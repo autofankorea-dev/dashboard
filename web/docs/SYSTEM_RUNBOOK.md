@@ -168,6 +168,19 @@ FARM02 사례: sent만 · applied 0 — 장비/펌웨어 triage.
 2. admin impersonation vs operator session
 3. Supabase advisor — partition child RLS
 
+### 4.9 FARM01 30일 차트 시각 재배치 (C안, 2026-09-17)
+
+시뮬 수신이 8월 28일에 멈춰 30일 1시간 칸이 비던 것을, **값·키는 유지**하고 측정·수신 시각만 최근 30일로 폈다. clock_kst 목록에는 넣지 않음.
+
+| 백업 | 내용 |
+|------|------|
+| `_bak_farm01_c_decoded_20260917` | decoded 118,840행 |
+| `_bak_farm01_c_raw_20260917` | raw 122,780행 |
+| `_bak_farm01_c_last_20260917` | last_value 13대 |
+| `_farm01_c_map_20260917` | id → 신·구 시각 |
+
+롤백: 백업으로 되돌릴 때는 파티션 키(`mesure_at`) 이동이 다시 일어난다.
+
 ---
 
 ## 5. incident 기록
@@ -209,4 +222,5 @@ FARM02 사례: sent만 · applied 0 — 장비/펌웨어 triage.
 
 | 날짜 | 내용 |
 |------|------|
+| 2026-09-17 | FARM01 C안 시각 재배치 · 백업 테이블 §4.9 |
 | 2026-09-01 | 초안 — 배포·모니터링·시나리오 runbook (Canvas §3 승인 반영) |

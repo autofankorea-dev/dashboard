@@ -21,6 +21,8 @@ type Props = {
   commands?: import("@/lib/data/commands").ThermoCommand[];
   alarmSettings?: AlarmSettings;
   canCommand?: boolean;
+  /** 명령이 접수되면 덮개로 돌아가 채널 진행을 본다 */
+  onCommandQueued?: () => void;
   /** «차트에서 보기» — 해당 컨트롤러 스코프로 차트 탭 이동 (그래프 모드 은퇴 대체) */
   onOpenChart?: () => void;
 };
@@ -33,6 +35,7 @@ export function ControllerMobileSettingsPage({
   commands,
   alarmSettings,
   canCommand = false,
+  onCommandQueued,
   onOpenChart,
 }: Props) {
   const {
@@ -107,6 +110,7 @@ export function ControllerMobileSettingsPage({
           alarmSettings={alarmSettings}
           canCommand={canCommand}
           collapsibleSections
+          onCommandQueued={onCommandQueued}
         />
     </div>
   );

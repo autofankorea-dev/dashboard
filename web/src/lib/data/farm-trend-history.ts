@@ -426,13 +426,20 @@ export async function getFarmControllerTrendHistoryCompact(params: {
   overview?: boolean;
   /** 테스트·특수 축. 허브·PDF 기본은 TREND_PERIODS. */
   cfg?: TrendPeriodConfig;
+  /** 허브 클라 30일 하루 조각 — 24h compact 와 같은 축. */
+  axisToMs?: number;
+  scanFromMs?: number;
+  scanToMs?: number;
 }): Promise<CompactControllerPeriod> {
   const cfg =
     params.cfg ??
     (params.overview && params.period === "30d"
       ? TREND_OVERVIEW_30D
       : TREND_PERIODS[params.period]);
-  const toMs = alignedToMs(params.now ?? Date.now());
+  const toMs =
+    params.axisToMs != null && Number.isFinite(params.axisToMs)
+      ? params.axisToMs
+      : alignedToMs(params.now ?? Date.now());
   const fromMs = toMs - cfg.durationMs;
   const empty = emptyCompactControllerPeriod(
     params.period,
@@ -441,13 +448,35 @@ export async function getFarmControllerTrendHistoryCompact(params: {
     cfg.strideMs,
   );
 
+  const scanFromMs = params.scanFromMs ?? fromMs;
+  const scanToMs = params.scanToMs ?? toMs;
+  const dayMs = TREND_PERIODS["24h"].durationMs;
+  if (
+    !Number.isFinite(scanFromMs) ||
+    !Number.isFinite(scanToMs) ||
+    scanToMs <= scanFromMs ||
+    scanFromMs < fromMs - 1000 ||
+    scanToMs > toMs + 1000
+  ) {
+    return empty;
+  }
+  if (
+    (params.scanFromMs != null || params.scanToMs != null) &&
+    scanToMs - scanFromMs > dayMs + 2000
+  ) {
+    return empty;
+  }
+
   const accessToken = await getAccessTokenOrNull();
   if (!accessToken) return empty;
 
   const user = await getCurrentUser();
   const userId = user?.id ?? "anon";
   const scopeKey = farmKeyId(params.farmKey);
-  const cacheKind = trendCacheKind(cfg, params.overview);
+  const cacheKind =
+    params.scanFromMs != null
+      ? `${trendCacheKind(cfg, params.overview)}-scan-${scanFromMs}-${scanToMs}`
+      : trendCacheKind(cfg, params.overview);
 
   const rows = await cachedLiveQuery(
     [
@@ -463,8 +492,8 @@ export async function getFarmControllerTrendHistoryCompact(params: {
       fetchControllerTrendRowsChunked(
         accessToken,
         params.farmKey,
-        fromMs,
-        toMs,
+        scanFromMs,
+        scanToMs,
         cfg.bucket,
       ),
   );
@@ -476,6 +505,22 @@ export async function getFarmControllerTrendHistoryCompact(params: {
     cfg.bucketCount,
     cfg.strideMs,
   );
+}
+
+/** 허브 30일 1시간 축의 하루 RPC. compact 슬롯은 전체 720칸 기준. */
+export async function getFarmControllerTrend30dDayCompact(params: {
+  farmKey: FarmKey;
+  axisToMs: number;
+  scanFromMs: number;
+  scanToMs: number;
+}): Promise<CompactControllerPeriod> {
+  return getFarmControllerTrendHistoryCompact({
+    farmKey: params.farmKey,
+    period: "30d",
+    axisToMs: params.axisToMs,
+    scanFromMs: params.scanFromMs,
+    scanToMs: params.scanToMs,
+  });
 }
 
 export async function getFarmControllerTrendHistory(params: {

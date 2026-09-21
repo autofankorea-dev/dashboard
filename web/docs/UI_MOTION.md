@@ -128,6 +128,7 @@ import { motionPresetForIntent } from "@/lib/ui/motion-preset";
 | `farm-chart-brush-window` | 기간 브러시 윈도우 transition |
 | `farm-chart-band-guide-in` / `farm-chart-band-guide-out` | 분할 가이드 점선 등장/퇴장 |
 | `farm-chart-scope-shell` / `farm-chart-panel-shell` | 차트 탭 레이아웃 등장 |
+| `farm-view-tab-pill` | 보기 탭·채널 A/B/C 초록 패딩 left/width 슬라이드 |
 | `farm-detail-carousel` | 컨트롤러 상세 캐러셀 클립 컨테이너 |
 | `farm-detail-slide-enter-next` / `enter-prev` | 캐러셀 enter (버튼 방향에서 진입) |
 | `farm-detail-slide-exit-next` / `exit-prev` | 캐러셀 exit (반대쪽으로 퇴장, enter와 겹침) |
@@ -173,7 +174,7 @@ import { motionPresetForIntent } from "@/lib/ui/motion-preset";
 |------|------|
 | Duration | 차트 surface는 `fast`/`normal`/`moderate`/`emphasis`/`exit`만. 오버레이(습도 슬롯 만남 → 위젯 높이 팽창)는 `moderate` 두 단계 |
 | Infinite | hover-ring · scope-handle-pulse는 **정적** |
-| Amplitude | enter `scale ≥ 0.85` (토큰 `--motion-chart-scale-from: 0.92`) · exit `0.94` · **overshoot ≤ 1.08 금지** |
+| Amplitude | enter `scale ≥ 0.85` (토큰 `--motion-chart-scale-from: 0.92`) · exit `0.94` · **overshoot ≤ 1.08 금지**. 미니칸→펼침은 FLIP `transform` + `clip-path`/`opacity`(emphasis/moderate 토큰). |
 | Rotate | `farm-chart-*` 키프레임에서 `rotate()` 금지 |
 | Spring | 다단 bounce(1.12→0.97) 제거 — enter/exit 2키프레임 |
 | Stagger | 리터럴 ms 대신 `--motion-duration-fast` 배수 |

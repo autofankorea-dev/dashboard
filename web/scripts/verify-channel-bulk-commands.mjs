@@ -27,16 +27,18 @@ function assert(cond, msg) {
   if (!cond) throw new Error(msg);
 }
 
-async function clickChannel(page, slot, on) {
+async function selectChannel(page, slot) {
   const dialog = page.getByRole("dialog");
-  const label = dialog.locator(`label[title="채널 ${slot}"]`);
-  const box = label.locator('input[type="checkbox"]');
-  for (let i = 0; i < 5; i++) {
-    if ((await box.isChecked()) === on) return;
-    await label.click({ force: true });
-    await page.waitForTimeout(150);
-  }
-  assert((await box.isChecked()) === on, `채널 ${slot} → ${on} 실패`);
+  const tab = dialog.getByRole("tab", { name: new RegExp(`^${slot}`) });
+  await tab.click();
+}
+
+async function bumpSetpoint(page) {
+  const input = page.getByRole("dialog").getByRole("textbox", { name: "설정온도" });
+  await input.click();
+  const cur = Number(await input.inputValue()) || 25;
+  await input.fill(String(Math.min(30, Math.round((cur + 0.1) * 10) / 10)));
+  await input.press("Tab");
 }
 
 async function setSection(page, re, on) {
@@ -96,9 +98,8 @@ async function main() {
     await setSection(page, /환기/, false);
     await setSection(page, /알람/, false);
 
-    await clickChannel(page, "A", false);
-    await clickChannel(page, "B", true);
-    await clickChannel(page, "C", false);
+    await selectChannel(page, "B");
+    await bumpSetpoint(page);
 
     const preview = await dialog
       .locator('[aria-label^="제어 명령"]')

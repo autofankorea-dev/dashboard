@@ -236,7 +236,6 @@ export {
   splitYLayoutsEqual,
   easeOutCubic,
   ALARM_PAD_RATIO,
-  TEMP_DISPLAY_PAD_RATIO,
   paddedExtentDomain,
   finiteExtent,
   fitTempDisplayDomain,

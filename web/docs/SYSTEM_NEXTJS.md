@@ -68,6 +68,7 @@ SELECT 계약: [`live-read-select.ts`](../src/lib/data/live-read-select.ts)
 | `fetchFarmScopedLiveDataAction` | soft refresh LIVE |
 | `fetchFarmScopedPanelDataAction` | full panel |
 | `fetchFarmTrend*Action` | 추이 · coverage RPC |
+| `fetchFarmControllerTrend30dDayAction` | 허브 30일 1시간 축의 하루 조각 (클라 최대 3개 병렬, 화면은 최신→과거) |
 | `fetchActiveModuleAlarmsAction` / `ack*` | 모듈 경보 |
 | `fetchDailyReportPayloadAction` | PDF payload |
 | `revalidateFarmLiveAction` | LIVE cache 무효화 |
@@ -203,9 +204,9 @@ SELECT 계약: [`live-read-select.ts`](../src/lib/data/live-read-select.ts)
 | 그룹 | 변수 |
 |------|------|
 | Core | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` |
-| LIVE/허브 | `NEXT_PUBLIC_LIVE_READ_TIER`, `NEXT_PUBLIC_FARM_FIELD_MERGE_V1`, `NEXT_PUBLIC_BARN_PLAN_ENABLED`, `NEXT_PUBLIC_DELIN_ENABLED` |
+| LIVE/허브 | `NEXT_PUBLIC_LIVE_READ_TIER`, `NEXT_PUBLIC_FARM_FIELD_MERGE_V1`, `NEXT_PUBLIC_DELIN_ENABLED` |
 | Auth | `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID`, `KAKAO_*` |
-| Maps | `KAKAO_JS_KEY`, `KAKAO_REST_API_KEY`, `VWORLD_*` |
+| Maps | `KAKAO_JS_KEY`, `KAKAO_REST_API_KEY` |
 | Admin/QA | `HEALTH_COLLECTOR_GROUPS`, `UI_VERIFY_BASE`, `SKIP_ADMIN_HUB_WARM` |
 | APK | `APP_INSTALL_*`, `APP_APK_*` |
 

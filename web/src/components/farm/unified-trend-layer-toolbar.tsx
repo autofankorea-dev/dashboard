@@ -447,7 +447,7 @@ export function UnifiedTrendLayerToolbar({
       <div
         ref={toolbarRef}
         className={cn(
-          "inline-flex max-w-full flex-wrap items-center gap-2 overflow-visible",
+          "farm-chart-toolbar-fit inline-flex max-w-full flex-wrap items-center gap-2 overflow-visible",
           className,
         )}
         data-tour-id="unified-trend-layer-toolbar"
@@ -620,7 +620,7 @@ export function CommandChannelLayerToolbar({
     <TooltipProvider delay={200}>
       <div
         className={cn(
-          "inline-flex items-center gap-2 overflow-visible",
+          "farm-chart-toolbar-fit inline-flex max-w-full items-center gap-2 overflow-visible",
           className,
         )}
         data-tour-id="chart-command-channel-toolbar"

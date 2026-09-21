@@ -1,6 +1,7 @@
 /**
  * A안 — 농장 차트 탭 UI·텍스트 일괄 배율.
  * 현장 목록·카드 미니차트에는 적용하지 않는다 (기본 1×).
+ * 모바일 차트 탭 툴바는 `.farm-chart-toolbar-fit` 이 1×로 너비에 맞춘다.
  * CSS `.farm-chart-ui { --farm-chart-ui-scale }` 과 동일 값을 유지한다.
  */
 export const FARM_CHART_UI_SCALE = 2;

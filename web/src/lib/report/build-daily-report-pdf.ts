@@ -786,7 +786,7 @@ function paintCoverWeeklyBriefing(
   headerBand(
     ctx,
     "스마트축사 일보",
-    [payload.farmLabel, `보고일 ${payload.reportDate}`, "주간 브리핑"],
+    [payload.farmLabel, `보고일 ${payload.reportDate}`, "30일 브리핑"],
     theme,
   );
   let y = paintOverviewKpis(ctx, MARGIN + 48, payload);
@@ -794,8 +794,8 @@ function paintCoverWeeklyBriefing(
   y = periodStack(
     ctx,
     y,
-    "농장 7일",
-    briefing.farm7d,
+    "농장 30일 · 1시간",
+    briefing.farm30d,
     theme,
     alarmGuides,
     92,
@@ -817,7 +817,7 @@ function paintCoverWeeklyBriefing(
   tableHeaderBar(
     ctx,
     y,
-    ["유형", "동", "평균 온도", "평균 습도", "7일 권장구간 밖"],
+    ["유형", "동", "평균 온도", "평균 습도", "30일 권장구간 밖"],
     cols,
     theme,
   );
@@ -828,10 +828,10 @@ function paintCoverWeeklyBriefing(
     ctx.fillStyle = INK;
     ctx.fillText(type.stallLabel, cols[0]!, y);
     ctx.fillText(String(type.barnCount), cols[1]!, y);
-    ctx.fillText(`${fmt(type.avgTemp7d)}℃`, cols[2]!, y);
-    ctx.fillText(`${fmt(type.avgHum7d, 0)}%`, cols[3]!, y);
+    ctx.fillText(`${fmt(type.avgTemp30d)}℃`, cols[2]!, y);
+    ctx.fillText(`${fmt(type.avgHum30d, 0)}%`, cols[3]!, y);
     ctx.fillText(
-      type.hoursOutsideTemp7d == null ? "—" : `${type.hoursOutsideTemp7d}시간`,
+      type.hoursOutsideTemp30d == null ? "—" : `${type.hoursOutsideTemp30d}시간`,
       cols[4]!,
       y,
     );
@@ -858,7 +858,7 @@ function paintStallTypeBriefing(
   headerBand(
     ctx,
     type.stallLabel,
-    [payload.farmLabel, `축사유형 ${type.barnCount}동`, "주간 브리핑"],
+    [payload.farmLabel, `축사유형 ${type.barnCount}동`, "30일 브리핑"],
     theme,
   );
   let y = MARGIN + 48;
@@ -866,13 +866,13 @@ function paintStallTypeBriefing(
     ? `${type.recommendTemp.lo}~${type.recommendTemp.hi}℃`
     : "—";
   const kpis: [string, string, KpiTone?][] = [
-    [`${fmt(type.avgTemp7d)}℃`, "7일 온도"],
-    [`${fmt(type.avgHum7d, 0)}%`, "7일 습도"],
+    [`${fmt(type.avgTemp30d)}℃`, "30일 온도"],
+    [`${fmt(type.avgHum30d, 0)}%`, "30일 습도"],
     [recTemp, "권장 온도"],
     [
-      type.hoursOutsideTemp7d == null ? "—" : `${type.hoursOutsideTemp7d}시간`,
+      type.hoursOutsideTemp30d == null ? "—" : `${type.hoursOutsideTemp30d}시간`,
       "권장 밖",
-      (type.hoursOutsideTemp7d ?? 0) > 0 ? "caution" : "ok",
+      (type.hoursOutsideTemp30d ?? 0) > 0 ? "caution" : "ok",
     ],
     [`${type.online}/${type.controllerTotal}`, "온라인"],
     [type.judge, "수신", toneFromJudge(type.judge)],
@@ -886,8 +886,8 @@ function paintStallTypeBriefing(
   y = periodStack(
     ctx,
     y,
-    `${type.stallLabel} 7일`,
-    type.series7d,
+    `${type.stallLabel} 30일 · 1시간`,
+    type.series30d,
     theme,
     typeChartGuides(type, farmAlarmGuides(payload)),
     86,
@@ -1073,7 +1073,7 @@ export async function buildAndDownloadDailyReportPdf(
 
   {
     pageNo += 1;
-    reportProgress("농장 주간 브리핑");
+    reportProgress("농장 30일 브리핑");
     const { canvas, ctx } = createPageCanvas();
     paintCoverWeeklyBriefing(ctx, payload, briefing, theme, totalPages);
     addCanvasPage(pdf, canvas, first);
@@ -1083,7 +1083,7 @@ export async function buildAndDownloadDailyReportPdf(
 
   for (const type of briefing.types) {
     pageNo += 1;
-    reportProgress(`${type.stallLabel} 주간 브리핑`);
+    reportProgress(`${type.stallLabel} 30일 브리핑`);
     const { canvas, ctx } = createPageCanvas();
     paintStallTypeBriefing(ctx, payload, type, theme, pageNo, totalPages);
     addCanvasPage(pdf, canvas, first);

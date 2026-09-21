@@ -16,7 +16,7 @@
 
 ## Knip
 
-- 설정: `knip.config.ts` — `src/app`·`src/**/*.test.ts`·`scripts/*`를 entry로 둔다. ignore: 로컬 모델 탭 편집기(`BARN_PLAN.md`), 미연결 디자인 헬퍼. `buffer`는 webpack 폴리필이라 `ignoreDependencies`. `scripts/archive/**`는 entry에 넣지 않는다.
+- 설정: `knip.config.ts` — `src/app`·`src/**/*.test.ts`·`scripts/*`를 entry로 둔다. ignore: 미연결 디자인 헬퍼. `buffer`는 webpack 폴리필이라 `ignoreDependencies`. `scripts/archive/**`는 entry에 넣지 않는다.
 - CI: `npm run knip` — files/dependencies/duplicates만 게이트
 - 로컬 점진 정리: `npm run knip:exports` — unused export 전체 목록
 

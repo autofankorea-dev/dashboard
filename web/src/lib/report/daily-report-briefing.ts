@@ -1,5 +1,5 @@
 /**
- * 일보 브리핑 모델 — 축사유형 집계, 7일 권장 이탈 시간, 30일 최장 연속 이탈.
+ * 일보 브리핑 모델 — 축사유형 집계, 30일 1시간 그래프·권장 이탈 시간, 30일 최장 연속 이탈.
  * 문장은 숫자 FACT만 (LLM 자유 문장 없음). 내부 코드·키 비노출.
  */
 
@@ -36,12 +36,11 @@ export type DailyReportTypeBrief = {
   controllerTotal: number;
   online: number;
   judge: string;
-  avgTemp7d: number | null;
-  avgHum7d: number | null;
+  avgTemp30d: number | null;
+  avgHum30d: number | null;
   recommendTemp: EnvBand | null;
   recommendHum: EnvBand | null;
-  hoursOutsideTemp7d: number | null;
-  series7d: DailyReportSeries;
+  hoursOutsideTemp30d: number | null;
   series30d: DailyReportSeries;
   barns: DailyReportBarnRow[];
 };
@@ -68,9 +67,9 @@ export type DailyReportRiskWindow = {
 };
 
 export type DailyReportBriefing = {
-  farm7d: DailyReportSeries;
-  farmAvgTemp7d: number | null;
-  farmAvgHum7d: number | null;
+  farm30d: DailyReportSeries;
+  farmAvgTemp30d: number | null;
+  farmAvgHum30d: number | null;
   types: DailyReportTypeBrief[];
   risk: DailyReportRiskWindow;
 };
@@ -238,7 +237,6 @@ export function buildDailyReportBriefing(
     .sort((a, b) => stallTyCodeSortKey(a[0]) - stallTyCodeSortKey(b[0]))
     .map(([code, barns]) => {
       const pig = bandFromPig(code);
-      const series7d = averageBarnsSeries(barns, "7d");
       const series30d = averageBarnsSeries(barns, "30d");
       return {
         stallTyCode: code,
@@ -247,14 +245,13 @@ export function buildDailyReportBriefing(
         controllerTotal: barns.reduce((n, b) => n + b.kpi.total, 0),
         online: barns.reduce((n, b) => n + b.kpi.online, 0),
         judge: worstJudge(barns.map((b) => b.kpi.judge)),
-        avgTemp7d: avgFinite(series7d.temp),
-        avgHum7d: avgFinite(series7d.humidity),
+        avgTemp30d: avgFinite(series30d.temp),
+        avgHum30d: avgFinite(series30d.humidity),
         recommendTemp: pig?.temp ?? null,
         recommendHum: pig?.humidity ?? null,
-        hoursOutsideTemp7d: pig
-          ? countOutsideBand(series7d.temp, pig.temp.lo, pig.temp.hi)
+        hoursOutsideTemp30d: pig
+          ? countOutsideBand(series30d.temp, pig.temp.lo, pig.temp.hi)
           : null,
-        series7d,
         series30d,
         barns: barns.map((b) => ({
           stallLabel: b.stallLabel,
@@ -268,7 +265,7 @@ export function buildDailyReportBriefing(
       };
     });
 
-  const farm7d = averageBarnsSeries(payload.barns, "7d");
+  const farm30d = averageBarnsSeries(payload.barns, "30d");
 
   let best: {
     type: DailyReportTypeBrief;
@@ -337,9 +334,9 @@ export function buildDailyReportBriefing(
   }
 
   return {
-    farm7d,
-    farmAvgTemp7d: avgFinite(farm7d.temp),
-    farmAvgHum7d: avgFinite(farm7d.humidity),
+    farm30d,
+    farmAvgTemp30d: avgFinite(farm30d.temp),
+    farmAvgHum30d: avgFinite(farm30d.humidity),
     types,
     risk,
   };
@@ -351,15 +348,15 @@ export function farmBriefingFacts(
 ): string[] {
   const lines: string[] = [];
   lines.push(
-    `7일 농장 평균 온도 ${fmt1(briefing.farmAvgTemp7d)}℃, 습도 ${fmt0(briefing.farmAvgHum7d)}%.`,
+    `30일 농장 평균 온도 ${fmt1(briefing.farmAvgTemp30d)}℃, 습도 ${fmt0(briefing.farmAvgHum30d)}%.`,
   );
 
   const high: string[] = [];
   const low: string[] = [];
   for (const t of briefing.types) {
-    if (!t.recommendTemp || t.avgTemp7d == null) continue;
-    if (t.avgTemp7d > t.recommendTemp.hi) high.push(t.stallLabel);
-    else if (t.avgTemp7d < t.recommendTemp.lo) low.push(t.stallLabel);
+    if (!t.recommendTemp || t.avgTemp30d == null) continue;
+    if (t.avgTemp30d > t.recommendTemp.hi) high.push(t.stallLabel);
+    else if (t.avgTemp30d < t.recommendTemp.lo) low.push(t.stallLabel);
   }
   const joinNames = (names: string[], rest: string) =>
     names.length > 1
@@ -388,24 +385,24 @@ export function typeBriefingFacts(type: DailyReportTypeBrief): string[] {
   const lines: string[] = [];
   if (type.recommendTemp) {
     const rec = `${type.recommendTemp.lo}~${type.recommendTemp.hi}℃`;
-    if (type.avgTemp7d == null) {
-      lines.push(`${type.stallLabel} 7일 온도 기록이 부족합니다. 권장은 ${rec}입니다.`);
-    } else if (type.avgTemp7d > type.recommendTemp.hi) {
+    if (type.avgTemp30d == null) {
+      lines.push(`${type.stallLabel} 30일 온도 기록이 부족합니다. 권장은 ${rec}입니다.`);
+    } else if (type.avgTemp30d > type.recommendTemp.hi) {
       lines.push(
-        `${type.stallLabel} 7일 평균 ${fmt1(type.avgTemp7d)}℃로, 권장 ${rec}보다 높았습니다. 권장구간 밖은 ${type.hoursOutsideTemp7d ?? 0}시간입니다.`,
+        `${type.stallLabel} 30일 평균 ${fmt1(type.avgTemp30d)}℃로, 권장 ${rec}보다 높았습니다. 권장구간 밖은 ${type.hoursOutsideTemp30d ?? 0}시간입니다.`,
       );
-    } else if (type.avgTemp7d < type.recommendTemp.lo) {
+    } else if (type.avgTemp30d < type.recommendTemp.lo) {
       lines.push(
-        `${type.stallLabel} 7일 평균 ${fmt1(type.avgTemp7d)}℃로, 권장 ${rec}보다 낮았습니다. 권장구간 밖은 ${type.hoursOutsideTemp7d ?? 0}시간입니다.`,
+        `${type.stallLabel} 30일 평균 ${fmt1(type.avgTemp30d)}℃로, 권장 ${rec}보다 낮았습니다. 권장구간 밖은 ${type.hoursOutsideTemp30d ?? 0}시간입니다.`,
       );
     } else {
       lines.push(
-        `${type.stallLabel} 7일 평균 ${fmt1(type.avgTemp7d)}℃로, 권장 ${rec} 안에 있었습니다. 권장구간 밖은 ${type.hoursOutsideTemp7d ?? 0}시간입니다.`,
+        `${type.stallLabel} 30일 평균 ${fmt1(type.avgTemp30d)}℃로, 권장 ${rec} 안에 있었습니다. 권장구간 밖은 ${type.hoursOutsideTemp30d ?? 0}시간입니다.`,
       );
     }
   } else {
     lines.push(
-      `${type.stallLabel} 7일 평균 온도 ${fmt1(type.avgTemp7d)}℃, 습도 ${fmt0(type.avgHum7d)}%. 이 유형은 생육 권장 구간이 없어 가이드만 표시합니다.`,
+      `${type.stallLabel} 30일 평균 온도 ${fmt1(type.avgTemp30d)}℃, 습도 ${fmt0(type.avgHum30d)}%. 이 유형은 생육 권장 구간이 없어 가이드만 표시합니다.`,
     );
   }
 

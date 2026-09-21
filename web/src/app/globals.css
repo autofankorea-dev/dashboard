@@ -1737,11 +1737,33 @@ html[data-viewport-preview="mobile"] [data-mobile-viewport-toast] {
 
 /**
  * A안 — 차트 UI 배율.
- * 기본 1× (현장 목록·카드 미니차트). 차트 탭 `.farm-chart-ui` 만 2×.
+ * 차트 탭 `.farm-chart-ui` 만 2×. 모바일 툴바는 `.farm-chart-toolbar-fit` 이 1×.
  * TS: src/lib/ui/farm-chart-ui-scale.ts FARM_CHART_UI_SCALE
  */
 .farm-chart-ui {
   --farm-chart-ui-scale: 2;
+}
+
+/** 모바일 — ON/OFF 아이콘 묶음을 칸 너비에 맞춤 (2× 대신 1×) */
+.farm-chart-toolbar-fit {
+  max-width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 767px) {
+  .farm-chart-toolbar-fit {
+    --farm-chart-ui-scale: 1;
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+  }
+}
+
+[data-viewport-preview="mobile"] .farm-chart-toolbar-fit {
+  --farm-chart-ui-scale: 1;
+  width: 100%;
+  justify-content: space-between;
+  flex-wrap: nowrap;
 }
 
 .farm-chart-fs-legend {

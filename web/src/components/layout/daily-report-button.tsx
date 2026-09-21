@@ -95,7 +95,7 @@ export function DailyReportButton({
           }
           setOverlay((o) => ({
             ...o,
-            detail: `주간 브리핑 PDF 구성 중`,
+            detail: `30일 브리핑 PDF 구성 중`,
           }));
           const { buildAndDownloadDailyReportPdf } = await import(
             "@/lib/report/build-daily-report-pdf"

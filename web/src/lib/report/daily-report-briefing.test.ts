@@ -138,7 +138,7 @@ describe("buildDailyReportBriefing", () => {
     assert.equal(briefing.types.length, 2);
     assert.equal(briefing.types[0]?.stallLabel, "임신사");
     assert.equal(briefing.types[0]?.barnCount, 2);
-    assert.ok((briefing.types[0]?.hoursOutsideTemp7d ?? 0) >= 3);
+    assert.ok((briefing.types[0]?.hoursOutsideTemp30d ?? 0) >= 3);
     assert.equal(briefing.risk.found, true);
     assert.equal(briefing.risk.stallLabel, "임신사");
     assert.ok(briefing.risk.hours >= 4);
@@ -146,12 +146,12 @@ describe("buildDailyReportBriefing", () => {
     assert.ok(briefing.risk.peakExcess >= 3);
 
     const farmFacts = farmBriefingFacts(briefing, payload).join(" ");
-    assert.match(farmFacts, /7일 농장 평균 온도/);
+    assert.match(farmFacts, /30일 농장 평균 온도/);
     assert.doesNotMatch(farmFacts, /SP0/);
     assert.doesNotMatch(farmFacts, /farmKey/);
 
     const typeFacts = typeBriefingFacts(briefing.types[0]!).join(" ");
-    assert.match(typeFacts, /임신사 7일 평균/);
+    assert.match(typeFacts, /임신사 30일 평균/);
     assert.match(typeFacts, /권장 16~21℃/);
 
     const riskFacts = riskBriefingFacts(briefing.risk).join(" ");

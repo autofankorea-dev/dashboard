@@ -94,16 +94,12 @@ assert.equal(
 assert.equal(
   controllersShareStall(
     {
-      level: "controller",
       stallTyCode: "SP03",
       stallNo: "1",
-      controllerKey: "a",
     },
     {
-      level: "controller",
       stallTyCode: "SP03",
       stallNo: "1",
-      controllerKey: "b",
     },
   ),
   true,

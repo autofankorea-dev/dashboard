@@ -1,16 +1,21 @@
-import type { AlarmSettings } from "@/lib/data/alarms";
+import {
+  DEFAULT_ALARM_SETTINGS,
+  type AlarmSettings,
+  type AlarmThresholds,
+} from "@/lib/data/alarms";
 import { formatAlarmBaselinePair } from "@/lib/data/alarm-baseline";
+import { resolveThresholdsForReading } from "@/lib/data/alarm-scope";
 import type { BarnReading } from "@/lib/data/iot";
 import { formatHumidityPct, formatTempC } from "@/lib/data/farm-summaries";
-import {
-  barnPlanEnvAlarmThresholds,
-  barnPlanRoomEnvChannels,
-  barnPlanRoomEnvTint,
-  type BarnPlanCoverClimateTone,
-  type BarnPlanRoomEnvTint,
-} from "@/lib/farm/barn-site-live";
+import { sevOfScore, severityScore } from "@/lib/farm/severity-score";
 
-export type ControllerEnvCoverLevel = BarnPlanCoverClimateTone;
+export type ControllerEnvCoverLevel = "ok" | "warn" | "danger" | "offline";
+type RoomEnvTint = "ok" | "warn" | "danger";
+
+type RoomEnvChannels = {
+  temp: RoomEnvTint | null;
+  humidity: RoomEnvTint | null;
+};
 
 const COVER_LEVEL_RANK: Record<ControllerEnvCoverLevel, number> = {
   ok: 0,
@@ -25,14 +30,86 @@ type CoverReasonReading = Pick<
 > &
   Partial<Pick<BarnReading, "farmKey" | "stallNo" | "controllerKey" | "eqpmnNo">>;
 
+function alarmChannelTint(
+  value: number | null | undefined,
+  low: number,
+  high: number,
+): RoomEnvTint | null {
+  if (value == null || !Number.isFinite(value)) return null;
+  const sev = sevOfScore(severityScore(value, { lo: low, hi: high }));
+  if (sev === "warning") return "danger";
+  if (sev === "caution") return "warn";
+  return "ok";
+}
+
+function envAlarmThresholds(
+  reading: CoverReasonReading,
+  settings?: AlarmSettings,
+): AlarmThresholds {
+  return resolveThresholdsForReading(settings ?? DEFAULT_ALARM_SETTINGS, {
+    key: "",
+    farmKey: reading.farmKey ?? { lsindRegistNo: "", itemCode: "" },
+    moduleUid: 0,
+    controllerKey: reading.controllerKey ?? "",
+    eqpmnNo: reading.eqpmnNo ?? "",
+    stallNo: reading.stallNo ?? null,
+    stallTyCode: reading.stallTyCode ?? null,
+    label: "",
+    tempC: reading.tempC,
+    humidityPct: reading.humidityPct,
+    fanSupply: null,
+    fanExhaust: null,
+    fanIntake: null,
+    fanSupplySeries: [],
+    fanExhaustSeries: [],
+    fanIntakeSeries: [],
+    mesureDt: null,
+    receivedAt: "",
+    status: reading.status,
+    packetMode: "live",
+    wireVer: null,
+  });
+}
+
+function roomEnvChannels(
+  reading: CoverReasonReading | undefined,
+  alarmSettings?: AlarmSettings,
+): RoomEnvChannels | null {
+  if (!reading || reading.status === "offline") return null;
+  if (reading.tempC == null && reading.humidityPct == null) return null;
+  const band = envAlarmThresholds(reading, alarmSettings);
+  return {
+    temp: alarmChannelTint(reading.tempC, band.tempLow, band.tempHigh),
+    humidity: alarmChannelTint(
+      reading.humidityPct,
+      band.humidityLow,
+      band.humidityHigh,
+    ),
+  };
+}
+
+function roomEnvTint(
+  reading: CoverReasonReading,
+  alarmSettings?: AlarmSettings,
+): RoomEnvTint | null {
+  const channels = roomEnvChannels(reading, alarmSettings);
+  if (!channels) return null;
+  if (channels.temp === "danger" || channels.humidity === "danger") {
+    return "danger";
+  }
+  if (channels.temp === "warn" || channels.humidity === "warn") {
+    return "warn";
+  }
+  return "ok";
+}
+
 /** 필드 카드 덮개 채점 — 사용자가 정한 알람 상·하한. 권장은 델린이 제시. */
 export function controllerEnvCoverLevel(
   reading: CoverReasonReading,
   alarmSettings?: AlarmSettings,
 ): ControllerEnvCoverLevel {
   if (reading.status === "offline") return "offline";
-  const tint =
-    barnPlanRoomEnvTint(reading, { mode: "alarm", alarmSettings }) ?? "ok";
+  const tint = roomEnvTint(reading, alarmSettings) ?? "ok";
   /**
    * 측정 정체(수신은 최신·측정시각 정체 → LIVE `caution`)면
    * 알람 구간 안이어도 덮개를 「주의」로 강등. 이미 위험이면 유지.
@@ -78,12 +155,12 @@ export type ControllerEnvCoverReason = {
   bandLabel: string | null;
 };
 
-function channelOff(tint: BarnPlanRoomEnvTint | null | undefined): boolean {
+function channelOff(tint: RoomEnvTint | null | undefined): boolean {
   return tint === "warn" || tint === "danger";
 }
 
 function tempAlarmBandLabel(reading: CoverReasonReading, alarmSettings?: AlarmSettings): string {
-  const band = barnPlanEnvAlarmThresholds(reading, alarmSettings);
+  const band = envAlarmThresholds(reading, alarmSettings);
   return `알람 ${formatAlarmBaselinePair(band.tempLow, band.tempHigh, "℃")}`;
 }
 
@@ -91,7 +168,7 @@ function humidityAlarmBandLabel(
   reading: CoverReasonReading,
   alarmSettings?: AlarmSettings,
 ): string {
-  const band = barnPlanEnvAlarmThresholds(reading, alarmSettings);
+  const band = envAlarmThresholds(reading, alarmSettings);
   return `알람 ${formatAlarmBaselinePair(band.humidityLow, band.humidityHigh, "%")}`;
 }
 
@@ -107,10 +184,7 @@ export function controllerEnvCoverReason(
     return { valueLabel: null, bandLabel: null };
   }
 
-  const channels = barnPlanRoomEnvChannels(reading, {
-    mode: "alarm",
-    alarmSettings,
-  });
+  const channels = roomEnvChannels(reading, alarmSettings);
   const tempOff = channelOff(channels?.temp);
   const humidityOff = channelOff(channels?.humidity);
   const showHumidity =

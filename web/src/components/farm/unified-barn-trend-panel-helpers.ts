@@ -3,6 +3,7 @@ import type { AlarmSettings, AlarmThresholds } from "@/lib/data/alarms";
 import type { BarnReading } from "@/lib/data/iot";
 import { snapToStep } from "@/lib/controllers/controller-panel-map";
 import {
+  TREND_MINI_STRIDE_MS,
   TREND_PERIODS,
   isContextControllerTrend30d,
   type TrendControllerPeriodData,
@@ -27,6 +28,7 @@ import {
 import {
   downsampleThermoByIndices,
   sliceChannelThermo,
+  type ChannelThermoVec,
 } from "@/lib/farm/channel-thermo";
 
 /**
@@ -160,6 +162,178 @@ export function downsampleSeriesForChart(
       thermoC: downsampleThermoByIndices(s.thermoC, idx),
     })),
   };
+}
+
+export type ControllerWindowBundle = {
+  seriesList: TrendControllerSeries[];
+  categories: string[];
+  bucketAts: string[];
+};
+
+export function controllerWindowHasValues(
+  window: ControllerWindowBundle,
+): boolean {
+  return window.seriesList.some((s) =>
+    [s.temp, s.humidity, s.fanA, s.fanB, s.fanC].some((col) =>
+      col.some((v) => v != null && Number.isFinite(v)),
+    ),
+  );
+}
+
+function round1(n: number): number {
+  return Math.round(n * 10) / 10;
+}
+
+function avgRange(
+  values: (number | null)[],
+  from: number,
+  to: number,
+): number | null {
+  let sum = 0;
+  let n = 0;
+  for (let i = from; i < to; i += 1) {
+    const v = values[i];
+    if (v != null && Number.isFinite(v)) {
+      sum += v;
+      n += 1;
+    }
+  }
+  return n > 0 ? round1(sum / n) : null;
+}
+
+function lastRange<T>(values: T[], from: number, to: number): T | undefined {
+  for (let i = to - 1; i >= from; i -= 1) {
+    const v = values[i];
+    if (v != null) return v;
+  }
+  return values[to - 1];
+}
+
+function binNumericAvg(
+  values: (number | null)[],
+  group: number,
+): (number | null)[] {
+  const out: (number | null)[] = [];
+  for (let i = 0; i < values.length; i += group) {
+    out.push(avgRange(values, i, Math.min(values.length, i + group)));
+  }
+  return out;
+}
+
+function binCountSum(values: number[], group: number): number[] {
+  const out: number[] = [];
+  for (let i = 0; i < values.length; i += group) {
+    const to = Math.min(values.length, i + group);
+    let sum = 0;
+    for (let j = i; j < to; j += 1) sum += values[j] ?? 0;
+    out.push(sum);
+  }
+  return out;
+}
+
+function binFirst<T>(values: T[], group: number): T[] {
+  const out: T[] = [];
+  for (let i = 0; i < values.length; i += group) {
+    out.push(values[i]!);
+  }
+  return out;
+}
+
+function binLast<T>(values: T[], group: number): T[] {
+  const out: T[] = [];
+  for (let i = 0; i < values.length; i += group) {
+    const to = Math.min(values.length, i + group);
+    out.push(lastRange(values, i, to) as T);
+  }
+  return out;
+}
+
+function binThermo(vec: ChannelThermoVec | undefined, group: number) {
+  if (!vec) return undefined;
+  return {
+    setpoint: binLast(vec.setpoint, group),
+    deviation: binLast(vec.deviation, group),
+    minVent: binLast(vec.minVent, group),
+    maxVent: binLast(vec.maxVent, group),
+  };
+}
+
+function inferBucketStrideMs(bucketAts: string[]): number | null {
+  if (bucketAts.length < 2) return null;
+  const a = Date.parse(bucketAts[0] ?? "");
+  const b = Date.parse(bucketAts[1] ?? "");
+  if (!Number.isFinite(a) || !Number.isFinite(b) || b <= a) return null;
+  return b - a;
+}
+
+/** 미니 칸 — 15분/1시간 창을 목표 간격(기본 2시간) 평균으로 묶는다. */
+export function binControllerWindowToStride(
+  window: ControllerWindowBundle,
+  targetStrideMs: number = TREND_MINI_STRIDE_MS,
+): ControllerWindowBundle {
+  const stride = inferBucketStrideMs(window.bucketAts);
+  if (
+    !stride ||
+    targetStrideMs <= stride + 1 ||
+    window.categories.length < 2 ||
+    window.categories.length !== window.bucketAts.length
+  ) {
+    return window;
+  }
+  const group = Math.max(2, Math.round(targetStrideMs / stride));
+  if (group <= 1) return window;
+  return {
+    categories: binFirst(window.categories, group),
+    bucketAts: binFirst(window.bucketAts, group),
+    seriesList: window.seriesList.map((s) => ({
+      ...s,
+      temp: binNumericAvg(s.temp, group),
+      humidity: binNumericAvg(s.humidity, group),
+      fanA: binNumericAvg(s.fanA, group),
+      fanB: binNumericAvg(s.fanB, group),
+      fanC: binNumericAvg(s.fanC, group),
+      fanSupply: binNumericAvg(s.fanSupply, group),
+      fanExhaust: binNumericAvg(s.fanExhaust, group),
+      fanIntake: binNumericAvg(s.fanIntake, group),
+      sampleCount: binCountSum(s.sampleCount, group),
+      uplinkKind: s.uplinkKind ? binLast(s.uplinkKind, group) : undefined,
+      thermoA: binThermo(s.thermoA, group),
+      thermoB: binThermo(s.thermoB, group),
+      thermoC: binThermo(s.thermoC, group),
+    })),
+  };
+}
+
+/** 표시 축 인덱스 → 원본 창 슬라이스. */
+export function mapIndexWindowToSlice(
+  displayLen: number,
+  start: number,
+  end: number,
+  dataLen: number,
+): { from: number; to: number } {
+  const span = Math.max(1, displayLen - 1);
+  const r0 = start / span;
+  const r1 = end / span;
+  const from = Math.max(0, Math.floor(r0 * (dataLen - 1)));
+  const to = Math.min(
+    dataLen,
+    Math.max(from + 2, Math.ceil(r1 * (dataLen - 1)) + 1),
+  );
+  return { from, to };
+}
+
+export function bucketAtsRangeMs(
+  bucketAts: string[],
+  from: number,
+  to: number,
+): { fromMs: number; toMs: number } | null {
+  if (bucketAts.length < 1) return null;
+  const start = Date.parse(bucketAts[from] ?? "");
+  const lastIdx = Math.max(from, Math.min(bucketAts.length, to) - 1);
+  const last = Date.parse(bucketAts[lastIdx] ?? "");
+  if (!Number.isFinite(start) || !Number.isFinite(last)) return null;
+  const stride = inferBucketStrideMs(bucketAts) ?? TREND_PERIODS["30d"].strideMs;
+  return { fromMs: start, toMs: last + stride };
 }
 
 export function applyCoverageToWindow(

@@ -5,6 +5,7 @@ import { computeBinnedMetricValues } from "@/lib/farm/stack-metric";
  * 그리드·sheet 공용 표시 막대 수.
  * 원본은 TREND_PERIODS → 히트맵 색은 binWorst, 값/라인은 구간 평균.
  * 24h=1시간(15m×4), 7d=6시간(1h×6), 30d=1일(1h×24).
+ * 차트 탭 미니 칸은 GRAPH_BARS가 아니라 TREND_MINI_STRIDE_MS(2시간 평균).
  */
 export const GRAPH_BARS: Record<TrendPeriodId, number> = {
   "24h": 24,

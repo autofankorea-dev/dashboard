@@ -127,8 +127,8 @@ export function ThresholdRangeSlider({
   );
   const inputSize = axisInputSize ?? (compact ? "compact" : "dashboard");
   const showBoundFields = resolvedAxisMode === "editable";
-  const hideTrackOnPc = showBoundFields && compact && !mobile;
-  const showThumbLabels = !hideTrackOnPc && (!showBoundFields || mobileDrag);
+  const hideTrack = showBoundFields;
+  const showThumbLabels = !hideTrack && (!showBoundFields || mobileDrag);
 
   const railRef = useRef<HTMLDivElement>(null);
   const lowLabelRef = useRef<HTMLSpanElement>(null);
@@ -255,7 +255,7 @@ export function ThresholdRangeSlider({
         />
       ) : null}
 
-      {hideTrackOnPc ? null : (
+      {hideTrack ? null : (
       <div
         className={cn(
           sliderTrackShellClass(compact, "dual", false, showThumbLabels),

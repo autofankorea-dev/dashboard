@@ -32,7 +32,7 @@ Glass(서리·투시)는 **이 표의 종류를 고른 뒤에만** 넣는다. �
 | **B** | Document | 본문 그릇 | `SectionCard`, 설정 카드, `dashboardElevation.card` | 단 2 | `bg-card`. 안에 카드 겹쌓기 금지 |
 | **C** | Well | 격자 우물 | 필드 그리드 배경, `hubSurface.well` | 단 1 | `--surface-well` |
 | **D** | Tile | 한 컨트롤러/축사 칸 | `FarmMapCard`, `hubSurface.tile` | 단 2 | `bg-card` + 약한 ring. 열리면 테두리에 판정색 |
-| **E** | Status film | 판정을 면으로 | 덮개, 왼쪽 현황, 모델 칸 틴트 | 타일 **위** | `--status-*`만. 채널색 금지 |
+| **E** | Status film | 판정을 면으로 | 덮개, 왼쪽 현황 | 타일 **위** | `--status-*`만. 채널색 금지 |
 | **F** | Overlay | 떠서 가림 | Dialog, 시트, 드롭다운, FAB 패널 | 단 3 | `bg-popover`. 기존 `backdrop-blur`는 여기만 |
 | **G** | Feedback | 적용 결과 | 토스트, 명령 오버레이, 적용 큐 | 단 3 float | `opsFeedbackTone` |
 | **H** | Presence | 델린만 | 뱃지 | 예외 | status 톤. 덮개에 복제 금지 |
@@ -52,8 +52,7 @@ Glass(서리·투시)는 **이 표의 종류를 고른 뒤에만** 넣는다. �
 | 필드 격자 | `barn-table`, `farm-field-status-grid`, `farm-map-card` | C 우물 + D 타일 |
 | 덮개 | `controller-env-cover`, `cover-reveal-overlay` | **E** |
 | 차트 | `farm-chart-view`, `trend-chart`, `severity-heatmap` | B + 데이터 잉크 |
-| 모델 | `farm-plan-view`, `farm-plan-field-canvas` | 지도 + E 틴트 |
-| 시트 | `barn-panel-bottom-sheet`, `farm-plan-dock-sheet`, 모바일 시트 | F |
+| 시트 | `barn-panel-bottom-sheet`, 모바일 시트 | F |
 | 명령 | `command-pipeline-overlay`, 필드 덮개 채널 스트립 | G |
 | 델린 | `delin-env-badge` | H |
 | 운영 | `/admin/ops`, `opsTypography` | B · 밀도는 허브 2× 없음 |

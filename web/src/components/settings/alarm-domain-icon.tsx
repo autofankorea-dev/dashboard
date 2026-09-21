@@ -4,11 +4,11 @@ import { cn } from "@/lib/utils";
 
 export type AlarmDomain = "temp" | "humidity";
 
-/** 종 본체 · 도메인 아이콘은 우하단 ¼. 겹치는 칸은 종을 그리지 않음. */
-const METRIC_FRAC = "25%";
+/** 종 본체 · 도메인 아이콘은 우하단 ½. 겹치는 칸은 종을 그리지 않음. */
+const METRIC_FRAC = "50%";
 const BELL_CLIP: CSSProperties = {
   clipPath:
-    "polygon(0 0, 100% 0, 100% calc(100% - 25% - 1px), calc(100% - 25% - 1px) calc(100% - 25% - 1px), calc(100% - 25% - 1px) 100%, 0 100%)",
+    "polygon(0 0, 100% 0, 100% calc(100% - 50% - 1px), calc(100% - 50% - 1px) calc(100% - 50% - 1px), calc(100% - 50% - 1px) 100%, 0 100%)",
 };
 
 export function AlarmDomainIcon({

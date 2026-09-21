@@ -10,7 +10,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { useSearchParams } from "next/navigation";
-import { Map, List, LineChart, Box } from "lucide-react";
+import { Map, List, LineChart } from "lucide-react";
 import { StallUnitIcon } from "@/components/icons/stall-unit-icon";
 import type { BarnMapSnapshot } from "@/lib/data/iot";
 import type { BarnReading } from "@/lib/data/iot";
@@ -20,7 +20,6 @@ import type { TrendPeriodData, TrendPeriodId } from "@/lib/data/farm-trend-types
 import { DelinEnvBadge } from "@/components/farm/delin-env-badge";
 import { FarmMapView } from "@/components/farm/farm-map-view";
 import { FarmChartLabView } from "@/components/farm/farm-chart-lab-view";
-import { FarmPlanView } from "@/components/farm/farm-plan-view";
 import { BarnTable } from "@/components/farm/barn-table";
 import {
   FarmFieldStatusGrid,
@@ -58,11 +57,9 @@ import { isScopedControllerEnriched } from "@/lib/farm/farm-scoped-panel-utils";
 import type { ControllerGridData } from "@/lib/farm/controller-grid-data";
 import {
   farmKeyId,
-  parseFarmKeyFromQuery,
   parseFarmKeyId,
   type FarmKey,
 } from "@/lib/data/farm-key";
-import type { FarmLocationRow } from "@/lib/data/farm-location-shared";
 import { parseBarnCatalogKey } from "@/lib/data/barn-catalog";
 import {
   invalidateFarmControllerTrendCache,
@@ -79,7 +76,6 @@ import {
   useFarmLiveRefreshOptional,
 } from "@/lib/navigation/farm-live-refresh";
 import { useHydrationSafeDashboardCompact } from "@/components/layout/dashboard-viewport-context";
-import { useFarmScope } from "@/components/layout/farm-scope-provider";
 import {
   dashboardAffordance,
   dashboardChroma,
@@ -90,7 +86,6 @@ import { useFieldListFilterMotion } from "@/components/farm/use-field-list-filte
 import { motionClass } from "@/lib/ui/motion-classes";
 import { useFarmTourActive } from "@/lib/onboarding/use-farm-tour-active";
 import { delinEnabled } from "@/lib/aria/delin-enabled";
-import { barnPlanEnabled } from "@/lib/farm/barn-plan-enabled";
 import { STAGGER_MOUNT_MIN_READINGS } from "@/lib/farm/stagger-mount";
 
 type Props = {
@@ -111,7 +106,6 @@ type Props = {
   /** SSR과 일치하는 초기 그리드/목록/차트 탭 (hubMode) */
   initialHubView?: FarmHubView;
   lazyListFarmKey?: FarmKey | null;
-  hubLocations?: FarmLocationRow[];
 };
 
 export function FarmPageContent({
@@ -130,11 +124,8 @@ export function FarmPageContent({
   lazyListEnrichment = false,
   lazyListFarmKey = null,
   initialHubView,
-  hubLocations = [],
 }: Props) {
   const viewportCompact = useHydrationSafeDashboardCompact();
-  const { isAdmin } = useFarmScope();
-  const showModelTab = barnPlanEnabled({ isAdmin });
   const tourActive = useFarmTourActive();
   const searchParams = useSearchParams();
   const liveRefresh = useFarmLiveRefreshOptional();
@@ -238,7 +229,6 @@ export function FarmPageContent({
     initialHubView,
     searchParams,
     keepAliveFarmId,
-    isAdmin,
     onOpenList: () => {
       void enrichListIfNeeded();
     },
@@ -305,7 +295,7 @@ export function FarmPageContent({
     enrichFarmRef.current = null;
   }, [lazyListFarmKey]);
 
-  /** LIVE 안정 후 — 24시간 추이는 스플래시와 겹치게 즉시, 히트맵·목록은 idle */
+  /** LIVE 안정 후 — 24시간 추이는 스플래시와 겹치게 즉시. 30일은 차트 탭·idle */
   useEffect(() => {
     if (!gridFarmKey || tourActive) return;
     void prefetchFarmControllerTrend(gridFarmKey);
@@ -413,6 +403,7 @@ export function FarmPageContent({
         (view === "map" ||
           view === "chart" ||
           view === "list"),
+      extend30d: view === "chart",
     });
 
   const shallowParams = useMemo(() => {
@@ -425,14 +416,6 @@ export function FarmPageContent({
   }, [urlHydrated, hubUrlEpoch, urlTick, searchParams]);
 
   const urlCtrl = shallowParams.get("ctrl");
-  const planFarmKey =
-    lazyListFarmKey ??
-    gridFarmKey ??
-    parseFarmKeyFromQuery(
-      shallowParams.get("lsind"),
-      shallowParams.get("item"),
-    );
-  const planFarmId = planFarmKey ? farmKeyId(planFarmKey) : "";
   const listSp =
     fieldMerge || view === "list"
       ? shallowParams.get("sp") ?? undefined
@@ -547,7 +530,7 @@ export function FarmPageContent({
     setTabPill((prev) =>
       prev.left === next.left && prev.width === next.width ? prev : next,
     );
-  }, [view, hideViewTabs, gridCompactShell, viewportCompact, scopeToggleSlot, showModelTab]);
+  }, [view, hideViewTabs, gridCompactShell, viewportCompact, scopeToggleSlot]);
 
   const tabNavClass =
     gridCompactShell || viewportCompact || Boolean(scopeToggleSlot)
@@ -559,11 +542,6 @@ export function FarmPageContent({
     const exiting = viewSlide?.from === panel;
     const entering = viewSlide?.to === panel;
     if (!active && !exiting) return "hidden";
-    /* Leaflet는 탭 슬라이드 transform 안에서 타일 크기를 잘못 잡음 */
-    if (panel === "model") {
-      if (!active) return "hidden";
-      return "relative z-[1] w-full";
-    }
     return cn(
       exiting && "pointer-events-none absolute inset-x-0 top-0 z-0 w-full",
       active && "relative z-[1] w-full",
@@ -718,22 +696,6 @@ export function FarmPageContent({
         />
         차트
       </button>
-      {showModelTab ? (
-        <button
-          type="button"
-          role="tab"
-          aria-selected={view === "model"}
-          className={viewTabBtn(view === "model")}
-          onClick={() => setView("model")}
-        >
-          <Box
-            className={dashboardUi.iconSm}
-            strokeWidth={dashboardUi.iconStroke}
-            aria-hidden
-          />
-          모델
-        </button>
-      ) : null}
     </div>
   ) : null;
 
@@ -765,7 +727,7 @@ export function FarmPageContent({
       <div
         className={cn(
           "relative min-h-0 overflow-hidden",
-          (view === "model" || view === "chart") && "flex min-h-0 flex-1 flex-col",
+          (view === "chart") && "flex min-h-0 flex-1 flex-col",
         )}
         data-farm-view-slot
       >
@@ -956,29 +918,6 @@ export function FarmPageContent({
                 layersToolbarActive={view === "chart"}
               />
             </div>
-          </div>
-        ) : null}
-
-        {showModelTab &&
-        (view === "model" ||
-          viewSlide?.from === "model" ||
-          viewSlide?.to === "model") ? (
-          <div
-            className={cn(
-              panelMotionClass("model"),
-              view === "model" && "flex min-h-0 min-w-0 flex-1 flex-col",
-            )}
-            aria-hidden={view !== "model"}
-            data-farm-view-panel="model"
-            data-farm-view-active={view === "model"}
-          >
-            <FarmPlanView
-              farmId={planFarmId}
-              locations={hubLocations}
-              barns={barnSnapshots}
-              readings={readings}
-              alarmSettings={alarmSettings}
-            />
           </div>
         ) : null}
 

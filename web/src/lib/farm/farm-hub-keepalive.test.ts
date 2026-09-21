@@ -14,8 +14,6 @@ import {
 
 {
   assert.equal(isFarmHubKeepAlivePanel("map"), false);
-  assert.equal(isFarmHubKeepAlivePanel("plan"), false);
-  assert.equal(isFarmHubKeepAlivePanel("model"), false);
   assert.equal(isFarmHubKeepAlivePanel("list"), true);
   assert.equal(isFarmHubKeepAlivePanel("chart"), true);
   assert.equal(isFarmHubKeepAlivePanel("chartlab"), false);

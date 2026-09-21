@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   expandCompactControllerPeriod,
+  overlayCompactControllerPeriod,
+  seedCompact30dFrom24h,
   synthesizeOverview30dFrom7d,
   type CompactControllerPeriod,
 } from "./farm-trend-compact";
@@ -124,5 +126,94 @@ describe("synthesizeOverview30dFrom7d", () => {
     assert.equal(ctrl.thermoA?.setpoint[23], 24);
     assert.equal(ctrl.thermoA?.setpoint[29], 24);
     assert.equal(ctrl.thermoB?.setpoint[29], 2);
+  });
+});
+
+describe("seedCompact30dFrom24h + overlayCompactControllerPeriod", () => {
+  const h24From = Date.UTC(2026, 8, 20, 0, 0, 0);
+  const axisFromMs =
+    h24From + TREND_PERIODS["24h"].durationMs - TREND_PERIODS["30d"].durationMs;
+
+  it("puts 24h 15m averages on the rightmost 24 hourly slots", () => {
+    const h24: CompactControllerPeriod = {
+      v: 1,
+      period: "24h",
+      fromMs: h24From,
+      bucketCount: TREND_PERIODS["24h"].bucketCount,
+      strideMs: TREND_PERIODS["24h"].strideMs,
+      totalSamples: 4,
+      series: [
+        {
+          ty: "SP07",
+          lb: "비육사",
+          sn: "1",
+          k: "k1",
+          e: "01",
+          p: [
+            [0, 10, 40, null, null, null, null, null, null, 1],
+            [1, 20, 50, null, null, null, null, null, null, 1],
+            [2, 30, 60, null, null, null, null, null, null, 1],
+            [3, 40, 70, null, null, null, null, null, null, 1],
+          ],
+        },
+      ],
+    };
+    const seeded = seedCompact30dFrom24h(h24, axisFromMs);
+    assert.equal(seeded.period, "30d");
+    assert.equal(seeded.bucketCount, 720);
+    assert.equal(seeded.fromMs, axisFromMs);
+    const firstHour = seeded.series[0]!.p[0]!;
+    assert.equal(firstHour[0], 696);
+    assert.equal(firstHour[1], 25);
+    assert.equal(firstHour[2], 55);
+    assert.equal(firstHour[9], 4);
+  });
+
+  it("overlays a later day without clearing the seeded tail", () => {
+    const seeded = seedCompact30dFrom24h(
+      {
+        v: 1,
+        period: "24h",
+        fromMs: h24From,
+        bucketCount: TREND_PERIODS["24h"].bucketCount,
+        strideMs: TREND_PERIODS["24h"].strideMs,
+        totalSamples: 1,
+        series: [
+          {
+            ty: "SP07",
+            lb: "비육사",
+            sn: "1",
+            k: "k1",
+            e: "01",
+            p: [[92, 18, null, null, null, null, null, null, null, 1]],
+          },
+        ],
+      },
+      axisFromMs,
+    );
+    const older: CompactControllerPeriod = {
+      v: 1,
+      period: "30d",
+      fromMs: axisFromMs,
+      bucketCount: 720,
+      strideMs: TREND_PERIODS["30d"].strideMs,
+      totalSamples: 2,
+      series: [
+        {
+          ty: "SP07",
+          lb: "비육사",
+          sn: "1",
+          k: "k1",
+          e: "01",
+          p: [[0, 11, null, null, null, null, null, null, null, 2]],
+        },
+      ],
+    };
+    const merged = overlayCompactControllerPeriod(seeded, older);
+    const slots = merged.series[0]!.p.map((p) => p[0]).sort((a, b) => a - b);
+    assert.deepEqual(slots, [0, 719]);
+    const bySlot = new Map(merged.series[0]!.p.map((p) => [p[0], p[1]]));
+    assert.equal(bySlot.get(0), 11);
+    assert.equal(bySlot.get(719), 18);
   });
 });

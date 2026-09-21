@@ -10,14 +10,15 @@ const config: KnipConfig = {
   ignore: [
     "src/components/ui/**",
     "src/lib/farm/build-farm-unified-trend-raw.ts",
-    // 모델 탭 편집기 (Production은 관리자만, docs/BARN_PLAN.md)
-    "src/components/farm/farm-plan-corridor.tsx",
-    "src/components/farm/farm-plan-fill-editor.tsx",
     // 디자인 헬퍼 — 토큰 소비 예정, 현재 미import (docs/UI_MOTION.md · UI_DENSITY.md)
     "src/lib/ui/layout-breakpoints.ts",
     "src/lib/ui/motion-preset.ts",
     "src/lib/ui/use-container-compact.ts",
     "src/lib/ui/use-scroll-active-tab.ts",
+    // 필드 적용 진행은 채널 스트립으로 대체. 도크 UI는 보관만.
+    "src/components/farm/apply-queue-dock.tsx",
+    // 알람 폼은 alarm-threshold-form 사용. 숫자 필드 그룹은 보관만.
+    "src/components/settings/alarm-threshold-fields.tsx",
   ],
   ignoreExportsUsedInFile: true,
   ignoreDependencies: [

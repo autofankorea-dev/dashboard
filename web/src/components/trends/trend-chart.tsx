@@ -199,6 +199,8 @@ type TrendChartProps = {
    * viewBox 기준 우측 여백 ~20.
    */
   labelGutter?: boolean;
+  /** 미니 칸 — 날짜·Y축 글자·눈금 레일 생략 */
+  hideAxisChrome?: boolean;
   /**
    * bar 모드 — 바 1개의 최대 너비(차트 폭 % 단위, 0~100).
    * 카테고리 수가 적을 때 통짜 바가 되지 않게 상한을 두고 슬롯 중앙에 정렬한다.
@@ -389,6 +391,7 @@ export function TrendChart({
   legendDensity = "full",
   scaleEdgeHitPx = SCALE_EDGE_HIT_PX,
   labelGutter = false,
+  hideAxisChrome = false,
   showMarkers = true,
   markerDensity = "all",
   markerRadiusPx = 3,
@@ -584,7 +587,7 @@ export function TrendChart({
     [categories, mode],
   );
 
-  const axisH = 16;
+  const axisH = hideAxisChrome ? 0 : 16;
   const yLabelColumn = fillParent && !labelGutter;
   const chartH = fillParent
     ? Math.max(48, plotPx.h > 8 ? plotPx.h : 48)
@@ -624,6 +627,7 @@ export function TrendChart({
   };
 
   const leftAxisTicks =
+    !hideAxisChrome &&
     showNativeLeftAxis && Number.isFinite(lMin) && Number.isFinite(lMax) && lMax > lMin
       ? (yAxisTicks === "ends"
           ? [0, 1]
@@ -2976,7 +2980,7 @@ export function TrendChart({
           })
         : null}
 
-      {yGutterStartCaption ? (
+      {yGutterStartCaption && !hideAxisChrome ? (
         <span
           className={cn(
             "pointer-events-none absolute left-1 top-0.5 z-[2] farm-chart-fs-axis font-medium leading-none text-muted-foreground",
@@ -2987,7 +2991,7 @@ export function TrendChart({
           {yGutterStartCaption}
         </span>
       ) : null}
-      {yGutterEndCaption ? (
+      {yGutterEndCaption && !hideAxisChrome ? (
         <span
           className={cn(
             "pointer-events-none absolute right-1 top-0.5 z-[2] farm-chart-fs-axis font-medium leading-none text-muted-foreground",
@@ -3566,6 +3570,7 @@ export function TrendChart({
       </div>
       </div>
 
+      {!hideAxisChrome ? (
       <div className="relative shrink-0 overflow-visible border-t border-border">
         <div className="relative">
         <div className="pointer-events-none absolute inset-x-0 top-0 z-[1]" aria-hidden>
@@ -3619,6 +3624,7 @@ export function TrendChart({
         </div>
         </div>
       </div>
+      ) : null}
       </div>
     </div>
   );

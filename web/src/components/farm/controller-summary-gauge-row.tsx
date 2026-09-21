@@ -75,6 +75,8 @@ type Props = {
   envCoverOpen?: boolean;
   onEnvCoverOpen?: () => void;
   onEnvCoverClose?: () => void;
+  /** 명령 접수 후 설정을 닫는다 (토글 아님) */
+  onCloseSettings?: () => void;
   className?: string;
   /** 모바일 목록 Graph/Set toolbar — 인라인 패널 숨김 */
   suppressMobileInlinePanels?: boolean;
@@ -116,6 +118,7 @@ export function ControllerSummaryGaugeRow({
   envCoverOpen = false,
   onEnvCoverOpen,
   onEnvCoverClose,
+  onCloseSettings,
   className,
   suppressMobileInlinePanels = false,
   suppressPerCardMobileSheet = false,
@@ -179,6 +182,7 @@ export function ControllerSummaryGaugeRow({
   } | null>(null);
   const coverRevealRef = useRef(coverReveal);
   const pendingCoverCloseRef = useRef(false);
+  const closeSettingsOnCoverFinishRef = useRef(true);
   useEffect(() => {
     coverRevealRef.current = coverReveal;
   }, [coverReveal]);
@@ -187,29 +191,51 @@ export function ControllerSummaryGaugeRow({
     pendingCoverCloseRef.current = false;
     setCoverReveal(null);
     onEnvCoverClose?.();
-    if (settingsExpanded) onToggleSettings?.();
+    if (closeSettingsOnCoverFinishRef.current && settingsExpanded) {
+      onToggleSettings?.();
+    }
   }, [onEnvCoverClose, onToggleSettings, settingsExpanded]);
 
-  const closeEnvCover = useCallback(() => {
-    const current = coverRevealRef.current;
-    if (current?.overlay && current.direction === "close") return;
-    if (current?.overlay && current.direction === "open") {
-      pendingCoverCloseRef.current = true;
-      return;
+  const closeEnvCover = useCallback(
+    (opts?: { closeSettings?: boolean }) => {
+      closeSettingsOnCoverFinishRef.current = opts?.closeSettings !== false;
+      const current = coverRevealRef.current;
+      if (current?.overlay && current.direction === "close") return;
+      if (current?.overlay && current.direction === "open") {
+        pendingCoverCloseRef.current = true;
+        return;
+      }
+      const reduced =
+        prefersCoverMorphReducedMotion() || coverMorphDurationMs() === 0;
+      if (current?.snapshot && !reduced) {
+        setCoverReveal({
+          snapshot: current.snapshot,
+          overlay: true,
+          direction: "close",
+        });
+        return;
+      }
+      setCoverEnterFromFade(true);
+      finishCoverClose();
+    },
+    [finishCoverClose],
+  );
+
+  const returnToEnvCover = useCallback(() => {
+    onCloseSettings?.();
+    if (envCoverEnabled) {
+      closeEnvCover({ closeSettings: false });
     }
+    const el = cardRef.current;
+    if (!el) return;
     const reduced =
-      prefersCoverMorphReducedMotion() || coverMorphDurationMs() === 0;
-    if (current?.snapshot && !reduced) {
-      setCoverReveal({
-        snapshot: current.snapshot,
-        overlay: true,
-        direction: "close",
-      });
-      return;
-    }
-    setCoverEnterFromFade(true);
-    finishCoverClose();
-  }, [finishCoverClose]);
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    el.scrollIntoView({
+      behavior: reduced ? "auto" : "smooth",
+      block: "nearest",
+    });
+  }, [closeEnvCover, envCoverEnabled, onCloseSettings]);
 
   const handleMorphDone = useCallback(() => {
     const current = coverRevealRef.current;
@@ -403,6 +429,9 @@ export function ControllerSummaryGaugeRow({
           commands={commands}
           alarmSettings={alarmSettings}
           canCommand={canCommand}
+          onCommandQueued={
+            envCoverEnabled || onCloseSettings ? returnToEnvCover : undefined
+          }
           onOpenChart={
             onOpenChart
               ? () => {
@@ -431,6 +460,9 @@ export function ControllerSummaryGaugeRow({
           alarmSettings={alarmSettings}
           canCommand={canCommand}
           collapsibleSections
+          onCommandQueued={
+            envCoverEnabled || onCloseSettings ? returnToEnvCover : undefined
+          }
         />
       ) : null}
     </BarnListPanelShell>

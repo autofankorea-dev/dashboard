@@ -3,7 +3,6 @@
  * 실행: npx tsx src/lib/farm/farm-hub-url-smoke.test.ts
  */
 import assert from "node:assert/strict";
-import { barnPlanEnabled } from "./barn-plan-enabled";
 import {
   applyFarmChartScopeParams,
   resolveFarmChartScope,
@@ -129,10 +128,10 @@ function clone(q: string) {
   console.log("smoke 3: period change keeps chart view+scope — ok");
 }
 
-/** 4) 탭 왕복 — applyHubScopedViewParams 순서 map→list→chart→plan→model→aria→map */
+/** 4) 탭 왕복 — applyHubScopedViewParams 순서 map→list→chart→aria→map */
 {
   const params = clone("lsind=FARM01&item=P00&sp=SP01&stall=3&mapLevel=stalls");
-  const order: FarmHubView[] = ["list", "chart", "chartlab", "plan", "model", "aria", "map"];
+  const order: FarmHubView[] = ["list", "chart", "chartlab", "aria", "map"];
   for (const v of order) {
     applyHubScopedViewParams(params, v);
     const expected =
@@ -140,11 +139,7 @@ function clone(q: string) {
         ? ("map" as FarmHubView)
         : v === "chartlab"
           ? ("chart" as FarmHubView)
-          : v === "plan" || v === "model"
-            ? barnPlanEnabled()
-              ? ("model" as FarmHubView)
-              : ("map" as FarmHubView)
-            : v;
+          : v;
     assert.equal(resolveFarmHubView(params.get("view")), expected);
   }
   // map 홈: view 없음 · 드릴 제거 · 농장 유지
@@ -156,14 +151,8 @@ function clone(q: string) {
   assert.equal(resolveFarmHubView("jarvis"), "map");
   assert.equal(resolveFarmHubView("aria"), "map");
   assert.equal(resolveFarmHubView("status"), "map");
-  assert.equal(
-    resolveFarmHubView("plan"),
-    barnPlanEnabled() ? "model" : "map",
-  );
-  assert.equal(
-    resolveFarmHubView("model"),
-    barnPlanEnabled() ? "model" : "map",
-  );
+  assert.equal(resolveFarmHubView("plan"), "map");
+  assert.equal(resolveFarmHubView("model"), "map");
   console.log("smoke 4: tab roundtrip URL helpers — ok");
 }
 
@@ -189,76 +178,37 @@ function clone(q: string) {
   console.log("smoke 5: farm switch clears hub drill — ok");
 }
 
-/** 6) 차트 ↔ 모델 — chart* / plan* 서로 지움 */
+/** 6) 차트 전환 — 잔여 plan* 제거. 옛 view=plan|model 은 필드 */
 {
-  const toPlan = clone(
-    "lsind=FARM01&item=P00&view=chart&chartSp=SP03&chartStall=1&chartCmd=1",
-  );
-  applyHubScopedViewParams(toPlan, "plan");
-  if (barnPlanEnabled()) {
-    assert.equal(toPlan.get("view"), "model");
-    assert.equal(toPlan.get("chartSp"), null);
-    assert.equal(toPlan.get("chartStall"), null);
-    assert.equal(toPlan.get("chartCmd"), null);
-  } else {
-    assert.equal(resolveFarmHubView(toPlan.get("view")), "map");
-  }
-
-  const toChart = clone(
+  const leftover = clone(
     "lsind=FARM01&item=P00&view=plan&planBldg=bd-1&planSp=SP02&planStall=1",
   );
-  applyHubScopedViewParams(toChart, "chart");
-  assert.equal(toChart.get("view"), "chart");
-  assert.equal(toChart.get("planBldg"), null);
-  assert.equal(toChart.get("planSp"), null);
-  assert.equal(toChart.get("planStall"), null);
-  console.log("smoke 6: chart/plan params stay isolated — ok");
+  assert.equal(resolveFarmHubView(leftover.get("view")), "map");
+  applyHubScopedViewParams(leftover, "chart");
+  assert.equal(leftover.get("view"), "chart");
+  assert.equal(leftover.get("planBldg"), null);
+  assert.equal(leftover.get("planSp"), null);
+  assert.equal(leftover.get("planStall"), null);
+
+  const toMap = clone(
+    "lsind=FARM01&item=P00&view=model&planBldg=bd-1",
+  );
+  applyHubScopedViewParams(toMap, "map");
+  assert.equal(toMap.get("view"), null);
+  assert.equal(toMap.get("planBldg"), null);
+  console.log("smoke 6: leftover plan* cleared — ok");
 }
 
-/** 7) Production — 관리자만 model, 운영자·뷰어는 필드 */
+/** 7) 옛 model/plan 주소 — 항상 필드 */
 {
-  const prev = {
-    flag: process.env.NEXT_PUBLIC_BARN_PLAN_ENABLED,
-    vercel: process.env.VERCEL_ENV,
-    vercelPub: process.env.NEXT_PUBLIC_VERCEL_ENV,
-    node: process.env.NODE_ENV,
-  };
-  const env = process.env as Record<string, string | undefined>;
-  try {
-    delete env.NEXT_PUBLIC_BARN_PLAN_ENABLED;
-    env.NEXT_PUBLIC_VERCEL_ENV = "production";
-    env.VERCEL_ENV = "production";
-    env.NODE_ENV = "production";
+  assert.equal(resolveFarmHubView("model"), "map");
+  assert.equal(resolveFarmHubView("plan"), "map");
+  assert.equal(resolveFarmHubView("chartlab"), "chart");
 
-    assert.equal(resolveFarmHubView("model"), "map");
-    assert.equal(resolveFarmHubView("model", { isAdmin: false }), "map");
-    assert.equal(resolveFarmHubView("model", { isAdmin: true }), "model");
-    assert.equal(resolveFarmHubView("plan", { isAdmin: true }), "model");
-    assert.equal(resolveFarmHubView("chartlab"), "chart");
-    assert.equal(resolveFarmHubView("chartlab", { isAdmin: false }), "chart");
-    assert.equal(resolveFarmHubView("chartlab", { isAdmin: true }), "chart");
-
-    const op = clone("lsind=FARM01&item=P00&view=model");
-    applyHubScopedViewParams(op, "model");
-    assert.equal(resolveFarmHubView(op.get("view")), "map");
-
-    const admin = clone("lsind=FARM01&item=P00");
-    applyHubScopedViewParams(admin, "model", { isAdmin: true });
-    assert.equal(admin.get("view"), "model");
-    assert.equal(resolveFarmHubView(admin.get("view"), { isAdmin: true }), "model");
-  } finally {
-    for (const [k, v] of Object.entries({
-      NEXT_PUBLIC_BARN_PLAN_ENABLED: prev.flag,
-      VERCEL_ENV: prev.vercel,
-      NEXT_PUBLIC_VERCEL_ENV: prev.vercelPub,
-    })) {
-      if (v === undefined) delete env[k];
-      else env[k] = v;
-    }
-    if (prev.node === undefined) delete env.NODE_ENV;
-    else env.NODE_ENV = prev.node;
-  }
-  console.log("smoke 7: production model is admin-only — ok");
+  const op = clone("lsind=FARM01&item=P00&view=model");
+  applyHubScopedViewParams(op, "map");
+  assert.equal(resolveFarmHubView(op.get("view")), "map");
+  console.log("smoke 7: retired model/plan URLs map to field — ok");
 }
 
 /** 8) 옛 chartlab 주소 — 차트 탭으로 정규화, 위젯 칸 유지 */

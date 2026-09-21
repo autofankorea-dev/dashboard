@@ -20,6 +20,7 @@ import { getTourStepsForScope } from "./tour-steps";
   assert.match(control?.body ?? "", /알람 아이콘/);
   const brush = getTourStepsForScope("chart").find((s) => s.id === "c-brush");
   assert.equal(brush?.selector, '[data-tour-id="farm-chart-unified-trend"]');
+  assert.match(brush?.body ?? "", /24시간/);
   assert.match(brush?.body ?? "", /30일/);
   const delin = getTourStepsForScope("field").find((s) => s.id === "f-delin");
   assert.match(delin?.body ?? "", /일령별 권장/);

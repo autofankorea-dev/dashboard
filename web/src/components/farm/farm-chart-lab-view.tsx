@@ -154,13 +154,13 @@ export function FarmChartLabView({
         : "batch"
       : storedMode;
   const [sharedBrushWindow, setSharedBrushWindow] = useState<BrushWindow>(
-    () => BRUSH_PERIOD_WINDOW["30d"],
+    () => BRUSH_PERIOD_WINDOW["24h"],
   );
-  const resetLookbackTo30d = useCallback(() => {
-    setSharedBrushWindow(BRUSH_PERIOD_WINDOW["30d"]);
+  const resetLookbackTo24h = useCallback(() => {
+    setSharedBrushWindow(BRUSH_PERIOD_WINDOW["24h"]);
   }, []);
   const ignoreLookbackChange = useCallback((_next: BrushWindow) => {
-    /* 일괄은 30일 고정 */
+    /* 일괄 칸은 24시간 고정. 펼친 카드에서 휠로 과거를 연다. */
   }, []);
   const [layers, setLayers] = useState(DEFAULT_UNIFIED_LAYERS);
   const [alarmRangeOn, setAlarmRangeOn] = useState({ temp: true, hum: true });
@@ -270,6 +270,7 @@ export function FarmChartLabView({
     scope: FarmChartControllerScope,
     tileEl: HTMLElement | null,
   ) => {
+    setSharedBrushWindow(BRUSH_PERIOD_WINDOW["24h"]);
     if (tileEl) {
       const r = tileEl.getBoundingClientRect();
       setExpandOrigin({
@@ -291,7 +292,7 @@ export function FarmChartLabView({
     });
     if (next.mode === "batch") {
       setOpenSp(normalizeStallTyCode(scope.stallTyCode));
-      resetLookbackTo30d();
+      resetLookbackTo24h();
     }
     if (urlBound) {
       commitSelection(farmChartLabSelectionFromKeys(scopes, next));
@@ -375,7 +376,7 @@ export function FarmChartLabView({
         hidePeriodBrush
         brushWindow={
           mode === "batch"
-            ? BRUSH_PERIOD_WINDOW["30d"]
+            ? BRUSH_PERIOD_WINDOW["24h"]
             : sharedBrushWindow
         }
         onBrushWindowChange={
@@ -410,10 +411,10 @@ export function FarmChartLabView({
       )
     : [];
   const layerToolbar = layersToolbarActive ? (
-    <div
-      className="relative inline-flex max-w-full flex-wrap rounded-xl border bg-muted/40 p-2"
-      data-farm-chart-layers-shell=""
-    >
+      <div
+        className="farm-chart-toolbar-fit relative flex w-full min-w-0 max-w-full items-center rounded-xl border bg-muted/40 p-2 md:inline-flex md:w-auto md:flex-wrap"
+        data-farm-chart-layers-shell=""
+      >
       <UnifiedTrendLayerToolbar
         layers={layers}
         available={{
@@ -652,11 +653,18 @@ function LabTile({
     const sy = expandFrom.height / dest.height;
     el.style.transformOrigin = "top left";
     el.style.transition = "none";
+    el.style.opacity = "0.45";
+    el.style.clipPath = "inset(10% 8% 10% 8% round 0.75rem)";
     el.style.transform = `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})`;
     const play = () => {
-      el.style.transition =
-        "transform var(--motion-duration-emphasis) var(--motion-ease-enter)";
+      el.style.transition = [
+        "transform var(--motion-duration-emphasis) var(--motion-ease-emphasis)",
+        "opacity var(--motion-duration-moderate) var(--motion-ease-enter)",
+        "clip-path var(--motion-duration-emphasis) var(--motion-ease-enter)",
+      ].join(", ");
       el.style.transform = "translate(0, 0) scale(1, 1)";
+      el.style.opacity = "1";
+      el.style.clipPath = "inset(0 round 0.75rem)";
     };
     const frame = window.requestAnimationFrame(play);
     const done = (ev: TransitionEvent) => {
@@ -664,6 +672,8 @@ function LabTile({
       el.style.transition = "";
       el.style.transform = "";
       el.style.transformOrigin = "";
+      el.style.opacity = "";
+      el.style.clipPath = "";
       onExpandSettled?.();
     };
     el.addEventListener("transitionend", done);

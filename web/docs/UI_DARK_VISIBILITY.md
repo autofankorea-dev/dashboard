@@ -94,7 +94,7 @@ controllerEnvMetricTextClass(warn|danger) → status-*-ink (검정 혼합)
 - 델린 말풍선 목록: `muted-foreground` → 본문보다 약하지만 읽힘.
 - 헤더 알람 버튼: `--status-danger` 틴트 (`topHeaderActionBtnAlert`).
 
-**모델 · 관제 지도**
+**관제 지도**
 
 - 카카오 타일: 항상 밝은 지도. 셸만 다크.
 - 핀: 라이브 `#10b981`(가드 금지 hex와 동일 계열), 끊김=`muted-foreground`.

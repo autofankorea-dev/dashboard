@@ -11,13 +11,12 @@ Cursor 규칙: `.cursor/rules/farm-shell-routing.mdc`.
 
 | 환경변수 | 기본 | 설명 |
 |----------|------|------|
-| `NEXT_PUBLIC_FARM_FIELD_MERGE_V1` | **on** (`false`/`0`/`off`만 끔) | 그리드·목록 → «필드» 탭. off면 현행 4탭 |
-| `NEXT_PUBLIC_BARN_PLAN_ENABLED` | 로컬·Preview **전원 on**, Production **관리자만**. 강제 `false`는 전원 off | 모델 탭(2D). 상세 [`BARN_PLAN.md`](./BARN_PLAN.md) |
+| `NEXT_PUBLIC_FARM_FIELD_MERGE_V1` | **on** (`false`/`0`/`off`만 끔) | 그리드·목록 → «필드» 탭. off면 그리드·목록·차트 분리 |
 
 통합 on일 때 UI:
-- 상위 탭: **필드 · 차트 · 모델**(Production에서는 모델 기본 숨김, 관리자만)
+- 상위 탭: **필드 · 차트**
 - 판정 단위는 **컨트롤러 영향범위**(카드 1장). 방 칸 히트맵 탭(`view=status`)은 제거. 옛 주소는 필드로 정규화
-- DELIN: 필드 **우측 하단 뱃지** (`NEXT_PUBLIC_DELIN_ENABLED`). 차트·목록·모델에서는 숨김. 전용 탭 없음. `view=aria`/`jarvis` → 필드
+- DELIN: 필드 **우측 하단 뱃지** (`NEXT_PUBLIC_DELIN_ENABLED`). 차트·목록에서는 숨김. 전용 탭 없음. `view=aria`/`jarvis` → 필드
 - PC 필드: ScopeBar 스티키 없음 — 농장 선택은 **계정 메뉴**, 보기 탭은 **TopBar**
 - 모바일 compact: 보기 탭은 **하단 독** (`DashboardViewportShell`)
 - 좌 카드 선택 → 우측 **해당 축사 컨트롤러만**. 「전체보기」·같은 카드 재탭으로 전체 복귀
@@ -32,7 +31,7 @@ Cursor 규칙: `.cursor/rules/farm-shell-routing.mdc`.
 | 키 | 값 | 기본 | 설명 |
 |----|-----|------|------|
 | `lsind` / `item` | 농장 키 | (권한·서버) | 활성 농장. soft home에서 **유지** |
-| `view` | `list` \| `chart` \| `plan` \| `model` \| (`chartlab`→차트, `aria`/`jarvis`/`status`→필드) | **없음 = 그리드(map)** | 상단 탭. 옛 델린·현황 히트맵 주소는 필드. 모델 게이트 off(Production 비관리자·강제 off)면 그리드. 필드에서 DELIN 권장 뱃지(차트·목록·모델은 숨김). `plan`은 `model`로, `chartlab`은 `chart`로 정규화 |
+| `view` | `list` \| `chart` \| (`chartlab`→차트, `aria`/`jarvis`/`status`/`plan`/`model`→필드) | **없음 = 그리드(map)** | 상단 탭. 옛 델린·현황 히트맵·모델 주소는 필드. 필드에서 DELIN 권장 뱃지(차트·목록은 숨김). `chartlab`은 `chart`로 정규화 |
 | `trendPeriod` | `24h` \| `30d` | **없음 = 7d** | 그리드·목록·차트 공유 기간. 기본 `7d`는 URL 생략 |
 | `sp` | 축사유형 코드 | — | 그리드 드릴 (SP 그래프) |
 | `mapLevel` | `stalls` | 없음=sp | 그리드 드릴 단계 |
@@ -48,9 +47,6 @@ Cursor 규칙: `.cursor/rules/farm-shell-routing.mdc`.
 | `chartYBand` | `temp` \| `hum` \| `motor` (+로 복수). 레거시 `command`는 `chartCmd`로 해석 | — | 지표 집중(Y밴드). 칩·드래그·델린 handoff |
 | `chartCmd` | `1` | — | 컨트롤러 집계에서 온도·모터 본선 **명령 이력**(A/B/C 창·선). 집계 트리 컨트롤러 행 「명령」 토글 |
 | `chartX0` / `chartX1` | 0–1 비율 | — | 집중·줌의 시간 구간(전체면 생략) |
-| `planBldg` | 건물 id | — | 모델 포커스(건물). **3단계(배치) 이후.** 지금은 미사용 |
-| `planSp` | 축사유형 코드 | — | 모델 구역(유형). **3단계 이후.** 지금은 미사용 |
-| `planStall` | 축사번호 | — | 모델 구역(번호). **3단계 이후.** 지금은 미사용 |
 
 레거시 `tab=ops|…` 는 미들웨어·페이지에서 `/farm`으로 정리. 신규 코드는 `tab` 쓰지 않음.
 
@@ -65,8 +61,7 @@ resolveFarmHubView(raw)
   list  → list
   chart → chart
   chartlab → chart  // 옛 테스트 탭
-  plan  → model  // 게이트 off면 map. 옛 URL. 문서: BARN_PLAN.md
-  model → model  // 게이트 off면 map. 문서: BARN_PLAN.md
+  plan | model → map  // 은퇴한 모델 탭
   aria | jarvis → map   // 옛 델린 탭
   status → map          // 레거시 현황(방 칸 히트맵) 탭
   else  → map   // view 없음·알 수 없음
@@ -74,21 +69,19 @@ resolveFarmHubView(raw)
 
 | 전환 헬퍼 | 부수 효과 |
 |-----------|-----------|
-| `applyMapGridParams` | `view`·`listMode`·drill·집계·줌·명령·`plan*` 제거. **위젯 칸(`chartW1`/`chartW2`)은 유지** |
-| `applyListViewParams` | `view=list`, `stall`·`mapLevel` 제거 (`sp` 유지 가능). `plan*` 정리 |
-| `applyChartViewParams` | `view=chart`, `listMode`·`stall`·`mapLevel` 제거 (`chart*` 유지). `plan*` 정리 |
+| `applyMapGridParams` | `view`·`listMode`·drill·집계·줌·명령·잔여 `plan*` 제거. **위젯 칸(`chartW1`/`chartW2`)은 유지** |
+| `applyListViewParams` | `view=list`, `stall`·`mapLevel` 제거 (`sp` 유지 가능). 잔여 `plan*` 정리 |
+| `applyChartViewParams` | `view=chart`, `listMode`·`stall`·`mapLevel` 제거 (`chart*` 유지). 잔여 `plan*` 정리 |
 | `applyChartLabViewParams` | `applyChartViewParams`와 동일 (옛 `view=chartlab`) |
-| `applyPlanViewParams` | `applyModelViewParams`와 동일 (`view=model`). 게이트 off면 그리드 |
-| `applyModelViewParams` | `view=model`, 목록/드릴·`chart*` 정리. `plan*` 유지. 게이트 off면 그리드 |
 | `applyAriaViewParams` | 필드(그리드)로 정규화. 옛 `view=aria` 호환 |
 | `applyHubScopedViewParams(view)` | 위 + 레거시 `tab` 삭제 |
-| `pinFarmHubViewParam(view)` | **탭만** 고정. `list`/`chart`/`model`은 `view` 유지. `chartlab`→`chart`, `plan`→`model`. drill·`chart*`·`plan*` 유지 (기간 변경용) |
+| `pinFarmHubViewParam(view)` | **탭만** 고정. `list`/`chart`는 `view` 유지. `chartlab`→`chart`. drill·`chart*` 유지 (기간 변경용) |
 
 ### 차트 집계 딥링크
 
 - 헬퍼: `resolveFarmChartScope` / `applyFarmChartScopeParams` / `clearFarmChartScopeParams` (`farm-chart-scope.ts`)
 - 범위 변경: shallow + `pinFarmHubViewParam(chart)` — **hub epoch 올리지 않음**
-- 목록·모델·soft home·농장 전환 시 `chart*` 전부 제거. 필드(맵) 전환은 집계·줌·명령만 제거하고 위젯 칸은 유지
+- 목록·soft home·농장 전환 시 `chart*` 전부 제거. 필드(맵) 전환은 집계·줌·명령만 제거하고 위젯 칸은 유지
 - 예: `/farm?lsind=…&item=…&view=chart&trendPeriod=7d&chartSp=SP03&chartStall=1`
 - 줌 예: `chartYBand=temp+command&chartX0=0.2&chartX1=0.6` — 온도·명령 레인 집중 + 시간 구간
 - 목록·펼침 계약: `farmChartLabSelectionFromWidgetSlots` / `applyFarmChartLabSelectionParams`. 차트 탭이 이 계약을 화면에 쓴다. `W2` 비교는 보류. 아래칸만 있으면 기준으로 올려 위칸에 쓴다. `chartSp`/`chartCmd`/`chartYBand`/`chartX0`는 읽기만 유지
@@ -165,7 +158,7 @@ flowchart LR
 목록 탭에서 개별 카드가 공유 `trendPeriod`와 **다른** 기간을 잠깐 볼 수 있다(URL에 쓰지 않음).  
 공유 기간 변경·목록 탭 언마운트 시 로컬 override는 초기화된다.
 
-그리드(`map`)는 **항상** 마운트. 목록·차트는 첫 방문 후 DOM에 남겨 재진입을 빠르게 하고, 이탈 후 TTL이 지나면 언마운트한다. **모델은 keep-alive 아님** (활성·슬라이드 중에만 마운트).
+그리드(`map`)는 **항상** 마운트. 목록·차트는 첫 방문 후 DOM에 남겨 재진입을 빠르게 하고, 이탈 후 TTL이 지나면 언마운트한다.
 
 | 패널 | TTL | 비고 |
 |------|-----|------|
@@ -189,8 +182,7 @@ flowchart LR
 | 쿼리 키·의미·soft home·epoch | 본 문서 (정본) |
 | 탭 슬라이드·패널 모션 | `UI_MOTION.md` · `motionClass`만 소비 |
 | `view=aria` (호환) | 필드 정규화. 추천 UI는 뱃지 · `aria-protocol.md` |
-| `view=plan` | 호환 별칭 → `view=model`. [`BARN_PLAN.md`](./BARN_PLAN.md) |
-| `view=model` | [`BARN_PLAN.md`](./BARN_PLAN.md). 옛 3D: [`BARN_MODEL.md`](./BARN_MODEL.md) |
+| `view=plan` · `view=model` | 은퇴. 필드로 정규화 |
 | `view=chartlab` | 옛 테스트 탭. `view=chart`로 정규화 |
 
 ---
@@ -198,8 +190,6 @@ flowchart LR
 ## 관련 문서
 
 - 사용설명서 IA: [user-manual/10-메뉴구조도.md](./user-manual/10-메뉴구조도.md)
-- 모델: [BARN_PLAN.md](./BARN_PLAN.md)
-- 옛 3D: [BARN_MODEL.md](./BARN_MODEL.md)
 - ARIA: [aria-protocol.md](./aria-protocol.md) (**정본**)
 - 문서 진입점: [README.md](./README.md)
 - Preview 게이트 절차: [VERCEL_PREVIEW_GATE.md](./VERCEL_PREVIEW_GATE.md)

@@ -8,7 +8,6 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
-  useMemo,
   useRef,
   useState,
   type Dispatch,
@@ -18,9 +17,9 @@ import type { ReadonlyURLSearchParams } from "next/navigation";
 import {
   applyHubScopedViewParams,
   applyMapGridParams,
-  applyModelViewParams,
   applyChartViewParams,
   currentFarmSearchParams,
+  isFarmChartWorkspaceView,
   normalizeLegacyListModeParam,
   publishLiveFarmHubView,
   replaceFarmUrlShallow,
@@ -28,7 +27,6 @@ import {
   subscribeFarmHubViewResync,
   type FarmHubView,
 } from "@/lib/farm/farm-view-url";
-import { barnPlanEnabled } from "@/lib/farm/barn-plan-enabled";
 import {
   canUnmountKeepAlivePanel,
   FARM_HUB_KEEPALIVE_PANELS,
@@ -44,9 +42,7 @@ const FARM_HUB_VIEW_ORDER: Record<FarmHubView, number> = {
   list: 1,
   chart: 2,
   chartlab: 2,
-  plan: 4,
-  model: 4,
-  aria: 5,
+  aria: 3,
 };
 
 /** globals.css farm-view-slide-* (moderate enter + exit) */
@@ -68,7 +64,6 @@ export type UseFarmHubViewShellArgs = {
   keepAliveFarmId: string;
   /** 목록 탭 진입 시 (enrich 등) */
   onOpenList?: () => void;
-  isAdmin?: boolean;
 };
 
 export type FarmHubViewShell = {
@@ -79,8 +74,6 @@ export type FarmHubViewShell = {
   setUrlTick: Dispatch<SetStateAction<number>>;
   listEverOpened: boolean;
   chartEverOpened: boolean;
-  planEverOpened: boolean;
-  modelEverOpened: boolean;
   setView: (next: FarmHubView) => void;
   setTourView: (next: FarmHubView) => void;
 };
@@ -93,28 +86,20 @@ export function useFarmHubViewShell({
   searchParams,
   keepAliveFarmId,
   onOpenList,
-  isAdmin = false,
 }: UseFarmHubViewShellArgs): FarmHubViewShell {
   const onOpenListRef = useRef(onOpenList);
   useEffect(() => {
     onOpenListRef.current = onOpenList;
   });
-  const gate = useMemo(() => ({ isAdmin }), [isAdmin]);
 
   const [urlHydrated, setUrlHydrated] = useState(false);
   const bootstrapView: FarmHubView =
-    initialHubView ?? resolveFarmHubView(searchParams.get("view"), gate);
+    initialHubView ?? resolveFarmHubView(searchParams.get("view"));
   const [view, setViewState] = useState<FarmHubView>(bootstrapView);
   const [viewSlide, setViewSlide] = useState<FarmViewSlide | null>(null);
   const [listEverOpened, setListEverOpened] = useState(bootstrapView === "list");
   const [chartEverOpened, setChartEverOpened] = useState(
     bootstrapView === "chart" || bootstrapView === "chartlab",
-  );
-  const [planEverOpened, setPlanEverOpened] = useState(
-    bootstrapView === "model" && barnPlanEnabled(gate),
-  );
-  const [modelEverOpened, setModelEverOpened] = useState(
-    bootstrapView === "model" && barnPlanEnabled(gate),
   );
   const [panelInactiveSince, setPanelInactiveSince] = useState<
     Partial<Record<FarmHubKeepAlivePanel, number>>
@@ -148,18 +133,13 @@ export function useFarmHubViewShell({
         const params = currentFarmSearchParams();
         let rewritten = normalizeLegacyListModeParam(params);
         const raw = params.get("view");
-        if (raw === "aria" || raw === "jarvis") {
-          applyMapGridParams(params);
-          rewritten = true;
-        }
         if (
-          !barnPlanEnabled(gate) &&
-          (params.get("view") === "plan" || params.get("view") === "model")
+          raw === "aria" ||
+          raw === "jarvis" ||
+          raw === "plan" ||
+          raw === "model"
         ) {
           applyMapGridParams(params);
-          rewritten = true;
-        } else if (barnPlanEnabled(gate) && params.get("view") === "plan") {
-          applyModelViewParams(params, gate);
           rewritten = true;
         }
         if (params.get("view") === "chartlab") {
@@ -175,7 +155,6 @@ export function useFarmHubViewShell({
         opts?.viewRaw !== undefined
           ? opts.viewRaw
           : currentFarmSearchParams().get("view"),
-        gate,
       );
       const animate = opts?.animate ?? true;
       setViewState((prev) => {
@@ -187,11 +166,9 @@ export function useFarmHubViewShell({
       });
       if (next === "list") setListEverOpened(true);
       if (next === "chart" || next === "chartlab") setChartEverOpened(true);
-      if (next === "plan" && barnPlanEnabled(gate)) setPlanEverOpened(true);
-      if (next === "model" && barnPlanEnabled(gate)) setModelEverOpened(true);
       if (opts?.bumpUrlTick) setUrlTick((n) => n + 1);
     },
-    [beginViewSlide, hubMode, gate],
+    [beginViewSlide, hubMode],
   );
 
   useEffect(() => {
@@ -232,12 +209,6 @@ export function useFarmHubViewShell({
   if ((view === "chart" || view === "chartlab") && !chartEverOpened) {
     setChartEverOpened(true);
   }
-  if (view === "model" && !planEverOpened) {
-    if (barnPlanEnabled(gate)) setPlanEverOpened(true);
-  }
-  if (view === "model" && !modelEverOpened) {
-    if (barnPlanEnabled(gate)) setModelEverOpened(true);
-  }
 
   useLayoutEffect(() => {
     publishLiveFarmHubView(view);
@@ -273,36 +244,23 @@ export function useFarmHubViewShell({
     const flags = keepAliveFlagsForActiveView(view);
     setListEverOpened(flags.list);
     setChartEverOpened(flags.chart);
-    setPlanEverOpened(view === "model" && barnPlanEnabled(gate));
-    setModelEverOpened(view === "model" && barnPlanEnabled(gate));
     setPanelInactiveSince({});
-  }, [keepAliveFarmId, view, gate]);
+  }, [keepAliveFarmId, view]);
 
   const applyViewChange = useCallback(
     (next: FarmHubView) => {
-      const gated =
+      const target: FarmHubView =
         next === "aria"
-          ? ("map" as FarmHubView)
-          : next === "plan" || next === "model"
-            ? barnPlanEnabled(gate)
-              ? ("model" as FarmHubView)
-              : ("map" as FarmHubView)
-            : next === "chartlab"
-              ? ("chart" as FarmHubView)
-              : next;
-      const target = gated;
+          ? "map"
+          : next === "chartlab"
+            ? "chart"
+            : next;
       if (target === "list") {
         setListEverOpened(true);
         onOpenListRef.current?.();
       }
-      if (target === "chart" || target === "chartlab") {
+      if (isFarmChartWorkspaceView(target)) {
         setChartEverOpened(true);
-      }
-      if (target === "plan") {
-        setPlanEverOpened(true);
-      }
-      if (target === "model") {
-        setModelEverOpened(true);
       }
       beginViewSlide(view, target);
       setViewState(target);
@@ -311,7 +269,7 @@ export function useFarmHubViewShell({
         const params = new URLSearchParams(
           currentFarmSearchParams().toString(),
         );
-        applyHubScopedViewParams(params, target, gate);
+        applyHubScopedViewParams(params, target);
         replaceFarmUrlShallow(params);
         onHubUrlChange?.();
         setUrlTick((n) => n + 1);
@@ -321,11 +279,8 @@ export function useFarmHubViewShell({
       params.delete("tab");
       if (target === "list") {
         params.set("view", "list");
-      } else if (target === "chart" || target === "chartlab") {
+      } else if (isFarmChartWorkspaceView(target)) {
         params.set("view", "chart");
-        params.delete("listMode");
-      } else if (target === "plan" || target === "model") {
-        params.set("view", "model");
         params.delete("listMode");
       } else {
         params.delete("view");
@@ -334,7 +289,7 @@ export function useFarmHubViewShell({
       replaceFarmUrlShallow(params);
       setUrlTick((n) => n + 1);
     },
-    [hubMode, onHubUrlChange, beginViewSlide, view, gate],
+    [hubMode, onHubUrlChange, beginViewSlide, view],
   );
 
   const setView = useCallback(
@@ -434,8 +389,6 @@ export function useFarmHubViewShell({
     setUrlTick,
     listEverOpened,
     chartEverOpened,
-    planEverOpened,
-    modelEverOpened,
     setView,
     setTourView,
   };

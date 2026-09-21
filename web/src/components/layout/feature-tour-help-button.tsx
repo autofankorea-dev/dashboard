@@ -17,7 +17,6 @@ import {
   type FarmKey,
 } from "@/lib/data/farm-key";
 import { resolveFarmHubView } from "@/lib/farm/farm-view-url";
-import { useFarmScope } from "@/components/layout/farm-scope-provider";
 import { dashboardUi } from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";
 
@@ -46,14 +45,13 @@ function TourHelpButtonShell() {
 function FeatureTourHelpButtonInner({ tourFarmKey = null }: Props) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { isAdmin } = useFarmScope();
 
   if (!pathname?.startsWith("/farm")) return null;
 
   const farmScoped = Boolean(
     parseFarmKeyFromQuery(searchParams.get("lsind"), searchParams.get("item")),
   );
-  const hubView = resolveFarmHubView(searchParams.get("view"), { isAdmin });
+  const hubView = resolveFarmHubView(searchParams.get("view"));
 
   const onClick = () => {
     let scope: TourScope = tourScopeFromHubView(hubView);
@@ -61,7 +59,7 @@ function FeatureTourHelpButtonInner({ tourFarmKey = null }: Props) {
       // shallow URL이 React searchParams보다 앞설 수 있음
       const live = new URLSearchParams(window.location.search);
       scope = tourScopeFromHubView(
-        resolveFarmHubView(live.get("view"), { isAdmin }),
+        resolveFarmHubView(live.get("view")),
       );
     } catch {
       /* ignore */

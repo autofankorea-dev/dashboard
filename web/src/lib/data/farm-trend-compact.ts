@@ -380,3 +380,206 @@ export function synthesizeOverview30dFrom7d(
     totalSamples,
   };
 }
+
+function cloneCompactSeries(row: CompactControllerSeries): CompactControllerSeries {
+  return {
+    ...row,
+    p: row.p.slice(),
+    th: row.th?.slice(),
+  };
+}
+
+/**
+ * 같은 30일 1시간 축에 하루 조각을 덮어쓴다. 슬롯은 incoming 이 이긴다.
+ */
+export function overlayCompactControllerPeriod(
+  base: CompactControllerPeriod,
+  incoming: CompactControllerPeriod,
+): CompactControllerPeriod {
+  if (incoming.v !== 1 || incoming.series.length === 0) return base;
+  if (
+    base.v !== 1 ||
+    base.bucketCount !== incoming.bucketCount ||
+    base.strideMs !== incoming.strideMs ||
+    Math.abs(base.fromMs - incoming.fromMs) > 1
+  ) {
+    return incoming;
+  }
+
+  const byKey = new Map<string, CompactControllerSeries>();
+  for (const row of base.series) {
+    byKey.set(row.k, cloneCompactSeries(row));
+  }
+  for (const row of incoming.series) {
+    const prev = byKey.get(row.k);
+    if (!prev) {
+      byKey.set(row.k, cloneCompactSeries(row));
+      continue;
+    }
+    const pMap = new Map<number, CompactControllerPoint>();
+    for (const pt of prev.p) pMap.set(pt[0], pt);
+    for (const pt of row.p) pMap.set(pt[0], pt);
+    const thMap = new Map<number, CompactThermoPoint>();
+    for (const t of prev.th ?? []) thMap.set(t[0], t);
+    for (const t of row.th ?? []) thMap.set(t[0], t);
+    const p = [...pMap.values()].sort((a, b) => a[0] - b[0]);
+    const th = [...thMap.values()].sort((a, b) => a[0] - b[0]);
+    byKey.set(row.k, {
+      ...prev,
+      ty: row.ty || prev.ty,
+      lb: row.lb || prev.lb,
+      sn: row.sn || prev.sn,
+      e: row.e || prev.e,
+      p,
+      th: th.length ? th : undefined,
+    });
+  }
+
+  let totalSamples = 0;
+  for (const row of byKey.values()) {
+    for (const pt of row.p) totalSamples += pt[9] ?? 0;
+  }
+  return {
+    ...base,
+    period: "30d",
+    totalSamples,
+    series: [...byKey.values()],
+  };
+}
+
+type HourSeedAcc = {
+  sums: number[];
+  counts: number[];
+  samples: number;
+  lastTh: CompactThermoPoint | undefined;
+};
+
+function avgSeed(sum: number, count: number): number | null {
+  return count > 0 ? sum / count : null;
+}
+
+/**
+ * 24시간 15분 compact 를 30일 1시간 축의 맨 오른쪽 24시간에 심는다.
+ * 하루 RPC 가 오기 전에 차트 탭이 30일 칸을 쓰게 한다.
+ */
+export function seedCompact30dFrom24h(
+  h24: CompactControllerPeriod,
+  axisFromMs: number,
+): CompactControllerPeriod {
+  const src = TREND_PERIODS["24h"];
+  const dst = TREND_PERIODS["30d"];
+  const empty = emptyCompactControllerPeriod(
+    "30d",
+    axisFromMs,
+    dst.bucketCount,
+    dst.strideMs,
+  );
+  if (
+    h24.v !== 1 ||
+    h24.period !== "24h" ||
+    h24.bucketCount !== src.bucketCount ||
+    h24.strideMs !== src.strideMs
+  ) {
+    return empty;
+  }
+  const expectedFrom = h24.fromMs + src.durationMs - dst.durationMs;
+  if (Math.abs(expectedFrom - axisFromMs) > 1) return empty;
+
+  const hours = 24;
+  const srcPerHour = src.bucketCount / hours;
+  const dstStart = dst.bucketCount - hours;
+  const series: CompactControllerSeries[] = [];
+  let totalSamples = 0;
+
+  for (const row of h24.series) {
+    const byHour = new Map<number, HourSeedAcc>();
+    const ensure = (hour: number): HourSeedAcc => {
+      let acc = byHour.get(hour);
+      if (!acc) {
+        acc = {
+          sums: [0, 0, 0, 0, 0, 0, 0, 0],
+          counts: [0, 0, 0, 0, 0, 0, 0, 0],
+          samples: 0,
+          lastTh: undefined,
+        };
+        byHour.set(hour, acc);
+      }
+      return acc;
+    };
+    for (const pt of row.p) {
+      const hour = Math.floor(pt[0] / srcPerHour);
+      if (hour < 0 || hour >= hours) continue;
+      const acc = ensure(hour);
+      for (let i = 0; i < 8; i += 1) {
+        const v = pt[i + 1];
+        if (v != null && Number.isFinite(v)) {
+          acc.sums[i] = (acc.sums[i] ?? 0) + v;
+          acc.counts[i] = (acc.counts[i] ?? 0) + 1;
+        }
+      }
+      acc.samples += pt[9] ?? 0;
+    }
+    for (const t of row.th ?? []) {
+      const hour = Math.floor(t[0] / srcPerHour);
+      if (hour < 0 || hour >= hours) continue;
+      const acc = ensure(hour);
+      if (t[0] >= (acc.lastTh?.[0] ?? -1)) acc.lastTh = t;
+    }
+
+    const p: CompactControllerPoint[] = [];
+    const th: CompactThermoPoint[] = [];
+    for (const [hour, acc] of byHour) {
+      const slot = dstStart + hour;
+      p.push([
+        slot,
+        avgSeed(acc.sums[0] ?? 0, acc.counts[0] ?? 0),
+        avgSeed(acc.sums[1] ?? 0, acc.counts[1] ?? 0),
+        avgSeed(acc.sums[2] ?? 0, acc.counts[2] ?? 0),
+        avgSeed(acc.sums[3] ?? 0, acc.counts[3] ?? 0),
+        avgSeed(acc.sums[4] ?? 0, acc.counts[4] ?? 0),
+        avgSeed(acc.sums[5] ?? 0, acc.counts[5] ?? 0),
+        avgSeed(acc.sums[6] ?? 0, acc.counts[6] ?? 0),
+        avgSeed(acc.sums[7] ?? 0, acc.counts[7] ?? 0),
+        acc.samples,
+      ]);
+      totalSamples += acc.samples;
+      if (acc.lastTh) {
+        th.push([
+          slot,
+          acc.lastTh[1],
+          acc.lastTh[2],
+          acc.lastTh[3],
+          acc.lastTh[4],
+          acc.lastTh[5],
+          acc.lastTh[6],
+          acc.lastTh[7],
+          acc.lastTh[8],
+          acc.lastTh[9],
+          acc.lastTh[10],
+          acc.lastTh[11],
+          acc.lastTh[12],
+        ]);
+      }
+    }
+    if (p.length === 0) continue;
+    series.push({
+      ty: row.ty,
+      lb: row.lb,
+      sn: row.sn,
+      k: row.k,
+      e: row.e,
+      p,
+      th: th.length ? th : undefined,
+    });
+  }
+
+  return {
+    v: 1,
+    period: "30d",
+    fromMs: axisFromMs,
+    bucketCount: dst.bucketCount,
+    strideMs: dst.strideMs,
+    totalSamples,
+    series,
+  };
+}

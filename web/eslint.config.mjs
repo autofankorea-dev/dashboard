@@ -77,6 +77,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     // Capacitor Android project + generated bridge (not app source)
     "android/**",
+    // 로컬 측정·스크래치 스크립트 (앱 소스 린트 대상 아님)
+    "scripts/**",
   ]),
 ]);
 

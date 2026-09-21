@@ -18,6 +18,6 @@ export function warmPostLoginFarmHub(farmKey: FarmKey): void {
       /* /farm bootstrap */
     });
   void prefetchFarmControllerTrend(farmKey).catch(() => {
-    /* 차트 탭 idle prefetch */
+    /* 필드 24시간. 차트 탭·idle 이 30일을 이어 받는다 */
   });
 }

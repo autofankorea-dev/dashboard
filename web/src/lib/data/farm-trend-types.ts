@@ -24,11 +24,13 @@ const DAY = 24 * 60 * 60 * 1000;
 
 /**
  * Hub chart buckets.
- *   24h: 15m × 96   → GRAPH_BARS 24
+ *   24h wire: 15m × 96. Mini tile display = 2h average (12 pts).
  *   7d:  1h × 168   → GRAPH_BARS 28 (from 30d tail)
  *   30d: 1h × 720   → GRAPH_BARS 30
- * Zoom window ≤ 48h: 15m for that range only (TREND_ZOOM_15M_MAX_DAYS).
+ * Expand lookback = 1h. Drag-zoom ≤ 48h fetches 15m for that range only.
  */
+/** 차트 탭 미니 칸 표시 간격 (24시간 축을 2시간 평균 12점). */
+export const TREND_MINI_STRIDE_MS = 2 * HOUR;
 export const TREND_PERIODS: Record<TrendPeriodId, TrendPeriodConfig> = {
   "24h": {
     id: "24h",
@@ -56,7 +58,12 @@ export const TREND_PERIODS: Record<TrendPeriodId, TrendPeriodConfig> = {
   },
 };
 
-/** 브러시 줌 창(≤48h) 15분 축. 허브·PDF 기본 로드는 TREND_PERIODS. */
+/** 허브 30일 1시간 축을 최신부터 채우는 하루 RPC 조각 수. */
+export const TREND_30D_DAY_CHUNKS = 30;
+/** 허브 클라 하루 조각 동시 요청. 화면 반영은 최신→과거 순. */
+export const TREND_30D_DAY_CONCURRENCY = 3;
+
+/** 브러시 줌이 아니라 플롯 드래그 줌(≤48h) 전용 15분 축. 허브·PDF 기본 로드는 TREND_PERIODS. */
 export const TREND_15M_PERIODS: Record<TrendPeriodId, TrendPeriodConfig> = {
   "24h": TREND_PERIODS["24h"],
   "7d": {
@@ -196,7 +203,7 @@ export type TrendControllerPeriodData = {
   totalSamples: number;
 };
 
-/** 브러시 창 ≤ 48h 일 때 받은 구간 15분. */
+/** 드래그 줌 구간(≤48h)에 받은 15분. 펼친 기본 창·휠 룩백은 1시간. */
 export type TrendWindow15m = {
   fromMs: number;
   toMs: number;
@@ -242,11 +249,16 @@ export function isControllerTrendPeriodComplete(
 /**
  * 30일 1시간이 있으면 브러시 캔버스.
  * 없으면 선택한 기간 → 7일 → 24시간 순.
+ * `prefer24h` — 미니 타일이 30일 빈 칸보다 24시간 선을 먼저 쓴다.
  */
 export function pickTrendCanvasPeriod(
   bundle: Partial<Record<TrendPeriodId, TrendControllerPeriodData>> | null | undefined,
   period: TrendPeriodId,
+  prefer24h = false,
 ): TrendPeriodId {
+  if (prefer24h && controllerTrendPeriodHasSeries(bundle?.["24h"])) {
+    return "24h";
+  }
   if (
     isContextControllerTrend30d(bundle?.["30d"]) &&
     controllerTrendPeriodHasSeries(bundle?.["30d"])
@@ -264,4 +276,21 @@ export function isCompleteControllerTrendBundle(
   bundle: Record<TrendPeriodId, TrendControllerPeriodData> | null | undefined,
 ): boolean {
   return isControllerTrendPeriodComplete(bundle?.["30d"], "30d");
+}
+
+/**
+ * 허브 클라 로드 완료. `d30DaysScanned` 가 있으면 하루 조각 30개가
+ * 끝나야 한다. 축 길이만으로는 시드·부분 30일을 완료로 보지 않는다.
+ */
+export function isFarmTrendLoadComplete(
+  bundle: Record<TrendPeriodId, TrendControllerPeriodData> | null | undefined,
+  d30DaysScanned?: number,
+): boolean {
+  if (d30DaysScanned != null) {
+    return (
+      d30DaysScanned >= TREND_30D_DAY_CHUNKS &&
+      isControllerTrendPeriodComplete(bundle?.["30d"], "30d")
+    );
+  }
+  return isCompleteControllerTrendBundle(bundle);
 }

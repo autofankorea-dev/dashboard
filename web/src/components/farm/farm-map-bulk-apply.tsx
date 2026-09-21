@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import {
   AlertCircle,
@@ -33,7 +33,6 @@ import {
   type AlarmThresholds,
 } from "@/lib/data/alarms";
 import { applyBulkSpAlarmThresholds } from "@/lib/data/alarm-scope";
-import { EDIT_START_DRAFT } from "@/lib/controllers/controller-panel-map";
 import { normalizeStallTyCode } from "@/lib/data/stall-type";
 import { isReadingOnline } from "@/lib/data/reading-display";
 import type { InlineStatusTone } from "@/components/common/inline-status-toast";
@@ -49,14 +48,15 @@ import {
   SectionToggle,
   buildBulkThermoCommands,
   bulkAlarmDraftSeed,
-  bulkThermoDraftSeed,
+  bulkDirtyChannelSlots,
+  bulkThermoDraftSeedByChannel,
+  emptyBulkChannelDrafts,
+  resolveBulkSendChannels,
   bulkModalShell,
   bulkModalSectionTitle,
   bulkModalMeta,
-  bulkModalThumbLabel,
   bulkModalBtn,
   bulkModalSection,
-  bulkModalTrackShell,
   readingNeedsChannelsHydration,
 } from "@/components/farm/farm-map-bulk-apply-parts";
 import type { ChannelSlot } from "@/lib/data/iot-channel";
@@ -281,15 +281,11 @@ export function FarmMapBulkApply({
   const [openSection, setOpenSection] = useState<BulkSettingsSectionId | null>(
     null,
   );
-  const [selectedChannels, setSelectedChannels] = useState<ChannelSlot[]>([
-    "A",
-    "B",
-    "C",
-  ]);
-  const [setpoint, setSetpoint] = useState(EDIT_START_DRAFT.setpointTemp);
-  const [deviation, setDeviation] = useState(EDIT_START_DRAFT.tempDeviation);
-  const [minVent, setMinVent] = useState(EDIT_START_DRAFT.minVentPct);
-  const [maxVent, setMaxVent] = useState(EDIT_START_DRAFT.maxVentPct);
+  const [activeChannel, setActiveChannel] = useState<ChannelSlot>("A");
+  const channelTablistRef = useRef<HTMLDivElement>(null);
+  const [channelPill, setChannelPill] = useState({ left: 0, width: 0 });
+  const [channelDrafts, setChannelDrafts] = useState(emptyBulkChannelDrafts);
+  const [channelSeeds, setChannelSeeds] = useState(emptyBulkChannelDrafts);
   const [alarm, setAlarm] = useState<AlarmThresholds>(DEFAULT_ALARM_THRESHOLDS);
 
   useEffect(() => {
@@ -331,11 +327,13 @@ export function FarmMapBulkApply({
     if (needsHydration) {
       void liveRefresh?.revalidateFarmLive({ mode: "full" });
     }
-    const thermo = bulkThermoDraftSeed(targets, controller.thermoSettings);
-    setSetpoint(thermo.setpoint);
-    setDeviation(thermo.deviation);
-    setMinVent(thermo.minVent);
-    setMaxVent(thermo.maxVent);
+    const thermo = bulkThermoDraftSeedByChannel(
+      targets,
+      controller.thermoSettings,
+    );
+    setChannelSeeds(thermo);
+    setChannelDrafts(thermo);
+    setActiveChannel("A");
     setAlarm(
       bulkAlarmDraftSeed(
         targets,
@@ -360,6 +358,27 @@ export function FarmMapBulkApply({
 
   const nothingSelected = !applyTemp && !applyVent && !applyAlarm;
   const wantedControl = applyTemp || applyVent;
+  const activeDraft = channelDrafts[activeChannel];
+  const dirtyChannelSlots = useMemo(
+    () =>
+      bulkDirtyChannelSlots(
+        channelDrafts,
+        channelSeeds,
+        applyTemp,
+        applyVent,
+      ),
+    [channelDrafts, channelSeeds, applyTemp, applyVent],
+  );
+  const selectedChannels = useMemo(
+    () =>
+      resolveBulkSendChannels(
+        channelDrafts,
+        channelSeeds,
+        applyTemp,
+        applyVent,
+      ),
+    [channelDrafts, channelSeeds, applyTemp, applyVent],
+  );
   /** 온라인 대상이 전부 채널형일 때만 채널 선택이 필수 */
   const allChannelTargets = useMemo(
     () =>
@@ -373,10 +392,7 @@ export function FarmMapBulkApply({
         ? buildBulkThermoCommands(onlineTargets, controller.thermoSettings, {
             applyTemp,
             applyVent,
-            setpoint,
-            deviation,
-            minVent,
-            maxVent,
+            channelDrafts,
             selectedChannels,
           })
         : [],
@@ -386,10 +402,7 @@ export function FarmMapBulkApply({
       controller.thermoSettings,
       applyTemp,
       applyVent,
-      setpoint,
-      deviation,
-      minVent,
-      maxVent,
+      channelDrafts,
       selectedChannels,
     ],
   );
@@ -417,16 +430,33 @@ export function FarmMapBulkApply({
     setOpenSection(null);
   }
 
+  useLayoutEffect(() => {
+    if (!open || !wantedControl) return;
+    const root = channelTablistRef.current;
+    if (!root) return;
+    const selected = root.querySelector<HTMLElement>(
+      '[role="tab"][aria-selected="true"]',
+    );
+    if (!selected) return;
+    const next = { left: selected.offsetLeft, width: selected.offsetWidth };
+    setChannelPill((prev) =>
+      prev.left === next.left && prev.width === next.width ? prev : next,
+    );
+  }, [activeChannel, open, wantedControl]);
+
   const toggleSection = (id: BulkSettingsSectionId) => {
     setOpenSection((prev) => (prev === id ? null : id));
   };
 
-  const toggleChannel = (slot: ChannelSlot, on: boolean) => {
-    setSelectedChannels((prev) => {
-      if (on) return prev.includes(slot) ? prev : [...prev, slot];
-      return prev.filter((s) => s !== slot);
-    });
-  };
+  const patchActiveDraft = useCallback(
+    (patch: Partial<(typeof channelDrafts)[ChannelSlot]>) => {
+      setChannelDrafts((prev) => ({
+        ...prev,
+        [activeChannel]: { ...prev[activeChannel], ...patch },
+      }));
+    },
+    [activeChannel],
+  );
 
   const runApply = async () => {
     if (running) return;
@@ -476,10 +506,7 @@ export function FarmMapBulkApply({
           {
             applyTemp,
             applyVent,
-            setpoint,
-            deviation,
-            minVent,
-            maxVent,
+            channelDrafts,
             selectedChannels,
           },
         );
@@ -530,6 +557,13 @@ export function FarmMapBulkApply({
           liveRefresh?.patchThermoFromCommand(item.command);
         }
         applyQueue?.startSession(control.sentItems);
+        onAfterApply?.(applied, feedback);
+        setOpen(false);
+        setResult(null);
+        setLastApplyOpts(null);
+        setError(null);
+        onExit();
+        return;
       }
       setLastApplyOpts(applyOpts);
       setResult(applied);
@@ -562,8 +596,12 @@ export function FarmMapBulkApply({
       )
     : null;
 
-  const tempSummary = applyTemp ? `${setpoint}±${deviation}℃` : "온도 미적용";
-  const ventSummary = applyVent ? `환기 ${minVent}–${maxVent}%` : "환기 미적용";
+  const tempSummary = applyTemp
+    ? `${activeDraft.setpoint}±${activeDraft.deviation}℃`
+    : "온도 미적용";
+  const ventSummary = applyVent
+    ? `환기 ${activeDraft.minVent}–${activeDraft.maxVent}%`
+    : "환기 미적용";
   const controlSummary =
     !applyTemp && !applyVent
       ? "적용 안 함"
@@ -590,17 +628,15 @@ export function FarmMapBulkApply({
       />
       <div className={cn("min-w-0", collapsible ? "pt-2" : "pt-3 md:pt-4")}>
         <ControllerTempDualSlider
-          setpoint={setpoint}
-          deviation={deviation}
+          key={`temp-${activeChannel}`}
+          setpoint={activeDraft.setpoint}
+          deviation={activeDraft.deviation}
           disabled={!applyTemp}
           compact={false}
           axisMode="editable"
           axisInputSize="dashboard"
-          thumbLabelClassName={bulkModalThumbLabel}
-          trackShellClassName={bulkModalTrackShell}
           onChange={(sp, dev) => {
-            setSetpoint(sp);
-            setDeviation(dev);
+            patchActiveDraft({ setpoint: sp, deviation: dev });
           }}
         />
       </div>
@@ -628,6 +664,7 @@ export function FarmMapBulkApply({
       />
       <div className={cn("min-w-0", collapsible ? "pt-2" : "pt-3 md:pt-4")}>
         <ThresholdRangeSlider
+          key={`vent-${activeChannel}`}
           title="환기"
           icon={
             <span
@@ -643,8 +680,8 @@ export function FarmMapBulkApply({
           min={0}
           max={100}
           step={1}
-          low={minVent}
-          high={maxVent}
+          low={activeDraft.minVent}
+          high={activeDraft.maxVent}
           unit="%"
           lowLabel="최저환기"
           highLabel="최고환기"
@@ -654,13 +691,10 @@ export function FarmMapBulkApply({
           bare
           compact={false}
           titleClassName={bulkModalSectionTitle}
-          thumbLabelClassName={bulkModalThumbLabel}
           axisClassName={bulkModalMeta}
-          trackShellClassName="lg:pt-12 lg:pb-4"
           disabled={!applyVent}
           onChange={(low, high) => {
-            setMinVent(low);
-            setMaxVent(high);
+            patchActiveDraft({ minVent: low, maxVent: high });
           }}
         />
       </div>
@@ -705,8 +739,6 @@ export function FarmMapBulkApply({
           bare
           compact={false}
           titleClassName={bulkModalSectionTitle}
-          thumbLabelClassName={bulkModalThumbLabel}
-          trackShellClassName="lg:pt-12 lg:pb-3"
           disabled={!applyAlarm}
           onChange={(low, high) =>
             setAlarm((a) => ({ ...a, tempLow: low, tempHigh: high }))
@@ -733,8 +765,6 @@ export function FarmMapBulkApply({
           bare
           compact={false}
           titleClassName={bulkModalSectionTitle}
-          thumbLabelClassName={bulkModalThumbLabel}
-          trackShellClassName="lg:pt-12 lg:pb-3"
           disabled={!applyAlarm}
           onChange={(low, high) =>
             setAlarm((a) => ({
@@ -1038,62 +1068,78 @@ export function FarmMapBulkApply({
                 {wantedControl ? (
                   <section className={bulkModalSection}>
                     <p className={cn("border-b pb-2.5 font-semibold md:pb-3", bulkModalSectionTitle)}>
-                      적용 채널
+                      제어 채널
                     </p>
-                    <div
-                      className="mt-3 flex flex-wrap gap-2 md:gap-3"
-                      role="group"
-                      aria-label="적용 채널"
-                    >
-                      {BULK_CHANNEL_OPTIONS.map((slot) => {
-                        const checked = selectedChannels.includes(slot);
-                        return (
-                          <label
-                            key={slot}
-                            title={`채널 ${slot}`}
-                            className={cn(
-                              "inline-flex cursor-pointer items-center gap-2 rounded-lg border px-2.5 py-1.5 md:px-3 md:py-2",
-                              motionClass.microHover,
-                              checked
-                                ? dashboardChroma.chromeSelected
-                                : "bg-muted/20 text-muted-foreground hover:bg-muted/40",
-                            )}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={(e) =>
-                                toggleChannel(slot, e.target.checked)
-                              }
-                              className="size-4 accent-primary md:size-5"
-                              aria-label={`채널 ${slot}`}
-                            />
-                            <span
+                    <div className="mt-3">
+                      <div
+                        ref={channelTablistRef}
+                        role="tablist"
+                        aria-label="제어 채널"
+                        className="relative inline-flex rounded-xl border bg-muted/40 p-1"
+                      >
+                        <span
+                          aria-hidden
+                          className={cn(
+                            "pointer-events-none absolute top-1 bottom-1 z-0 rounded-lg",
+                            dashboardChroma.viewTabPill,
+                            motionClass.viewTabPill,
+                            channelPill.width <= 0 && "opacity-0",
+                          )}
+                          style={{
+                            left: channelPill.left,
+                            width: channelPill.width,
+                          }}
+                        />
+                        {BULK_CHANNEL_OPTIONS.map((slot) => {
+                          const selected = slot === activeChannel;
+                          const dirty = dirtyChannelSlots.includes(slot);
+                          return (
+                            <button
+                              key={slot}
+                              type="button"
+                              role="tab"
+                              aria-selected={selected}
+                              aria-label={dirty ? `${slot} 변경됨` : slot}
                               className={cn(
-                                "inline-flex size-7 items-center justify-center rounded-md border text-xs font-semibold md:size-8 md:text-sm",
-                                checked
-                                  ? "border-primary/50 bg-background"
-                                  : "border-border bg-background/60",
+                                "relative z-[1] inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg px-3 py-1.5 text-xs font-medium md:min-h-10 md:min-w-10 md:px-4 md:text-sm lg:min-h-12 lg:text-[1.75rem]",
+                                motionClass.microHover,
+                                selected
+                                  ? dashboardChroma.chromeActiveText
+                                  : dashboardAffordance.choiceIdle,
                               )}
-                              aria-hidden
+                              onClick={() => {
+                                const active = document.activeElement;
+                                if (active instanceof HTMLElement) active.blur();
+                                setActiveChannel(slot);
+                              }}
                             >
-                              {slot}
-                            </span>
-                          </label>
-                        );
-                      })}
+                              <span className="inline-flex items-center gap-1">
+                                {slot}
+                                {dirty ? (
+                                  <span
+                                    className="size-1.5 rounded-full bg-primary md:size-2"
+                                    aria-hidden
+                                  />
+                                ) : null}
+                              </span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
-                    {selectedChannels.length === 0 ? (
+                    {dirtyChannelSlots.length > 0 ? (
                       <p className={cn("mt-2 text-xs leading-snug", bulkModalMeta)}>
-                        {allChannelTargets
-                          ? "채널을 1개 이상 선택해야 제어 명령을 보낼 수 있습니다."
-                          : "채널을 선택하지 않으면 채널형 컨트롤러는 제어에서 제외되고, 레거시(CTRL)만 전송됩니다."}
+                        {dirtyChannelSlots.join("·")} 변경 — 바꾼 채널만 나갑니다.
                       </p>
                     ) : previewCommands.length === 0 && onlineTargets.length > 0 ? (
                       <p className={cn("mt-2 text-xs leading-snug", bulkModalMeta)}>
                         선택한 채널에 맞는 온라인 컨트롤러가 없습니다. 채널 선택을 확인하세요.
                       </p>
-                    ) : null}
+                    ) : (
+                      <p className={cn("mt-2 text-xs leading-snug", bulkModalMeta)}>
+                        채널별로 값을 맞춥니다. 바꾸지 않으면 A·B·C 모두 현재 값으로 나갑니다.
+                      </p>
+                    )}
                   </section>
                 ) : null}
 

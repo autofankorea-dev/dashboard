@@ -2,14 +2,25 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
+  fetchFarmControllerTrend30dDayAction,
   fetchFarmControllerTrendPeriodAction,
   fetchFarmControllerTrendWindowAction,
 } from "@/app/(dashboard)/farm/actions";
 import { farmKeyId, type FarmKey } from "@/lib/data/farm-key";
-import { expandCompactControllerPeriod } from "@/lib/data/farm-trend-compact";
+import {
+  expandCompactControllerPeriod,
+  overlayCompactControllerPeriod,
+  seedCompact30dFrom24h,
+  type CompactControllerPeriod,
+} from "@/lib/data/farm-trend-compact";
 import {
   emptyTrendControllerPeriodData,
   isCompleteControllerTrendBundle,
+  isFarmTrendLoadComplete,
+  TREND_30D_DAY_CHUNKS,
+  TREND_30D_DAY_CONCURRENCY,
+  TREND_PERIODS,
+  controllerTrendPeriodHasSeries,
   type TrendControllerPeriodData,
   type TrendPeriodId,
   type TrendWindow15m,
@@ -29,6 +40,7 @@ import {
   type TimedCacheEntry,
 } from "@/lib/farm/client-trend-cache";
 import { startSharedInflight } from "@/lib/farm/shared-inflight";
+import { runOrderedPool } from "@/lib/farm/trend-day-pool";
 import { useDeferredLoading } from "@/lib/ui/use-deferred-loading";
 
 type TrendBundle = Record<TrendPeriodId, TrendControllerPeriodData>;
@@ -36,6 +48,9 @@ type TrendBundle = Record<TrendPeriodId, TrendControllerPeriodData>;
 type TrendSnapshot = {
   bundle: TrendBundle;
   window15m: TrendWindow15m | null;
+  /** 30일 1시간 축에서 최신부터 스캔한 하루 수. 시드만이면 0. */
+  d30DaysScanned: number;
+  compact30d: CompactControllerPeriod | null;
 };
 
 const emptySubscribe = () => () => {};
@@ -44,6 +59,7 @@ const emptySubscribe = () => () => {};
 const trendCache = new Map<string, TimedCacheEntry<TrendSnapshot>>();
 const trendInflight = new Map<string, Promise<TrendSnapshot>>();
 const trendRefreshInflight = new Map<string, Promise<TrendSnapshot>>();
+const trend30Inflight = new Map<string, Promise<TrendSnapshot>>();
 const trendWindowInflight = new Map<string, Promise<TrendSnapshot>>();
 const trendListeners = new Map<string, Set<(snap: TrendSnapshot) => void>>();
 
@@ -70,7 +86,17 @@ function emptyBundle(): TrendBundle {
 }
 
 function emptySnapshot(): TrendSnapshot {
-  return { bundle: emptyBundle(), window15m: null };
+  return {
+    bundle: emptyBundle(),
+    window15m: null,
+    d30DaysScanned: 0,
+    compact30d: null,
+  };
+}
+
+function scannedDays(snap: TrendSnapshot): number {
+  if (typeof snap.d30DaysScanned === "number") return snap.d30DaysScanned;
+  return isCompleteControllerTrendBundle(snap.bundle) ? TREND_30D_DAY_CHUNKS : 0;
 }
 
 function notifyTrend(scopeId: string, snap: TrendSnapshot): void {
@@ -113,12 +139,101 @@ function subscribeTrendSnapshot(
   };
 }
 
-async function fetchPeriod(
+function snapshotFrom30d(
+  h24: TrendControllerPeriodData,
+  compact30d: CompactControllerPeriod,
+  window15m: TrendWindow15m | null,
+  d30DaysScanned: number,
+): TrendSnapshot {
+  const d30 = expandCompactControllerPeriod(compact30d);
+  const d7Slice = sliceControllerTrendFromLonger(d30, "7d");
+  return {
+    bundle: {
+      "24h": h24,
+      "7d":
+        d7Slice && d7Slice.totalSamples > 0
+          ? d7Slice
+          : emptyTrendControllerPeriodData("7d"),
+      "30d": d30,
+    },
+    window15m,
+    d30DaysScanned,
+    compact30d,
+  };
+}
+
+async function loadProgressiveBundle(
   farmKey: FarmKey,
-  period: TrendPeriodId,
-): Promise<TrendControllerPeriodData> {
-  const compact = await fetchFarmControllerTrendPeriodAction(farmKey, period);
-  return expandCompactControllerPeriod(compact);
+  refresh: boolean,
+  extend30d: boolean,
+): Promise<TrendSnapshot> {
+  const scopeId = farmKeyId(farmKey);
+  const prev = refresh ? emptySnapshot() : (readTrendCache(scopeId) ?? emptySnapshot());
+  const d30Cfg = TREND_PERIODS["30d"];
+  const dayMs = TREND_PERIODS["24h"].durationMs;
+
+  let h24 = prev.bundle["24h"];
+  let axisFromMs: number;
+  let axisToMs: number;
+  let compact30d: CompactControllerPeriod;
+  let startDay = 0;
+
+  const resumable =
+    !refresh &&
+    controllerTrendPeriodHasSeries(h24) &&
+    prev.compact30d != null &&
+    prev.compact30d.bucketCount === d30Cfg.bucketCount &&
+    scannedDays(prev) < TREND_30D_DAY_CHUNKS;
+
+  if (resumable && prev.compact30d) {
+    compact30d = prev.compact30d;
+    axisFromMs = compact30d.fromMs;
+    axisToMs = axisFromMs + d30Cfg.durationMs;
+    startDay = scannedDays(prev);
+  } else {
+    const compact24 = await fetchFarmControllerTrendPeriodAction(farmKey, "24h");
+    h24 = expandCompactControllerPeriod(compact24);
+    axisToMs = compact24.fromMs + TREND_PERIODS["24h"].durationMs;
+    axisFromMs = axisToMs - d30Cfg.durationMs;
+    compact30d = seedCompact30dFrom24h(compact24, axisFromMs);
+    startDay = 0;
+  }
+
+  let snap = snapshotFrom30d(h24, compact30d, prev.window15m, startDay);
+  notifyTrend(scopeId, snap);
+
+  if (!extend30d || startDay >= TREND_30D_DAY_CHUNKS) {
+    return snap;
+  }
+
+  try {
+    await runOrderedPool({
+      start: startDay,
+      end: TREND_30D_DAY_CHUNKS,
+      concurrency: TREND_30D_DAY_CONCURRENCY,
+      fetchOne: (day) => {
+        const scanToMs = axisToMs - day * dayMs;
+        const scanFromMs = Math.max(axisFromMs, scanToMs - dayMs);
+        return fetchFarmControllerTrend30dDayAction(
+          farmKey,
+          axisToMs,
+          scanFromMs,
+          scanToMs,
+        );
+      },
+      onApply: (day, part) => {
+        if (part) {
+          compact30d = overlayCompactControllerPeriod(compact30d, part);
+        }
+        snap = snapshotFrom30d(h24, compact30d, snap.window15m, day + 1);
+        notifyTrend(scopeId, snap);
+      },
+    });
+  } catch {
+    notifyTrend(scopeId, snap);
+  }
+
+  return snap;
 }
 
 function periodTimeRange(
@@ -145,42 +260,6 @@ function windowFrom24h(
   const data = sliceControllerTrendByTime(h24, fromMs, toMs);
   if (!data || data.categories.length < 2) return null;
   return { fromMs, toMs, data };
-}
-
-async function loadProgressiveBundle(farmKey: FarmKey): Promise<TrendSnapshot> {
-  const scopeId = farmKeyId(farmKey);
-  const prev = readTrendCache(scopeId) ?? emptySnapshot();
-
-  const h24 = await fetchPeriod(farmKey, "24h");
-  let snap: TrendSnapshot = {
-    bundle: {
-      ...prev.bundle,
-      "24h": h24,
-    },
-    window15m: prev.window15m,
-  };
-  notifyTrend(scopeId, snap);
-
-  try {
-    const d30 = await fetchPeriod(farmKey, "30d");
-    const d7Slice = sliceControllerTrendFromLonger(d30, "7d");
-    snap = {
-      bundle: {
-        "24h": h24,
-        "7d":
-          d7Slice && d7Slice.totalSamples > 0
-            ? d7Slice
-            : emptyTrendControllerPeriodData("7d"),
-        "30d": d30,
-      },
-      window15m: prev.window15m,
-    };
-    notifyTrend(scopeId, snap);
-  } catch {
-    notifyTrend(scopeId, snap);
-  }
-
-  return snap;
 }
 
 async function loadWindow15m(
@@ -221,16 +300,41 @@ function fetchTrendShared(
   farmKey: FarmKey,
   scopeId: string,
   refresh: boolean,
+  extend30d = false,
 ): Promise<TrendSnapshot> {
   if (!refresh) {
     const cached = readTrendCache(scopeId);
-    if (cached && isCompleteControllerTrendBundle(cached.bundle)) {
+    if (extend30d) {
+      if (cached && isFarmTrendLoadComplete(cached.bundle, scannedDays(cached))) {
+        return Promise.resolve(cached);
+      }
+    } else if (
+      cached &&
+      controllerTrendPeriodHasSeries(cached.bundle["24h"])
+    ) {
       return Promise.resolve(cached);
     }
   }
 
-  const map = refresh ? trendRefreshInflight : trendInflight;
-  return startSharedInflight(map, scopeId, () => loadProgressiveBundle(farmKey));
+  if (refresh) {
+    return startSharedInflight(trendRefreshInflight, scopeId, () =>
+      loadProgressiveBundle(farmKey, true, extend30d),
+    );
+  }
+
+  const p24 = startSharedInflight(trendInflight, scopeId, () =>
+    loadProgressiveBundle(farmKey, false, false),
+  );
+  if (!extend30d) return p24;
+
+  return startSharedInflight(trend30Inflight, scopeId, async () => {
+    await p24;
+    const cached = readTrendCache(scopeId);
+    if (cached && isFarmTrendLoadComplete(cached.bundle, scannedDays(cached))) {
+      return cached;
+    }
+    return loadProgressiveBundle(farmKey, false, true);
+  });
 }
 
 function fetchWindow15mShared(
@@ -255,17 +359,26 @@ function fetchWindow15mShared(
   );
 }
 
-/** 로그인·농장 LIVE 이후 idle 시 호출 — 그래프 탭 대기 제거 */
-export function prefetchFarmControllerTrend(farmKey: FarmKey): Promise<TrendBundle> {
-  return fetchTrendShared(farmKey, farmKeyId(farmKey), false).then(
-    (snap) => snap.bundle,
-  );
+/** 로그인·필드 — 24시간만. 30일은 차트 탭 또는 idle `extend30d`. */
+export function prefetchFarmControllerTrend(
+  farmKey: FarmKey,
+  opts?: { extend30d?: boolean },
+): Promise<TrendBundle> {
+  return fetchTrendShared(
+    farmKey,
+    farmKeyId(farmKey),
+    false,
+    opts?.extend30d ?? false,
+  ).then((snap) => snap.bundle);
 }
 
 export function useFarmControllerTrend(params: {
   farmKey: FarmKey | null;
   enabled: boolean;
+  /** 30일 하루 조각. 차트 탭·idle. 필드는 24시간만. */
+  extend30d?: boolean;
 }) {
+  const extend30d = Boolean(params.extend30d);
   const scopeId = params.farmKey ? farmKeyId(params.farmKey) : "";
   const active = params.enabled && Boolean(params.farmKey);
   const applyTokenRef = useRef(0);
@@ -300,8 +413,14 @@ export function useFarmControllerTrend(params: {
       setError(false);
     });
     const cached = readTrendCache(scopeId);
-    if (!isCompleteControllerTrendBundle(cached?.bundle)) {
-      void fetchTrendShared(params.farmKey, scopeId, false).catch(() => {
+    const needFetch = extend30d
+      ? !isFarmTrendLoadComplete(
+          cached?.bundle,
+          cached ? scannedDays(cached) : 0,
+        )
+      : !controllerTrendPeriodHasSeries(cached?.bundle["24h"]);
+    if (needFetch) {
+      void fetchTrendShared(params.farmKey, scopeId, false, extend30d).catch(() => {
         if (token !== applyTokenRef.current) return;
         setError(true);
       });
@@ -310,7 +429,7 @@ export function useFarmControllerTrend(params: {
       unsub();
       applyTokenRef.current += 1;
     };
-  }, [active, scopeId, params.farmKey]);
+  }, [active, scopeId, params.farmKey, extend30d]);
 
   const ensureWindow15m = useCallback(
     (fromMs: number, toMs: number) => {
@@ -346,7 +465,7 @@ export function useFarmControllerTrend(params: {
     if (!params.farmKey) return Promise.resolve();
     const token = ++applyTokenRef.current;
     setRefreshing(true);
-    return fetchTrendShared(params.farmKey, scopeId, true)
+    return fetchTrendShared(params.farmKey, scopeId, true, extend30d)
       .then((result) => {
         if (token !== applyTokenRef.current) return;
         setSnap({ scopeId, data: result });
@@ -359,7 +478,7 @@ export function useFarmControllerTrend(params: {
       .finally(() => {
         if (token === applyTokenRef.current) setRefreshing(false);
       });
-  }, [params.farmKey, scopeId, setRefreshing, setSnap, setError]);
+  }, [params.farmKey, scopeId, extend30d, setRefreshing, setSnap, setError]);
 
   const data = snap?.scopeId === scopeId ? snap.data.bundle : null;
   const window15m =
@@ -371,7 +490,10 @@ export function useFarmControllerTrend(params: {
   const extending =
     active &&
     Boolean(data) &&
-    !isCompleteControllerTrendBundle(data) &&
+    !isFarmTrendLoadComplete(
+      data,
+      snap?.scopeId === scopeId ? scannedDays(snap.data) : 0,
+    ) &&
     !error;
 
   return {

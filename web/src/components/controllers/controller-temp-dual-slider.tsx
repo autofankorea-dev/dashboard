@@ -84,8 +84,8 @@ export function ControllerTempDualSlider({
   const devLabel = fmtTempLabel(deviation);
   const inputSize = axisInputSize ?? (compact ? "compact" : "dashboard");
   const showBoundFields = axisMode === "editable";
-  const hideTrackOnPc = showBoundFields && compact && !mobile;
-  const showThumbLabels = !hideTrackOnPc && (!showBoundFields || mobileDrag);
+  const hideTrack = showBoundFields;
+  const showThumbLabels = !hideTrack && (!showBoundFields || mobileDrag);
   const devMin = MENU_STEPS.deviation.min;
   const devMax = Math.max(devMin, TRACK_MAX - setpoint);
 
@@ -175,7 +175,7 @@ export function ControllerTempDualSlider({
           onHighCommit={setDeviationFromInput}
         />
       ) : null}
-    {hideTrackOnPc ? null : (
+    {hideTrack ? null : (
     <div
       className={cn(
         sliderTrackShellClass(compact, "dual", dense, showThumbLabels),

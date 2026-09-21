@@ -19,16 +19,16 @@ import {
   CHART_W2_PARAM,
   clearFarmChartCmdParam,
 } from "@/lib/farm/farm-chart-scope";
-import {
-  barnPlanEnabled,
-  type BarnPlanGateOpts,
-} from "@/lib/farm/barn-plan-enabled";
-import {
-  PLAN_BLDG_PARAM,
-  PLAN_SP_PARAM,
-  PLAN_STALL_PARAM,
-  clearBarnPlanParams,
-} from "@/lib/farm/barn-plan-url";
+/** 은퇴한 모델 탭 딥링크. 북마크 잔여분만 지운다. */
+const LEGACY_PLAN_BLDG_PARAM = "planBldg";
+const LEGACY_PLAN_SP_PARAM = "planSp";
+const LEGACY_PLAN_STALL_PARAM = "planStall";
+
+function clearLegacyBarnPlanParams(params: URLSearchParams): void {
+  params.delete(LEGACY_PLAN_BLDG_PARAM);
+  params.delete(LEGACY_PLAN_SP_PARAM);
+  params.delete(LEGACY_PLAN_STALL_PARAM);
+}
 
 export const TREND_PERIOD_PARAM = "trendPeriod";
 
@@ -106,14 +106,12 @@ export function setListViewMode(
   else params.set("listMode", mode);
 }
 
-/** 허브 탭 — 그리드(map/필드) · 목록 · 차트 · 모델(2D 평면). `chartlab`·`plan`은 옛 URL. `aria`·`status`는 필드로 정규화. */
+/** 허브 탭 — 그리드(map/필드) · 목록 · 차트. `chartlab`은 옛 URL. `aria`·`status`·`plan`·`model`은 필드로 정규화. */
 export type FarmHubView =
   | "map"
   | "list"
   | "chart"
   | "chartlab"
-  | "plan"
-  | "model"
   | "aria";
 
 export function isFarmChartWorkspaceView(view: FarmHubView): boolean {
@@ -122,18 +120,14 @@ export function isFarmChartWorkspaceView(view: FarmHubView): boolean {
 
 export function resolveFarmHubView(
   raw: string | null | undefined,
-  opts: BarnPlanGateOpts = {},
 ): FarmHubView {
   if (raw === "list") return "list";
   if (raw === "chart" || raw === "chartlab") return "chart";
-  if (raw === "plan" || raw === "model") {
-    return barnPlanEnabled(opts) ? "model" : "map";
-  }
   if (raw === "aria" || raw === "jarvis") {
     return "map";
   }
-  /** 레거시 현황(방 칸 히트맵) 탭 — 필드(그리드)로. */
-  if (raw === "status") {
+  /** 레거시 현황(방 칸 히트맵) · 모델(2D) 탭 — 필드(그리드)로. */
+  if (raw === "status" || raw === "plan" || raw === "model") {
     return "map";
   }
   return "map";
@@ -148,7 +142,7 @@ export function applyListViewParams(params: URLSearchParams): void {
   clearFarmChartZoomParams(params);
   clearFarmChartCmdParam(params);
   clearFarmChartWidgetParams(params);
-  clearBarnPlanParams(params);
+  clearLegacyBarnPlanParams(params);
 }
 
 /** 차트 탭 — 전폭 통합 추이. chart* 딥링크·줌 힌트는 유지 */
@@ -157,38 +151,12 @@ export function applyChartViewParams(params: URLSearchParams): void {
   params.delete("listMode");
   params.delete("stall");
   params.delete("mapLevel");
-  clearBarnPlanParams(params);
+  clearLegacyBarnPlanParams(params);
 }
 
 /** 옛 `view=chartlab` — 차트 탭으로 정규화. */
 export function applyChartLabViewParams(params: URLSearchParams): void {
   applyChartViewParams(params);
-}
-
-/** 모델 탭 — 2D 부지·건물. `view=plan`은 호환 별칭. 게이트 off면 그리드. */
-export function applyPlanViewParams(
-  params: URLSearchParams,
-  opts: BarnPlanGateOpts = {},
-): void {
-  applyModelViewParams(params, opts);
-}
-
-export function applyModelViewParams(
-  params: URLSearchParams,
-  opts: BarnPlanGateOpts = {},
-): void {
-  if (!barnPlanEnabled(opts)) {
-    applyMapGridParams(params);
-    return;
-  }
-  params.set("view", "model");
-  params.delete("listMode");
-  params.delete("stall");
-  params.delete("mapLevel");
-  clearFarmChartScopeParams(params);
-  clearFarmChartZoomParams(params);
-  clearFarmChartCmdParam(params);
-  clearFarmChartWidgetParams(params);
 }
 
 /** 옛 델린 탭 주소 — 현장(그리드)으로 보냄. */
@@ -204,7 +172,7 @@ export function applyMapGridParams(params: URLSearchParams): void {
   clearFarmChartScopeParams(params);
   clearFarmChartZoomParams(params);
   clearFarmChartCmdParam(params);
-  clearBarnPlanParams(params);
+  clearLegacyBarnPlanParams(params);
 }
 
 export function clearMapDrillParams(params: URLSearchParams): void {
@@ -246,17 +214,14 @@ export function buildFarmPath(params: URLSearchParams): string {
   return q ? `/farm?${q}` : "/farm";
 }
 
-/** view=list|map|chart|chartlab|plan|model|aria 전환 (레거시 tab=ops · view=status 쿼리 제거) */
+/** view=list|map|chart|chartlab|aria 전환 (레거시 tab=ops · view=status|plan|model 쿼리 제거) */
 export function applyHubScopedViewParams(
   params: URLSearchParams,
   view: FarmHubView,
-  opts: BarnPlanGateOpts = {},
 ): void {
   params.delete("tab");
   if (view === "list") applyListViewParams(params);
   else if (view === "chart" || view === "chartlab") applyChartViewParams(params);
-  else if (view === "plan") applyPlanViewParams(params, opts);
-  else if (view === "model") applyModelViewParams(params, opts);
   else if (view === "aria") applyAriaViewParams(params);
   else applyMapGridParams(params);
 }
@@ -269,17 +234,8 @@ export function pinFarmHubViewParam(
   params: URLSearchParams,
   view: FarmHubView,
 ): void {
-  if (
-    view === "list" ||
-    view === "chart" ||
-    view === "chartlab" ||
-    view === "plan" ||
-    view === "model"
-  ) {
-    params.set(
-      "view",
-      view === "plan" ? "model" : view === "chartlab" ? "chart" : view,
-    );
+  if (view === "list" || view === "chart" || view === "chartlab") {
+    params.set("view", view === "chartlab" ? "chart" : view);
   } else {
     params.delete("view");
   }
@@ -296,7 +252,7 @@ export function clearHubFarmDrillParams(params: URLSearchParams): void {
   clearFarmChartZoomParams(params);
   clearFarmChartCmdParam(params);
   clearFarmChartWidgetParams(params);
-  clearBarnPlanParams(params);
+  clearLegacyBarnPlanParams(params);
 }
 
 /**
@@ -375,9 +331,9 @@ export function isFarmMonitoringSoftHome(params: URLSearchParams): boolean {
     return false;
   }
   if (
-    params.get(PLAN_BLDG_PARAM) ||
-    params.get(PLAN_SP_PARAM) ||
-    params.get(PLAN_STALL_PARAM)
+    params.get(LEGACY_PLAN_BLDG_PARAM) ||
+    params.get(LEGACY_PLAN_SP_PARAM) ||
+    params.get(LEGACY_PLAN_STALL_PARAM)
   ) {
     return false;
   }

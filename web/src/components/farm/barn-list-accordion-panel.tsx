@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Eye, Loader2, Thermometer } from "lucide-react";
 import {
   AlarmThresholdForm,
@@ -55,7 +55,6 @@ import { motionClass } from "@/lib/ui/motion-classes";
 /** 목록 카드 설정 패널 — 그래프 패널 차트 라벨과 동일 스케일 */
 const LIST_PANEL_META = "text-xs tabular-nums text-muted-foreground";
 const LIST_SLIDER_TITLE = "text-xs font-semibold";
-const LIST_SLIDER_THUMB = "text-xs tabular-nums";
 const LIST_SLIDER_AXIS = "text-[11px] leading-snug text-muted-foreground";
 
 type SettingsSectionId = "alarm" | "control";
@@ -69,6 +68,8 @@ type Props = {
   canCommand: boolean;
   /** 섹션 접이식 — 모바일 sheet·PC 목록 설정 공통 */
   collapsibleSections?: boolean;
+  /** 명령이 접수되면 덮개로 돌아가 채널 진행을 본다 */
+  onCommandQueued?: () => void;
 };
 
 function SectionShell({ children }: { children: React.ReactNode }) {
@@ -108,6 +109,7 @@ export function BarnListAccordionPanel({
   alarmSettings,
   canCommand,
   collapsibleSections = false,
+  onCommandQueued,
 }: Props) {
   const [thresholdHeader, setThresholdHeader] =
     useState<AlarmThresholdHeaderState | null>(null);
@@ -115,6 +117,8 @@ export function BarnListAccordionPanel({
     null,
   );
   const [activeChannel, setActiveChannel] = useState<ChannelSlot>("A");
+  const channelTablistRef = useRef<HTMLDivElement>(null);
+  const [channelPill, setChannelPill] = useState({ left: 0, width: 0 });
   const [confirmModel, setConfirmModel] = useState<CommandConfirmModel | null>(
     null,
   );
@@ -132,6 +136,19 @@ export function BarnListAccordionPanel({
     () => channels.map((c) => c.channel),
     [channels],
   );
+
+  useLayoutEffect(() => {
+    const root = channelTablistRef.current;
+    if (!root) return;
+    const selected = root.querySelector<HTMLElement>(
+      '[role="tab"][aria-selected="true"]',
+    );
+    if (!selected) return;
+    const next = { left: selected.offsetLeft, width: selected.offsetWidth };
+    setChannelPill((prev) =>
+      prev.left === next.left && prev.width === next.width ? prev : next,
+    );
+  }, [activeChannel, channelSlots]);
 
   /** detail 로드·채널 구성 변경 시 가용 슬롯으로 맞춤 */
   if (hasChannels && !channelSlots.includes(activeChannel)) {
@@ -224,10 +241,17 @@ export function BarnListAccordionPanel({
       liveRefresh?.patchThermoFromCommand(cmd);
       pipeline.registerCommand(cmd);
       applyQueue?.startFromCommand(reading.key, cmd);
+      onCommandQueued?.();
     },
     // pipeline 전체 포함 시 tracker 재생성 루프 — 메서드만 의존
     // eslint-disable-next-line react-hooks/exhaustive-deps -- 의도적 생략
-    [liveRefresh, pipeline.registerCommand, applyQueue?.startFromCommand, reading.key],
+    [
+      liveRefresh,
+      pipeline.registerCommand,
+      applyQueue?.startFromCommand,
+      reading.key,
+      onCommandQueued,
+    ],
   );
 
   const registerBulkCommands = useCallback(
@@ -237,9 +261,15 @@ export function BarnListAccordionPanel({
         pipeline.registerCommand(item.command);
       }
       applyQueue?.startSession(items);
+      if (items.length) onCommandQueued?.();
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps -- 의도적 생략
-    [liveRefresh, pipeline.registerCommand, applyQueue?.startSession],
+    [
+      liveRefresh,
+      pipeline.registerCommand,
+      applyQueue?.startSession,
+      onCommandQueued,
+    ],
   );
 
   const panelTarget = detail ?? reading;
@@ -415,10 +445,24 @@ export function BarnListAccordionPanel({
   const channelPicker =
     hasChannels && channelSlots.length > 1 ? (
       <div
+        ref={channelTablistRef}
         role="tablist"
         aria-label="제어 채널"
-        className="inline-flex rounded-xl border bg-muted/40 p-1"
+        className="relative inline-flex rounded-xl border bg-muted/40 p-1"
       >
+        <span
+          aria-hidden
+          className={cn(
+            "pointer-events-none absolute top-1 bottom-1 z-0 rounded-lg",
+            dashboardChroma.viewTabPill,
+            motionClass.viewTabPill,
+            channelPill.width <= 0 && "opacity-0",
+          )}
+          style={{
+            left: channelPill.left,
+            width: channelPill.width,
+          }}
+        />
         {channelSlots.map((slot) => {
           const selected = slot === activeChannel;
           const dirty = panel.dirtyChannelSlots.includes(slot);
@@ -434,10 +478,7 @@ export function BarnListAccordionPanel({
                 "relative z-[1] inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg px-3 py-1.5 text-xs font-medium",
                 motionClass.microHover,
                 selected
-                  ? cn(
-                      dashboardChroma.viewTabPill,
-                      dashboardChroma.chromeActiveText,
-                    )
+                  ? dashboardChroma.chromeActiveText
                   : dashboardAffordance.choiceIdle,
                 isSaving && "opacity-50",
               )}
@@ -472,7 +513,6 @@ export function BarnListAccordionPanel({
       density="mobileSplit"
       disabled={!canCommand}
       sliderTitleClassName={LIST_SLIDER_TITLE}
-      sliderThumbLabelClassName={LIST_SLIDER_THUMB}
       sliderAxisClassName={LIST_SLIDER_AXIS}
       onHeaderState={setThresholdHeader}
     />
@@ -507,7 +547,6 @@ export function BarnListAccordionPanel({
           axisMode="editable"
           axisInputSize="compact"
           axisClassName={LIST_SLIDER_AXIS}
-          thumbLabelClassName={LIST_SLIDER_THUMB}
           onChange={panel.setTempControl}
         />
       </div>
@@ -536,7 +575,6 @@ export function BarnListAccordionPanel({
         compact
         bare
         titleClassName={LIST_SLIDER_TITLE}
-        thumbLabelClassName={LIST_SLIDER_THUMB}
         axisClassName={LIST_SLIDER_AXIS}
         disabled={controlsDisabled}
         onChange={panel.setVentRange}

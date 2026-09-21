@@ -47,7 +47,7 @@ export function prefetchFarmStallTrend(
     onUpdate?.(stall);
   });
 
-  return prefetchFarmControllerTrend(farmKey)
+  return prefetchFarmControllerTrend(farmKey, { extend30d: true })
     .then((ctrl) => {
       const stall = stallTrendBundleFromController(ctrl);
       writeTimedCache(stallTrendCache, scopeId, stall);

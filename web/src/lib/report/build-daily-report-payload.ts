@@ -76,8 +76,8 @@ function avgColumns(
 }
 
 /**
- * PDF용 시리즈 — 허브 TREND_PERIODS 그대로 (24h×96 15분 / 7d×168 1h / 30d×720 1h).
- * 인쇄 다운샘플은 캔버스에서 LTTB. 축사 내 컨트롤러는 슬롯 평균.
+ * PDF용 시리즈 — 허브 TREND_PERIODS 보관 (24h×96 15분 / 7d×168 1h / 30d×720 1h).
+ * 공식 일보 그래프는 30일 1시간. 인쇄 다운샘플은 캔버스에서 LTTB. 축사 내 컨트롤러는 슬롯 평균.
  */
 function seriesFromControllers(
   categories: string[],

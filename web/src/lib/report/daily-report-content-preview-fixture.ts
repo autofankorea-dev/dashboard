@@ -46,7 +46,7 @@ function series(
 
 const s24 = series(96, "hour", 0.3);
 const s7 = series(48, "day", 0.8);
-const s30 = series(60, "day", 1.4);
+const s30 = series(720, "day", 1.4);
 const periods = { "24h": s24, "7d": s7, "30d": s30 };
 
 export function dailyReportContentPreviewPayload(): DailyReportPayload {

@@ -1,7 +1,7 @@
 # 필드 통합 — 좌 현황 + 우 목록 스플릿
 
 ## Flag
-`NEXT_PUBLIC_FARM_FIELD_MERGE_V1` — 기본 on. `false`/`0`/`off` → 현행 4탭.
+`NEXT_PUBLIC_FARM_FIELD_MERGE_V1` — 기본 on. `false`/`0`/`off` → 그리드·목록·차트 분리.
 
 ## PC (`lg+`)
 - 상위 탭: **필드 · 차트 · DELIN** → TopBar(IoT Board 우측)

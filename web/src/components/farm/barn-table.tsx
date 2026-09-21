@@ -46,6 +46,7 @@ import { farmFieldMergeEnabled } from "@/lib/farm/farm-field-merge-enabled";
 import {
   EMPTY_BARN_LIST_PANEL_SETS,
   toggleBarnListSettings,
+  closeBarnListSettingsForKey,
   isBarnListMobileToolbarSheetMode,
   type BarnListPanelSets,
 } from "@/lib/farm/barn-list-panel-state";
@@ -393,6 +394,21 @@ export function BarnTable({
     [bulkMode, compact, openMobileToolbarSheet],
   );
 
+  const handleCloseSettings = useCallback(
+    (key: string) => {
+      if (compact && !bulkMode) {
+        setToolbarSheetOpen(false);
+        if (listMode === "settings") {
+          setListMode("controller");
+          replaceListParams({ listMode: null });
+        }
+        return;
+      }
+      setPanelSets((prev) => closeBarnListSettingsForKey(prev, key));
+    },
+    [bulkMode, compact, listMode, replaceListParams],
+  );
+
   const toggleListLayout = () => {
     if (bulkMode || layoutPending) return;
     const next: ListLayout = listLayout === "group" ? "flat" : "group";
@@ -638,6 +654,7 @@ export function BarnTable({
           onPanelPeriodChange={onPanelPeriodChange}
           panelSets={panelSets}
           onToggleSettings={handleToggleSettings}
+          onCloseSettings={handleCloseSettings}
           onOpenChart={onOpenChart}
           bulkMode={bulkMode}
           selectedSps={selectedSps}

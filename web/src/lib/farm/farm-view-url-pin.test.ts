@@ -47,15 +47,10 @@ import {
 }
 
 {
-  const params = new URLSearchParams("lsind=FARM01&item=P00");
-  pinFarmHubViewParam(params, "plan");
-  assert.equal(params.get("view"), "model");
-}
-
-{
-  const params = new URLSearchParams("lsind=FARM01&item=P00");
-  pinFarmHubViewParam(params, "model");
-  assert.equal(params.get("view"), "model");
+  const params = new URLSearchParams("lsind=FARM01&item=P00&view=model");
+  assert.equal(resolveFarmHubView(params.get("view")), "map");
+  pinFarmHubViewParam(params, "map");
+  assert.equal(params.get("view"), null);
 }
 
 {

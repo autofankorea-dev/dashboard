@@ -42,8 +42,12 @@ import {
   emptyTrendControllerPeriodData,
   isContextControllerTrend30d,
   pickTrendCanvasPeriod,
+  TREND_MINI_STRIDE_MS,
   TREND_PERIODS,
+  TREND_ZOOM_15M_MAX_DAYS,
+  controllerTrendPeriodHasSeries,
   type TrendControllerPeriodData,
+  type TrendControllerSeries,
   type TrendPeriodId,
   type TrendWindow15m,
 } from "@/lib/data/farm-trend-types";
@@ -52,20 +56,22 @@ import {
 } from "@/lib/farm/trend-uplink-coverage";
 import {
   applyCoverageToWindow,
+  binControllerWindowToStride,
   brushSliceRange,
+  bucketAtsRangeMs,
   buildTrendBrushOverview,
+  controllerWindowHasValues,
   downsampleSeriesForChart,
   FARM_ALARM_RANGE_FILL,
   FARM_ALARM_RANGE_FILL_OPACITY,
   FARM_ALARM_RANGE_HUM_OVERLAY_OPACITY,
   FARM_ALARM_RANGE_TEMP_OVERLAY_OPACITY,
   farmAlarmMidValue,
+  mapIndexWindowToSlice,
   sliceControllerSeries,
 } from "@/components/farm/unified-barn-trend-panel-helpers";
 import { applyAlarmScaleEdgeCommit } from "@/lib/data/alarm-baseline";
 import {
-  brushWindowNeeds15m,
-  brushWindowToRangeMs,
   window15mCovers,
 } from "@/lib/farm/trend-brush-coverage";
 import {
@@ -145,7 +151,7 @@ import {
   humanizeGuidedScopeRect,
   type GuidedScopeRect,
 } from "@/lib/ui/delin-guided-scope-jitter";
-import { dashboardControlFill, dashboardUi } from "@/lib/ui/dashboard-page-ui";
+import { dashboardChroma, dashboardControlFill, dashboardUi } from "@/lib/ui/dashboard-page-ui";
 import {
   chartUiPx,
   farmChartUi,
@@ -370,9 +376,10 @@ export function UnifiedBarnTrendPanel({
   const brushControlled =
     brushWindowProp != null && onBrushWindowChange != null;
   const [innerBrushWindow, setInnerBrushWindow] = useState<BrushWindow>(
-    () => BRUSH_PERIOD_WINDOW[period],
+    () => BRUSH_PERIOD_WINDOW["24h"],
   );
   const brushWindow = brushControlled ? brushWindowProp : innerBrushWindow;
+  const lookbackPeriod = displayPeriodFromBrushWindow(brushWindow);
   const applyBrushWindow = (next: BrushWindow) => {
     if (brushControlled) onBrushWindowChange(next);
     else setInnerBrushWindow(next);
@@ -492,7 +499,12 @@ export function UnifiedBarnTrendPanel({
     [layers],
   );
   const metricAvailable = useMemo(() => {
-    const periodId = pickTrendCanvasPeriod(controllerTrendByPeriod, period);
+    const periodId = overview
+      ? "24h"
+      : pickTrendCanvasPeriod(
+          controllerTrendByPeriod,
+          period,
+        );
     const periodData = controllerTrendByPeriod?.[periodId];
     if (!periodData) {
       return { temp: false, hum: false, motors: false };
@@ -514,7 +526,7 @@ export function UnifiedBarnTrendPanel({
       return { temp: false, hum: false, motors: false };
     }
     return metricAvailabilityFromSeriesList(list);
-  }, [controllers, controllerTrendByPeriod, period]);
+  }, [controllers, controllerTrendByPeriod, period, overview]);
   useEffect(() => {
     onMetricAvailable?.(metricAvailable);
   }, [metricAvailable, onMetricAvailable]);
@@ -542,9 +554,11 @@ export function UnifiedBarnTrendPanel({
   );
   const chartLeftUnit = targetPlot.leftUnit;
   /** 브러시 캔버스 여부 — 높이 풀·레이아웃 보간을 같은 훅에서 맞추기 위해 조기 계산 */
-  const useBrushCanvas = isContextControllerTrend30d(
-    controllerTrendByPeriod?.["30d"],
-  );
+  /** 펼친 카드: 30일 트랙 + 24시간 창. 휠이 왼쪽(과거)을 바로 연다. 일괄 칸은 24시간만. */
+  const useBrushCanvas =
+    !overview &&
+    isContextControllerTrend30d(controllerTrendByPeriod?.["30d"]) &&
+    controllerTrendPeriodHasSeries(controllerTrendByPeriod?.["30d"]);
   const baseChartPlotH =
     chartHeight ?? (isMobileStack ? chartUiPx(320) : chartUiPx(340));
   const targetBandHeights = useMemo(
@@ -606,42 +620,17 @@ export function UnifiedBarnTrendPanel({
     return guides;
   }, [layout]);
 
-  const canvasPeriod: TrendPeriodId = pickTrendCanvasPeriod(
-    controllerTrendByPeriod,
-    period,
-  );
+  const canvasPeriod: TrendPeriodId = overview
+    ? "24h"
+    : pickTrendCanvasPeriod(controllerTrendByPeriod, period);
   const context30d = useBrushCanvas;
-  const displayPeriod = useBrushCanvas
-    ? displayPeriodFromBrushWindow(brushWindow)
-    : canvasPeriod;
-  const d30FromMs = Date.parse(
-    controllerTrendByPeriod?.["30d"]?.bucketAts[0] ?? "",
-  );
-  const brushRangeMs =
-    useBrushCanvas && Number.isFinite(d30FromMs)
-      ? brushWindowToRangeMs(
-          brushWindow,
-          d30FromMs,
-          TREND_PERIODS["30d"].durationMs,
-        )
-      : null;
-  const brushFromMs = brushRangeMs?.fromMs ?? null;
-  const brushToMs = brushRangeMs?.toMs ?? null;
-  const brushNeedsWindow15m =
-    brushFromMs != null &&
-    brushToMs != null &&
-    brushWindowNeeds15m(brushWindow) &&
-    !window15mCovers(window15m, brushFromMs, brushToMs);
+  const displayPeriod = overview
+    ? "24h"
+    : useBrushCanvas
+      ? lookbackPeriod
+      : canvasPeriod;
 
-  useEffect(() => {
-    if (!brushNeedsWindow15m || brushFromMs == null || brushToMs == null) return;
-    const timer = window.setTimeout(() => {
-      onNeedWindow15m?.(brushFromMs, brushToMs);
-    }, 250);
-    return () => window.clearTimeout(timer);
-  }, [brushNeedsWindow15m, brushFromMs, brushToMs, onNeedWindow15m]);
-
-  /** 브러시 창 — ≤48h이면 구간 15분, 아니면 30일 1시간 슬라이스 */
+  /** 펼친 기본·휠 = 30일 1시간 슬라이스. 미니 = 24시간 2시간 평균. 15분은 드래그 줌만. */
   const windowBundle = useMemo(() => {
     const collectRange = (periodId: TrendPeriodId, from: number, to: number) => {
       const periodData = controllerTrendByPeriod?.[periodId] ?? null;
@@ -687,56 +676,6 @@ export function UnifiedBarnTrendPanel({
       };
     };
 
-    const collectFromData = (
-      periodData: TrendControllerPeriodData,
-      from: number,
-      to: number,
-    ) => {
-      const fake: Record<TrendPeriodId, TrendControllerPeriodData> = {
-        "24h": emptyTrendControllerPeriodData("24h"),
-        "7d": emptyTrendControllerPeriodData("7d"),
-        "30d": emptyTrendControllerPeriodData("30d"),
-        [periodData.period]: periodData,
-      };
-      const categoriesRaw = periodData.categories;
-      const windowCategories = categoriesRaw.slice(from, to);
-      if (windowCategories.length < 2) return null;
-      const seriesList = controllers
-        .map((c) => {
-          const r = c.reading;
-          if (!r) return null;
-          const found = findControllerTrendSeries(
-            fake,
-            periodData.period,
-            r.stallTyCode,
-            r.stallNo,
-            r.controllerKey,
-          );
-          if (!found) return null;
-          // 표시 정본 = 채널 슬롯(A/B/C) — series.fanA/B/C 를 그대로 사용.
-          return {
-            ...sliceControllerSeries(found, from, to),
-            zoneLabel: formatControllerHeaderPrimary(r),
-            equipmentLabel: formatControllerHeaderSecondary(r),
-            stallTyCode: r.stallTyCode
-              ? normalizeStallTyCode(r.stallTyCode)
-              : undefined,
-          };
-        })
-        .filter((s): s is NonNullable<typeof s> => s != null);
-      if (!seriesList.length) return null;
-      const bucketAts = periodData.bucketAts.slice(from, to);
-      return {
-        categories: windowCategories,
-        bucketAts,
-        seriesList: applyCoverageToWindow(
-          seriesList,
-          bucketAts,
-          uplinkCoverage,
-        ),
-      };
-    };
-
     const collect = (periodId: TrendPeriodId, brush: boolean) => {
       const periodData = controllerTrendByPeriod?.[periodId] ?? null;
       const categoriesRaw = periodData?.categories ?? [];
@@ -746,28 +685,53 @@ export function UnifiedBarnTrendPanel({
       return collectRange(periodId, range.from, range.to);
     };
 
-    if (
-      useBrushCanvas &&
-      brushFromMs != null &&
-      brushToMs != null &&
-      window15mCovers(window15m, brushFromMs, brushToMs) &&
-      window15m
-    ) {
-      const sliced =
-        sliceControllerTrendByTime(window15m.data, brushFromMs, brushToMs) ??
-        window15m.data;
-      const fromWindow = collectFromData(sliced, 0, sliced.categories.length);
-      if (fromWindow) return fromWindow;
+    const finish = (
+      bundle: {
+        categories: string[];
+        bucketAts: string[];
+        seriesList: ReturnType<typeof applyCoverageToWindow>;
+      } | null,
+    ) => {
+      if (!bundle) return null;
+      if (overview) {
+        return binControllerWindowToStride(bundle, TREND_MINI_STRIDE_MS);
+      }
+      return bundle;
+    };
+
+    if (overview) {
+      const h24 = collect("24h", false);
+      if (h24) return finish(h24);
+      const d30n = controllerTrendByPeriod?.["30d"]?.categories.length ?? 0;
+      const hours24 = Math.round(
+        TREND_PERIODS["24h"].durationMs / TREND_PERIODS["30d"].strideMs,
+      );
+      if (d30n >= hours24) {
+        const tail = collectRange("30d", d30n - hours24, d30n);
+        if (tail) return finish(tail);
+      }
+      return null;
     }
 
     if (useBrushCanvas && context30d) {
-      const primary = collect("30d", true);
-      if (primary) return primary;
+      const hourly = collect("30d", true);
+      if (hourly && controllerWindowHasValues(hourly)) return hourly;
+    }
+    const h24 = collect("24h", false);
+    if (h24 && controllerWindowHasValues(h24)) {
+      return binControllerWindowToStride(
+        h24,
+        TREND_PERIODS["30d"].strideMs,
+      );
+    }
+    if (useBrushCanvas && context30d) {
+      const hourly = collect("30d", true);
+      if (hourly) return hourly;
     }
 
     const primary = collect(canvasPeriod, false);
-    if (primary) return primary;
-    if (canvasPeriod !== "24h") return collect("24h", false);
+    if (primary) return finish(primary);
+    if (canvasPeriod !== "24h") return finish(collect("24h", false));
     return null;
   }, [
     controllers,
@@ -775,11 +739,9 @@ export function UnifiedBarnTrendPanel({
     canvasPeriod,
     useBrushCanvas,
     context30d,
-    window15m,
-    brushFromMs,
-    brushToMs,
     brushWindow,
     uplinkCoverage,
+    overview,
   ]);
 
   /** M1 — 다운샘플+집계는 layout 무관 1회, 보간은 Y매핑만 */
@@ -855,7 +817,7 @@ export function UnifiedBarnTrendPanel({
   if (period !== scopePeriod) {
     setScopePeriod(period);
     setXScopeStack([]);
-    if (!brushControlled) applyBrushWindow(BRUSH_PERIOD_WINDOW[period]);
+    if (!brushControlled) applyBrushWindow(BRUSH_PERIOD_WINDOW["24h"]);
   }
 
   /** 데이터 길이/인덱스 불일치 시 스택 비우기 */
@@ -871,6 +833,36 @@ export function UnifiedBarnTrendPanel({
       setXScopeStack([]);
     }
   }
+
+  const xScopeRangeMs = useMemo(() => {
+    if (overview || !xScope || !picked || !windowBundle) return null;
+    const slice = mapIndexWindowToSlice(
+      picked.categories.length,
+      xScope.start,
+      xScope.end,
+      windowBundle.bucketAts.length,
+    );
+    const range = bucketAtsRangeMs(
+      windowBundle.bucketAts,
+      slice.from,
+      slice.to,
+    );
+    if (!range) return null;
+    const maxMs = TREND_ZOOM_15M_MAX_DAYS * TREND_PERIODS["24h"].durationMs;
+    if (range.toMs - range.fromMs > maxMs + 1) return null;
+    return range;
+  }, [overview, xScope, picked, windowBundle]);
+
+  useEffect(() => {
+    if (!xScopeRangeMs) return;
+    if (window15mCovers(window15m, xScopeRangeMs.fromMs, xScopeRangeMs.toMs)) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      onNeedWindow15m?.(xScopeRangeMs.fromMs, xScopeRangeMs.toMs);
+    }, 250);
+    return () => window.clearTimeout(timer);
+  }, [xScopeRangeMs, window15m, onNeedWindow15m]);
 
   /** P2 — URL/DELIN 줌 힌트 1회 적용 (온도 레인 포커스 등) */
   useEffect(() => {
@@ -949,49 +941,102 @@ export function UnifiedBarnTrendPanel({
         thermoWindows: trendRaw?.thermoWindows ?? null,
       };
     }
-    if (windowBundle) {
-      const span = Math.max(1, picked.categories.length - 1);
-      const r0 = xScope.start / span;
-      const r1 = xScope.end / span;
-      const dN = windowBundle.categories.length;
-      const from = Math.max(0, Math.floor(r0 * (dN - 1)));
-      const to = Math.min(
-        dN,
-        Math.max(from + 2, Math.ceil(r1 * (dN - 1)) + 1),
+
+    const buildScopedFromSeries = (
+      seriesList: TrendControllerSeries[],
+      cats: string[],
+    ) => {
+      if (cats.length < 2 || seriesList.length < 1) return null;
+      const down = downsampleSeriesForChart(seriesList, cats, plotWidthPx);
+      const raw = aggregateUnifiedBarnTrendRaw(
+        down.seriesList,
+        down.categories,
+        plotThresholds,
+        { includeThermo: chartScope.level === "controller" },
       );
-      const cats = windowBundle.categories.slice(from, to);
+      if (!raw) return null;
+      const builtScoped = mapUnifiedBarnTrendRawToSplitY(
+        raw,
+        layout,
+        undefined,
+        overlayAlign,
+      );
+      if (!builtScoped) return null;
+      const pickLayers = maskLayersForYBands(layers, xScope.yBands);
+      const pickedScoped = pickUnifiedTrendLayers(builtScoped, pickLayers);
+      return {
+        categories: builtScoped.categories,
+        series: pickedScoped.series,
+        envelopes: pickedScoped.envelopes,
+        histograms: pickedScoped.histograms,
+        tempDomain: builtScoped.tempDomain,
+        tempOverflowDomain: builtScoped.tempOverflowDomain,
+        thermoWindows: raw.thermoWindows,
+      };
+    };
+
+    if (
+      xScopeRangeMs &&
+      window15m &&
+      window15mCovers(window15m, xScopeRangeMs.fromMs, xScopeRangeMs.toMs)
+    ) {
+      const sliced =
+        sliceControllerTrendByTime(
+          window15m.data,
+          xScopeRangeMs.fromMs,
+          xScopeRangeMs.toMs,
+        ) ?? window15m.data;
+      const fake: Record<TrendPeriodId, TrendControllerPeriodData> = {
+        "24h": emptyTrendControllerPeriodData("24h"),
+        "7d": emptyTrendControllerPeriodData("7d"),
+        "30d": emptyTrendControllerPeriodData("30d"),
+        [sliced.period]: sliced,
+      };
+      const seriesList = controllers
+        .map((c) => {
+          const r = c.reading;
+          if (!r) return null;
+          const found = findControllerTrendSeries(
+            fake,
+            sliced.period,
+            r.stallTyCode,
+            r.stallNo,
+            r.controllerKey,
+          );
+          if (!found) return null;
+          return {
+            ...found,
+            zoneLabel: formatControllerHeaderPrimary(r),
+            equipmentLabel: formatControllerHeaderSecondary(r),
+            stallTyCode: r.stallTyCode
+              ? normalizeStallTyCode(r.stallTyCode)
+              : undefined,
+          };
+        })
+        .filter((s): s is NonNullable<typeof s> => s != null);
+      const covered = applyCoverageToWindow(
+        seriesList,
+        sliced.bucketAts,
+        uplinkCoverage,
+      );
+      const from15m = buildScopedFromSeries(covered, sliced.categories);
+      if (from15m) return from15m;
+    }
+
+    if (windowBundle) {
+      const slice = mapIndexWindowToSlice(
+        picked.categories.length,
+        xScope.start,
+        xScope.end,
+        windowBundle.categories.length,
+      );
+      const cats = windowBundle.categories.slice(slice.from, slice.to);
       if (cats.length >= 2) {
         const series = windowBundle.seriesList.map((s) =>
-          sliceControllerSeries(s, from, to),
+          sliceControllerSeries(s, slice.from, slice.to),
         );
-        const down = downsampleSeriesForChart(series, cats, plotWidthPx);
-        const raw = aggregateUnifiedBarnTrendRaw(
-          down.seriesList,
-          down.categories,
-          plotThresholds,
-          { includeThermo: chartScope.level === "controller" },
-        );
-        if (raw) {
-          const builtScoped = mapUnifiedBarnTrendRawToSplitY(
-            raw,
-            layout,
-            undefined,
-            overlayAlign,
-          );
-          if (builtScoped) {
-            const pickLayers = maskLayersForYBands(layers, xScope.yBands);
-            const pickedScoped = pickUnifiedTrendLayers(builtScoped, pickLayers);
-            return {
-              categories: builtScoped.categories,
-              series: pickedScoped.series,
-              envelopes: pickedScoped.envelopes,
-              histograms: pickedScoped.histograms,
-              tempDomain: builtScoped.tempDomain,
-              tempOverflowDomain: builtScoped.tempOverflowDomain,
-              thermoWindows: raw.thermoWindows,
-            };
-          }
-        }
+        const fromHour = buildScopedFromSeries(series, cats);
+        if (fromHour) return fromHour;
       }
     }
     return {
@@ -1014,7 +1059,11 @@ export function UnifiedBarnTrendPanel({
   }, [
     picked,
     xScope,
+    xScopeRangeMs,
+    window15m,
     windowBundle,
+    controllers,
+    uplinkCoverage,
     plotThresholds,
     layout,
     layers,
@@ -1914,7 +1963,7 @@ export function UnifiedBarnTrendPanel({
       <div
         key={layersAnimKey}
         className={cn(
-          "flex shrink-0 items-center overflow-visible",
+          "farm-chart-toolbar-fit flex w-full min-w-0 shrink-0 items-center overflow-visible",
           layersToolbarPhase === "enter"
             ? motionClass.farmChartLayersEnter
             : motionClass.farmChartLayersExit,
@@ -2220,6 +2269,7 @@ export function UnifiedBarnTrendPanel({
           }
           scaleEdgeHitPx={isMobileStack ? chartUiPx(22) : chartUiPx(10)}
           labelGutter={isMobileStack && !plotFill && !overview}
+          hideAxisChrome={overview}
           showMarkers={!overview}
           markerDensity={displayPeriod === "24h" ? "all" : "sparse"}
           markerRadiusPx={isMobileStack ? chartUiPx(1.4) : chartUiPx(1.6)}
@@ -2229,7 +2279,7 @@ export function UnifiedBarnTrendPanel({
           scaleEdgeLabels={overview ? [] : scaleEdgeLabels}
           rangeBands={overview ? [] : alarmRangeBands}
           xScopeSelect={!overview}
-          onLookbackWheel={onLookbackWheel}
+          onLookbackWheel={overview ? undefined : onLookbackWheel}
           onXScopeCommit={(range) =>
             commitXScope(range, activeGuidedXScope ? "replace" : "push")
           }
@@ -2285,6 +2335,18 @@ export function UnifiedBarnTrendPanel({
         ) : null}
         </div>
         </div>
+      ) : overview &&
+        (trendLoading ||
+          (!controllerTrendByPeriod && !trendError) ||
+          (trendExtending && !built)) ? (
+        <div
+          className={cn(
+            dashboardChroma.skeletonBone,
+            "mx-2 mb-2 min-h-16 flex-1",
+          )}
+          role="status"
+          aria-label="통합 추이를 불러오는 중."
+        />
       ) : (
         <p className="py-6 text-center text-xs text-muted-foreground">
           {built

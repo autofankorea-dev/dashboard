@@ -77,9 +77,8 @@ type Props = {
   onHeaderState?: (state: AlarmThresholdHeaderState | null) => void;
   /** mobileSplit ThresholdRangeSlider typography (목록 카드 등) */
   sliderTitleClassName?: string;
-  sliderThumbLabelClassName?: string;
   sliderAxisClassName?: string;
-  /** true — 조회 전용(슬라이더·저장 비활성) */
+  /** true — 조회 전용(입력·저장 비활성) */
   disabled?: boolean;
 };
 
@@ -104,7 +103,6 @@ export function AlarmThresholdForm({
   density = "compact",
   onHeaderState,
   sliderTitleClassName,
-  sliderThumbLabelClassName,
   sliderAxisClassName,
   disabled = false,
 }: Props) {
@@ -546,9 +544,6 @@ export function AlarmThresholdForm({
               compact
               bare
               titleClassName={sliderTitleClassName}
-              thumbLabelClassName={
-                sliderThumbLabelClassName ?? "md:text-[1.75rem]"
-              }
               axisClassName={sliderAxisClassName}
               axisInputSize="compact"
               axisMode="editable"
@@ -571,9 +566,6 @@ export function AlarmThresholdForm({
               compact
               bare
               titleClassName={sliderTitleClassName}
-              thumbLabelClassName={
-                sliderThumbLabelClassName ?? "md:text-[1.75rem]"
-              }
               axisClassName={sliderAxisClassName}
               axisInputSize="compact"
               axisMode="editable"

@@ -46,6 +46,8 @@ type Props = {
   onPanelPeriodChange?: (key: string, period: TrendPeriodId) => void;
   panelSets: BarnListPanelSets;
   onToggleSettings: (key: string) => void;
+  /** 명령 접수 후 설정 패널을 닫고 덮개로 돌아간다 (토글 아님) */
+  onCloseSettings?: (key: string) => void;
   /** «차트에서 보기» — 카드 → 차트 탭 이동 */
   onOpenChart?: (reading: BarnReading) => void;
   bulkMode?: boolean;
@@ -136,6 +138,7 @@ function ControllerCardGrid({
   panelSets,
   listMode,
   onToggleSettings,
+  onCloseSettings,
   onOpenChart,
   inSpSection = false,
   bulkMode = false,
@@ -164,6 +167,7 @@ function ControllerCardGrid({
   panelSets: BarnListPanelSets;
   listMode: BarnListViewMode;
   onToggleSettings: (key: string) => void;
+  onCloseSettings?: (key: string) => void;
   onOpenChart?: (reading: BarnReading) => void;
   inSpSection?: boolean;
   bulkMode?: boolean;
@@ -248,6 +252,11 @@ function ControllerCardGrid({
           }
           onToggleSettings={
             !bulkMode ? () => onToggleSettings(r.key) : undefined
+          }
+          onCloseSettings={
+            !bulkMode && onCloseSettings
+              ? () => onCloseSettings(r.key)
+              : undefined
           }
           onOpenChart={
             !bulkMode && onOpenChart ? () => onOpenChart(r) : undefined
@@ -353,6 +362,7 @@ export function BarnListSummary({
   onPanelPeriodChange,
   panelSets,
   onToggleSettings,
+  onCloseSettings,
   onOpenChart,
   bulkMode = false,
   selectedSps = new Set(),
@@ -400,6 +410,7 @@ export function BarnListSummary({
     panelSets,
     listMode,
     onToggleSettings,
+    onCloseSettings,
     onOpenChart,
     bulkMode,
     selectedSps,

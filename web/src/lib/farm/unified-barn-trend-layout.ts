@@ -349,17 +349,14 @@ export function lerpSplitYLayoutStaged(
   return lerpSplitYLayout(meet, to, easeOutCubic((u - 0.5) * 2));
 }
 
-/** 알람 lo–hi 대비 상·하 여유 비율 */
+/** 알람 lo–hi 대비 상·하 여유 비율. 표시 온도 최솟·최댓값 패딩에도 동일 비율. */
 export const ALARM_PAD_RATIO = 0.2;
-
-/** 표시 온도 최솟·최댓값 대비 상·하 여유 비율 (잘림 방지) */
-export const TEMP_DISPLAY_PAD_RATIO = ALARM_PAD_RATIO;
 
 /** 최솟·최댓값 구간에 padRatio만큼 위·아래 여유. 거의 평탄하면 minSpan ℃. */
 export function paddedExtentDomain(
   min: number,
   max: number,
-  padRatio: number = TEMP_DISPLAY_PAD_RATIO,
+  padRatio: number = ALARM_PAD_RATIO,
   minSpan = 1,
 ): [number, number] {
   let lo = min;

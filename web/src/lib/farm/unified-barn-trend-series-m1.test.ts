@@ -36,8 +36,8 @@ import {
 import { emptyChannelThermo } from "./channel-thermo";
 
 function sampleCtrl(
-  temp: number[],
-  hum: number[],
+  temp: (number | null)[],
+  hum: (number | null)[],
   opts?: { key?: string; zone?: string; equipment?: string; stallNo?: string },
 ): TrendControllerSeries {
   return {
@@ -546,11 +546,11 @@ const layoutTempOnly = resolveSplitYLayout({
   /** 컨트롤러 오버레이가 온도만 있으면 평균 습도 본선은 남긴다 */
   const overlayTempOnly = overlayControllerMetricSeries({
     seriesList: [
-      sampleCtrl([22, 23, 24, 25], [null, null, null, null] as number[], {
+      sampleCtrl([22, 23, 24, 25], [null, null, null, null], {
         key: "c1",
         stallNo: "1",
       }),
-      sampleCtrl([21, 22, 23, 24], [null, null, null, null] as number[], {
+      sampleCtrl([21, 22, 23, 24], [null, null, null, null], {
         key: "c2",
         stallNo: "1",
       }),

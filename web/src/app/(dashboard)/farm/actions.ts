@@ -5,16 +5,18 @@ import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { canEditFarmScope } from "@/lib/auth/farm-access";
 import type { FarmKey } from "@/lib/data/farm-key";
 import {
+  getFarmControllerTrend30dDayCompact,
   getFarmControllerTrendAllPeriods,
   getFarmControllerTrendHistoryCompact,
   getFarmControllerTrendWindowCompact,
   getFarmTrendAllPeriods,
 } from "@/lib/data/farm-trend-history";
 import type { CompactControllerPeriod } from "@/lib/data/farm-trend-compact";
-import type {
-  TrendControllerPeriodData,
-  TrendPeriodData,
-  TrendPeriodId,
+import {
+  TREND_PERIODS,
+  type TrendControllerPeriodData,
+  type TrendPeriodData,
+  type TrendPeriodId,
 } from "@/lib/data/farm-trend-types";
 import { getFarmTrendUplinkCoverage } from "@/lib/data/farm-trend-uplink-coverage";
 import type { UplinkCoverageWire } from "@/lib/farm/trend-uplink-coverage";
@@ -141,6 +143,37 @@ export async function fetchFarmControllerTrendPeriodAction(
     throw new Error("Invalid trend period");
   }
   return getFarmControllerTrendHistoryCompact({ farmKey, period });
+}
+
+/** 허브 30일 — 최신부터 하루(1시간 버킷) compact. 축은 24h compact 와 같게. */
+export async function fetchFarmControllerTrend30dDayAction(
+  farmKey: FarmKey,
+  axisToMs: number,
+  scanFromMs: number,
+  scanToMs: number,
+): Promise<CompactControllerPeriod> {
+  const cfg = TREND_PERIODS["30d"];
+  const dayMs = TREND_PERIODS["24h"].durationMs;
+  if (
+    !Number.isFinite(axisToMs) ||
+    !Number.isFinite(scanFromMs) ||
+    !Number.isFinite(scanToMs) ||
+    scanToMs <= scanFromMs ||
+    scanToMs - scanFromMs > dayMs + 2000
+  ) {
+    throw new Error("Invalid trend day window");
+  }
+  const axisFromMs = axisToMs - cfg.durationMs;
+  if (scanFromMs < axisFromMs - 1000 || scanToMs > axisToMs + 1000) {
+    throw new Error("Invalid trend day window");
+  }
+  await assertFarmReadAccess(farmKey);
+  return getFarmControllerTrend30dDayCompact({
+    farmKey,
+    axisToMs,
+    scanFromMs,
+    scanToMs,
+  });
 }
 
 const WINDOW_15M_MAX_MS = 2.5 * 24 * 60 * 60 * 1000;

@@ -46,8 +46,6 @@
 | 문서 | 내용 |
 |------|------|
 | [`farm-hub-url.md`](./farm-hub-url.md) | `/farm` URL·탭·epoch |
-| [`BARN_PLAN.md`](./BARN_PLAN.md) | 축사 모델 탭 (2D 위성 부지) |
-| [`BARN_MODEL.md`](./BARN_MODEL.md) | 옛 3D 모델 탭 은퇴 포인터 |
 | [`aria-protocol.md`](./aria-protocol.md) | 델린(DELIN) 뱃지 정본 |
 | [`UI_MOTION.md`](./UI_MOTION.md) | 모션 |
 | [`UI_DENSITY.md`](./UI_DENSITY.md) | 밀도·맵 수치 |

@@ -4,7 +4,9 @@ import {
   controllerTrendPeriodHasSeries,
   emptyTrendControllerPeriodData,
   isCompleteControllerTrendBundle,
+  isFarmTrendLoadComplete,
   pickTrendCanvasPeriod,
+  TREND_30D_DAY_CHUNKS,
   type TrendControllerPeriodData,
 } from "./farm-trend-types";
 
@@ -99,6 +101,15 @@ describe("pickTrendCanvasPeriod", () => {
     assert.equal(pickTrendCanvasPeriod(bundle, "7d"), "30d");
   });
 
+  it("keeps 24h on mini tiles while 30d is still filling", () => {
+    const bundle = {
+      "24h": withSamples("24h", 96),
+      "7d": emptyTrendControllerPeriodData("7d"),
+      "30d": withSamples("30d", 720),
+    };
+    assert.equal(pickTrendCanvasPeriod(bundle, "7d", true), "24h");
+  });
+
   it("uses 7d when it has series even if 24h is already loaded", () => {
     const bundle = {
       "24h": withSamples("24h", 96),
@@ -139,5 +150,29 @@ describe("isCompleteControllerTrendBundle", () => {
       }),
       false,
     );
+  });
+});
+
+describe("isFarmTrendLoadComplete", () => {
+  const bundle = {
+    "24h": withSamples("24h", 96),
+    "7d": withSamples("7d", 168),
+    "30d": withSamples("30d", 720),
+  };
+
+  it("treats a seeded 30d axis as incomplete until day chunks finish", () => {
+    assert.equal(isFarmTrendLoadComplete(bundle, 0), false);
+    assert.equal(isFarmTrendLoadComplete(bundle, 3), false);
+  });
+
+  it("is complete after 30 day chunks on a 30d axis", () => {
+    assert.equal(
+      isFarmTrendLoadComplete(bundle, TREND_30D_DAY_CHUNKS),
+      true,
+    );
+  });
+
+  it("falls back to axis completeness when scan progress is omitted", () => {
+    assert.equal(isFarmTrendLoadComplete(bundle), true);
   });
 });

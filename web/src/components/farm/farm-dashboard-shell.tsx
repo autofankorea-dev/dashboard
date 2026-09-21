@@ -72,7 +72,6 @@ function FarmLivePageContent({
   lazyListEnrichment = false,
   lazyListFarmKey = null,
   initialHubView,
-  hubLocations = [],
 }: {
   gridCompactShell: boolean;
   hubUrlEpoch: number;
@@ -80,7 +79,6 @@ function FarmLivePageContent({
   lazyListEnrichment?: boolean;
   lazyListFarmKey?: FarmKey | null;
   initialHubView?: ReturnType<typeof resolveFarmHubView>;
-  hubLocations?: FarmLocationRow[];
 }) {
   const { slice, isStale, isBootstrapping } = useFarmLiveRefresh();
 
@@ -116,7 +114,6 @@ function FarmLivePageContent({
         lazyListEnrichment={lazyListEnrichment}
         lazyListFarmKey={lazyListFarmKey}
         initialHubView={initialHubView}
-        hubLocations={hubLocations}
       />
     </StaleWhileRevalidateShell>
   );
@@ -208,8 +205,7 @@ function AdminHubBody({
           onHubUrlChange={onHubUrlChange}
           lazyListEnrichment
           lazyListFarmKey={clientActiveFarmKey}
-          initialHubView={resolveFarmHubView(view, { isAdmin })}
-          hubLocations={hubLocations}
+          initialHubView={resolveFarmHubView(view)}
         />
       );
     }
@@ -218,8 +214,7 @@ function AdminHubBody({
         gridCompactShell={isAdmin}
         hubUrlEpoch={hubUrlEpoch}
         onHubUrlChange={onHubUrlChange}
-        initialHubView={resolveFarmHubView(view, { isAdmin })}
-        hubLocations={hubLocations}
+        initialHubView={resolveFarmHubView(view)}
       />
     );
   }
@@ -249,8 +244,7 @@ function AdminHubBody({
           gridCompactShell={isAdmin}
           hubUrlEpoch={hubUrlEpoch}
           onHubUrlChange={onHubUrlChange}
-          initialHubView={resolveFarmHubView(view, { isAdmin })}
-          hubLocations={hubLocations}
+          initialHubView={resolveFarmHubView(view)}
         />
       )}
     </Suspense>
@@ -408,8 +402,7 @@ export function FarmDashboardShell({
                 onHubUrlChange={onHubUrlChange}
                 lazyListEnrichment={useCachedSingle}
                 lazyListFarmKey={clientActiveFarmKey}
-                initialHubView={resolveFarmHubView(view, { isAdmin })}
-                hubLocations={hubLocations}
+                initialHubView={resolveFarmHubView(view)}
               />
             )}
           </Suspense>

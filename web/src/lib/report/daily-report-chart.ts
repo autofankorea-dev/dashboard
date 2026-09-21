@@ -1,6 +1,6 @@
 /**
  * 일보 PDF 인쇄용 시리즈 — 허브 통합 추이(split-Y·브러시)를 복제하지 않음.
- * A4 3열 미니차트 폭에 맞춰 LTTB만 적용.
+ * 공식 그래프는 30일 1시간(720점). A4 폭에 맞춰 LTTB만 적용.
  */
 import {
   downsampleByIndices,

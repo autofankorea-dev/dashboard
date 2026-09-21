@@ -691,6 +691,7 @@ export function FarmMapControllerDetail({
                       hideGraphToggle
                       settingsExpanded
                       onToggleSettings={() => {}}
+                      onCommandQueued={onClose}
                       suppressPerCardMobileSheet
                       showDesktopGraph={false}
                       showChannelSection={false}
@@ -736,6 +737,7 @@ type ControllerDetailSlideBodyProps = {
   hideGraphToggle?: boolean;
   settingsExpanded: boolean;
   onToggleSettings?: () => void;
+  onCommandQueued?: () => void;
   sheetPickerReadings?: BarnReading[];
   onSheetPickerSelect?: (readingKey: string) => void;
   showSheetPickerAffiliation?: boolean;
@@ -770,6 +772,7 @@ function ControllerDetailSlideBody({
   hideGraphToggle = false,
   settingsExpanded,
   onToggleSettings,
+  onCommandQueued,
   sheetPickerReadings,
   onSheetPickerSelect,
   showSheetPickerAffiliation,
@@ -848,6 +851,7 @@ function ControllerDetailSlideBody({
         panelLayoutVariant={panelLayoutVariant}
         settingsExpanded={settingsExpanded}
         onToggleSettings={interactive ? onToggleSettings : undefined}
+        onCloseSettings={interactive ? onCommandQueued : undefined}
         sheetPickerReadings={interactive ? sheetPickerReadings : undefined}
         onSheetPickerSelect={interactive ? onSheetPickerSelect : undefined}
         showSheetPickerAffiliation={showSheetPickerAffiliation}
