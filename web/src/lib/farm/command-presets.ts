@@ -1,5 +1,6 @@
 import {
   clampMenuValue,
+  snapToStep,
 } from "@/lib/controllers/controller-panel-map";
 import type {
   ChannelGlanceRow,
@@ -7,10 +8,19 @@ import type {
 } from "@/lib/controllers/controller-panel-draft";
 import type { ChannelSlot } from "@/lib/data/iot-channel";
 import { farmKeyId, type FarmKey } from "@/lib/data/farm-key";
+import { motionDuration } from "@/lib/ui/motion-tokens";
 
 export const COMMAND_PRESET_STORAGE_PREFIX = "dashboard.command-presets.v1";
 export const COMMAND_PRESET_MAX = 8;
 export const COMMAND_PRESET_NAME_MAX = 12;
+/** 생성 카드 환기 스테퍼만. 패널 명령 단위(`MENU_STEPS` 1%)는 유지. */
+export const PRESET_VENT_STEP = 5;
+/** 클릭과 홀드를 가르는 첫 대기 */
+export const PRESET_STEPPER_HOLD_DELAY_MS = motionDuration.emphasis;
+/** 홀드 이후 연속 동작 간격 */
+export const PRESET_STEPPER_HOLD_INTERVAL_MS = motionDuration.fast;
+
+export type PresetCreateField = keyof PanelDraft;
 
 export type CommandPresetChannels = Partial<Record<ChannelSlot, PanelDraft>>;
 
@@ -46,6 +56,52 @@ export function clampCommandPresetDraft(raw: PanelDraft): PanelDraft {
     minVentPct: min,
     maxVentPct: max,
   };
+}
+
+export function clampPresetVent(raw: number): number {
+  return Math.min(100, Math.max(0, snapToStep(raw, PRESET_VENT_STEP, 0)));
+}
+
+export function applyPresetCreateField(
+  draft: PanelDraft,
+  field: PresetCreateField,
+  value: number,
+): PanelDraft {
+  const next: PanelDraft = { ...draft, [field]: value };
+  next.setpointTemp = clampMenuValue("setpoint", next.setpointTemp);
+  next.tempDeviation = clampMenuValue("deviation", next.tempDeviation);
+  let min = clampPresetVent(next.minVentPct);
+  let max = clampPresetVent(next.maxVentPct);
+  if (field === "minVentPct" && min > max) max = min;
+  if (field === "maxVentPct" && max < min) min = max;
+  if (min > max) [min, max] = [max, min];
+  next.minVentPct = min;
+  next.maxVentPct = max;
+  return next;
+}
+
+export function clampPresetCreateDraft(raw: PanelDraft): PanelDraft {
+  let min = clampPresetVent(raw.minVentPct);
+  let max = clampPresetVent(raw.maxVentPct);
+  if (min > max) [min, max] = [max, min];
+  return {
+    setpointTemp: clampMenuValue("setpoint", raw.setpointTemp),
+    tempDeviation: clampMenuValue("deviation", raw.tempDeviation),
+    minVentPct: min,
+    maxVentPct: max,
+  };
+}
+
+export function seedPresetCreateChannels(
+  channels: CommandPresetChannels,
+): CommandPresetChannels {
+  const out: CommandPresetChannels = {};
+  for (const slot of SLOTS) {
+    const raw = channels[slot];
+    if (!raw) continue;
+    out[slot] = clampPresetCreateDraft(raw);
+  }
+  return out;
 }
 
 function isDraft(value: unknown): value is PanelDraft {

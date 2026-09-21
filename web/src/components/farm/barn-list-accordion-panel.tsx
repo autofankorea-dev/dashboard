@@ -6,9 +6,13 @@ import {
   AlarmThresholdForm,
   type AlarmThresholdHeaderState,
 } from "@/components/settings/alarm-threshold-form";
-import { ControllerTempDualSlider } from "@/components/controllers/controller-temp-dual-slider";
-import { ThresholdRangeSlider } from "@/components/settings/threshold-range-slider";
 import { useControllerDetail } from "@/components/controllers/use-controller-detail";
+import {
+  SettingsChannelStepperGrid,
+  SettingsChannelWell,
+} from "@/components/farm/settings-channel-stepper-grid";
+import { MENU_STEPS } from "@/lib/controllers/controller-panel-map";
+import type { PresetCreateField } from "@/lib/farm/command-presets";
 import { useControllerPanel } from "@/components/controllers/use-controller-panel";
 import type {
   DirtyChannelSave,
@@ -55,6 +59,7 @@ import { farmKeyId } from "@/lib/data/farm-key";
 import { applyQueueChannelStripForReading } from "@/lib/farm/apply-queue";
 import {
   snapshotCommandPresetChannels,
+  type CommandPresetChannels,
   type CommandPresetScope,
 } from "@/lib/farm/command-presets";
 import { normalizeStallTyCode } from "@/lib/data/stall-type";
@@ -449,13 +454,13 @@ export function BarnListAccordionPanel({
     if (activePresetId === id) setActivePresetId(null);
   };
 
-  const handleCreatePreset = (name: string) => {
-    const channels = snapshotCommandPresetChannels(
-      panel.channelGlanceRows,
-      fieldsToDraft(panel.sliderValues),
-    );
+  const handleCreatePreset = (
+    name: string,
+    channels: CommandPresetChannels,
+  ) => {
     const result = presets.save({ name, channels });
     if (!result.ok) return result.reason;
+    panel.applyChannelDrafts(channels);
     setActivePresetId(result.id);
     return "ok" as const;
   };
@@ -556,57 +561,43 @@ export function BarnListAccordionPanel({
     />
   );
 
+  const handleControlField = (field: PresetCreateField, value: number) => {
+    if (field === "setpointTemp") {
+      panel.setField("setpoint", value);
+      return;
+    }
+    if (field === "tempDeviation") {
+      panel.setField("deviation", value);
+      return;
+    }
+    if (field === "minVentPct") {
+      const max = panel.sliderValues.maxVent;
+      panel.setVentRange(value, value > max ? value : max);
+      return;
+    }
+    const min = panel.sliderValues.minVent;
+    panel.setVentRange(value < min ? value : min, value);
+  };
+
   const controlBody = (
-    <div className="space-y-3">
-      <div>
-        {panel.currentValues ? (
-          <p className={cn("mb-2 tabular-nums", LIST_PANEL_META)}>
-            현재 {panel.currentValues.setpoint}℃ +
-            {panel.currentValues.deviation}℃
-          </p>
-        ) : null}
-        <ControllerTempDualSlider
-          key={`temp-${activeChannel}`}
-          setpoint={panel.sliderValues.setpoint}
-          deviation={panel.sliderValues.deviation}
+    <div className="flex flex-col gap-3">
+      {panel.currentValues ? (
+        <p className="text-[11px] tabular-nums text-muted-foreground">
+          현재 {panel.currentValues.setpoint.toFixed(1)}℃ +
+          {panel.currentValues.deviation.toFixed(1)}℃
+        </p>
+      ) : null}
+      <SettingsChannelWell key={focusedSlot ?? activeChannel}>
+        <SettingsChannelStepperGrid
+          draft={fieldsToDraft(panel.sliderValues)}
           disabled={controlsDisabled}
-          compact
-          dense
-          axisMode="editable"
-          axisInputSize="compact"
-          axisClassName={LIST_SLIDER_AXIS}
-          onChange={panel.setTempControl}
+          ventStep={MENU_STEPS.minVent.step}
+          onChange={handleControlField}
         />
-      </div>
-      <ThresholdRangeSlider
-        key={`vent-${activeChannel}`}
-        title="환기"
-        icon={
-          <span
-            className="inline-flex size-4 items-center justify-center text-sm font-bold text-channel-info"
-            aria-hidden
-          >
-            %
-          </span>
-        }
-        min={0}
-        max={100}
-        step={1}
-        low={panel.sliderValues.minVent}
-        high={panel.sliderValues.maxVent}
-        unit="%"
-        lowLabel="최저환기"
-        highLabel="최고환기"
-        accentClass="bg-channel-info/35"
-        axisMode="editable"
-        axisInputSize="compact"
-        compact
-        bare
-        titleClassName={LIST_SLIDER_TITLE}
-        axisClassName={LIST_SLIDER_AXIS}
-        disabled={controlsDisabled}
-        onChange={panel.setVentRange}
-      />
+      </SettingsChannelWell>
+      <p className="text-[11px] text-muted-foreground">
+        설정·편차 0.1℃, 환기 1%. −/+를 꾹 누르면 연속입니다.
+      </p>
     </div>
   );
 
@@ -631,6 +622,10 @@ export function BarnListAccordionPanel({
               activeId={activePresetId}
               disabled={isSaving}
               canStore={presets.canStore}
+              seedChannels={snapshotCommandPresetChannels(
+                panel.channelGlanceRows,
+                fieldsToDraft(panel.sliderValues),
+              )}
               onPick={handlePickPreset}
               onDelete={handleDeletePreset}
               onCreate={handleCreatePreset}
@@ -723,6 +718,7 @@ export function BarnListAccordionPanel({
     <>
       <SettingsEditOverlay
         open={editorOpen}
+        wide={showControlEditor}
         title={editorTitle}
         primaryLabel={canCommand ? editorPrimaryLabel : null}
         primaryBusyLabel={alarmLayer ? "저장 중…" : undefined}

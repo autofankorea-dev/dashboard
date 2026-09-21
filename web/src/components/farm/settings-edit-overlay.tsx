@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react";
 import { createPortal } from "react-dom";
 import { dashboardAffordance } from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";
@@ -20,10 +27,18 @@ type Props = {
   onClose: () => void;
   onPrimary?: () => void;
   closeLabel?: string;
+  /** 생성 카드처럼 본문이 넓을 때 */
+  wide?: boolean;
+  /** 기본은 확인 버튼. 이름 입력 등은 `content`. */
+  focusTarget?: "primary" | "content";
 };
 
 const btnClass =
   "inline-flex min-h-9 min-w-0 flex-1 items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium leading-snug";
+
+const emptySubscribe = () => () => {};
+const clientTrue = () => true;
+const serverFalse = () => false;
 
 /** 한눈 행 편집 — CommandConfirmOverlay와 같은 중앙 덮개 셸. 자식은 닫혀도 유지. */
 export function SettingsEditOverlay({
@@ -38,8 +53,10 @@ export function SettingsEditOverlay({
   onClose,
   onPrimary,
   closeLabel = "닫기",
+  wide = false,
+  focusTarget = "primary",
 }: Props) {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(emptySubscribe, clientTrue, serverFalse);
   const [show, setShow] = useState(false);
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
@@ -54,11 +71,8 @@ export function SettingsEditOverlay({
     onPrimaryRef.current = onPrimary;
   }, [onPrimary]);
 
-  if (typeof document !== "undefined" && !mounted) {
-    setMounted(true);
-  }
-  if (!open) {
-    if (show) setShow(false);
+  if (!open && show) {
+    setShow(false);
   }
 
   useEffect(() => {
@@ -69,13 +83,14 @@ export function SettingsEditOverlay({
 
   useEffect(() => {
     if (!open || !show) return;
+    if (focusTarget === "content") return;
     const primary = primaryRef.current;
     if (primary && !primary.disabled) {
       primary.focus();
       return;
     }
     closeRef.current?.focus();
-  }, [open, show]);
+  }, [open, show, focusTarget]);
 
   useEffect(() => {
     if (!open) return;
@@ -93,6 +108,7 @@ export function SettingsEditOverlay({
       const el = e.target;
       if (el instanceof HTMLTextAreaElement) return;
       if (el instanceof HTMLElement && el.isContentEditable) return;
+      if (el instanceof HTMLElement && el.closest("[data-stepper]")) return;
       e.preventDefault();
       e.stopPropagation();
       confirm();
@@ -101,7 +117,7 @@ export function SettingsEditOverlay({
     return () => document.removeEventListener("keydown", onKey, true);
   }, [open, busy, primaryDisabled]);
 
-  if (!mounted || typeof document === "undefined") return null;
+  if (!mounted) return null;
 
   return createPortal(
     <div
@@ -127,7 +143,10 @@ export function SettingsEditOverlay({
         aria-labelledby={open ? titleId : undefined}
         className={cn(
           motionClass.commandCard,
-          "w-full max-w-[min(100vw-2rem,25rem)] rounded-xl border bg-background px-4 py-4 text-left ring-1 ring-border/60 select-none",
+          "w-full rounded-xl border bg-card px-4 py-4 text-left ring-1 ring-border/60 select-none",
+          wide
+            ? "max-w-[min(100vw-2rem,28rem)]"
+            : "max-w-[min(100vw-2rem,25rem)]",
           "[&_input]:select-text [&_textarea]:select-text",
           show && open
             ? "translate-y-0 scale-100 opacity-100"
@@ -144,7 +163,9 @@ export function SettingsEditOverlay({
         >
           {title}
         </p>
-        <div className="mt-3">{children}</div>
+        <div className="mt-3 max-h-[min(60dvh,32rem)] overflow-y-auto">
+          {children}
+        </div>
         <div className={cn("mt-4 flex items-center justify-center gap-2", !open && "hidden")}>
           <button
             ref={closeRef}

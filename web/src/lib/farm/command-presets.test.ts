@@ -4,6 +4,11 @@
 import assert from "node:assert/strict";
 import {
   COMMAND_PRESET_MAX,
+  PRESET_STEPPER_HOLD_DELAY_MS,
+  PRESET_STEPPER_HOLD_INTERVAL_MS,
+  applyPresetCreateField,
+  clampPresetCreateDraft,
+  clampPresetVent,
   parseCommandPresetList,
   removeCommandPreset,
   snapshotCommandPresetChannels,
@@ -105,6 +110,51 @@ const sample: CommandPreset[] = [
 {
   const next = removeCommandPreset(sample, "day");
   assert.equal(next.length, 0);
+}
+
+{
+  assert.equal(clampPresetVent(26), 25);
+  assert.equal(clampPresetVent(33), 35);
+  assert.equal(clampPresetVent(100), 100);
+  const seeded = clampPresetCreateDraft({
+    setpointTemp: 18.54,
+    tempDeviation: 0.4,
+    minVentPct: 26,
+    maxVentPct: 31,
+  });
+  assert.equal(seeded.setpointTemp, 18.5);
+  assert.equal(seeded.tempDeviation, 0.5);
+  assert.equal(seeded.minVentPct, 25);
+  assert.equal(seeded.maxVentPct, 30);
+  const swapped = clampPresetCreateDraft({
+    ...draft(18),
+    minVentPct: 80,
+    maxVentPct: 20,
+  });
+  assert.equal(swapped.minVentPct, 20);
+  assert.equal(swapped.maxVentPct, 80);
+}
+
+{
+  const raised = applyPresetCreateField(
+    draft(18),
+    "minVentPct",
+    40,
+  );
+  assert.equal(raised.minVentPct, 40);
+  assert.equal(raised.maxVentPct, 40);
+  const lowered = applyPresetCreateField(
+    { ...draft(18), minVentPct: 25, maxVentPct: 85 },
+    "maxVentPct",
+    20,
+  );
+  assert.equal(lowered.maxVentPct, 20);
+  assert.equal(lowered.minVentPct, 20);
+}
+
+{
+  assert.equal(PRESET_STEPPER_HOLD_DELAY_MS, 360);
+  assert.equal(PRESET_STEPPER_HOLD_INTERVAL_MS, 120);
 }
 
 console.log("command-presets.test.ts ok");
