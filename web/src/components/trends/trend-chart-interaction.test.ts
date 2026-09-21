@@ -7,6 +7,7 @@ import {
   pickGutterScaleEdgeId,
   chartTipPresenceClass,
   clipWipeClass,
+  shouldPreferLookbackPinch,
 } from "./trend-chart-interaction";
 
 {
@@ -98,6 +99,13 @@ import {
   assert.equal(clipWipeClass("enter"), "farm-chart-clip-wipe-in");
   assert.equal(clipWipeClass("exit"), "farm-chart-clip-wipe-out");
   assert.equal(clipWipeClass("shown"), undefined);
+}
+
+{
+  assert.equal(shouldPreferLookbackPinch(0), false);
+  assert.equal(shouldPreferLookbackPinch(1), false);
+  assert.equal(shouldPreferLookbackPinch(2), true);
+  assert.equal(shouldPreferLookbackPinch(3), true);
 }
 
 console.log("trend-chart-interaction.test.ts ok");

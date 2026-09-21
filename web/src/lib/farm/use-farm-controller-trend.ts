@@ -55,7 +55,7 @@ type TrendSnapshot = {
 
 const emptySubscribe = () => () => {};
 
-/** map/list 훅 인스턴스 간 공유 — 탭 전환 시 이중 fetch 방지 · TTL 90s */
+/** map/list 훅 인스턴스 간 공유 — 서버 슬롯과 같은 5분 TTL */
 const trendCache = new Map<string, TimedCacheEntry<TrendSnapshot>>();
 const trendInflight = new Map<string, Promise<TrendSnapshot>>();
 const trendRefreshInflight = new Map<string, Promise<TrendSnapshot>>();

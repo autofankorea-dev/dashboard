@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import { PanelRight } from "lucide-react";
 import {
   TrendChart,
@@ -159,6 +159,8 @@ import {
 } from "@/lib/ui/farm-chart-ui-scale";
 import { cn } from "@/lib/utils";
 
+const emptySubscribe = () => () => {};
+
 export type UnifiedBarnTrendControllerRef = {
   key: string;
   reading: BarnReading | null;
@@ -225,6 +227,8 @@ function ChartScopeTargetMarks({
     </span>
   );
 }
+
+const EMPTY_CHART_CATEGORIES: string[] = [];
 
 type Props = {
   label: string;
@@ -743,16 +747,27 @@ export function UnifiedBarnTrendPanel({
     uplinkCoverage,
     overview,
   ]);
+  /** SSR/첫 hydration은 셸만 맞추고 SVG용 집계는 background render에서 계산한다. */
+  const clientReady = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false,
+  );
+  const deferredWindowBundle = useDeferredValue(
+    clientReady ? windowBundle : null,
+  );
+  const renderPending =
+    windowBundle !== null && deferredWindowBundle !== windowBundle;
 
   /** M1 — 다운샘플+집계는 layout 무관 1회, 보간은 Y매핑만 */
   const downsampledWindow = useMemo(() => {
-    if (!windowBundle) return null;
+    if (!deferredWindowBundle) return null;
     return downsampleSeriesForChart(
-      windowBundle.seriesList,
-      windowBundle.categories,
+      deferredWindowBundle.seriesList,
+      deferredWindowBundle.categories,
       plotWidthPx,
     );
-  }, [windowBundle, plotWidthPx]);
+  }, [deferredWindowBundle, plotWidthPx]);
 
   const trendRaw = useMemo(() => {
     if (!downsampledWindow) return null;
@@ -812,12 +827,20 @@ export function UnifiedBarnTrendPanel({
     overlayAlign,
   ]);
 
-  /** 농장 기간 변경 시 브러시 창·스코프 시드 (render-time sync — effect setState 회피) */
+  /** 농장 기간 변경 시 브러시 창·스코프 시드 (render-time sync — 값이 바뀔 때만) */
   const [scopePeriod, setScopePeriod] = useState(period);
   if (period !== scopePeriod) {
     setScopePeriod(period);
     setXScopeStack([]);
-    if (!brushControlled) applyBrushWindow(BRUSH_PERIOD_WINDOW["24h"]);
+    if (!brushControlled) {
+      const nextWindow = BRUSH_PERIOD_WINDOW["24h"];
+      if (
+        Math.abs(brushWindow.start - nextWindow.start) > 1e-12 ||
+        Math.abs(brushWindow.width - nextWindow.width) > 1e-12
+      ) {
+        applyBrushWindow(nextWindow);
+      }
+    }
   }
 
   /** 데이터 길이/인덱스 불일치 시 스택 비우기 */
@@ -1023,16 +1046,16 @@ export function UnifiedBarnTrendPanel({
       if (from15m) return from15m;
     }
 
-    if (windowBundle) {
+    if (deferredWindowBundle) {
       const slice = mapIndexWindowToSlice(
         picked.categories.length,
         xScope.start,
         xScope.end,
-        windowBundle.categories.length,
+        deferredWindowBundle.categories.length,
       );
-      const cats = windowBundle.categories.slice(slice.from, slice.to);
+      const cats = deferredWindowBundle.categories.slice(slice.from, slice.to);
       if (cats.length >= 2) {
-        const series = windowBundle.seriesList.map((s) =>
+        const series = deferredWindowBundle.seriesList.map((s) =>
           sliceControllerSeries(s, slice.from, slice.to),
         );
         const fromHour = buildScopedFromSeries(series, cats);
@@ -1061,7 +1084,7 @@ export function UnifiedBarnTrendPanel({
     xScope,
     xScopeRangeMs,
     window15m,
-    windowBundle,
+    deferredWindowBundle,
     controllers,
     uplinkCoverage,
     plotThresholds,
@@ -1073,7 +1096,7 @@ export function UnifiedBarnTrendPanel({
     overlayAlign,
   ]);
 
-  const chartCategories = scoped?.categories ?? [];
+  const chartCategories = scoped?.categories ?? EMPTY_CHART_CATEGORIES;
   const tempMapDomain = scoped?.tempDomain ?? built?.tempDomain;
   const tempMapOverflow =
     scoped?.tempOverflowDomain ?? built?.tempOverflowDomain ?? null;
@@ -1976,7 +1999,9 @@ export function UnifiedBarnTrendPanel({
           layers={layers}
           available={built.available}
           metricsPending={Boolean(
-            trendLoading || (!controllerTrendByPeriod && !trendError),
+            renderPending ||
+              trendLoading ||
+              (!controllerTrendByPeriod && !trendError),
           )}
           onCycleGroup={cycleGroupLayers}
           placement="inline"
@@ -2271,7 +2296,9 @@ export function UnifiedBarnTrendPanel({
           labelGutter={isMobileStack && !plotFill && !overview}
           hideAxisChrome={overview}
           showMarkers={!overview}
-          markerDensity={displayPeriod === "24h" ? "all" : "sparse"}
+          markerDensity={
+            (scoped?.categories.length ?? 0) <= 48 ? "all" : "sparse"
+          }
           markerRadiusPx={isMobileStack ? chartUiPx(1.4) : chartUiPx(1.6)}
           animate={!overview}
           layerClipWipe={!overview}
@@ -2351,7 +2378,9 @@ export function UnifiedBarnTrendPanel({
         <p className="py-6 text-center text-xs text-muted-foreground">
           {built
             ? "표시할 레이어를 선택하세요."
-            : trendLoading || (!controllerTrendByPeriod && !trendError)
+            : renderPending ||
+                trendLoading ||
+                (!controllerTrendByPeriod && !trendError)
               ? "통합 추이를 불러오는 중."
                 : trendExtending
                 ? "최근 이력을 이어 받는 중."

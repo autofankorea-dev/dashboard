@@ -105,6 +105,24 @@ export const PAD_BOTTOM = 6;
 /** 측정 전 fallback · 패딩 비율 기준 */
 export const VIEW_W_NORM = 100;
 
+/**
+ * 화면 px 반지름을 SVG viewBox 단위로 변환한다.
+ * 첫 렌더의 1×1 측정값은 실제 크기가 아니므로 fallback view 크기를 기준으로 삼아
+ * ResizeObserver 반영 전 marker가 과대 확대되지 않게 한다.
+ */
+export function markerRadiusInViewUnits(
+  radiusPx: number,
+  viewSize: number,
+  measuredPx: number,
+  measuredReadyMin: number,
+): number {
+  const renderedPx =
+    Number.isFinite(measuredPx) && measuredPx > measuredReadyMin
+      ? measuredPx
+      : viewSize;
+  return (radiusPx * viewSize) / Math.max(1, renderedPx);
+}
+
 export type TrendPlotPadOpts = {
   /** 왼쪽 단위축(℃ 등) — padL = PAD_X */
   leftUnit?: boolean;

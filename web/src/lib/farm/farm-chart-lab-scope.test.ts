@@ -2,15 +2,35 @@
  * 실행: npx tsx src/lib/farm/farm-chart-lab-scope.test.ts
  */
 import assert from "node:assert/strict";
+import type { BarnReading } from "@/lib/data/iot";
 import {
   dismissFarmChartLabHero,
   farmChartLabControllerScopes,
   farmChartLabScopeKey,
   farmChartLabSelectionFromKeys,
   farmChartLabStallKey,
+  indexReadingsByChartScope,
   controllersShareStall,
   uniqueFarmChartLabStalls,
 } from "./farm-chart-scope";
+
+const indexedReadings = [
+  {
+    stallTyCode: "sp03",
+    stallNo: "01",
+    controllerKey: "a",
+  },
+  {
+    stallTyCode: "SP03",
+    stallNo: "01",
+    controllerKey: "b",
+  },
+] as BarnReading[];
+const scopeIndex = indexReadingsByChartScope(indexedReadings);
+assert.equal(scopeIndex.get("farm"), indexedReadings);
+assert.deepEqual(scopeIndex.get("sp:SP03"), indexedReadings);
+assert.deepEqual(scopeIndex.get("stall:SP03:01"), indexedReadings);
+assert.deepEqual(scopeIndex.get("SP03:01:a"), [indexedReadings[0]]);
 
 assert.deepEqual(farmChartLabControllerScopes([]), []);
 assert.equal(

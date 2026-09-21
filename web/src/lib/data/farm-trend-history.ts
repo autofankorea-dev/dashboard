@@ -180,7 +180,7 @@ async function fetchControllerTrendRows(
   );
 }
 
-/** 하루보다 긴 창은 24h RPC로 나눠 스캔 — statement timeout 회피. 최신 구간부터. */
+/** 장기 창은 24h RPC로 나눠 스캔 — 오래된 고밀도 파티션의 timeout을 제한. */
 async function fetchControllerTrendRowsChunked(
   accessToken: string,
   farmKey: FarmKey,
@@ -478,9 +478,9 @@ export async function getFarmControllerTrendHistoryCompact(params: {
       ? `${trendCacheKind(cfg, params.overview)}-scan-${scanFromMs}-${scanToMs}`
       : trendCacheKind(cfg, params.overview);
 
-  const rows = await cachedLiveQuery(
+  return cachedLiveQuery(
     [
-      "farm-controller-trend",
+      "farm-controller-trend-compact",
       userId,
       scopeKey,
       params.period,
@@ -488,22 +488,22 @@ export async function getFarmControllerTrendHistoryCompact(params: {
       cacheKind,
     ],
     ["live", `controller-trend:${scopeKey}`],
-    () =>
-      fetchControllerTrendRowsChunked(
+    async () => {
+      const rows = await fetchControllerTrendRowsChunked(
         accessToken,
         params.farmKey,
         scanFromMs,
         scanToMs,
         cfg.bucket,
-      ),
-  );
-
-  return compactFromControllerRows(
-    rows,
-    params.period,
-    fromMs,
-    cfg.bucketCount,
-    cfg.strideMs,
+      );
+      return compactFromControllerRows(
+        rows,
+        params.period,
+        fromMs,
+        cfg.bucketCount,
+        cfg.strideMs,
+      );
+    },
   );
 }
 

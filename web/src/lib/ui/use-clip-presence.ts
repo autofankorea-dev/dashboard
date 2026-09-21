@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { motionDuration } from "@/lib/ui/motion-tokens";
 
 export type ClipPhase = "enter" | "shown" | "exit";
@@ -17,9 +17,69 @@ type Options = {
   exitMs?: number;
 };
 
+export function clipPresencePhaseKey(
+  entries: readonly { key: string; phase: ClipPhase }[],
+): string {
+  return entries.map((e) => `${e.key}:${e.phase}`).join("|");
+}
+
+export function clipPresenceLiveKey(keys: readonly string[]): string {
+  return keys.join("\0");
+}
+
+/**
+ * 라이브 키 집합 기준으로 enter/shown/exit 엔트리를 계산한다.
+ * 렌더 중 setState 없이 같은 입력이면 같은 phase 시그니처를 만든다.
+ */
+export function nextClipPresenceEntries<T>(
+  prev: readonly ClipPresenceEntry<T>[],
+  liveKeys: readonly string[],
+  itemByKey: Map<string, T>,
+): ClipPresenceEntry<T>[] {
+  const liveSet = new Set(liveKeys);
+  const prevByKey = new Map(prev.map((e) => [e.key, e]));
+  const next: ClipPresenceEntry<T>[] = [];
+  for (const key of liveKeys) {
+    const item = itemByKey.get(key)!;
+    const old = prevByKey.get(key);
+    if (!old || old.phase === "exit") {
+      next.push({ key, phase: "enter", item });
+    } else {
+      next.push({
+        key,
+        phase: old.phase === "enter" ? "enter" : "shown",
+        item,
+      });
+    }
+  }
+  for (const e of prev) {
+    if (!liveSet.has(e.key)) {
+      next.push({
+        key: e.key,
+        phase: "exit",
+        item: e.item,
+      });
+    }
+  }
+  return next;
+}
+
+function mapItemsByKey<T>(
+  items: readonly T[],
+  getKey: (item: T) => string,
+): { liveKeys: string[]; itemByKey: Map<string, T> } {
+  const liveKeys = items.map(getKey);
+  const itemByKey = new Map<string, T>();
+  for (let i = 0; i < items.length; i++) {
+    itemByKey.set(liveKeys[i]!, items[i]!);
+  }
+  return { liveKeys, itemByKey };
+}
+
 /**
  * 시리즈/히스토그램 키 단위 enter·exit 유지.
  * 첫 마운트는 wipe 없이 shown, 이후 추가/삭제만 클립 와이프.
+ * 키 동기화는 layout effect — 렌더 중 setState로 #301이 나지 않게 한다.
  */
 export function useClipPresence<T>(
   items: T[],
@@ -32,11 +92,9 @@ export function useClipPresence<T>(
     exitMs = motionDuration.moderate,
   } = options;
 
-  const liveKeys = items.map(getKey);
-  const liveKeyStr = liveKeys.join("\0");
-  const itemByKey = new Map(items.map((item) => [getKey(item), item]));
+  const { liveKeys, itemByKey } = mapItemsByKey(items, getKey);
+  const liveKeyStr = clipPresenceLiveKey(liveKeys);
 
-  const [trackedLive, setTrackedLive] = useState(liveKeyStr);
   const [entries, setEntries] = useState<ClipPresenceEntry<T>[]>(() =>
     liveKeys.map((key) => ({
       key,
@@ -45,39 +103,30 @@ export function useClipPresence<T>(
     })),
   );
 
-  if (enabled && liveKeyStr !== trackedLive) {
-    setTrackedLive(liveKeyStr);
-    const liveSet = new Set(liveKeys);
-    setEntries((prev) => {
-      const prevByKey = new Map(prev.map((e) => [e.key, e]));
-      const next: ClipPresenceEntry<T>[] = [];
-      for (const key of liveKeys) {
-        const item = itemByKey.get(key)!;
-        const old = prevByKey.get(key);
-        if (!old || old.phase === "exit") {
-          next.push({ key, phase: "enter", item });
-        } else {
-          next.push({
-            key,
-            phase: old.phase === "enter" ? "enter" : "shown",
-            item,
-          });
-        }
-      }
-      for (const e of prev) {
-        if (!liveSet.has(e.key)) {
-          next.push({
-            key: e.key,
-            phase: "exit",
-            item: e.item,
-          });
-        }
-      }
-      return next;
-    });
-  }
+  const syncedKeyRef = useRef(liveKeyStr);
+  const enabledRef = useRef(enabled);
 
-  const phaseKey = entries.map((e) => `${e.key}:${e.phase}`).join("|");
+  useLayoutEffect(() => {
+    const wasEnabled = enabledRef.current;
+    enabledRef.current = enabled;
+    if (!enabled) {
+      syncedKeyRef.current = liveKeyStr;
+      return;
+    }
+    if (liveKeyStr === syncedKeyRef.current && wasEnabled) return;
+    syncedKeyRef.current = liveKeyStr;
+    const { liveKeys: keys, itemByKey: byKey } = mapItemsByKey(items, getKey);
+    setEntries((prev) => {
+      const next = nextClipPresenceEntries(prev, keys, byKey);
+      return clipPresencePhaseKey(next) === clipPresencePhaseKey(prev)
+        ? prev
+        : next;
+    });
+    // liveKeyStr이 바뀐 렌더의 items/getKey를 쓴다. identity 의존은 #301을 다시 연다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- liveKeyStr is the membership trigger
+  }, [enabled, liveKeyStr]);
+
+  const phaseKey = clipPresencePhaseKey(entries);
 
   useEffect(() => {
     if (!enabled) return;
@@ -127,7 +176,7 @@ export function useClipPresence<T>(
 
 /**
  * 열림/닫힘 유지 — 닫힐 때 exit 애니 후 unmount.
- * 열릴 때는 렌더 중 상태 보정으로 즉시 표시 (effect setState 금지).
+ * 열릴 때는 boolean 한 번만 보정 (객체 identity 비교 없음).
  * @see https://react.dev/reference/react/useState#storing-information-from-previous-renders
  */
 export function useOpenPresence(
@@ -159,6 +208,7 @@ export function useOpenPresence(
 /**
  * 값이 없어져도 exit 동안 마지막 값을 유지한다.
  * 차트 호버 카드·드래프트·강조선처럼 등장/퇴장 UI용.
+ * 객체 identity로 렌더 중 setState 하지 않는다 — 매 렌더 새 객체여도 #301이 나지 않는다.
  */
 export function usePresenceValue<T>(
   value: T | null | undefined,
@@ -167,9 +217,20 @@ export function usePresenceValue<T>(
   const open = Boolean(options?.open ?? value != null);
   const presence = useOpenPresence(open, options?.exitMs);
   const [held, setHeld] = useState<T | null>(value ?? null);
-  if (value != null && !Object.is(held, value)) {
-    setHeld(value);
-  }
+  const openRef = useRef(open);
+  const lastValueRef = useRef<T | null>(value ?? null);
+
+  useLayoutEffect(() => {
+    if (value != null) {
+      lastValueRef.current = value;
+    }
+    const wasOpen = openRef.current;
+    openRef.current = open;
+    if (wasOpen && !open) {
+      setHeld(lastValueRef.current);
+    }
+  }, [open, value]);
+
   return {
     mounted: presence.mounted,
     phase: presence.phase,

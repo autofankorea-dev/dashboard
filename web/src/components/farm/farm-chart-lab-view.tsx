@@ -45,6 +45,7 @@ import {
   farmChartLabStallKey,
   farmChartScopeKey,
   filterReadingsByChartScope,
+  indexReadingsByChartScope,
   spScopeFromStallTy,
   stallScopeFromController,
   uniqueFarmChartLabStalls,
@@ -54,7 +55,6 @@ import {
   type FarmChartScope,
 } from "@/lib/farm/farm-chart-scope";
 import {
-  coverageIndexesFromSnap,
   useFarmTrendUplinkCoverage,
 } from "@/lib/farm/use-farm-trend-uplink-coverage";
 import type { UplinkCoverageIndex } from "@/lib/farm/trend-uplink-coverage";
@@ -102,6 +102,20 @@ function labBatchListClass(compact: boolean): string {
   return "flex flex-wrap content-start gap-2.5 md:gap-3";
 }
 
+function hiddenControllersExceptFirst(
+  controllers: BarnReading[],
+): Set<string> {
+  const first =
+    controllers.find(
+      (reading) => String(reading.eqpmnNo ?? "").replace(/^0+/, "") === "1",
+    ) ?? controllers[0];
+  return new Set(
+    controllers
+      .filter((reading) => reading.controllerKey !== first?.controllerKey)
+      .map((reading) => reading.controllerKey),
+  );
+}
+
 export function FarmChartLabView({
   readings,
   farmKey,
@@ -126,6 +140,10 @@ export function FarmChartLabView({
     [readings],
   );
   const tree = useMemo(() => buildFarmChartTree(readings), [readings]);
+  const readingsByScope = useMemo(
+    () => indexReadingsByChartScope(readings),
+    [readings],
+  );
   const stallAnchors = useMemo(
     () => uniqueFarmChartLabStalls(scopes),
     [scopes],
@@ -215,14 +233,41 @@ export function FarmChartLabView({
   const heroStallKey = primaryAnchor
     ? farmChartLabStallKey(primaryAnchor)
     : null;
-  const [hiddenCtrlKeys, setHiddenCtrlKeys] = useState<Set<string>>(
-    () => new Set(),
+  const heroControllers = useMemo(
+    () => {
+      const anchor = primaryKey
+        ? (scopes.find((s) => farmChartLabScopeKey(s) === primaryKey) ?? null)
+        : null;
+      if (!anchor) return [];
+      const scope = stallScopeFromController(anchor);
+      return (
+        readingsByScope.get(farmChartScopeKey(scope)) ??
+        filterReadingsByChartScope(readings, scope)
+      );
+    },
+    [primaryKey, readings, readingsByScope, scopes],
   );
-  const [hiddenForStall, setHiddenForStall] = useState<string | null>(null);
-  if (heroStallKey !== hiddenForStall) {
-    setHiddenForStall(heroStallKey);
-    setHiddenCtrlKeys(new Set());
-  }
+  const defaultHiddenCtrlKeys = useMemo(
+    () => hiddenControllersExceptFirst(heroControllers),
+    [heroControllers],
+  );
+  const [controllerVisibility, setControllerVisibility] = useState<{
+    stallKey: string;
+    hidden: Set<string>;
+  } | null>(null);
+  const hiddenCtrlKeys =
+    controllerVisibility?.stallKey === heroStallKey
+      ? controllerVisibility.hidden
+      : defaultHiddenCtrlKeys;
+  const controllerToggles = useMemo(
+    () =>
+      heroControllers.map((reading) => ({
+        key: reading.controllerKey,
+        eqpmnNo: reading.eqpmnNo,
+        on: !hiddenCtrlKeys.has(reading.controllerKey),
+      })),
+    [heroControllers, hiddenCtrlKeys],
+  );
 
   const labRootRef = useRef<HTMLDivElement>(null);
   const [expandOrigin, setExpandOrigin] = useState<{
@@ -235,12 +280,24 @@ export function FarmChartLabView({
 
   const uplinkCoverageSnap = useFarmTrendUplinkCoverage({
     farmKey: farmKey ?? null,
-    enabled: true,
+    enabled: layersToolbarActive,
     h24: controllerTrendByPeriod?.["24h"],
     d30: controllerTrendByPeriod?.["30d"],
     window15m,
   });
-  const uplinkCoverage = coverageIndexesFromSnap(uplinkCoverageSnap);
+  const uplinkCoverage = useMemo(
+    () =>
+      [
+        uplinkCoverageSnap.window,
+        uplinkCoverageSnap.h24,
+        uplinkCoverageSnap.d30,
+      ].filter((index): index is UplinkCoverageIndex => index != null),
+    [
+      uplinkCoverageSnap.window,
+      uplinkCoverageSnap.h24,
+      uplinkCoverageSnap.d30,
+    ],
+  );
 
   const commitSelection = (next: FarmChartLabSelection) => {
     if (onSelectionChange) {
@@ -257,6 +314,7 @@ export function FarmChartLabView({
   };
 
   const openSingle = (scope: FarmChartControllerScope) => {
+    setControllerVisibility(null);
     if (urlBound) {
       commitSelection({ mode: "single", primary: scope, partner: null });
       return;
@@ -353,6 +411,10 @@ export function FarmChartLabView({
         key={key}
         scope={scope}
         readings={readings}
+        scopedReadings={
+          readingsByScope.get(farmChartScopeKey(scope)) ??
+          filterReadingsByChartScope(readings, scope)
+        }
         size={size}
         selected={selected}
         index={index}
@@ -404,18 +466,13 @@ export function FarmChartLabView({
   };
 
   const heroAnchors = stallAnchors.filter(isHeroAnchor);
-  const heroControllers = primaryAnchor
-    ? filterReadingsByChartScope(
-        readings,
-        stallScopeFromController(primaryAnchor),
-      )
-    : [];
   const layerToolbar = layersToolbarActive ? (
       <div
         className="farm-chart-toolbar-fit relative flex w-full min-w-0 max-w-full items-center rounded-xl border bg-muted/40 p-2 md:inline-flex md:w-auto md:flex-wrap"
         data-farm-chart-layers-shell=""
       >
       <UnifiedTrendLayerToolbar
+        compact={isMobileStack}
         layers={layers}
         available={{
           ...UNIFIED_LAYER_TOOLBAR_AVAILABLE,
@@ -443,17 +500,18 @@ export function FarmChartLabView({
         onToggleHumAlarm={() =>
           setAlarmRangeOn((prev) => ({ ...prev, hum: !prev.hum }))
         }
-        controllerToggles={heroControllers.map((r) => ({
-          key: r.controllerKey,
-          eqpmnNo: r.eqpmnNo,
-          on: !hiddenCtrlKeys.has(r.controllerKey),
-        }))}
+        controllerToggles={controllerToggles}
         onToggleController={(key) => {
-          setHiddenCtrlKeys((prev) => {
-            const next = new Set(prev);
+          if (!heroStallKey) return;
+          setControllerVisibility((prev) => {
+            const current =
+              prev?.stallKey === heroStallKey
+                ? prev.hidden
+                : hiddenCtrlKeys;
+            const next = new Set(current);
             if (next.has(key)) next.delete(key);
             else next.add(key);
-            return next;
+            return { stallKey: heroStallKey, hidden: next };
           });
         }}
       />
@@ -551,6 +609,7 @@ export function FarmChartLabView({
 function LabTile({
   scope,
   readings,
+  scopedReadings,
   size,
   selected,
   index,
@@ -582,6 +641,7 @@ function LabTile({
 }: {
   scope: FarmChartScope;
   readings: BarnReading[];
+  scopedReadings: BarnReading[];
   size: "cell" | "hero" | "peer";
   selected: boolean;
   index: number;
@@ -621,13 +681,16 @@ function LabTile({
 }) {
   const tileRef = useRef<HTMLDivElement>(null);
   const overview = size !== "hero";
-  const scopedReadings = filterReadingsByChartScope(readings, scope);
-  const controllers = scopedReadings
-    .filter((r) => !hiddenCtrlKeys?.has(r.controllerKey))
-    .map((r) => ({
-      key: r.controllerKey,
-      reading: r,
-    }));
+  const controllers = useMemo(
+    () =>
+      scopedReadings
+        .filter((reading) => !hiddenCtrlKeys?.has(reading.controllerKey))
+        .map((reading) => ({
+          key: reading.controllerKey,
+          reading,
+        })),
+    [hiddenCtrlKeys, scopedReadings],
+  );
   const controllerSelectEmpty =
     Boolean(hiddenCtrlKeys?.size) &&
     scopedReadings.length > 0 &&

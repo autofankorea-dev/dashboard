@@ -47,7 +47,7 @@ import {
   });
   assert.equal(params.get("chartSp"), "SP03");
   assert.equal(params.get("chartStall"), "1");
-  assert.equal(params.get("chartCtrl"), encodeURIComponent("a/b"));
+  assert.equal(params.get("chartCtrl"), "a/b");
   const scope = resolveFarmChartScope(params);
   assert.ok(
     scopesEqual(scope, {
@@ -411,6 +411,34 @@ import {
   assert.equal(params.get("chartSp"), null);
   assert.equal(params.get("chartW1"), "SP07|1|a/b");
   assert.equal(params.get("chartW2"), "-");
+}
+
+{
+  const slot = parseChartWidgetSlot("SP07|01|SP07:01:01|SP07:01:01");
+  assert.ok(slot);
+  assert.equal(slot!.stallTyCode, "SP07");
+  assert.equal(slot!.stallNo, "01");
+  assert.equal(slot!.controllerKey, "SP07:01:01");
+  const lab = resolveFarmChartLabSelection(
+    new URLSearchParams(
+      "chartW1=SP07%7C01%7CSP07%3A01%3A01%7CSP07%3A01%3A01&chartW2=-",
+    ),
+  );
+  assert.equal(lab.mode, "single");
+  assert.equal(lab.primary?.controllerKey, "SP07:01:01");
+}
+
+{
+  const params = new URLSearchParams(
+    "chartSp=SP07&chartStall=01&chartCtrl=SP07%253A01%253A01",
+  );
+  const scope = resolveFarmChartScope(params);
+  assert.equal(scope.level, "controller");
+  if (scope.level === "controller") {
+    assert.equal(scope.controllerKey, "SP07:01:01");
+  }
+  applyFarmChartScopeParams(params, scope);
+  assert.equal(params.get("chartCtrl"), "SP07:01:01");
 }
 
 console.log("farm-chart-scope-url.test.ts: ok");

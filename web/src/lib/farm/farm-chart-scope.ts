@@ -83,6 +83,41 @@ export function filterReadingsByChartScope(
 }
 
 /**
+ * 타일이 같은 readings를 범위마다 반복 filter하지 않도록 만든 scope index.
+ * 값 배열은 입력 readings가 바뀔 때 한 번만 생성한다.
+ */
+export function indexReadingsByChartScope(
+  readings: BarnReading[],
+): Map<string, BarnReading[]> {
+  const index = new Map<string, BarnReading[]>([["farm", readings]]);
+  const append = (key: string, reading: BarnReading) => {
+    const list = index.get(key);
+    if (list) list.push(reading);
+    else index.set(key, [reading]);
+  };
+
+  for (const reading of readings) {
+    const stallTyCode = normalizeStallTyCode(reading.stallTyCode);
+    const stallNo = stallKeyFromReading(reading);
+    append(farmChartScopeKey({ level: "sp", stallTyCode }), reading);
+    append(
+      farmChartScopeKey({ level: "stall", stallTyCode, stallNo }),
+      reading,
+    );
+    append(
+      farmChartScopeKey({
+        level: "controller",
+        stallTyCode,
+        stallNo,
+        controllerKey: reading.controllerKey,
+      }),
+      reading,
+    );
+  }
+  return index;
+}
+
+/**
  * 차트 집계 범위 → 알람 byScope 키.
  * 농장 전체 = farm만, 유형/축사/컨트롤러는 설정 패널과 동일 계층.
  */
@@ -433,12 +468,12 @@ export function parseChartWidgetSlot(
 ): FarmChartControllerScope | null {
   if (!raw?.trim() || raw.trim() === CHART_WIDGET_EMPTY) return null;
   const decoded = safeDecodeCtrl(raw.trim());
-  const i1 = decoded.indexOf("|");
-  const i2 = decoded.indexOf("|", i1 + 1);
-  if (i1 < 0 || i2 < 0) return null;
-  const stallTyCode = normalizeStallTyCode(decoded.slice(0, i1));
-  const stallNo = decoded.slice(i1 + 1, i2).trim();
-  const controllerKey = decoded.slice(i2 + 1).trim();
+  const parts = decoded.split("|");
+  if (parts.length < 3) return null;
+  const stallTyCode = normalizeStallTyCode(parts[0] ?? "");
+  const stallNo = (parts[1] ?? "").trim();
+  /** 컨트롤러 키는 `|`를 쓰지 않음. 옛 4칸 URL은 앞 3칸만 쓴다. */
+  const controllerKey = safeDecodeCtrl((parts[2] ?? "").trim());
   if (!stallTyCode || !stallNo || !controllerKey) return null;
   return { level: "controller", stallTyCode, stallNo, controllerKey };
 }
@@ -790,12 +825,19 @@ export function resolveFarmChartScope(
   return { level: "sp", stallTyCode };
 }
 
+/** `%3A`·옛 이중 인코딩 `%253A`를 키 원문으로. */
 function safeDecodeCtrl(raw: string): string {
-  try {
-    return decodeURIComponent(raw);
-  } catch {
-    return raw;
+  let value = raw;
+  for (let i = 0; i < 3; i++) {
+    try {
+      const next = decodeURIComponent(value);
+      if (next === value) break;
+      value = next;
+    } catch {
+      break;
+    }
   }
+  return value;
 }
 
 /** 집계 범위 → URL. farm 레벨이면 chart* 제거. */
@@ -809,5 +851,5 @@ export function applyFarmChartScopeParams(
   if (scope.level === "sp") return;
   params.set(CHART_STALL_PARAM, scope.stallNo.trim());
   if (scope.level === "stall") return;
-  params.set(CHART_CTRL_PARAM, encodeURIComponent(scope.controllerKey));
+  params.set(CHART_CTRL_PARAM, scope.controllerKey);
 }

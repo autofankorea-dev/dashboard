@@ -86,9 +86,9 @@ export const TREND_15M_PERIODS: Record<TrendPeriodId, TrendPeriodConfig> = {
 
 export const TREND_ZOOM_15M_MAX_DAYS = 2;
 
-export const DEFAULT_TREND_PERIOD: TrendPeriodId = "7d";
+export const DEFAULT_TREND_PERIOD: TrendPeriodId = "24h";
 
-/** 차트 브러시 개요 — 30일×1일. 허브 기본은 30d 1시간(720). */
+/** 장기 차트 브러시 개요 — 30일×1시간(720). */
 export const TREND_OVERVIEW_30D: TrendPeriodConfig = {
   id: "30d",
   label: "30일",

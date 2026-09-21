@@ -387,6 +387,19 @@ export function FarmPageContent({
     enrichListIfNeeded,
   ]);
 
+  const shallowParams = useMemo(() => {
+    void urlTick;
+    void hubUrlEpoch;
+    if (!urlHydrated) {
+      return new URLSearchParams(searchParams.toString());
+    }
+    return currentFarmSearchParams();
+  }, [urlHydrated, hubUrlEpoch, urlTick, searchParams]);
+  const trendPeriod = useMemo(
+    () => resolveTrendPeriodParam(shallowParams),
+    [shallowParams],
+  );
+
   const {
     data: gridControllerTrend,
     loading: gridTrendLoading,
@@ -406,15 +419,6 @@ export function FarmPageContent({
       extend30d: view === "chart",
     });
 
-  const shallowParams = useMemo(() => {
-    void urlTick;
-    void hubUrlEpoch;
-    if (!urlHydrated) {
-      return new URLSearchParams(searchParams.toString());
-    }
-    return currentFarmSearchParams();
-  }, [urlHydrated, hubUrlEpoch, urlTick, searchParams]);
-
   const urlCtrl = shallowParams.get("ctrl");
   const listSp =
     fieldMerge || view === "list"
@@ -424,10 +428,6 @@ export function FarmPageContent({
     return resolveListViewMode(shallowParams, "controller");
   }, [shallowParams]);
   const listLayout = resolveListLayoutParam(shallowParams);
-  const trendPeriod = useMemo(
-    () => resolveTrendPeriodParam(shallowParams),
-    [shallowParams],
-  );
   const chartLabSelection = useMemo(
     () => resolveFarmChartLabSelection(shallowParams),
     [shallowParams],

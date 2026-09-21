@@ -30,6 +30,7 @@
 | [`SPARSE_OBSERVATION.md`](./SPARSE_OBSERVATION.md) | 희소 관측 기록 · **현재 `sparse_enabled=false`** |
 | [`HUB_STABILITY_P0.md`](./HUB_STABILITY_P0.md) | 허브 안정화 P0 게이트·체크리스트 |
 | [`WORKSPACE_NOTES.md`](./WORKSPACE_NOTES.md) | 운영 메모(스냅샷) |
+| [`incidents/20260917-rs-supabase-outage.md`](./incidents/20260917-rs-supabase-outage.md) | RS Supabase timeout 수집 공백 · durable Outbox 재발 방지 작업 |
 | [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md) | 작업 맥락·스키마 참고 |
 | [`SYSTEM.md`](./SYSTEM.md) | 인스턴스·DB·Next.js 시스템 정본 ([DB](./SYSTEM_DB.md) · [Instance](./SYSTEM_INSTANCE.md) · [Next.js](./SYSTEM_NEXTJS.md) · [런북](./SYSTEM_RUNBOOK.md)) |
 | [`HOME_SIM_PILOT.md`](./HOME_SIM_PILOT.md) | 집 PC FARM01 LIVE 시뮬 (`sim_pilot_farm01.py`) |

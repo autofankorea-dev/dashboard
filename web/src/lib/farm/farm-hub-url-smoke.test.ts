@@ -70,8 +70,8 @@ function clone(q: string) {
   const home = buildFarmMonitoringHomeParams(source);
   assert.equal(home.get("lsind"), "FARM01");
   assert.equal(home.get("item"), "P00");
-  /** 7d = 기본 → soft home URL에서 생략 */
-  assert.equal(home.get("trendPeriod"), null);
+  /** 기본이 아닌 7d는 soft home에서도 유지 */
+  assert.equal(home.get("trendPeriod"), "7d");
   assert.equal(resolveTrendPeriodParam(home), "7d");
   assert.equal(home.get("view"), null);
   assert.equal(home.get("chartSp"), null);
@@ -89,7 +89,7 @@ function clone(q: string) {
       "lsind=FARM01&item=P00&view=chart&trendPeriod=24h&chartSp=SP03",
     ),
   );
-  assert.equal(keep24.get("trendPeriod"), "24h");
+  assert.equal(keep24.get("trendPeriod"), null);
 
   // 그리드 탭 전환은 집계 정리, 위젯 칸은 유지
   const leaveChart = clone(source.toString());
@@ -118,11 +118,11 @@ function clone(q: string) {
     }),
   );
 
-  // 7d = 기본 → URL에서 trendPeriod 생략해도 탭·범위 유지
-  setTrendPeriodParam(params, "7d");
+  // 24h = 기본 → URL에서 trendPeriod 생략해도 탭·범위 유지
+  setTrendPeriodParam(params, "24h");
   pinFarmHubViewParam(params, "chart");
   assert.equal(params.get("trendPeriod"), null);
-  assert.equal(resolveTrendPeriodParam(params), "7d");
+  assert.equal(resolveTrendPeriodParam(params), "24h");
   assert.equal(resolveFarmHubView(params.get("view")), "chart");
   assert.equal(params.get("chartSp"), "SP02");
   console.log("smoke 3: period change keeps chart view+scope — ok");

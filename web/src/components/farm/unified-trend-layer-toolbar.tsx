@@ -202,6 +202,7 @@ type Props = {
   available: UnifiedTrendLayerAvailable;
   onCycleGroup: (group: LayerGroupId) => void;
   className?: string;
+  compact?: boolean;
   /** 시계열 응답 전 — 빈 지표 회색 카드를 아직 띄우지 않음 */
   metricsPending?: boolean;
   /** @deprecated 헤더 인라인만 사용. hub 무시 */
@@ -397,6 +398,7 @@ export function UnifiedTrendLayerToolbar({
   available,
   onCycleGroup,
   className,
+  compact = false,
   metricsPending = false,
   tempAlarmOn = true,
   humAlarmOn = true,
@@ -447,7 +449,8 @@ export function UnifiedTrendLayerToolbar({
       <div
         ref={toolbarRef}
         className={cn(
-          "farm-chart-toolbar-fit inline-flex max-w-full flex-wrap items-center gap-2 overflow-visible",
+          "farm-chart-toolbar-responsive inline-flex max-w-full flex-wrap items-center gap-2 overflow-visible",
+          compact && "farm-chart-toolbar-compact",
           className,
         )}
         data-tour-id="unified-trend-layer-toolbar"

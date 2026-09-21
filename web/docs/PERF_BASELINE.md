@@ -90,8 +90,25 @@ FARM01 LIVE ~12.8만 행에서 `v_iot_farm_overview`(전체 `DISTINCT ON`)이 **
 - App fetch uses `*_json` RPCs (one PostgREST row). Table-returning `farm_trend_history*` remain for SQL/EXPLAIN; do **not** `.range()` them — `max_rows=1000` re-runs the 30d `GROUP BY` per page.
 - Hub UI: **controller json only**. Stall heatmap is derived (`stallTrendFromControllerPeriod`).
 - Map tab SSR skips stall trend + controller-trend (Phase B idle hydrate / P4 lazy)
-- **Post-login:** farmer client warms scoped panel + 24h controller trend during brand splash (`warmPostLoginFarmHub`). Splash waits for field LIVE bootstrap + paint, not chart 30d / 3D.
+- **Post-login:** farmer client warms scoped panel + 24h controller trend during brand splash (`warmPostLoginFarmHub`). 30d와 coverage는 차트 탭 활성 뒤 점진 로드한다. Splash waits for field LIVE bootstrap + paint, not chart 30d / 3D.
 - Admin ops Z3 (`FarmScopedPanel`) uses per-farm scoped fetch; stall trend client-idle when map opens
+
+### 2026-09-17 · FARM01 P0–P2
+
+- P0: `cachedLiveQuery`에는 5MB대 RPC 원본이 아니라 sparse compact 결과만 저장한다. client cache TTL은 server slot과 같은 5분이다.
+- P1: 첫 `plotPx=1×1`은 viewBox fallback으로 marker를 px 크기로 유지한다. 차트 shell hydration 후 downsample·aggregate·SVG 계산을 deferred render로 넘긴다.
+- P2: decoded range partial index를 추가하고, 평균 입력에서 큰 `decoded_json`을 제외했다. B/C thermo는 bucket별 최신 row에만 재조인해 파싱한다.
+- 고정 24h payload 정합성: 적용 전후 `1092 rows`, MD5 `8b42f9bb41a4f32df697fc72d1312f7f` 일치.
+
+`TREND_MEASURE_SAMPLES=1 npm run measure:trend` · FARM01/P00 · remote Supabase:
+
+| 경로 | 전 | 후 | JSON |
+| --- | ---: | ---: | ---: |
+| controller 24h @ 15m | 1.58s | **0.33s** | 0.58MiB |
+| controller 30d @ 1h, 일별 직렬 | 33.9s | **16.83s** | RPC 원본 4.97MiB |
+| coverage 30d @ 1h | 9.01s | **1.02s** | 2B(현재 구간 결과 없음) |
+
+첫 usable 24h는 목표 1.5초를 충족한다. 30d cold는 약 50% 개선됐지만 5초 목표에는 미달한다. 현재는 24h를 먼저 표시하고 30d를 background에서 이어 받아 초기 진입을 막지 않는다. hourly summary는 별도 테이블·backfill·증분 갱신이 운영 수집 부하를 추가하므로 이번 P2에는 넣지 않았고, 30d cold 자체를 5초 아래로 내려야 할 때 다음 단계로 적용한다.
 
 ### Measured (dev, 2026-08-18) — `npm run measure:trend` · FARM01/P00 · 30d @ 15m · `*_json`
 
@@ -136,7 +153,7 @@ Admin hub grid is overview-only. Farm drill-in uses full panel (or enrich). Bulk
 | Layer | TTL / key | Notes |
 | --- | --- | --- |
 | Server `cachedLiveQuery` | 300 s · `[farm-trend, userId, scope, period, toMs]` | tags `live`, `trend:{scope}` |
-| Client Map (stall + controller) | **90 s** · `farmKeyId` | `client-trend-cache.ts` · farm leave invalidates previous scope |
+| Client Map (stall + controller) | **300 s** · `farmKeyId` | server cache slot과 정렬 · farm leave/명시 refresh에서 무효화 |
 
 ## Profile UI meta cache (Sprint B)
 

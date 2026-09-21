@@ -80,6 +80,7 @@ import {
   computeTipPlacement,
   domainFor,
   finiteValues,
+  markerRadiusInViewUnits,
   mergeOverlappingTempHumEdgeLabels,
   nudgeEdgeLabelTops,
   stackLeftAlarmBaselineLabels,
@@ -105,6 +106,7 @@ import {
   pickDraggableScaleEdgeHit,
   chartTipPresenceClass,
   chartBandGuideClass,
+  shouldPreferLookbackPinch,
   type PinnedTip,
 } from "./trend-chart-interaction";
 import { useTrendPinnedTips } from "./use-trend-pinned-tips";
@@ -437,8 +439,6 @@ export function TrendChart({
     null,
   );
   const [plotHovering, setPlotHovering] = useState(false);
-  /** 윈도우(줌) 도메인 시그니처 — 변경 시 고정 카드 재배치 */
-  const [prevWinSig, setPrevWinSig] = useState<string>("");
   /** 고정 카드 실측 크기(px) — 배치·점선 앵커 정확도용 (id별) */
   const [pinCardSizes, setPinCardSizes] = useState<
     Record<string, { w: number; h: number }>
@@ -475,6 +475,8 @@ export function TrendChart({
     y: number;
     pointerId: number;
   } | null>(null);
+  /** 2손가락 룩백 핀치 중 — X스코프 draft 재진입·커밋 방지 */
+  const lookbackPinchActiveRef = useRef(false);
   const [plotPx, setPlotPx] = useState({ w: 1, h: 1 });
   const plotWidthNotifyRef = useRef(0);
   const glowFilterId = `tc-glow-${useId().replace(/:/g, "")}`;
@@ -582,9 +584,12 @@ export function TrendChart({
     eventLaneActive: Boolean(eventLane) && eventLaneHeight > 0,
   });
   const n = categories.length;
+  const categoryAxisKey = n > 0 ? categories.join("\0") : "";
   const timeAxisMs = useMemo(
     () => (mode === "bar" ? null : parseCategoryTimelineMs(categories)),
-    [categories, mode],
+    // 배열 identity가 아니라 라벨 내용. 매 렌더 new Date() 재파싱 방지.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- categoryAxisKey
+    [categoryAxisKey, mode],
   );
 
   const axisH = hideAxisChrome ? 0 : 16;
@@ -605,8 +610,10 @@ export function TrendChart({
   const eventLaneTop = PAD_TOP + innerH;
 
   /** preserveAspectRatio=none 에서 원이 옆으로 퍼지지 않도록 viewBox rx/ry 보정 */
-  const markerRx = (rPx: number) => (rPx * viewW) / Math.max(1, plotPx.w);
-  const markerRy = (rPx: number) => (rPx * chartH) / Math.max(1, plotPx.h);
+  const markerRx = (rPx: number) =>
+    markerRadiusInViewUnits(rPx, viewW, plotPx.w, 32);
+  const markerRy = (rPx: number) =>
+    markerRadiusInViewUnits(rPx, chartH, plotPx.h, 8);
 
   const usesRight = series.some((s) => s.axis === "right") || referenceLines.some((r) => r.axis === "right");
 
@@ -736,22 +743,25 @@ export function TrendChart({
   const xAtIndex = (i: number): number =>
     mode === "bar" ? xForBar(i) : xFor(i);
 
-  // 윈도우(줌) 도메인이 바뀌면 고정 카드를 재배치한다 (prop-sync during render).
+  // 윈도우(줌) 도메인이 바뀌면 고정 카드를 재배치한다 (layout — 렌더 중 setState 금지).
   // - 새 구간 밖(atMs 범위 밖) → 닫기
   // - 새 구간 안 → 새 도메인 기준으로 앵커(nx/ny/idx) 재계산 (드래그 오프셋 초기화)
   const winSig =
     mode === "bar" || !timeAxisMs || timeAxisMs.length !== n || n < 1
       ? ""
       : `${timeAxisMs[0]}|${timeAxisMs[n - 1]}|${n}`;
-  if (winSig !== prevWinSig) {
-    setPrevWinSig(winSig);
-    if (winSig !== "" && timeAxisMs) {
+  const winSigSeenRef = useRef(winSig);
+  useLayoutEffect(() => {
+    if (winSigSeenRef.current === winSig) return;
+    winSigSeenRef.current = winSig;
+    setPinnedTips((prev) => {
+      if (prev.length === 0) return prev;
+      if (winSig === "" || !timeAxisMs) return prev;
       const tLo = Math.min(timeAxisMs[0]!, timeAxisMs[n - 1]!);
       const tHi = Math.max(timeAxisMs[0]!, timeAxisMs[n - 1]!);
       const remapPinToWindow = (p: PinnedTip): PinnedTip | null => {
-        if (p.atMs == null) return p; // 시각 정보 없으면 그대로 유지
-        if (p.atMs < tLo || p.atMs > tHi) return null; // 범위 밖 → 닫기
-        // 가장 가까운 카테고리 인덱스
+        if (p.atMs == null) return p;
+        if (p.atMs < tLo || p.atMs > tHi) return null;
         let bestIdx = 0;
         let bestD = Infinity;
         for (let i = 0; i < n; i++) {
@@ -781,7 +791,6 @@ export function TrendChart({
             oy: 0,
           };
         }
-        // 라인 시리즈 (온·습도 등)
         const s = series.find((x) => x.name === p.seriesKey);
         if (s) {
           const v = s.data[bestIdx];
@@ -795,7 +804,6 @@ export function TrendChart({
             oy: 0,
           };
         }
-        // 히스토그램 (모터/편차 막대 등)
         const hi = histograms.findIndex(
           (h, i) => (h.legendLabel ?? `hist-${i}`) === p.seriesKey,
         );
@@ -812,20 +820,18 @@ export function TrendChart({
             oy: 0,
           };
         }
-        // 알 수 없는 계열 → 가로만 재계산, 세로는 유지
         return { ...p, idx: bestIdx, nx: xAtIndex(bestIdx) / viewW, ox: 0, oy: 0 };
       };
-      setPinnedTips((prev) => {
-        if (prev.length === 0) return prev;
-        const out: PinnedTip[] = [];
-        for (const p of prev) {
-          const r = remapPinToWindow(p);
-          if (r) out.push(r);
-        }
-        return out;
-      });
-    }
-  }
+      const out: PinnedTip[] = [];
+      for (const p of prev) {
+        const r = remapPinToWindow(p);
+        if (r) out.push(r);
+      }
+      return out;
+    });
+    // winSig가 바뀐 렌더의 기하를 쓴다. series identity를 dep에 넣으면 재진입 루프가 난다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- winSig is the window trigger
+  }, [winSig]);
 
   const CROSSHAIR_CHIP_GAP_PX = 8;
 
@@ -1285,21 +1291,36 @@ export function TrendChart({
     yViewFromClient,
     clearHover,
   });
+  const cancelXScopeRef = useRef(onXScopePointerCancel);
+  useEffect(() => {
+    cancelXScopeRef.current = onXScopePointerCancel;
+  }, [onXScopePointerCancel]);
 
   useEffect(() => {
     const el = plotRef.current;
     if (!el || !onLookbackWheel) return;
     const pinchFactor = 1.18;
-    const blocked = () =>
+    /** 휠: X스코프·편집 중에는 막음. 핀치: draft는 진입 시 취소하므로 편집만 막음. */
+    const wheelBlocked = () =>
       edgeEdit != null ||
       edgeDragRef.current != null ||
       labelDragArmRef.current != null ||
       Boolean(xScopeDraggingRef.current) ||
       xDraftRef.current != null;
+    const pinchBlocked = () =>
+      edgeEdit != null ||
+      edgeDragRef.current != null ||
+      labelDragArmRef.current != null;
+
+    const yieldToLookbackPinch = () => {
+      lookbackPinchActiveRef.current = true;
+      pinClickArmRef.current = null;
+      cancelXScopeRef.current();
+    };
 
     const onWheel = (e: WheelEvent) => {
       if (e.ctrlKey || e.metaKey) return;
-      if (blocked()) return;
+      if (wheelBlocked()) return;
       e.preventDefault();
       onLookbackWheel(e.deltaY > 0 ? 1 : -1);
     };
@@ -1313,10 +1334,15 @@ export function TrendChart({
       return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
     };
     const onTouchStart = (e: TouchEvent) => {
-      if (e.touches.length >= 2) pinchDist = dist(e.touches);
+      if (!shouldPreferLookbackPinch(e.touches.length)) return;
+      yieldToLookbackPinch();
+      pinchDist = dist(e.touches);
     };
     const onTouchMove = (e: TouchEvent) => {
-      if (e.touches.length < 2 || blocked()) return;
+      if (!shouldPreferLookbackPinch(e.touches.length) || pinchBlocked()) return;
+      if (xDraftRef.current != null || xScopeDraggingRef.current) {
+        yieldToLookbackPinch();
+      }
       const d = dist(e.touches);
       if (!(pinchDist > 0) || !(d > 0)) {
         pinchDist = d;
@@ -1334,7 +1360,9 @@ export function TrendChart({
       }
     };
     const onTouchEnd = (e: TouchEvent) => {
-      if (e.touches.length < 2) pinchDist = 0;
+      if (shouldPreferLookbackPinch(e.touches.length)) return;
+      lookbackPinchActiveRef.current = false;
+      pinchDist = 0;
     };
 
     el.addEventListener("wheel", onWheel, { passive: false });
@@ -1428,6 +1456,8 @@ export function TrendChart({
   const onPlotPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (!isPrimaryPress(e)) return;
     if (edgeEdit) return;
+    /** 핀치 세션 중(또는 touchstart가 pointerdown보다 먼저인 경우) X스코프·핀 암 생략 */
+    if (lookbackPinchActiveRef.current) return;
     pinClickArmRef.current = {
       x: e.clientX,
       y: e.clientY,
@@ -1875,7 +1905,9 @@ export function TrendChart({
   );
   const alarmPresence = useClipPresence(
     alarmFillBands,
-    (b) => b.id ?? `${b.axis}:${b.band.lo}:${b.band.hi}`,
+    (b) =>
+      b.id ??
+      `${b.axis}:${Number(b.band.lo).toFixed(3)}:${Number(b.band.hi).toFixed(3)}`,
     { enabled: clipWipeEnabled },
   );
 

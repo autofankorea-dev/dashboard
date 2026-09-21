@@ -21,12 +21,12 @@ import {
 
 {
   const params = new URLSearchParams("lsind=FARM01&item=P00&view=chart");
-  setTrendPeriodParam(params, "7d");
+  setTrendPeriodParam(params, "24h");
   pinFarmHubViewParam(params, "chart");
   assert.equal(params.get("view"), "chart");
-  // 기본 7d는 URL에서 생략
+  // 기본 24h는 URL에서 생략
   assert.equal(params.get("trendPeriod"), null);
-  assert.equal(resolveTrendPeriodParam(params), "7d");
+  assert.equal(resolveTrendPeriodParam(params), "24h");
   assert.equal(params.get("lsind"), "FARM01");
 }
 
@@ -84,8 +84,8 @@ import {
   const home = buildFarmMonitoringHomeParams(source);
   assert.equal(home.get("lsind"), "FARM01");
   assert.equal(home.get("item"), "P00");
-  // soft home도 기본 7d는 쿼리에서 제거
-  assert.equal(home.get("trendPeriod"), null);
+  // 기본이 아닌 7d는 soft home에서도 유지
+  assert.equal(home.get("trendPeriod"), "7d");
   assert.equal(home.get("view"), null);
   assert.equal(home.get("sp"), null);
   assert.equal(home.get("ctrl"), null);
@@ -93,7 +93,7 @@ import {
   assert.equal(isFarmMonitoringSoftHome(source), false);
   assert.equal(
     buildFarmMonitoringHomePath(source),
-    "/farm?lsind=FARM01&item=P00",
+    "/farm?lsind=FARM01&item=P00&trendPeriod=7d",
   );
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { PinnedTip } from "./trend-chart-interaction";
 
 /**
@@ -30,12 +30,13 @@ export function useTrendPinnedTips(opts: { resetKey: string }) {
     });
   }, []);
 
-  // 기간·데이터 바뀌면 고정 카드 초기화 (prop sync during render)
-  const [prevResetKey, setPrevResetKey] = useState(resetKey);
-  if (resetKey !== prevResetKey) {
-    setPrevResetKey(resetKey);
+  // 기간·데이터 바뀌면 고정 카드 초기화 (layout — 렌더 중 setState 금지)
+  const resetKeyRef = useRef(resetKey);
+  useLayoutEffect(() => {
+    if (resetKeyRef.current === resetKey) return;
+    resetKeyRef.current = resetKey;
     setPinnedTips([]);
-  }
+  }, [resetKey]);
 
   // 차트 밖 클릭 — 고정 데이터 카드 전부 해제
   useEffect(() => {

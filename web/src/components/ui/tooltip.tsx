@@ -1,9 +1,24 @@
 "use client"
 
+import {
+  createContext,
+  useContext,
+  useSyncExternalStore,
+  type ButtonHTMLAttributes,
+  type ReactNode,
+} from "react"
 import { Tooltip as TooltipPrimitive } from "@base-ui/react/tooltip"
 
 import { cn } from "@/lib/utils"
 import { motionClass } from "@/lib/ui/motion-classes"
+
+/** 첫 페인트는 서버·hydration 모두 false. Base UI Trigger 속성 불일치 방지. */
+const TooltipHydratedContext = createContext(false)
+const emptySubscribe = () => () => {}
+
+function useIsClient() {
+  return useSyncExternalStore(emptySubscribe, () => true, () => false)
+}
 
 function TooltipProvider({
   delay = 0,
@@ -18,12 +33,53 @@ function TooltipProvider({
   )
 }
 
-function Tooltip({ ...props }: TooltipPrimitive.Root.Props) {
-  return <TooltipPrimitive.Root data-slot="tooltip" {...props} />
+function Tooltip({ children, ...props }: TooltipPrimitive.Root.Props) {
+  const isClient = useIsClient()
+  const content = children as ReactNode
+  if (!isClient) {
+    return (
+      <TooltipHydratedContext.Provider value={false}>
+        {content}
+      </TooltipHydratedContext.Provider>
+    )
+  }
+  return (
+    <TooltipHydratedContext.Provider value={true}>
+      <TooltipPrimitive.Root data-slot="tooltip" {...props}>
+        {content}
+      </TooltipPrimitive.Root>
+    </TooltipHydratedContext.Provider>
+  )
 }
 
-function TooltipTrigger({ ...props }: TooltipPrimitive.Trigger.Props) {
-  return <TooltipPrimitive.Trigger data-slot="tooltip-trigger" {...props} />
+function TooltipTrigger({
+  handle: _handle,
+  payload: _payload,
+  delay: _delay,
+  closeOnClick: _closeOnClick,
+  closeDelay: _closeDelay,
+  render: _render,
+  disabled,
+  ...props
+}: TooltipPrimitive.Trigger.Props) {
+  const hydrated = useContext(TooltipHydratedContext)
+  if (!hydrated) {
+    return (
+      <button
+        type="button"
+        data-slot="tooltip-trigger"
+        disabled={disabled}
+        {...(props as ButtonHTMLAttributes<HTMLButtonElement>)}
+      />
+    )
+  }
+  return (
+    <TooltipPrimitive.Trigger
+      data-slot="tooltip-trigger"
+      disabled={disabled}
+      {...props}
+    />
+  )
 }
 
 function TooltipContent({
@@ -39,6 +95,8 @@ function TooltipContent({
     TooltipPrimitive.Positioner.Props,
     "align" | "alignOffset" | "side" | "sideOffset"
   >) {
+  const hydrated = useContext(TooltipHydratedContext)
+  if (!hydrated) return null
   return (
     <TooltipPrimitive.Portal>
       <TooltipPrimitive.Positioner

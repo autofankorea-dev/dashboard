@@ -1,6 +1,6 @@
 /** Client-side trend bundle cache — complements server `unstable_cache` (300s). */
 
-export const CLIENT_TREND_CACHE_TTL_MS = 90_000;
+export const CLIENT_TREND_CACHE_TTL_MS = 5 * 60_000;
 
 export type TimedCacheEntry<T> = {
   data: T;

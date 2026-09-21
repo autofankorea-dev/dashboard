@@ -113,6 +113,14 @@ export function isScaleEdgeMidId(id: string): boolean {
   return id.endsWith("-mid");
 }
 
+/**
+ * 모바일 룩백 핀치 — 터치 2개 이상이면 X스코프(윈도우 줌)보다 우선.
+ * 1손가락 드래그-줌·휠·핀은 그대로 둔다.
+ */
+export function shouldPreferLookbackPinch(touchCount: number): boolean {
+  return touchCount >= 2;
+}
+
 function pickPreferredScaleEdgeHit<T extends { d: number; mid: boolean }>(
   hits: T[],
 ): T | null {

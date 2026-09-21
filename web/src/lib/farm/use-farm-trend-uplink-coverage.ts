@@ -183,11 +183,3 @@ export function useFarmTrendUplinkCoverage(params: {
 
   return snap.scopeId === scopeId ? snap.data : emptySnap();
 }
-
-export function coverageIndexesFromSnap(
-  snap: CoverageSnap,
-): UplinkCoverageIndex[] {
-  return [snap.window, snap.h24, snap.d30].filter(
-    (idx): idx is UplinkCoverageIndex => idx != null,
-  );
-}

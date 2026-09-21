@@ -16,7 +16,7 @@ import {
 
 type StallTrendBundle = Record<TrendPeriodId, TrendPeriodData>;
 
-/** map idle prefetch 공유 — 컨트롤러 추이에서 파생 · TTL 90s */
+/** map idle prefetch 공유 — 컨트롤러 추이에서 파생 · 서버와 같은 5분 TTL */
 const stallTrendCache = new Map<string, TimedCacheEntry<StallTrendBundle>>();
 
 export function peekFarmStallTrendCache(

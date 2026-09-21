@@ -43,7 +43,7 @@ export function resolveTrendPeriodParam(params: URLSearchParams): TrendPeriodId 
   return parseTrendPeriodParam(params.get(TREND_PERIOD_PARAM));
 }
 
-/** 기본 period(7d)면 URL에서 생략. */
+/** 기본 period(24h)면 URL에서 생략. */
 export function setTrendPeriodParam(
   params: URLSearchParams,
   period: TrendPeriodId,

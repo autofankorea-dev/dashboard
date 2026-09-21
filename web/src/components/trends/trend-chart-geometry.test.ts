@@ -8,6 +8,7 @@ import {
   computeTipPlacement,
   domainFor,
   finiteValues,
+  markerRadiusInViewUnits,
   mergeOverlappingTempHumEdgeLabels,
   nudgeEdgeLabelTops,
   stackLeftAlarmBaselineLabels,
@@ -37,6 +38,12 @@ import type {
 // 좌표 매퍼 스텁 — 인덱스=x, 값=y (axis 무시).
 const xForId = (i: number) => i;
 const yForId = (v: number) => v;
+
+// 첫 확대 1×1 측정값은 fallback view 크기를 사용해 marker를 px 크기로 유지.
+assert.equal(markerRadiusInViewUnits(1.6, 100, 1, 32), 1.6);
+assert.ok(Math.abs(markerRadiusInViewUnits(1.6, 48, 1, 8) - 1.6) < 1e-9);
+// 실제 크기를 측정한 뒤에는 preserveAspectRatio=none 비율로 변환.
+assert.equal(markerRadiusInViewUnits(2, 100, 200, 32), 1);
 
 // domainFor: forced 우선, 빈 배열 fallback, 동일값 확장, 패딩.
 assert.deepEqual(domainFor([1, 2, 3], [0, 10]), [0, 10]);
