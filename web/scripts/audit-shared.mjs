@@ -92,8 +92,17 @@ export async function waitListSettingsPanel(page) {
   return openFieldControllerSettings(page);
 }
 
-/** 접힌 제어 섹션을 펼쳐 설정온도 입력이 클릭 가능하게 한다. */
+/** 명령 편집이 보이도록 채널 줄을 연다. */
 export async function ensureControlSectionExpanded(scope) {
+  const setpoint = scope.getByLabel("설정온도", { exact: true }).first();
+  if (await setpoint.isVisible().catch(() => false)) return;
+
+  const channelA = scope.getByRole("button", { name: /^A채널/ }).first();
+  if (await channelA.isVisible().catch(() => false)) {
+    await channelA.click();
+    if (await setpoint.isVisible().catch(() => false)) return;
+  }
+
   const controlToggle = scope
     .locator('button[aria-expanded="false"]')
     .filter({ hasText: /^제어/ })
@@ -138,7 +147,7 @@ export async function applyFromSettingsPanel(page, scope = page) {
     return candidates[0] ?? (base >= 25 ? Math.max(15, base - 1) : Math.min(35, base + 1));
   };
 
-  const applyBtn = scope.getByRole("button", { name: "적용", exact: true }).first();
+  const applyBtn = scope.getByRole("button", { name: /^(명령 적용|적용)$/ }).first();
   await applyBtn.waitFor({ state: "visible", timeout: 15000 });
 
   let next = 25;

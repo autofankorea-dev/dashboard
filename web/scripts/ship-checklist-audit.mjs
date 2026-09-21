@@ -134,7 +134,7 @@ async function smokeViewer(page) {
   const panelText = await panel.innerText();
   assert(/조회\s*전용/.test(panelText), "viewer: 조회 전용 배너 없음");
   assert(
-    !(await panel.getByRole("button", { name: "적용", exact: true }).isVisible().catch(() => false)),
+    !(await panel.getByRole("button", { name: /^(명령 적용|적용)$/ }).isVisible().catch(() => false)),
     "viewer: 적용 버튼이 보이면 안 됨",
   );
 

@@ -49,7 +49,7 @@ async function auditViewerDenied(page) {
   const panel = page.locator('[data-audit-region="barn-list-accordion-panel"]').first();
   await ensureControlSectionExpanded(panel);
 
-  const applyBtn = panel.getByRole("button", { name: "적용", exact: true });
+  const applyBtn = panel.getByRole("button", { name: /^(명령 적용|적용)$/ });
   const applyCount = await applyBtn.count();
   // 조회 전용: 적용 버튼 자체가 없거나, disabled / 권한 안내
   if (applyCount === 0) {

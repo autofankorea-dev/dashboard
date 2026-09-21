@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { Eye, Loader2, Thermometer } from "lucide-react";
 import {
   AlarmThresholdForm,
@@ -27,7 +27,11 @@ import {
   type CommandConfirmModel,
   type CommandThermoValues,
 } from "@/lib/farm/command-confirm";
-import { SettingsCollapsibleSection } from "@/components/farm/settings-collapsible-section";
+import {
+  SettingsGlanceStrip,
+  type SettingsGlanceFocus,
+} from "@/components/farm/settings-glance-strip";
+import { type PanelDraft } from "@/lib/controllers/controller-panel-draft";
 import { BusyButtonLabel } from "@/components/common/busy-button-label";
 import { useFarmLiveRefreshOptional } from "@/lib/navigation/farm-live-refresh";
 import type { BarnReading } from "@/lib/data/iot";
@@ -46,18 +50,12 @@ import { normalizeStallTyCode } from "@/lib/data/stall-type";
 import { stallKeyFromReading } from "@/lib/data/reading-hierarchy";
 import { isReadingOnline } from "@/lib/data/reading-display";
 import { cn } from "@/lib/utils";
-import {
-  dashboardAffordance,
-  dashboardChroma,
-} from "@/lib/ui/dashboard-page-ui";
-import { motionClass } from "@/lib/ui/motion-classes";
+import { dashboardAffordance } from "@/lib/ui/dashboard-page-ui";
 
 /** 목록 카드 설정 패널 — 그래프 패널 차트 라벨과 동일 스케일 */
 const LIST_PANEL_META = "text-xs tabular-nums text-muted-foreground";
 const LIST_SLIDER_TITLE = "text-xs font-semibold";
 const LIST_SLIDER_AXIS = "text-[11px] leading-snug text-muted-foreground";
-
-type SettingsSectionId = "alarm" | "control";
 
 type Props = {
   reading: BarnReading;
@@ -66,26 +64,11 @@ type Props = {
   commands?: ThermoCommand[];
   alarmSettings?: AlarmSettings;
   canCommand: boolean;
-  /** 섹션 접이식 — 모바일 sheet·PC 목록 설정 공통 */
+  /** 패딩 변형 — 모바일 sheet·PC 목록 설정 공통 */
   collapsibleSections?: boolean;
   /** 명령이 접수되면 덮개로 돌아가 채널 진행을 본다 */
   onCommandQueued?: () => void;
 };
-
-function SectionShell({ children }: { children: React.ReactNode }) {
-  return (
-    <section className="rounded-lg border bg-background p-3">{children}</section>
-  );
-}
-
-function formatControlCollapsedSummary(values: {
-  setpoint: number;
-  deviation: number;
-  minVent: number;
-  maxVent: number;
-}): string {
-  return `${values.setpoint}±${values.deviation}℃ · 환기 ${values.minVent}–${values.maxVent}%`;
-}
 
 function sliderFieldsToThermo(values: {
   setpoint: number;
@@ -93,6 +76,20 @@ function sliderFieldsToThermo(values: {
   minVent: number;
   maxVent: number;
 }): CommandThermoValues {
+  return {
+    setpointTemp: values.setpoint,
+    tempDeviation: values.deviation,
+    minVentPct: values.minVent,
+    maxVentPct: values.maxVent,
+  };
+}
+
+function fieldsToDraft(values: {
+  setpoint: number;
+  deviation: number;
+  minVent: number;
+  maxVent: number;
+}): PanelDraft {
   return {
     setpointTemp: values.setpoint,
     tempDeviation: values.deviation,
@@ -113,12 +110,8 @@ export function BarnListAccordionPanel({
 }: Props) {
   const [thresholdHeader, setThresholdHeader] =
     useState<AlarmThresholdHeaderState | null>(null);
-  const [openSection, setOpenSection] = useState<SettingsSectionId | null>(
-    null,
-  );
+  const [focus, setFocus] = useState<SettingsGlanceFocus | null>(null);
   const [activeChannel, setActiveChannel] = useState<ChannelSlot>("A");
-  const channelTablistRef = useRef<HTMLDivElement>(null);
-  const [channelPill, setChannelPill] = useState({ left: 0, width: 0 });
   const [confirmModel, setConfirmModel] = useState<CommandConfirmModel | null>(
     null,
   );
@@ -137,23 +130,13 @@ export function BarnListAccordionPanel({
     [channels],
   );
 
-  useLayoutEffect(() => {
-    const root = channelTablistRef.current;
-    if (!root) return;
-    const selected = root.querySelector<HTMLElement>(
-      '[role="tab"][aria-selected="true"]',
-    );
-    if (!selected) return;
-    const next = { left: selected.offsetLeft, width: selected.offsetWidth };
-    setChannelPill((prev) =>
-      prev.left === next.left && prev.width === next.width ? prev : next,
-    );
-  }, [activeChannel, channelSlots]);
-
   /** detail 로드·채널 구성 변경 시 가용 슬롯으로 맞춤 */
   if (hasChannels && !channelSlots.includes(activeChannel)) {
     setActiveChannel(channelSlots[0] ?? "A");
   }
+
+  const resolvedFocus: SettingsGlanceFocus =
+    focus ?? (hasChannels ? (channelSlots[0] ?? "A") : "ctrl");
 
   const channelEqpmnCode =
     channelBySlot(channels, activeChannel)?.eqpmnCode ?? "";
@@ -307,6 +290,7 @@ export function BarnListAccordionPanel({
   );
 
   const isSaving = panel.pending || Boolean(thresholdHeader?.pending);
+  const alarmLayer = resolvedFocus === "alarm";
   const canSaveControl =
     online && canCommand && !panel.pending && panel.hasChanges;
   const canSaveAlarm =
@@ -317,77 +301,93 @@ export function BarnListAccordionPanel({
     !thresholdHeader!.validationError &&
     thresholdHeader!.scopeReady &&
     thresholdHeader!.hasChanges;
-  const saveDisabled = isSaving || (!canSaveControl && !canSaveAlarm);
+  const saveDisabled = alarmLayer
+    ? isSaving || !canSaveAlarm
+    : isSaving || !canSaveControl;
   const saveDisabledReason = (() => {
     if (isSaving) return "저장 중…";
     if (!canCommand) return "조회 전용 계정입니다. 설정 변경 권한이 없습니다.";
     if (!online) return "오프라인이라 적용할 수 없습니다.";
-    if (!panel.settingsKnown && !panel.hasEdited && !canSaveAlarm) {
+    if (alarmLayer) {
+      if (!thresholdHeader?.scopeReady) return "알림 기준을 불러오는 중…";
+      if (!canSaveAlarm) return "변경된 알림이 없습니다.";
+      return null;
+    }
+    if (!panel.settingsKnown && !panel.hasEdited) {
       return "설정값을 불러오는 중…";
     }
-    if (!canSaveControl && !canSaveAlarm) return "변경된 설정이 없습니다.";
+    if (!canSaveControl) return "변경된 명령이 없습니다.";
     return null;
   })();
-  const defaultsDisabled =
-    !canCommand ||
-    isSaving ||
-    Boolean(thresholdHeader && (!thresholdHeader.scopeReady || thresholdHeader.pending));
+  const defaultsDisabled = alarmLayer
+    ? !canCommand ||
+      isSaving ||
+      Boolean(thresholdHeader && (!thresholdHeader.scopeReady || thresholdHeader.pending))
+    : !canCommand || isSaving;
 
-  const handleSaveAll = () => {
-    if (isSaving) return;
-    if (canSaveControl) {
-      const focused = document.activeElement;
-      if (focused instanceof HTMLElement) focused.blur();
-      window.setTimeout(() => {
-        const dirty = panel.peekDirtySaves();
-        if (dirty.length > 0) {
-          const model = buildMultiChannelCommandConfirmModel({
-            target: formatCommandConfirmTarget({
-              stallTyCode: reading.stallTyCode,
-              stallNo: reading.stallNo,
-              eqpmnNo: reading.eqpmnNo,
-              channels: dirty.map((row) => row.slot),
-              onlineCount: 1,
-            }),
-            channels: dirty.map((row) => ({
-              channel: row.slot,
-              current: row.current,
-              command: row.values,
-            })),
-          });
-          confirmSentRef.current = false;
-          confirmControlSavesRef.current = dirty;
-          setConfirmModel(model);
-          return;
-        }
-        const current = panel.currentValues
-          ? sliderFieldsToThermo(panel.currentValues)
-          : liveThermo
-            ? {
-                setpointTemp: liveThermo.setpointTemp,
-                tempDeviation: liveThermo.tempDeviation,
-                minVentPct: liveThermo.minVentPct,
-                maxVentPct: liveThermo.maxVentPct,
-              }
-            : null;
-        const model = buildCommandConfirmModel({
+  const handleFocus = (next: SettingsGlanceFocus) => {
+    setFocus(next);
+    if (next === "A" || next === "B" || next === "C") {
+      if (channelSlots.includes(next)) setActiveChannel(next);
+    }
+  };
+
+  const handleSaveControl = () => {
+    if (isSaving || !canSaveControl) return;
+    const focusedEl = document.activeElement;
+    if (focusedEl instanceof HTMLElement) focusedEl.blur();
+    window.setTimeout(() => {
+      const dirty = panel.peekDirtySaves();
+      if (dirty.length > 0) {
+        const model = buildMultiChannelCommandConfirmModel({
           target: formatCommandConfirmTarget({
             stallTyCode: reading.stallTyCode,
             stallNo: reading.stallNo,
             eqpmnNo: reading.eqpmnNo,
-            channel: hasChannels ? activeChannel : null,
+            channels: dirty.map((row) => row.slot),
             onlineCount: 1,
           }),
-          current,
-          command: sliderFieldsToThermo(panel.sliderValues),
+          channels: dirty.map((row) => ({
+            channel: row.slot,
+            current: row.current,
+            command: row.values,
+          })),
         });
         confirmSentRef.current = false;
-        confirmControlSavesRef.current = null;
+        confirmControlSavesRef.current = dirty;
         setConfirmModel(model);
-      }, 0);
-      return;
-    }
-    if (canSaveAlarm) thresholdHeader!.onSave();
+        return;
+      }
+      const current = panel.currentValues
+        ? sliderFieldsToThermo(panel.currentValues)
+        : liveThermo
+          ? {
+              setpointTemp: liveThermo.setpointTemp,
+              tempDeviation: liveThermo.tempDeviation,
+              minVentPct: liveThermo.minVentPct,
+              maxVentPct: liveThermo.maxVentPct,
+            }
+          : null;
+      const model = buildCommandConfirmModel({
+        target: formatCommandConfirmTarget({
+          stallTyCode: reading.stallTyCode,
+          stallNo: reading.stallNo,
+          eqpmnNo: reading.eqpmnNo,
+          channel: hasChannels ? activeChannel : null,
+          onlineCount: 1,
+        }),
+        current,
+        command: sliderFieldsToThermo(panel.sliderValues),
+      });
+      confirmSentRef.current = false;
+      confirmControlSavesRef.current = null;
+      setConfirmModel(model);
+    }, 0);
+  };
+
+  const handleSaveAlarm = () => {
+    if (isSaving || !canSaveAlarm) return;
+    thresholdHeader!.onSave();
   };
 
   const dismissConfirm = useCallback(() => {
@@ -399,17 +399,18 @@ export function BarnListAccordionPanel({
   const commitConfirmedApply = useCallback(() => {
     if (confirmSentRef.current || panel.pending) return;
     confirmSentRef.current = true;
-    const saveAlarm = canSaveAlarm;
     const queued = confirmControlSavesRef.current ?? undefined;
     confirmControlSavesRef.current = null;
     setConfirmModel(null);
-    if (saveAlarm) thresholdHeader?.onSave();
     panel.save(queued);
-  }, [canSaveAlarm, panel, thresholdHeader]);
+  }, [panel]);
 
   const handleApplyDefaults = () => {
+    if (alarmLayer) {
+      thresholdHeader?.onApplyDefaults();
+      return;
+    }
     panel.applyDefaults();
-    thresholdHeader?.onApplyDefaults();
   };
 
   const panelError =
@@ -433,75 +434,18 @@ export function BarnListAccordionPanel({
   // eslint-disable-next-line react-hooks/exhaustive-deps -- 의도적 생략
   }, [dismissOverlay, pipeline.clearFlash]);
 
-  const toggleSection = (id: SettingsSectionId) => {
-    setOpenSection((prev) => (prev === id ? null : id));
-  };
-
   const alarmSummary =
     thresholdHeader?.collapsedSummary ?? "온도 · 습도 알람";
-  const controlSummary = formatControlCollapsedSummary(panel.sliderValues);
-  const controlTitle = "설정온도 · 편차";
-
-  const channelPicker =
-    hasChannels && channelSlots.length > 1 ? (
-      <div
-        ref={channelTablistRef}
-        role="tablist"
-        aria-label="제어 채널"
-        className="relative inline-flex rounded-xl border bg-muted/40 p-1"
-      >
-        <span
-          aria-hidden
-          className={cn(
-            "pointer-events-none absolute top-1 bottom-1 z-0 rounded-lg",
-            dashboardChroma.viewTabPill,
-            motionClass.viewTabPill,
-            channelPill.width <= 0 && "opacity-0",
-          )}
-          style={{
-            left: channelPill.left,
-            width: channelPill.width,
-          }}
-        />
-        {channelSlots.map((slot) => {
-          const selected = slot === activeChannel;
-          const dirty = panel.dirtyChannelSlots.includes(slot);
-          return (
-            <button
-              key={slot}
-              type="button"
-              role="tab"
-              aria-selected={selected}
-              aria-label={dirty ? `${slot} 변경됨` : slot}
-              disabled={isSaving}
-              className={cn(
-                "relative z-[1] inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg px-3 py-1.5 text-xs font-medium",
-                motionClass.microHover,
-                selected
-                  ? dashboardChroma.chromeActiveText
-                  : dashboardAffordance.choiceIdle,
-                isSaving && "opacity-50",
-              )}
-              onClick={() => {
-                const active = document.activeElement;
-                if (active instanceof HTMLElement) active.blur();
-                setActiveChannel(slot);
-              }}
-            >
-              <span className="inline-flex items-center gap-1">
-                {slot}
-                {dirty ? (
-                  <span
-                    className="size-1.5 rounded-full bg-primary"
-                    aria-hidden
-                  />
-                ) : null}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    ) : null;
+  const focusedSlot =
+    resolvedFocus === "A" || resolvedFocus === "B" || resolvedFocus === "C"
+      ? resolvedFocus
+      : null;
+  const focusedChannelPresent = Boolean(
+    focusedSlot && channelSlots.includes(focusedSlot),
+  );
+  const showControlEditor = !alarmLayer && (!hasChannels || focusedChannelPresent);
+  const showMissingChannel =
+    hasChannels && Boolean(focusedSlot) && !focusedChannelPresent;
 
   const alarmForm = (
     <AlarmThresholdForm
@@ -520,7 +464,6 @@ export function BarnListAccordionPanel({
 
   const controlBody = (
     <div className="space-y-3">
-      {channelPicker}
       <div>
         <div className="mb-2 flex items-start gap-2">
           <Thermometer
@@ -528,7 +471,11 @@ export function BarnListAccordionPanel({
             aria-hidden
           />
           <div className="min-w-0 flex-1">
-            <p className={LIST_SLIDER_TITLE}>설정온도 · 편차</p>
+            <p className={LIST_SLIDER_TITLE}>
+              {hasChannels && focusedSlot
+                ? `${focusedSlot}채널 설정온도 · 편차`
+                : "설정온도 · 편차"}
+            </p>
             {panel.currentValues ? (
               <p className={cn("tabular-nums", LIST_PANEL_META)}>
                 현재 {panel.currentValues.setpoint}℃ +
@@ -582,40 +529,26 @@ export function BarnListAccordionPanel({
     </div>
   );
 
-  const settingsSections = collapsibleSections ? (
+  const settingsSections = (
     <div className="flex flex-col gap-2">
-      <SettingsCollapsibleSection
-        id="alarm"
-        title="알람"
-        summary={alarmSummary}
-        changed={Boolean(thresholdHeader?.hasChanges)}
-        open={openSection === "alarm"}
-        onToggle={() => toggleSection("alarm")}
-      >
-        {alarmForm}
-      </SettingsCollapsibleSection>
-      <SettingsCollapsibleSection
-        id="control"
-        title={controlTitle}
-        summary={controlSummary}
-        changed={panel.hasChanges}
-        open={openSection === "control"}
-        onToggle={() => toggleSection("control")}
-      >
-        {controlBody}
-      </SettingsCollapsibleSection>
-    </div>
-  ) : (
-    <div className="barn-list-panel-stagger--settings flex flex-col gap-3">
-      <SectionShell>{alarmForm}</SectionShell>
-      <SectionShell>
-        {hasChannels ? (
-          <p className={cn("mb-2 font-medium", LIST_SLIDER_TITLE)}>
-            {controlTitle}
-          </p>
-        ) : null}
-        {controlBody}
-      </SectionShell>
+      <SettingsGlanceStrip
+        hasChannels={hasChannels}
+        rows={panel.channelGlanceRows}
+        ctrlValues={fieldsToDraft(panel.sliderValues)}
+        ctrlDirty={panel.hasChanges}
+        alarmSummary={alarmSummary}
+        alarmDirty={Boolean(thresholdHeader?.hasChanges)}
+        focus={resolvedFocus}
+        disabled={isSaving}
+        onFocus={handleFocus}
+      />
+      {showControlEditor ? controlBody : null}
+      {showMissingChannel && focusedSlot ? (
+        <p className={LIST_PANEL_META}>
+          {focusedSlot}채널은 이 컨트롤러에 없습니다. 보내기 대상이 아닙니다.
+        </p>
+      ) : null}
+      <div className={cn(alarmLayer ? "block" : "hidden")}>{alarmForm}</div>
     </div>
   );
 
@@ -655,7 +588,7 @@ export function BarnListAccordionPanel({
               type="button"
               disabled={saveDisabled}
               title={saveDisabledReason ?? undefined}
-              onClick={handleSaveAll}
+              onClick={alarmLayer ? handleSaveAlarm : handleSaveControl}
               aria-busy={isSaving || undefined}
               className={cn(
                 "inline-flex min-h-11 min-w-0 items-center justify-center rounded-md px-4 py-2 text-xs font-medium sm:text-sm",
@@ -664,8 +597,8 @@ export function BarnListAccordionPanel({
             >
               <BusyButtonLabel
                 busy={isSaving}
-                idleLabel="적용"
-                busyLabel="적용 중…"
+                idleLabel={alarmLayer ? "알림 저장" : "명령 적용"}
+                busyLabel={alarmLayer ? "저장 중…" : "적용 중…"}
               />
             </button>
           </div>
@@ -673,7 +606,13 @@ export function BarnListAccordionPanel({
             <p className="text-right text-xs text-muted-foreground">
               {saveDisabledReason}
             </p>
-          ) : null}
+          ) : (
+            <p className="text-right text-xs text-muted-foreground">
+              {alarmLayer
+                ? "현장 명령이 아닙니다."
+                : "바뀐 채널만 현장으로 전송합니다."}
+            </p>
+          )}
         </>
       ) : null}
     </div>
@@ -703,7 +642,7 @@ export function BarnListAccordionPanel({
         className="border-t bg-muted/20"
         data-audit-region="barn-list-accordion-panel"
         data-tour-id="list-settings-panel"
-        data-settings-layout="collapsible"
+        data-settings-layout="glance"
         aria-busy={isSaving || undefined}
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => e.stopPropagation()}
@@ -741,6 +680,7 @@ export function BarnListAccordionPanel({
       className="border-t bg-muted/20 px-3 py-3 sm:px-4"
       data-audit-region="barn-list-accordion-panel"
       data-tour-id="list-settings-panel"
+      data-settings-layout="glance"
       aria-busy={isSaving || undefined}
       onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => e.stopPropagation()}

@@ -3,7 +3,9 @@
  */
 import assert from "node:assert/strict";
 import {
+  buildChannelGlanceRows,
   collectDirtyChannelSaves,
+  formatChannelGlanceCells,
   isChannelDraftDirty,
   mergeDirtyChannelSaves,
   type PanelChannelContext,
@@ -174,6 +176,28 @@ assert.equal(isChannelDraftDirty(draftA, draftA), false);
     ["EC02", "EC02", "EC02"],
     "다른 슬롯이 같은 장비코드를 써도 슬롯별로 명령을 모은다",
   );
+}
+
+{
+  const rows = buildChannelGlanceRows(
+    [channels[0], channels[1]],
+    { A: draftA },
+    {},
+  );
+  assert.equal(rows.length, 3);
+  assert.equal(rows[0].present, true);
+  assert.equal(rows[0].dirty, true);
+  assert.equal(rows[0].values?.setpointTemp, 24);
+  assert.equal(rows[1].present, true);
+  assert.equal(rows[1].dirty, false);
+  assert.equal(rows[1].values?.setpointTemp, 1);
+  assert.equal(rows[2].present, false);
+  assert.equal(rows[2].values, null);
+  assert.deepEqual(formatChannelGlanceCells(draftA), {
+    setpoint: "24.0",
+    deviation: "+3.0",
+    vent: "20–70",
+  });
 }
 
 console.log("controller-panel-draft.test.ts ok");

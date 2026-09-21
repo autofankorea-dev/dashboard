@@ -63,6 +63,55 @@ export type DirtyChannelSave = {
 
 const CHANNEL_SAVE_ORDER: ChannelSlot[] = ["A", "B", "C"];
 
+export const CHANNEL_GLANCE_SLOTS: ChannelSlot[] = CHANNEL_SAVE_ORDER;
+
+export type ChannelGlanceRow = {
+  slot: ChannelSlot;
+  present: boolean;
+  values: PanelDraft | null;
+  dirty: boolean;
+};
+
+export function formatChannelGlanceCells(values: PanelDraft): {
+  setpoint: string;
+  deviation: string;
+  vent: string;
+} {
+  return {
+    setpoint: values.setpointTemp.toFixed(1),
+    deviation: `+${values.tempDeviation.toFixed(1)}`,
+    vent: `${Math.round(values.minVentPct)}–${Math.round(values.maxVentPct)}`,
+  };
+}
+
+/** A·B·C를 항상 깔아, 없는 채널은 없음으로 둔다. */
+export function buildChannelGlanceRows(
+  channels: PanelChannelContext[],
+  draftByKey: Record<string, PanelDraft | null | undefined>,
+  saveBaselineByKey: Record<string, PanelDraft | null | undefined>,
+): ChannelGlanceRow[] {
+  const ctxBySlot = new Map(channels.map((ctx) => [ctx.slot, ctx]));
+  return CHANNEL_GLANCE_SLOTS.map((slot) => {
+    const ctx = ctxBySlot.get(slot);
+    if (!ctx) {
+      return { slot, present: false, values: null, dirty: false };
+    }
+    const draft = draftByKey[slot] ?? null;
+    const current = currentThermoForChannel(ctx.knownSettings, ctx.liveBaseline);
+    const baseline = dirtyBaselineForChannel(
+      saveBaselineByKey[slot],
+      ctx.knownSettings,
+      ctx.liveBaseline,
+    );
+    return {
+      slot,
+      present: true,
+      values: draft ?? current,
+      dirty: isChannelDraftDirty(draft, baseline),
+    };
+  });
+}
+
 /** 탭을 바꿔도 유지된 채널 초안 중, LIVE/채널 설정과 다른 것만 모은다. */
 export function collectDirtyChannelSaves(
   channels: PanelChannelContext[],

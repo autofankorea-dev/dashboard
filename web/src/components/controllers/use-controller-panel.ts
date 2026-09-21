@@ -15,9 +15,11 @@ import {
   type PanelMenuId,
 } from "@/lib/controllers/controller-panel-map";
 import {
+  buildChannelGlanceRows,
   collectDirtyChannelSaves,
   mergeDirtyChannelSaves,
   panelChannelKey,
+  type ChannelGlanceRow,
   type DirtyChannelSave,
   type PanelChannelContext,
   type PanelDraft,
@@ -30,7 +32,7 @@ import {
 import type { ChannelSlot } from "@/lib/data/iot-channel";
 import { formatUserError } from "@/lib/ui/controller-labels";
 
-export type { PanelDraft, PanelChannelContext };
+export type { ChannelGlanceRow, PanelDraft, PanelChannelContext };
 
 type ThermoValues = PanelThermoValues;
 
@@ -669,6 +671,16 @@ export function useControllerPanel(
     [dirtySaves],
   );
 
+  const channelGlanceRows = useMemo(
+    (): ChannelGlanceRow[] =>
+      buildChannelGlanceRows(
+        channelContexts ?? [],
+        draftByKey,
+        saveBaselineByKey,
+      ),
+    [channelContexts, draftByKey, saveBaselineByKey],
+  );
+
   const peekDirtySaves = useCallback((): DirtyChannelSave[] => {
     const contexts = channelContextsRef.current;
     if (!contexts?.length) return [];
@@ -709,6 +721,7 @@ export function useControllerPanel(
     hasChanges,
     dirtySaves,
     dirtyChannelSlots,
+    channelGlanceRows,
     peekDirtySaves,
     setField,
     setTempControl,

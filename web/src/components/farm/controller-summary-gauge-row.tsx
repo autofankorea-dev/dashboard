@@ -384,9 +384,17 @@ export function ControllerSummaryGaugeRow({
     </>
   );
 
+  const hideMetricsForSettings =
+    settingsExpanded && panelPlacement !== "right";
+
   const cardBody = (
     <>
-      <div className="px-2.5 pt-2.5 sm:px-3 sm:pt-3">
+      <div
+        className={cn(
+          "px-2.5 pt-2.5 sm:px-3 sm:pt-3",
+          hideMetricsForSettings ? "pb-0" : undefined,
+        )}
+      >
         <ControllerSummaryHeader
           reading={reading}
           alarmSettings={alarmSettings}
@@ -398,12 +406,14 @@ export function ControllerSummaryGaugeRow({
           onConcealDetail={
             envCoverEnabled && envCoverOpen ? closeEnvCover : undefined
           }
-          className="mb-2 w-full"
+          className={cn("w-full", !hideMetricsForSettings && "mb-2")}
         />
       </div>
-      <div className="shrink-0 px-2.5 pb-2.5 sm:px-3 sm:pb-3">
-        {metricsBlock}
-      </div>
+      {hideMetricsForSettings ? null : (
+        <div className="shrink-0 px-2.5 pb-2.5 sm:px-3 sm:pb-3">
+          {metricsBlock}
+        </div>
+      )}
     </>
   );
 
