@@ -16,7 +16,7 @@ type Props = {
   commands?: import("@/lib/data/commands").ThermoCommand[];
   alarmSettings?: AlarmSettings;
   canCommand?: boolean;
-  /** 명령이 접수되면 덮개로 돌아가 채널 진행을 본다 */
+  /** 호환용. 설정 한눈 행에서 진행을 보여 덮개로 돌아가지 않음. */
   onCommandQueued?: () => void;
   /** «차트에서 보기» — 해당 컨트롤러 스코프로 차트 탭 이동 (그래프 모드 은퇴 대체) */
   onOpenChart?: () => void;

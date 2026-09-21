@@ -70,6 +70,23 @@ export function formatAlarmBaselineSummary(t: AlarmThresholds): string {
   return `온도 ${formatAlarmBaselinePair(t.tempLow, t.tempHigh, "℃")} · 습도 ${formatAlarmBaselinePair(t.humidityLow, t.humidityHigh, "%")}`;
 }
 
+/** 한눈 표 알림 행 — 채널 격자와 같은 칸 */
+export function formatAlarmGlanceCells(t: AlarmThresholds): {
+  temp: string;
+  tempDev: string;
+  humidity: string;
+} {
+  const temp = alarmBaselineFromRange(t.tempLow, t.tempHigh);
+  const hum = alarmBaselineFromRange(t.humidityLow, t.humidityHigh);
+  const fmtTemp = (n: number) =>
+    Number.isInteger(n) ? String(n) : n.toFixed(1);
+  return {
+    temp: fmtTemp(temp.baseline),
+    tempDev: `±${fmtTemp(temp.deviation)}`,
+    humidity: `${Math.round(hum.baseline)}±${Math.round(hum.deviation)}`,
+  };
+}
+
 export type AlarmScaleEdgeKind =
   | "temp-baseline"
   | "temp-deviation"

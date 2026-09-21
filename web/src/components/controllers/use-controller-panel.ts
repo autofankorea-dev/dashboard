@@ -31,6 +31,10 @@ import {
 } from "@/lib/controllers/controller-settings";
 import type { ChannelSlot } from "@/lib/data/iot-channel";
 import { formatUserError } from "@/lib/ui/controller-labels";
+import {
+  clampCommandPresetDraft,
+  type CommandPresetChannels,
+} from "@/lib/farm/command-presets";
 
 export type { ChannelGlanceRow, PanelDraft, PanelChannelContext };
 
@@ -395,6 +399,38 @@ export function useControllerPanel(
     setMessage(null);
   }, [channelKey, markActiveEdited]);
 
+  const applyChannelDrafts = useCallback((channels: CommandPresetChannels) => {
+    const contexts = channelContextsRef.current;
+    if (contexts && contexts.length > 0) {
+      setDraftByKey((prev) => {
+        let next = prev;
+        for (const ctx of contexts) {
+          const raw = channels[ctx.slot];
+          if (!raw) continue;
+          next = patchKeyMap(next, ctx.slot, clampCommandPresetDraft(raw));
+        }
+        return next;
+      });
+      setEditedByKey((prev) => {
+        let next = prev;
+        for (const ctx of contexts) {
+          if (!channels[ctx.slot]) continue;
+          next = patchKeyMap(next, ctx.slot, true);
+        }
+        return next;
+      });
+    } else {
+      const raw = channels.A ?? channels.B ?? channels.C;
+      if (!raw) return;
+      const key = channelKeyRef.current;
+      setDraftByKey((prev) =>
+        patchKeyMap(prev, key, clampCommandPresetDraft(raw)),
+      );
+      setEditedByKey((prev) => patchKeyMap(prev, key, true));
+    }
+    setMessage(null);
+  }, []);
+
   const NETWORK_ERROR_TEXT =
     "네트워크 오류입니다. 연결을 확인한 뒤 다시 시도하세요.";
   const SAVE_TIMEOUT_MS = 20_000;
@@ -728,6 +764,7 @@ export function useControllerPanel(
     setVentRange,
     adjust,
     applyDefaults,
+    applyChannelDrafts,
     save,
     pending,
     message,

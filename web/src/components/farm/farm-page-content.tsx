@@ -709,8 +709,7 @@ export function FarmPageContent({
     <div
         className={cn(
         embedInScopeHeader ? "space-y-3" : "space-y-4",
-        "flex min-h-0 flex-1 flex-col",
-        view === "chart" && "overflow-hidden",
+        "flex min-h-0 flex-1 flex-col overflow-hidden",
       )}
     >
       <FarmFeatureTour
@@ -726,8 +725,10 @@ export function FarmPageContent({
 
       <div
         className={cn(
-          "relative min-h-0 overflow-hidden",
-          (view === "chart") && "flex min-h-0 flex-1 flex-col",
+          "relative min-h-0 flex-1",
+          view === "chart"
+            ? "flex flex-col overflow-hidden"
+            : "overflow-x-hidden overflow-y-auto overscroll-y-contain",
         )}
         data-farm-view-slot
       >

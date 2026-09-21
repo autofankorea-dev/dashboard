@@ -10,6 +10,7 @@ import {
   alarmScaleEdgeKind,
   applyAlarmScaleEdgeCommit,
   formatAlarmBaselineSummary,
+  formatAlarmGlanceCells,
 } from "./alarm-baseline";
 
 {
@@ -84,6 +85,18 @@ import {
     }),
     "온도 25℃ ±2℃ · 습도 60% ±5%",
   );
+}
+
+{
+  const cells = formatAlarmGlanceCells({
+    tempLow: 16,
+    tempHigh: 19,
+    humidityLow: 42,
+    humidityHigh: 58,
+  });
+  assert.equal(cells.temp, "17.5");
+  assert.equal(cells.tempDev, "±1.5");
+  assert.equal(cells.humidity, "50±8");
 }
 
 console.log("alarm-baseline.test.ts: ok");

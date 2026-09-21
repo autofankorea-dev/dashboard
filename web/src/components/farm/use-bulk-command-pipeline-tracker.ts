@@ -19,6 +19,8 @@ import {
 } from "@/lib/data/iot-channel";
 import {
   APPLY_QUEUE_START_GRACE_MS,
+  applyQueueNeedsLiveRefresh,
+  applyQueueNeedsStatusPoll,
   applyQueueReadingKey,
   applyQueueRowKey,
   isApplyQueueInWindow,
@@ -406,15 +408,29 @@ export function useBulkCommandPipelineTracker({
   useEffect(() => {
     if (!active || trackedRows.length === 0) return;
 
-    const openRows = trackedRows.filter(
-      (r) => !r.liveConfirmed && !isTerminalFail(r.command.status),
-    );
+    const openRows = trackedRows.filter((r) => {
+      const ticket = {
+        status: r.command.status,
+        liveConfirmed: r.liveConfirmed,
+      };
+      return (
+        applyQueueNeedsStatusPoll(ticket) || applyQueueNeedsLiveRefresh(ticket)
+      );
+    });
     if (openRows.length === 0) return;
 
     const anyPending = openRows.some((r) => r.command.status === "pending");
-    const anySent = openRows.some((r) => r.command.status === "sent");
-    const awaitingLive = openRows.some(
-      (r) => r.command.status === "sent" || r.command.status === "applied",
+    const anySent = openRows.some((r) =>
+      applyQueueNeedsStatusPoll({
+        status: r.command.status,
+        liveConfirmed: r.liveConfirmed,
+      }),
+    );
+    const awaitingLive = openRows.some((r) =>
+      applyQueueNeedsLiveRefresh({
+        status: r.command.status,
+        liveConfirmed: r.liveConfirmed,
+      }),
     );
     const intervalMs = anyPending
       ? PENDING_POLL_MS

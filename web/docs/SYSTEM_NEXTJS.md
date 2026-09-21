@@ -136,7 +136,7 @@ SELECT 계약: [`live-read-select.ts`](../src/lib/data/live-read-select.ts)
 | **received vs mesure UI** | caution=측정 정체 · 채널색≠상태색 · replay 구분 | received만 LIVE | [`UI_CHROMA.md`](./UI_CHROMA.md) |
 | **RSC+client hybrid** | LIVE SSR prefetch · 차트/맵 client · SWR | 전 CSR · 전 RSC blocking | [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md) §10 |
 | **델린 view=aria** | NLP PoC 허브 탭 격리 · `ARIA_PROTOCOL_V1` | 전역 챗봇 | [`aria-protocol.md`](./aria-protocol.md) |
-| **명령 UX — 즉시 반영(낙관)** | insert 직후 패치 · 일괄은 필드 덮개에서 접수→확인 | 확인 전 UI 동결 | [`controller-env-cover.tsx`](../src/components/farm/controller-env-cover.tsx) · [`UI_FEEDBACK.md`](./UI_FEEDBACK.md) |
+| **명령 UX — 즉시 반영(낙관)** | insert 직후 패치 · 설정은 한눈 행 채움 · 일괄은 필드 덮개에서 접수→확인 | 확인 전 UI 동결 | [`controller-env-cover.tsx`](../src/components/farm/controller-env-cover.tsx) · [`settings-glance-strip.tsx`](../src/components/farm/settings-glance-strip.tsx) · [`UI_FEEDBACK.md`](./UI_FEEDBACK.md) |
 
 ### B.2 라우트·역할
 

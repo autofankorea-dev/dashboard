@@ -46,7 +46,7 @@ type Props = {
   onPanelPeriodChange?: (key: string, period: TrendPeriodId) => void;
   panelSets: BarnListPanelSets;
   onToggleSettings: (key: string) => void;
-  /** 명령 접수 후 설정 패널을 닫고 덮개로 돌아간다 (토글 아님) */
+  /** 명령 접수 후 설정 패널을 닫는다. 한눈 행 채움 이후 필드 목록에서는 호출하지 않음. */
   onCloseSettings?: (key: string) => void;
   /** «차트에서 보기» — 카드 → 차트 탭 이동 */
   onOpenChart?: (reading: BarnReading) => void;

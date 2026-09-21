@@ -362,7 +362,7 @@ export function FarmDashboardShell({
   return (
     <FarmLiveRefreshProvider farmKey={farmKey} initial={initialSlice}>
       <FarmApplyQueueProvider>
-      <div className="flex min-h-0 flex-1 flex-col space-y-4 md:space-y-5">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden space-y-4 md:space-y-5">
         {isAdmin && deferAdminGridLoad ? (
           <AdminHubBody
             deferAdminGridLoad={deferAdminGridLoad}

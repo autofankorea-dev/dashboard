@@ -12,8 +12,11 @@ import {
   formatApplyQueueTargetLine,
   formatApplyQueueTargetParts,
   applyQueueInkFilled,
+  applyQueueFillRatio,
   applyQueueChannelStripForReading,
   applyQueueChannelStripAria,
+  applyQueueNeedsStatusPoll,
+  applyQueueNeedsLiveRefresh,
 } from "./apply-queue";
 
 {
@@ -36,6 +39,49 @@ import {
   assert.equal(
     applyQueueStage({ status: "failed", liveConfirmed: false }),
     "실패",
+  );
+  assert.equal(
+    applyQueueStage({ status: "sent", liveConfirmed: true }),
+    "전송",
+  );
+}
+
+{
+  assert.equal(
+    applyQueueNeedsStatusPoll({ status: "pending", liveConfirmed: false }),
+    true,
+  );
+  assert.equal(
+    applyQueueNeedsStatusPoll({ status: "sent", liveConfirmed: true }),
+    true,
+  );
+  assert.equal(
+    applyQueueNeedsStatusPoll({ status: "applied", liveConfirmed: false }),
+    false,
+  );
+  assert.equal(
+    applyQueueNeedsStatusPoll({ status: "applied", liveConfirmed: true }),
+    false,
+  );
+  assert.equal(
+    applyQueueNeedsStatusPoll({ status: "failed", liveConfirmed: false }),
+    false,
+  );
+  assert.equal(
+    applyQueueNeedsLiveRefresh({ status: "sent", liveConfirmed: true }),
+    false,
+  );
+  assert.equal(
+    applyQueueNeedsLiveRefresh({ status: "sent", liveConfirmed: false }),
+    true,
+  );
+  assert.equal(
+    applyQueueNeedsLiveRefresh({ status: "applied", liveConfirmed: false }),
+    true,
+  );
+  assert.equal(
+    applyQueueNeedsLiveRefresh({ status: "applied", liveConfirmed: true }),
+    false,
   );
 }
 
@@ -254,6 +300,10 @@ import {
     applyQueueInkFilled({ status: "failed", liveConfirmed: false }),
     1,
   );
+  assert.equal(applyQueueFillRatio(1), 1 / 3);
+  assert.equal(applyQueueFillRatio(2), 2 / 3);
+  assert.equal(applyQueueFillRatio(3), 1);
+  assert.equal(applyQueueFillRatio(0), 0);
 
   const farm = { lsindRegistNo: "A", itemCode: "B" };
   const reading = {

@@ -587,10 +587,8 @@ export function UnifiedTrendLayerToolbar({
                 >
                   <ControllerNoMark
                     eqpmnNo={item.eqpmnNo}
-                    dense
                     onFill
-                    className="text-current"
-                    iconClassName={farmChartUi.controlIcon}
+                    className={cn("text-current", farmChartUi.controlIcon)}
                   />
                   <ModeOverlay mode={item.on ? "base" : "off"} />
                 </IconTipButton>

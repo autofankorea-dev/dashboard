@@ -76,6 +76,7 @@ type Props = {
   onEnvCoverOpen?: () => void;
   onEnvCoverClose?: () => void;
   /** 명령 접수 후 설정을 닫는다 (토글 아님) */
+  /** 명령 접수 후 설정을 닫을 때. 한눈 행 채움 이후에는 호출하지 않음. */
   onCloseSettings?: () => void;
   className?: string;
   /** 모바일 목록 Graph/Set toolbar — 인라인 패널 숨김 */
@@ -118,7 +119,7 @@ export function ControllerSummaryGaugeRow({
   envCoverOpen = false,
   onEnvCoverOpen,
   onEnvCoverClose,
-  onCloseSettings,
+  onCloseSettings: _onCloseSettings,
   className,
   suppressMobileInlinePanels = false,
   suppressPerCardMobileSheet = false,
@@ -220,22 +221,6 @@ export function ControllerSummaryGaugeRow({
     },
     [finishCoverClose],
   );
-
-  const returnToEnvCover = useCallback(() => {
-    onCloseSettings?.();
-    if (envCoverEnabled) {
-      closeEnvCover({ closeSettings: false });
-    }
-    const el = cardRef.current;
-    if (!el) return;
-    const reduced =
-      typeof window !== "undefined" &&
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    el.scrollIntoView({
-      behavior: reduced ? "auto" : "smooth",
-      block: "nearest",
-    });
-  }, [closeEnvCover, envCoverEnabled, onCloseSettings]);
 
   const handleMorphDone = useCallback(() => {
     const current = coverRevealRef.current;
@@ -439,9 +424,6 @@ export function ControllerSummaryGaugeRow({
           commands={commands}
           alarmSettings={alarmSettings}
           canCommand={canCommand}
-          onCommandQueued={
-            envCoverEnabled || onCloseSettings ? returnToEnvCover : undefined
-          }
           onOpenChart={
             onOpenChart
               ? () => {
@@ -470,9 +452,6 @@ export function ControllerSummaryGaugeRow({
           alarmSettings={alarmSettings}
           canCommand={canCommand}
           collapsibleSections
-          onCommandQueued={
-            envCoverEnabled || onCloseSettings ? returnToEnvCover : undefined
-          }
         />
       ) : null}
     </BarnListPanelShell>

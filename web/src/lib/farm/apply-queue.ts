@@ -38,6 +38,17 @@ export function applyQueueStage(ticket: ApplyQueueTicket): ApplyQueueStage {
   return "접수";
 }
 
+/** 막대 확인단은 DB `applied`. LIVE가 맞아도 sent면 상태 폴링을 이어 간다. */
+export function applyQueueNeedsStatusPoll(ticket: ApplyQueueTicket): boolean {
+  return ticket.status === "pending" || ticket.status === "sent";
+}
+
+/** 도크 LIVE 확인용. 이미 맞으면 farm LIVE refresh는 생략. */
+export function applyQueueNeedsLiveRefresh(ticket: ApplyQueueTicket): boolean {
+  if (ticket.liveConfirmed) return false;
+  return ticket.status === "sent" || ticket.status === "applied";
+}
+
 export function applyQueueGauge(ticket: ApplyQueueTicket): ApplyQueueGauge {
   const stage = applyQueueStage(ticket);
   if (stage === "실패") {
@@ -125,6 +136,11 @@ export function applyQueueInkFilled(ticket: ApplyQueueTicket): number {
   const gauge = applyQueueGauge(ticket);
   if (gauge.fail) return 1;
   return gauge.filled + gauge.current;
+}
+
+/** 행·덮개 막대 — 0~1. 실패 1칸, 확인 전체. */
+export function applyQueueFillRatio(filled: number): number {
+  return Math.max(0, Math.min(1, filled / APPLY_QUEUE_STAGE_COUNT));
 }
 
 export type ApplyQueueChannelStripItem = {

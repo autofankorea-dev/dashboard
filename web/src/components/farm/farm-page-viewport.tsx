@@ -1,37 +1,21 @@
 "use client";
 
-import { useSyncExternalStore, type ReactNode } from "react";
-import {
-  getLiveFarmHubView,
-  resolveFarmHubView,
-  subscribeLiveFarmHubView,
-} from "@/lib/farm/farm-view-url";
-import { cn } from "@/lib/utils";
+import type { ReactNode } from "react";
 
 /**
  * 허브 본문은 항상 셸 남은 높이를 쓸 수 있게 flex-1.
- * 차트 탭 overflow-hidden 은 화면 탭 상태(라이브)를 따른다 — URL만 보면
- * 진입 직후 드래그 시 그래프가 내용 높이로 줄어든다.
+ * overflow-hidden 으로 높이를 가두고, 필드 격자는 안쪽 슬롯에서만 세로 스크롤한다.
+ * 차트는 그래프가 내용 높이로 줄어들지 않게 같은 가둠을 쓴다.
  */
 export function FarmPageViewport({
   children,
-  initialView,
 }: {
   children: ReactNode;
+  /** 호환용. 스크롤 가둠은 탭과 무관하게 항상 적용. */
   initialView?: string | null;
 }) {
-  const view = useSyncExternalStore(
-    subscribeLiveFarmHubView,
-    getLiveFarmHubView,
-    () => resolveFarmHubView(initialView),
-  );
   return (
-    <div
-      className={cn(
-        "flex min-h-0 flex-1 flex-col space-y-4 md:space-y-5",
-        view === "chart" && "overflow-hidden",
-      )}
-    >
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden space-y-4 md:space-y-5">
       {children}
     </div>
   );

@@ -36,7 +36,10 @@ import {
 } from "@/lib/data/reading-hierarchy";
 import { formatStallTypeLabel } from "@/lib/data/stall-type";
 import { ThresholdRangeSlider } from "@/components/settings/threshold-range-slider";
-import { formatAlarmBaselineSummary } from "@/lib/data/alarm-baseline";
+import {
+  formatAlarmBaselineSummary,
+  formatAlarmGlanceCells,
+} from "@/lib/data/alarm-baseline";
 import { useFarmLiveRefreshOptional } from "@/lib/navigation/farm-live-refresh";
 import { dashboardTypography, dashboardUi } from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";
@@ -50,6 +53,11 @@ export type AlarmThresholdHeaderState = {
   validationError: string | null;
   /** 모바일 접이식 summary — draft 기준 */
   collapsedSummary: string;
+  glanceCells: {
+    temp: string;
+    tempDev: string;
+    humidity: string;
+  };
   onSave: () => void;
   onApplyDefaults: () => void;
   onClear: () => void;
@@ -372,6 +380,7 @@ export function AlarmThresholdForm({
       pending,
       validationError,
       collapsedSummary: formatAlarmCollapsedSummary(draft),
+      glanceCells: formatAlarmGlanceCells(draft),
       onSave: handleSaveScope,
       onApplyDefaults: handleApplyDefaults,
       onClear: handleClearScope,

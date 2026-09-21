@@ -1,6 +1,6 @@
 # UI Feedback (H4 — 운영 피드백)
 
-명령은 **접수 → 전송 → 확인** 세 단입니다 (`pending` → `sent` → `applied`). `applied`는 command_ack가 LIVE 설정과 명령을 맞춰 올린 적용 확인입니다. 필드 격자에서는 해당 **환경 덮개** 값 아래에 채널별 잉크 게이지를 붙입니다.
+명령은 **접수 → 전송 → 확인** 세 단입니다 (`pending` → `sent` → `applied`). `applied`는 command_ack가 LIVE 설정과 명령을 맞춰 올린 적용 확인입니다. 설정 행·덮개 막대도 이 status를 따른다. LIVE 값이 먼저 맞아도 `sent` 폴링을 끊지 않는다(`applied`가 와야 확인단). 필드 격자에서는 해당 **환경 덮개** 값 아래에 채널별 잉크 게이지를 붙입니다.
 
 관련: [UI_MOTION.md](./UI_MOTION.md) · [UI_CHROMA.md](./UI_CHROMA.md) · [UI_ELEVATION.md](./UI_ELEVATION.md)  
 코드: `src/lib/ui/ops-feedback.ts` · `src/lib/farm/apply-queue.ts` · `controller-env-cover.tsx` · `command-pipeline-overlay.tsx` · `command-confirm-overlay.tsx` · `inline-status-toast.tsx`
@@ -24,7 +24,7 @@
 | loading | 오버레이 fade |
 | success / error | `.ui-motion-feedback-icon` soft scale-in (amplitude 토큰) |
 
-필드 **환경 덮개**는 명령을 보내지 않은 칸에는 스트립을 그리지 않는다. 최근 1시간 접수·전송·확인 티켓이 있는 컨트롤러만 값·알람 띠 아래에 채널 A/B/C 행을 올린다. **축사·컨트롤러·채널당 가장 최근 1건**만 큐에 남긴다. 1시간이 지나면 티켓을 내린다. 좌하단 상주 도크와 와이어 헥스는 운영 화면에 두지 않는다. 델린은 오른쪽 아래.
+필드 **환경 덮개**는 명령을 보내지 않은 칸에는 스트립을 그리지 않는다. 최근 1시간 접수·전송·확인 티켓이 있는 컨트롤러만 값·알람 띠 아래에 채널 A/B/C 행을 올린다. **설정 패널**에서는 보낸 채널 한눈 줄이 같은 세 단으로 차고, 확인 때 체크가 잠깐 보인다. 설정은 접지 않는다. **축사·컨트롤러·채널당 가장 최근 1건**만 큐에 남긴다. 1시간이 지나면 티켓을 내린다. 좌하단 상주 도크와 와이어 헥스는 운영 화면에 두지 않는다. 델린은 오른쪽 아래.
 
 ## 적용 큐 (필드 덮개)
 
@@ -35,6 +35,8 @@
 | 확인 | 적용 확인 (`applied`) |
 
 게이지는 덮개 잉크(`currentColor`)와 투명도만 쓴다. 3단 채움은 `scaleX` + `duration-motion-moderate`로 이어 간다. 오른쪽은 로딩 도넛, `applied`면 체크 후 `exit`로 해당 행을 내린다.
+
+설정 한눈 줄은 행 자체가 막대다. `primary` 면을 왼쪽부터 채우고, 확인이면 체크를 `enterFade`로 보여 준 뒤 같은 `emphasis` 유지·`exit`로 색과 체크를 내린다. 가운데 적용 완료 카드는 명령 진행 중에는 쓰지 않는다.
 
 ## 명령 설정 범위 (컨트롤러 · 온도·모터 겹침)
 

@@ -53,7 +53,7 @@ Glass(서리·투시)는 **이 표의 종류를 고른 뒤에만** 넣는다. �
 | 덮개 | `controller-env-cover`, `cover-reveal-overlay` | **E** |
 | 차트 | `farm-chart-view`, `trend-chart`, `severity-heatmap` | B + 데이터 잉크 |
 | 시트 | `barn-panel-bottom-sheet`, 모바일 시트 | F |
-| 명령 | `command-pipeline-overlay`, 필드 덮개 채널 스트립 | G |
+| 명령 | `command-pipeline-overlay`, 필드 덮개 채널 스트립, 설정 한눈 행 채움, 명령 프리셋 칩 | G |
 | 델린 | `delin-env-badge` | H |
 | 운영 | `/admin/ops`, `opsTypography` | B · 밀도는 허브 2× 없음 |
 

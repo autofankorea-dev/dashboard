@@ -12,6 +12,9 @@ import {
 
 type Args = {
   isSaving: boolean;
+  commandBusy?: boolean;
+  alarmBusy?: boolean;
+  suppressCommandStatus?: boolean;
   command: ThermoCommand | null;
   liveConfirmed: boolean;
   flash: CommandPipelineFlash | null;
@@ -23,6 +26,9 @@ type Args = {
 
 export function useSettingsApplyOverlay({
   isSaving,
+  commandBusy = false,
+  alarmBusy = false,
+  suppressCommandStatus = false,
   command,
   liveConfirmed,
   flash,
@@ -71,13 +77,17 @@ export function useSettingsApplyOverlay({
 
   const overlay = useMemo((): CommandPipelineOverlayState => {
     if (isSaving) {
-      return {
-        visible: true,
-        phase: "loading",
-        title: "적용 중…",
-        detail: "설정을 저장하고 있습니다.",
-        autoDismiss: false,
-      };
+      if (suppressCommandStatus && commandBusy && !alarmBusy) {
+        /* 명령 진행은 한눈 행 채움 */
+      } else {
+        return {
+          visible: true,
+          phase: "loading",
+          title: "적용 중…",
+          detail: "설정을 저장하고 있습니다.",
+          autoDismiss: false,
+        };
+      }
     }
 
     if (dismissed || isCommandOverlayDismissed(command?.id)) {
@@ -102,7 +112,7 @@ export function useSettingsApplyOverlay({
       };
     }
 
-    if (liveConfirmed && isUserInitiatedCommand(command?.id)) {
+    if (liveConfirmed && isUserInitiatedCommand(command?.id) && !suppressCommandStatus) {
       const setpoint =
         command?.setpointTemp != null ? `${command.setpointTemp}℃` : null;
       return {
@@ -142,6 +152,7 @@ export function useSettingsApplyOverlay({
 
     // 전송·등록 성공 = 적용 완료 (LIVE/ACK 대기 없이 값 표시는 명령 낙관 패치)
     if (
+      !suppressCommandStatus &&
       command &&
       isUserInitiatedCommand(command.id) &&
       (command.status === "pending" ||
@@ -170,7 +181,8 @@ export function useSettingsApplyOverlay({
           flash.text.includes("LIVE 설정값이 명령과 일치"));
       if (
         isLiveConfirmFlash &&
-        (!isUserInitiatedCommand(command?.id) ||
+        (suppressCommandStatus ||
+          !isUserInitiatedCommand(command?.id) ||
           dismissed ||
           isCommandOverlayDismissed(command?.id))
       ) {
@@ -193,7 +205,9 @@ export function useSettingsApplyOverlay({
     return { visible: false, phase: "info", title: "", autoDismiss: true };
   }, [
     alarmSavedFlash,
+    alarmBusy,
     command,
+    commandBusy,
     dismissed,
     flash,
     isCommandOverlayDismissed,
@@ -201,6 +215,7 @@ export function useSettingsApplyOverlay({
     isUserInitiatedCommand,
     liveConfirmed,
     panelError,
+    suppressCommandStatus,
   ]);
 
   return { overlay, dismiss };

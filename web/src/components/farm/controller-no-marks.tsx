@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import {
   formatControllerHeaderStallType,
   formatControllerHeaderStallUnit,
@@ -12,6 +13,12 @@ import { useHydrationSafeDashboardCompact } from "@/components/layout/dashboard-
 import { cn } from "@/lib/utils";
 import { ControllerDeviceIcon } from "@/components/icons/controller-device-icon";
 import { StallUnitIcon } from "@/components/icons/stall-unit-icon";
+
+/** 숫자 크기 = 아이콘 박스의 비율. 흰 면 패딩 없이 우하단에만 둠 */
+const MARK_VARS: CSSProperties = {
+  ["--no-mark-digit" as string]: "36cqmin",
+  ["--no-mark-gap" as string]: "1px",
+};
 
 /** PC: 아이콘 우하단 오버레이. 모바일: 아이콘·숫자 나란히 */
 function NoMarkFrame({
@@ -35,38 +42,47 @@ function NoMarkFrame({
 }) {
   const compact = useHydrationSafeDashboardCompact();
   const overlay = dense || !compact;
+  const iconSize = dense ? "size-3.5" : compact ? "size-6" : "size-[1.35em]";
+  const ink = onFill ? "text-current" : "text-muted-foreground";
+  const digitInk = onFill ? "text-current" : "text-foreground";
+
+  if (!overlay) {
+    return (
+      <span
+        className={cn("inline-flex shrink-0 items-center gap-1 align-middle", className)}
+        aria-label={label}
+        title={label}
+      >
+        <Icon className={cn("shrink-0", iconSize, ink, iconClassName)} aria-hidden />
+        <span className={cn("text-base font-bold tabular-nums leading-none", digitInk)} aria-hidden>
+          {digit}
+        </span>
+      </span>
+    );
+  }
+
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 align-middle",
-        overlay ? "relative items-center" : "items-center gap-1",
+        "relative inline-flex shrink-0 items-center justify-center align-middle",
+        iconSize,
         className,
       )}
+      style={{ containerType: "size", ...MARK_VARS }}
       aria-label={label}
       title={label}
     >
-      <Icon
-        className={cn(
-          "shrink-0",
-          onFill ? "text-current" : "text-muted-foreground",
-          dense ? "size-3.5" : compact ? "size-6" : "size-[1.35em]",
-          iconClassName,
-        )}
-        numberCutout={overlay}
-        aria-hidden
-      />
+      <Icon className={cn("size-full", ink, iconClassName)} aria-hidden />
       <span
         className={cn(
-          "font-bold tabular-nums leading-none",
-          onFill ? "text-current" : "text-foreground",
-          overlay
-            ? cn(
-                "pointer-events-none absolute bottom-0 right-0 z-[1] text-[0.68em]",
-                !onFill &&
-                  "[-webkit-text-stroke:1.5px_var(--card)] [paint-order:stroke_fill]",
-              )
-            : "text-base",
+          "pointer-events-none absolute right-0 bottom-0 z-[1] box-border text-center font-bold tabular-nums leading-none",
+          digitInk,
         )}
+        style={{
+          fontSize: "var(--no-mark-digit)",
+          padding: "var(--no-mark-gap)",
+          minWidth: "calc(var(--no-mark-digit) * 1.25)",
+        }}
         aria-hidden
       >
         {digit}

@@ -92,16 +92,22 @@ export async function waitListSettingsPanel(page) {
   return openFieldControllerSettings(page);
 }
 
-/** 명령 편집이 보이도록 채널 줄을 연다. */
-export async function ensureControlSectionExpanded(scope) {
-  const setpoint = scope.getByLabel("설정온도", { exact: true }).first();
+/** 명령 편집이 보이도록 채널 줄을 연다. 설정값 카드는 화면 중앙 대화상자. */
+export async function ensureControlSectionExpanded(scope, page = null) {
+  const root = page ?? scope;
+  const setpoint = root.getByLabel("설정온도", { exact: true }).first();
   if (await setpoint.isVisible().catch(() => false)) return;
 
   const channelA = scope.getByRole("button", { name: /^A채널/ }).first();
   if (await channelA.isVisible().catch(() => false)) {
     await channelA.click();
-    if (await setpoint.isVisible().catch(() => false)) return;
+    const dialog = root.getByRole("dialog").filter({
+      has: root.getByLabel("설정온도", { exact: true }),
+    });
+    await dialog.first().waitFor({ state: "visible", timeout: 8000 }).catch(() => {});
   }
+
+  if (await setpoint.isVisible().catch(() => false)) return;
 
   const controlToggle = scope
     .locator('button[aria-expanded="false"]')
@@ -112,16 +118,20 @@ export async function ensureControlSectionExpanded(scope) {
   }
 }
 
-/** 설정 패널 scope 내에서 setpoint 변경 후 적용 */
+/** 설정 패널 — 채널 행 → 중앙 설정값 카드에서 setpoint 변경 → 반영 → 명령 적용 */
 export async function applyFromSettingsPanel(page, scope = page) {
-  await ensureControlSectionExpanded(scope);
+  await ensureControlSectionExpanded(scope, page);
 
+  const dialog = page
+    .getByRole("dialog")
+    .filter({ has: page.getByLabel("설정온도", { exact: true }) })
+    .first();
   // exact — range의 "설정온도 25℃"와 텍스트 입력 "설정온도"를 구분
-  const setpointInput = scope.getByLabel("설정온도", { exact: true }).first();
+  const setpointInput = dialog.getByLabel("설정온도", { exact: true }).first();
   await setpointInput.waitFor({ state: "visible", timeout: 15000 });
 
   const readLiveSetpoint = async () => {
-    const text = await scope.innerText();
+    const text = await dialog.innerText();
     const m = text.match(/현재\s*([\d.]+)\s*℃/);
     return m ? parseFloat(m[1]) : null;
   };
@@ -156,7 +166,6 @@ export async function applyFromSettingsPanel(page, scope = page) {
     const draft = parseFloat(raw.replace(/[^\d.-]/g, ""));
     const live = await readLiveSetpoint();
     next = pickNext(draft, live, attempt);
-    // 모바일 viewport + sticky 헤더에서 click이 viewport 밖으로 실패할 수 있음
     await setpointInput.scrollIntoViewIfNeeded().catch(() => {});
     await setpointInput.focus();
     await setpointInput.fill("");
@@ -167,21 +176,27 @@ export async function applyFromSettingsPanel(page, scope = page) {
     const afterRaw = await setpointInput.inputValue();
     const after = parseFloat(afterRaw.replace(/[^\d.-]/g, ""));
     const liveAfter = await readLiveSetpoint();
-    const enabled = await applyBtn.isEnabled().catch(() => false);
-    if (
-      enabled &&
-      Number.isFinite(after) &&
-      (liveAfter == null || after !== liveAfter)
-    ) {
+    if (Number.isFinite(after) && (liveAfter == null || after !== liveAfter)) {
       break;
     }
     if (attempt === 5) {
       throw new Error(
-        `Apply 버튼이 활성화되지 않음 (tried→${next}, after=${after}, live=${liveAfter})`,
+        `설정온도가 바뀌지 않음 (tried→${next}, after=${after}, live=${liveAfter})`,
       );
     }
   }
 
+  const commit = dialog.getByRole("button", { name: "반영" }).first();
+  if (await commit.isVisible().catch(() => false)) {
+    await commit.click();
+    await dialog.waitFor({ state: "hidden", timeout: 8000 }).catch(() => {});
+  }
+
+  await applyBtn.waitFor({ state: "visible", timeout: 15000 });
+  const enabled = await applyBtn.isEnabled().catch(() => false);
+  if (!enabled) {
+    throw new Error("반영 후 명령 적용이 활성화되지 않음");
+  }
   await applyBtn.click({ timeout: 15000, force: true });
   const sendBtn = page.getByRole("alertdialog").getByRole("button", {
     name: "보내기",

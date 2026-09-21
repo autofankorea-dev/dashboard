@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
-import { Eye, Loader2, Thermometer } from "lucide-react";
+import { Eye, Loader2 } from "lucide-react";
 import {
   AlarmThresholdForm,
   type AlarmThresholdHeaderState,
@@ -18,8 +18,12 @@ import type { BulkSentCommandItem } from "@/app/(dashboard)/controllers/actions"
 import { useCommandPipelineTracker } from "@/components/controllers/use-command-pipeline-tracker";
 import { CommandPipelineOverlay } from "@/components/farm/command-pipeline-overlay";
 import { CommandConfirmOverlay } from "@/components/farm/command-confirm-overlay";
+import { SettingsEditOverlay } from "@/components/farm/settings-edit-overlay";
+import { SettingsCommandPresetStrip } from "@/components/farm/settings-command-preset-strip";
+import { useCommandPresets } from "@/components/farm/use-command-presets";
 import { useSettingsApplyOverlay } from "@/components/farm/use-settings-apply-overlay";
 import { useApplyQueueOptional } from "@/components/farm/apply-queue-context";
+import { useApplyQueueStripPresence } from "@/components/farm/use-apply-queue-strip-presence";
 import {
   buildCommandConfirmModel,
   buildMultiChannelCommandConfirmModel,
@@ -44,8 +48,15 @@ import {
 } from "@/lib/controllers/controller-settings";
 import { resolveReadingThermo } from "@/lib/farm/controller-summary-display";
 import { DEFAULT_ALARM_SETTINGS, type AlarmSettings } from "@/lib/data/alarms";
+import { formatAlarmGlanceCells } from "@/lib/data/alarm-baseline";
+import { resolveThresholdsForReading } from "@/lib/data/alarm-scope";
 import { channelBySlot, type ChannelSlot } from "@/lib/data/iot-channel";
 import { farmKeyId } from "@/lib/data/farm-key";
+import { applyQueueChannelStripForReading } from "@/lib/farm/apply-queue";
+import {
+  snapshotCommandPresetChannels,
+  type CommandPresetScope,
+} from "@/lib/farm/command-presets";
 import { normalizeStallTyCode } from "@/lib/data/stall-type";
 import { stallKeyFromReading } from "@/lib/data/reading-hierarchy";
 import { isReadingOnline } from "@/lib/data/reading-display";
@@ -66,7 +77,7 @@ type Props = {
   canCommand: boolean;
   /** 패딩 변형 — 모바일 sheet·PC 목록 설정 공통 */
   collapsibleSections?: boolean;
-  /** 명령이 접수되면 덮개로 돌아가 채널 진행을 본다 */
+  /** 명령이 접수되면 덮개로 돌아가 채널 진행을 본다. 설정 한눈 행 채움이면 쓰지 않음. */
   onCommandQueued?: () => void;
 };
 
@@ -134,9 +145,6 @@ export function BarnListAccordionPanel({
   if (hasChannels && !channelSlots.includes(activeChannel)) {
     setActiveChannel(channelSlots[0] ?? "A");
   }
-
-  const resolvedFocus: SettingsGlanceFocus =
-    focus ?? (hasChannels ? (channelSlots[0] ?? "A") : "ctrl");
 
   const channelEqpmnCode =
     channelBySlot(channels, activeChannel)?.eqpmnCode ?? "";
@@ -207,6 +215,25 @@ export function BarnListAccordionPanel({
   const liveRefresh = useFarmLiveRefreshOptional();
   const applyQueue = useApplyQueueOptional();
 
+  const applyItems = useMemo(
+    () =>
+      applyQueueChannelStripForReading(applyQueue?.rows ?? [], {
+        key: reading.key,
+        farmKey: reading.farmKey,
+        moduleUid: reading.moduleUid,
+        controllerKey: reading.controllerKey,
+      }),
+    [
+      applyQueue?.rows,
+      reading.key,
+      reading.farmKey,
+      reading.moduleUid,
+      reading.controllerKey,
+    ],
+  );
+  const applyPresence = useApplyQueueStripPresence(applyItems);
+  const applyBusy = applyPresence.visible.some((item) => item.stage !== "실패");
+
   const pipeline = useCommandPipelineTracker({
     commands,
     farmKey: detail?.farmKey ?? reading.farmKey,
@@ -269,6 +296,17 @@ export function BarnListAccordionPanel({
     registerBulkCommands,
   );
 
+  const presetScope = useMemo((): CommandPresetScope | null => {
+    if (!reading.controllerKey) return null;
+    return {
+      farmKey: reading.farmKey,
+      moduleUid: reading.moduleUid,
+      controllerKey: reading.controllerKey,
+    };
+  }, [reading.farmKey, reading.moduleUid, reading.controllerKey]);
+  const presets = useCommandPresets(presetScope);
+  const [activePresetId, setActivePresetId] = useState<string | null>(null);
+
   /** 카드 LIVE 상태 우선 — detail API가 늦거나 offline이면 적용이 잠기지 않게 */
   const online =
     isReadingOnline(reading.status) || isReadingOnline(detail?.status);
@@ -289,8 +327,10 @@ export function BarnListAccordionPanel({
     [farmId, spCode, stallKey, reading.key],
   );
 
-  const isSaving = panel.pending || Boolean(thresholdHeader?.pending);
-  const alarmLayer = resolvedFocus === "alarm";
+  const isSaving =
+    panel.pending || applyBusy || Boolean(thresholdHeader?.pending);
+  const editorOpen = focus != null && confirmModel == null;
+  const alarmLayer = focus === "alarm";
   const canSaveControl =
     online && canCommand && !panel.pending && panel.hasChanges;
   const canSaveAlarm =
@@ -301,36 +341,23 @@ export function BarnListAccordionPanel({
     !thresholdHeader!.validationError &&
     thresholdHeader!.scopeReady &&
     thresholdHeader!.hasChanges;
-  const saveDisabled = alarmLayer
-    ? isSaving || !canSaveAlarm
-    : isSaving || !canSaveControl;
+  const saveDisabled = isSaving || !canSaveControl;
   const saveDisabledReason = (() => {
-    if (isSaving) return "저장 중…";
+    if (panel.pending || applyBusy) return "적용 중…";
+    if (thresholdHeader?.pending) return "저장 중…";
     if (!canCommand) return "조회 전용 계정입니다. 설정 변경 권한이 없습니다.";
     if (!online) return "오프라인이라 적용할 수 없습니다.";
-    if (alarmLayer) {
-      if (!thresholdHeader?.scopeReady) return "알림 기준을 불러오는 중…";
-      if (!canSaveAlarm) return "변경된 알림이 없습니다.";
-      return null;
-    }
     if (!panel.settingsKnown && !panel.hasEdited) {
       return "설정값을 불러오는 중…";
     }
     if (!canSaveControl) return "변경된 명령이 없습니다.";
     return null;
   })();
-  const defaultsDisabled = alarmLayer
-    ? !canCommand ||
-      isSaving ||
-      Boolean(thresholdHeader && (!thresholdHeader.scopeReady || thresholdHeader.pending))
-    : !canCommand || isSaving;
+  const defaultsDisabled = !canCommand || isSaving;
 
-  const handleFocus = (next: SettingsGlanceFocus) => {
-    setFocus(next);
-    if (next === "A" || next === "B" || next === "C") {
-      if (channelSlots.includes(next)) setActiveChannel(next);
-    }
-  };
+  const closeEditor = useCallback(() => {
+    setFocus(null);
+  }, []);
 
   const handleSaveControl = () => {
     if (isSaving || !canSaveControl) return;
@@ -406,11 +433,38 @@ export function BarnListAccordionPanel({
   }, [panel]);
 
   const handleApplyDefaults = () => {
-    if (alarmLayer) {
-      thresholdHeader?.onApplyDefaults();
-      return;
-    }
     panel.applyDefaults();
+    setActivePresetId(null);
+  };
+
+  const handlePickPreset = (id: string) => {
+    const preset = presets.items.find((item) => item.id === id);
+    if (!preset) return;
+    panel.applyChannelDrafts(preset.channels);
+    setActivePresetId(id);
+  };
+
+  const handleDeletePreset = (id: string) => {
+    presets.remove(id);
+    if (activePresetId === id) setActivePresetId(null);
+  };
+
+  const handleCreatePreset = (name: string) => {
+    const channels = snapshotCommandPresetChannels(
+      panel.channelGlanceRows,
+      fieldsToDraft(panel.sliderValues),
+    );
+    const result = presets.save({ name, channels });
+    if (!result.ok) return result.reason;
+    setActivePresetId(result.id);
+    return "ok" as const;
+  };
+
+  const handleEditorPrimary = () => {
+    if (alarmLayer) {
+      handleSaveAlarm();
+    }
+    closeEditor();
   };
 
   const panelError =
@@ -418,6 +472,9 @@ export function BarnListAccordionPanel({
 
   const { overlay, dismiss: dismissOverlay } = useSettingsApplyOverlay({
     isSaving,
+    commandBusy: panel.pending,
+    alarmBusy: Boolean(thresholdHeader?.pending),
+    suppressCommandStatus: true,
     command: pipeline.command,
     liveConfirmed: pipeline.liveConfirmed,
     flash: pipeline.flash,
@@ -434,18 +491,55 @@ export function BarnListAccordionPanel({
   // eslint-disable-next-line react-hooks/exhaustive-deps -- 의도적 생략
   }, [dismissOverlay, pipeline.clearFlash]);
 
+  const handleFocus = (next: SettingsGlanceFocus) => {
+    if (confirmModel) return;
+    if (overlay.visible && overlay.phase !== "loading") {
+      handleOverlayDismiss();
+    }
+    setFocus(next);
+    if (next === "A" || next === "B" || next === "C") {
+      if (channelSlots.includes(next)) setActiveChannel(next);
+    }
+  };
+
   const alarmSummary =
     thresholdHeader?.collapsedSummary ?? "온도 · 습도 알람";
+  const alarmCells =
+    thresholdHeader?.glanceCells ??
+    formatAlarmGlanceCells(
+      resolveThresholdsForReading(effectiveAlarmSettings, reading),
+    );
   const focusedSlot =
-    resolvedFocus === "A" || resolvedFocus === "B" || resolvedFocus === "C"
-      ? resolvedFocus
-      : null;
+    focus === "A" || focus === "B" || focus === "C" ? focus : null;
   const focusedChannelPresent = Boolean(
     focusedSlot && channelSlots.includes(focusedSlot),
   );
-  const showControlEditor = !alarmLayer && (!hasChannels || focusedChannelPresent);
+  const showControlEditor =
+    editorOpen && !alarmLayer && (!hasChannels || focusedChannelPresent);
   const showMissingChannel =
-    hasChannels && Boolean(focusedSlot) && !focusedChannelPresent;
+    editorOpen &&
+    hasChannels &&
+    Boolean(focusedSlot) &&
+    !focusedChannelPresent;
+
+  const editorTitle = alarmLayer
+    ? "알림 기준"
+    : hasChannels && focusedSlot
+      ? `${focusedSlot}채널 설정온도 · 편차`
+      : "설정온도 · 편차";
+  const editorPrimaryLabel = alarmLayer
+    ? "알림 저장"
+    : showMissingChannel
+      ? null
+      : "반영";
+  const editorPrimaryDisabled = alarmLayer
+    ? isSaving || !canSaveAlarm
+    : false;
+  const editorHint = alarmLayer
+    ? "현장 명령이 아닙니다."
+    : showMissingChannel
+      ? undefined
+      : "표에만 기록합니다. 현장 전송은 명령 적용입니다.";
 
   const alarmForm = (
     <AlarmThresholdForm
@@ -465,25 +559,12 @@ export function BarnListAccordionPanel({
   const controlBody = (
     <div className="space-y-3">
       <div>
-        <div className="mb-2 flex items-start gap-2">
-          <Thermometer
-            className="mt-0.5 size-4 shrink-0 text-channel-temp"
-            aria-hidden
-          />
-          <div className="min-w-0 flex-1">
-            <p className={LIST_SLIDER_TITLE}>
-              {hasChannels && focusedSlot
-                ? `${focusedSlot}채널 설정온도 · 편차`
-                : "설정온도 · 편차"}
-            </p>
-            {panel.currentValues ? (
-              <p className={cn("tabular-nums", LIST_PANEL_META)}>
-                현재 {panel.currentValues.setpoint}℃ +
-                {panel.currentValues.deviation}℃
-              </p>
-            ) : null}
-          </div>
-        </div>
+        {panel.currentValues ? (
+          <p className={cn("mb-2 tabular-nums", LIST_PANEL_META)}>
+            현재 {panel.currentValues.setpoint}℃ +
+            {panel.currentValues.deviation}℃
+          </p>
+        ) : null}
         <ControllerTempDualSlider
           key={`temp-${activeChannel}`}
           setpoint={panel.sliderValues.setpoint}
@@ -536,20 +617,42 @@ export function BarnListAccordionPanel({
         rows={panel.channelGlanceRows}
         ctrlValues={fieldsToDraft(panel.sliderValues)}
         ctrlDirty={panel.hasChanges}
+        alarmCells={alarmCells}
         alarmSummary={alarmSummary}
         alarmDirty={Boolean(thresholdHeader?.hasChanges)}
-        focus={resolvedFocus}
+        focus={focus}
         disabled={isSaving}
+        applyItems={applyItems}
         onFocus={handleFocus}
+        presetStrip={
+          canCommand ? (
+            <SettingsCommandPresetStrip
+              items={presets.items}
+              activeId={activePresetId}
+              disabled={isSaving}
+              canStore={presets.canStore}
+              onPick={handlePickPreset}
+              onDelete={handleDeletePreset}
+              onCreate={handleCreatePreset}
+            />
+          ) : null
+        }
       />
+    </div>
+  );
+
+  const editorBody = (
+    <>
       {showControlEditor ? controlBody : null}
       {showMissingChannel && focusedSlot ? (
         <p className={LIST_PANEL_META}>
           {focusedSlot}채널은 이 컨트롤러에 없습니다. 보내기 대상이 아닙니다.
         </p>
       ) : null}
-      <div className={cn(alarmLayer ? "block" : "hidden")}>{alarmForm}</div>
-    </div>
+      <div className={alarmLayer && editorOpen ? "block" : "hidden"}>
+        {alarmForm}
+      </div>
+    </>
   );
 
   const readOnlyBanner = !canCommand ? (
@@ -588,7 +691,7 @@ export function BarnListAccordionPanel({
               type="button"
               disabled={saveDisabled}
               title={saveDisabledReason ?? undefined}
-              onClick={alarmLayer ? handleSaveAlarm : handleSaveControl}
+              onClick={handleSaveControl}
               aria-busy={isSaving || undefined}
               className={cn(
                 "inline-flex min-h-11 min-w-0 items-center justify-center rounded-md px-4 py-2 text-xs font-medium sm:text-sm",
@@ -596,9 +699,9 @@ export function BarnListAccordionPanel({
               )}
             >
               <BusyButtonLabel
-                busy={isSaving}
-                idleLabel={alarmLayer ? "알림 저장" : "명령 적용"}
-                busyLabel={alarmLayer ? "저장 중…" : "적용 중…"}
+                busy={panel.pending || applyBusy}
+                idleLabel="명령 적용"
+                busyLabel="적용 중…"
               />
             </button>
           </div>
@@ -608,9 +711,7 @@ export function BarnListAccordionPanel({
             </p>
           ) : (
             <p className="text-right text-xs text-muted-foreground">
-              {alarmLayer
-                ? "현장 명령이 아닙니다."
-                : "바뀐 채널만 현장으로 전송합니다."}
+              바뀐 채널만 현장으로 전송합니다.
             </p>
           )}
         </>
@@ -620,6 +721,19 @@ export function BarnListAccordionPanel({
 
   const overlayNode = (
     <>
+      <SettingsEditOverlay
+        open={editorOpen}
+        title={editorTitle}
+        primaryLabel={canCommand ? editorPrimaryLabel : null}
+        primaryBusyLabel={alarmLayer ? "저장 중…" : undefined}
+        primaryDisabled={editorPrimaryDisabled}
+        busy={alarmLayer ? Boolean(thresholdHeader?.pending) : false}
+        hint={editorHint}
+        onClose={closeEditor}
+        onPrimary={editorPrimaryLabel ? handleEditorPrimary : undefined}
+      >
+        {editorBody}
+      </SettingsEditOverlay>
       <CommandConfirmOverlay
         model={confirmModel}
         busy={panel.pending}
@@ -628,7 +742,7 @@ export function BarnListAccordionPanel({
       />
       <CommandPipelineOverlay
         {...overlay}
-        visible={overlay.visible && confirmModel == null}
+        visible={overlay.visible && confirmModel == null && !editorOpen}
         onDismiss={handleOverlayDismiss}
       />
     </>
