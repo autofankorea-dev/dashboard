@@ -1,5 +1,5 @@
 -- Phase 2-A: derive lsind/item/module_uid from MQTT topic on raw INSERT
--- Applied on iot-cloud 2026-08-05 (see Operation/docs/RAW_STORAGE_CHANGE.md)
+-- Applied on iot-cloud 2026-08-05 (see web/docs/RAW_STORAGE_CHANGE.md)
 
 CREATE OR REPLACE FUNCTION public.iot_raw_fill_from_topic()
 RETURNS trigger

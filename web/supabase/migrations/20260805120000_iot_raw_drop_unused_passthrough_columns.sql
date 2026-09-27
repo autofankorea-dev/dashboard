@@ -1,5 +1,5 @@
 -- Phase 4: drop unused iot_room_state_raw columns (RS passthrough never writes them).
--- See Operation/docs/RAW_STORAGE_CHANGE.md §8.
+-- See web/docs/RAW_STORAGE_CHANGE.md §8.
 -- Applied on iot-cloud 2026-08-05.
 -- idx_iot_raw_session (session_id) is removed with the column.
 
