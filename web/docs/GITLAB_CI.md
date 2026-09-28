@@ -47,7 +47,7 @@ npm run audit:health-drilldown
 
 ## GitHub
 
-원격이 GitHub(`SIJackLee/dashboard`)인 경우 [`../../.github/workflows/web-verify.yml`](../../.github/workflows/web-verify.yml)이  
+원격이 GitHub(`autofankorea-dev/dashboard`)인 경우 [`../../.github/workflows/web-verify.yml`](../../.github/workflows/web-verify.yml)이  
 `npm test` · `verify:design` · `build`를 push/PR에서 실행한다.
 
 ## GitHub mirror (구 메모)
