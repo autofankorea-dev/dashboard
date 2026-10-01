@@ -43,7 +43,7 @@ KAKAO_NATIVE_APP_KEY=<네이티브앱키>
 2. **OAuth 클라이언트 ID (웹 애플리케이션)** 생성 → `NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID`에 넣기.
 3. **OAuth 클라이언트 ID (Android)** 생성  
    - 패키지: `com.autofankorea.dashboard`  
-   - 디버그 SHA-1 (이 PC에서 추출): `7E:9A:4E:D1:D0:5B:9E:EB:EF:66:91:07:54:C6:57:A3:A2:38:E5:4F`  
+   - 디버그 키스토어 SHA-1은 로컬에서 추출해 Android OAuth 클라이언트에 등록한다. 값은 문서에 적지 않는다.
    - 릴리즈 APK는 서명 키스토어 SHA-1을 추가로 등록.
 4. Firebase에 SHA-1 등록 후 `google-services.json` 재다운로드 (현재 `oauth_client`가 비어 있음).
 5. Supabase Dashboard → Auth → Providers → Google: Web client ID / secret 확인.
