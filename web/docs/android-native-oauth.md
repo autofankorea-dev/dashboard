@@ -43,7 +43,7 @@ KAKAO_NATIVE_APP_KEY=<네이티브앱키>
 2. **OAuth 클라이언트 ID (웹 애플리케이션)** 생성 → `NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID`에 넣기.
 3. **OAuth 클라이언트 ID (Android)** 생성  
    - 패키지: `com.autofankorea.dashboard`  
-   - 디버그 SHA-1 (이 PC에서 추출): `7E:9A:4E:D1:D0:5B:9E:EB:EF:66:91:07:54:C6:57:A3:A2:38:E5:4F`  
+   - 디버그 키스토어 SHA-1은 로컬에서 추출해 Android OAuth 클라이언트에 등록한다. 값은 문서에 적지 않는다.
    - 릴리즈 APK는 서명 키스토어 SHA-1을 추가로 등록.
 4. Firebase에 SHA-1 등록 후 `google-services.json` 재다운로드 (현재 `oauth_client`가 비어 있음).
 5. Supabase Dashboard → Auth → Providers → Google: Web client ID / secret 확인.
@@ -79,7 +79,7 @@ KAKAO_NATIVE_APP_KEY=<네이티브앱키>
 1. [앱] → [플랫폼 키] → **네이티브 앱 키** (또는 Android 플랫폼)
 2. 패키지: `com.autofankorea.dashboard`
 3. 키 해시  
-   - 디버그: `fppO0dBbnuvvZpEHVMZXo6I45U8=`  
+   - 디버그 키 해시는 로컬 디버그 키스토어에서 추출해 카카오 콘솔에만 등록한다. 값은 문서에 적지 않는다.  
    - 릴리즈/Play 서명 SHA면 해당 키 해시 추가
 4. 로컬·Vercel·`android/local.properties`에  
    `KAKAO_NATIVE_APP_KEY` / `NEXT_PUBLIC_KAKAO_NATIVE_APP_KEY` = 네이티브 앱 키
@@ -90,9 +90,8 @@ KAKAO_NATIVE_APP_KEY=<네이티브앱키>
 
 | 필드 | 넣을 값 |
 |------|---------|
-| Client ID (REST API Key 칸) | `REST_API_키,네이티브_앱_키`  
-  예: `60f68834…e4ddab,098088d3…57391c`  
-  **앞=웹 OAuth, 뒤=앱 id_token aud** (순서 권장: REST 먼저) |
+| Client ID (REST API Key 칸) | `<REST_API_키>,<네이티브_앱_키>`  
+  **앞=웹 OAuth, 뒤=앱 id_token aud** (순서 권장: REST 먼저). 실제 키 값은 문서에 적지 않는다. |
 | Client Secret | REST 키 화면의 **카카오 로그인 Client Secret 코드만** |
 | Allow users without an email | ON 권장 (비즈 앱이 아니거나 이메일 미동의 시) |
 
