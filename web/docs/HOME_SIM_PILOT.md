@@ -4,7 +4,7 @@
 
 ## 무엇을 하는가
 
-`simulator/sim_pilot_farm01.py --mqtt` 가 v0x0C **83바이트**를 EC2 브로커(`54.116.16.1:1883`) `sungil/FARM01/P00/raw`로 보낸다. RS/C/command_ack는 클라우드가 처리한다. `/cmd`를 구독해 thermo를 덮어쓴 뒤 즉시 `/raw`를 한 번 더 올린다.
+`simulator/sim_pilot_farm01.py --mqtt` 가 v0x0C **83바이트**를 MQTT 브로커로 보낸다. 호스트·포트·topic은 환경변수 `MQTT_HOST`, `MQTT_PORT`, `MQTT_TOPIC`이다. 미설정 시 호스트는 `127.0.0.1`이고, 운영 브로커 주소는 문서와 코드에 두지 않는다. RS/C/command_ack는 클라우드가 처리한다. `/cmd`를 구독해 thermo를 덮어쓴 뒤 즉시 `/raw`를 한 번 더 올린다.
 
 대상 컨트롤러(iot-cloud FARM01 실측): `SP02:01:01`, `SP03:01:01`~`06`, `SP05:01:01`~`06`.
 
@@ -18,7 +18,7 @@
 
 | 항목 | FARM01 파일럿 |
 |------|----------------|
-| topic | `sungil/FARM01/P00/raw` |
+| topic | 환경변수 `MQTT_TOPIC`. 미설정 시 시뮬레이터 기본 topic |
 | tempsC | 프로브 4개, 원점 500 |
 | 경보 | 저온 10.0℃ / 고온 43.6℃ |
 | Channel A | `EC03` + 출력 + thermo 25.0/2.0/10/80 |
