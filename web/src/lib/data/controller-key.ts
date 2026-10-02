@@ -6,13 +6,14 @@ export type ControllerAddress = {
   eqpmnNo: string;
 };
 
+/** 컨트롤러 번호. 1~99는 두 자리 그대로 둔다. */
 export function normalizeEqpmnNo(raw: unknown): string {
   const n = Number(raw);
-  if (Number.isInteger(n) && n >= 1 && n <= 10) {
+  if (Number.isInteger(n) && n >= 1 && n <= 99) {
     return String(n).padStart(2, "0");
   }
   const s = String(raw ?? "").trim();
-  if (/^(0[1-9]|10)$/.test(s)) return s;
+  if (/^(0[1-9]|[1-9][0-9])$/.test(s)) return s;
   return "01";
 }
 
