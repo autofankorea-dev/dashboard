@@ -36,10 +36,10 @@ TEMP_ORIGIN_X10 = 500
 # Match field 83B alarm words (10.0°C / 43.6°C).
 ALARM_LOW_X10 = 100
 ALARM_HIGH_X10 = 436
-TOPIC = "sungil/FARM01/P00/raw"
-TOPIC_CMD = "sungil/FARM01/P00/cmd"
-MQTT_HOST = "54.116.16.1"
-MQTT_PORT = 1883
+TOPIC = os.environ.get("MQTT_TOPIC", "sungil/FARM01/P00/raw")
+TOPIC_CMD = os.environ.get("MQTT_TOPIC_CMD", "sungil/FARM01/P00/cmd")
+MQTT_HOST = os.environ.get("MQTT_HOST", "127.0.0.1")
+MQTT_PORT = int(os.environ.get("MQTT_PORT", "1883"))
 
 # controllerKey|channel -> (sp_x10, dev_x10, min, max)
 thermo_overrides: dict[str, tuple[int, int, int, int]] = {}
