@@ -80,7 +80,7 @@ erDiagram
 | Raw | `iot_room_state_raw` | `received_at` · `topic` · `payload_bytea` |
 | Decode | `iot_room_state_decoded` | **월 파티션** `RANGE (mesure_at)` |
 | Last | `iot_decoded_last_value` | sparse 기준 (앱 직접 SELECT 불가) |
-| 실패 | `iot_room_state_decode_failed` | INVALID_STALL_TY 등 |
+| 실패 | `iot_room_state_decode_failed` | upsert 등. 축사유형 바이트는 실패 아님 |
 | Cursor | `iot_decode_cursor` | Edge batch `last_raw_id` |
 | 설정 | `iot_decode_config` | sparse · clock · batch_limit · cron_secret |
 | 명령 | `ctrl_thermo_command` | pending→sent→applied |
@@ -175,7 +175,7 @@ PR 체크: `LIVE_LIST_FORBIDDEN_TOKENS` · `npm run measure:live` p95<300ms ([`L
 |------|-----------|------|
 | LIVE empty | `v_iot_decoded_latest` count | 2h 0건 |
 | decode backlog | `iot_decode_cursor` lag | warn 100 · critical 500 rows |
-| decode fail | `iot_room_state_decode_failed` | INVALID_STALL_TY |
+| decode fail | `iot_room_state_decode_failed` | upsert 등. 축사유형 바이트는 실패 아님 |
 | retention | raw/decoded rowcount | 30d cron |
 | sent stuck | `ctrl_thermo_command` sent age | TTL 300s+ |
 | 용량 | Supabase dashboard | Phase4 raw ~21MB (indexes ~81%) |

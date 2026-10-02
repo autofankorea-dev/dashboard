@@ -156,7 +156,7 @@ flowchart LR
 |------|------|------|
 | Raw | `iot_room_state_raw` | MQTT payload · `received_at` |
 | Decode | `iot_room_state_decoded` (월 파티션) · `iot_decoded_last_value` | `mesure_at` · sparse 기준 |
-| 실패 | `iot_room_state_decode_failed` | INVALID_STALL_TY 등 |
+| 실패 | `iot_room_state_decode_failed` | upsert 등. 축사유형 바이트는 실패 아님 |
 | LIVE | `v_iot_dashboard_list` · `v_iot_decoded_latest` · `v_iot_farm_overview` | 2h hot · tier |
 | Edge | `decode-batch` · `push-dispatch` | cron decode · FCM |
 | 설정 | `iot_decode_config` | sparse · `clock_kst_farm_keys` · batch_limit |
@@ -250,7 +250,7 @@ flowchart LR
 | LIVE empty | `v_iot_decoded_latest` 0건 | 2h 창 밖 · uplink 중단 |
 | 카드 caution | `live-status.ts` | 수신 OK · 측정 60분+ 정체 |
 | Instance stale | `instance_health_current.checked_at` | 10m 주의 · 30m 무시 |
-| decode 실패 | `iot_room_state_decode_failed` | INVALID_STALL_TY 등 |
+| decode 실패 | `iot_room_state_decode_failed` | upsert 등. 축사유형 바이트는 실패 아님 |
 | sent stuck | Health C · `ctrl_thermo_command` | C.py/ACK 경로 |
 | 용량 | raw/decoded rowcount | retention cron ([`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md)) |
 

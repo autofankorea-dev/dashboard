@@ -116,11 +116,11 @@ export function formatTempC(raw: number): string | null {
   return (x10 / 10).toFixed(1);
 }
 
-/** Ops `iot_room_state_decode_failed.error_code` — stall type byte outside 1..10. */
+/** Kept for rows that are not a stall-type byte. The 1..10 gate is lifted. */
 export const DECODE_ERROR_INVALID_STALL_TY = "INVALID_STALL_TY";
 
 function isValidStallTyRaw(raw: number): boolean {
-  return raw >= 1 && raw <= 10;
+  return Number.isInteger(raw) && raw >= 0 && raw <= 255;
 }
 
 function formatStallTy(raw: number): string | null {

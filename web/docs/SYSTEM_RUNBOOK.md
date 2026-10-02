@@ -68,7 +68,7 @@
 | 카드 caution | `live-status.ts` | 수신 OK + 측정 60m+ 정체 | replay·장비 시계 |
 | Instance stale | `instance_health_current.checked_at` | 10m | 30m unknown |
 | decode backlog | `iot_decode_cursor` lag | 100 rows | 500 rows |
-| decode fail | `iot_room_state_decode_failed` | row 증가 | INVALID_STALL_TY |
+| decode fail | `iot_room_state_decode_failed` | row 증가 | upsert 등. 축사유형 바이트는 실패 아님 |
 | sent stuck | `ctrl_thermo_command` + Health C | TTL 300s+ | C.py / ACK |
 | mem/disk | instance_health | mem <200MB · disk >85% | RS 노드 |
 | insert rate | raw buckets (admin) | 3×5min drop | D11 hints |
