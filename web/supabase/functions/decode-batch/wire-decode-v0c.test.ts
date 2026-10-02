@@ -4,7 +4,6 @@ import {
   clockModeForFarm,
   correctMesureEpochSec,
   crc16CcittFalse,
-  DECODE_ERROR_INVALID_STALL_TY,
   decodeV0cPayload,
   decodeV0cPayloadOutcome,
   formatTempC,
@@ -101,31 +100,24 @@ const slim83 = toSlimDecodedJson(farm02Alarm);
 assert.equal(slim83.alarmLowTempC, "10.0");
 assert.equal(slim83.alarmHighTempC, "43.6");
 
-const invalidStallTy = Uint8Array.from(farm01Body);
-invalidStallTy[6] = 0xff;
-assert.equal(decodeV0cPayload(withCrc(invalidStallTy)), null);
-const invalidOutcome = decodeV0cPayloadOutcome(withCrc(invalidStallTy));
-assert.equal(invalidOutcome.status, "invalid_stall_ty");
-if (invalidOutcome.status !== "invalid_stall_ty") {
-  throw new Error("expected INVALID_STALL_TY");
+const stallTy255 = Uint8Array.from(farm01Body);
+stallTy255[6] = 0xff;
+const outcome255 = decodeV0cPayloadOutcome(withCrc(stallTy255));
+assert.equal(outcome255.status, "ok");
+if (outcome255.status !== "ok") {
+  throw new Error("expected stall type 255 to decode");
 }
-assert.equal(invalidOutcome.errorCode, DECODE_ERROR_INVALID_STALL_TY);
-assert.equal(invalidOutcome.stallTyRaw, 255);
-assert.equal(invalidOutcome.stallNo, 1);
-assert.equal(invalidOutcome.eqpmnNo, 1);
-assert.equal(
-  invalidOutcome.errorDetail,
-  "stall_ty_raw=255 stall_no=1 eqpmn_no=1",
-);
+assert.equal(outcome255.payload.stallTyCode, "SP255");
+assert.equal(outcome255.payload.controllerKey, "SP255:01:01");
 
 const zeroStallTy = Uint8Array.from(farm01Body);
 zeroStallTy[6] = 0;
 const zeroOutcome = decodeV0cPayloadOutcome(withCrc(zeroStallTy));
-assert.equal(zeroOutcome.status, "invalid_stall_ty");
-if (zeroOutcome.status !== "invalid_stall_ty") {
-  throw new Error("expected INVALID_STALL_TY");
+assert.equal(zeroOutcome.status, "ok");
+if (zeroOutcome.status !== "ok") {
+  throw new Error("expected stall type 0 to decode");
 }
-assert.equal(zeroOutcome.stallTyRaw, 0);
+assert.equal(zeroOutcome.payload.stallTyCode, "SP00");
 
 const recvLive = Date.parse("2026-08-26T23:45:15.207Z");
 assert.equal(correctMesureEpochSec(1_787_787_915, recvLive), 1_787_787_915);

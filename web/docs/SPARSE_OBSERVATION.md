@@ -27,7 +27,7 @@
 | allowlist 농장 `decoded_n / raw_n` | 대략 **&lt; 70%**(변동·heartbeat에 따라 다름) |
 | LIVE / trend | 이상 없음 · 사용자 체감 OK |
 | `decode_failed` (UPSERT) | 지속 증가 없음 |
-| `decode_failed` (`INVALID_STALL_TY`) | 축사유형 바이트 1~10 밖(예: `0xFF`). **decoded 미기록(가림)** · raw는 유지. 펌웨어 미설정 관측용. UPSERT 장애와 구분 |
+| `decode_failed` (`INVALID_STALL_TY`) | 축사유형 1~10 제한은 해제됨. 0~255는 `SP00`~`SP255`로 decoded에 기록. 과거 실패 행은 raw 재디코드로 복원 |
 | slim JSON | 신규 행 `v0c-slim-1` 비율 증가 |
 
 ---
