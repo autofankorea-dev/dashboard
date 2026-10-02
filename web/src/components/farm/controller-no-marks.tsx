@@ -35,18 +35,19 @@ function NoMarkFrame({
 }) {
   const compact = useHydrationSafeDashboardCompact();
   const iconSize = dense ? "size-3.5" : compact ? "size-6" : "size-[1.35em]";
+  // 글자 크기 = 아이콘 높이. 데스크톱 카드는 부모 1.75rem이라 아이콘이 1.35em(약 38px)인데 text-xs는 12px였다.
   const digitSize = dense
-    ? "text-[0.7rem]"
+    ? "text-[0.875rem]"
     : compact
-      ? "text-base"
-      : "text-xs";
+      ? "text-[1.5rem]"
+      : "text-[1.35em]";
   const ink = onFill ? "text-current" : "text-muted-foreground";
   const digitInk = onFill ? "text-current" : "text-foreground";
 
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-end gap-0.5 align-middle",
+        "inline-flex shrink-0 items-center gap-0.5 align-middle",
         className,
       )}
       aria-label={label}
@@ -55,7 +56,7 @@ function NoMarkFrame({
       <Icon className={cn("shrink-0", iconSize, ink, iconClassName)} aria-hidden />
       <span
         className={cn(
-          "whitespace-nowrap font-bold tabular-nums leading-none",
+          "inline-flex items-center whitespace-nowrap font-bold tabular-nums leading-none",
           digitSize,
           digitInk,
         )}
