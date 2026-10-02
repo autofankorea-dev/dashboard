@@ -58,6 +58,15 @@ function sameChannels(
   return true;
 }
 
+/**
+ * 조회 실패·토큰 공백은 예외 없이 빈 배열로 온다.
+ * 카드가 이미 있으면 그 응답으로 목록을 비우지 않는다.
+ */
+export function retainLiveList<T>(prev: T[], next: T[]): T[] {
+  if (next.length === 0 && prev.length > 0) return prev;
+  return next;
+}
+
 /** LIVE soft refresh — 측정값이 같으면 이전 객체 참조 유지 (카드 remount/레이아웃 흔들림 완화). */
 export function liveReadingUnchanged(
   prev: BarnReading,
@@ -88,7 +97,7 @@ export function mergeLiveReadings(
 ): BarnReading[] {
   if (prev === next) return prev;
   if (prev.length === 0) return next;
-  if (next.length === 0) return next;
+  if (next.length === 0) return prev;
 
   const prevByKey = new Map(prev.map((r) => [r.key, r]));
   let reusedAll = prev.length === next.length;
@@ -139,7 +148,7 @@ export function mergeLiveBarnSnapshots(
 ): BarnMapSnapshot[] {
   if (prev === next) return prev;
   if (prev.length === 0) return next;
-  if (next.length === 0) return next;
+  if (next.length === 0) return prev;
 
   const prevByKey = new Map(prev.map((s) => [barnSnapshotKey(s), s]));
   let reusedAll = prev.length === next.length;
