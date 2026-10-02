@@ -71,7 +71,9 @@ SELECT count(*) FROM public.v_iot_raw_live;
 
 | 설정 | 값 |
 |------|-----|
-| Repo | `github.com/SIJackLee/dashboard` |
+| Repo | `github.com/autofankorea-dev/dashboard` |
+| Vercel | `autofankorea-dev/dashboard` |
+| Supabase | `fkkrjljeqxpbmazfnync` |
 | Branch (Production) | `main` |
 | Root Directory | `web` |
 | Functions | `icn1` (서울). 브이월드·카카오 서버 조회. 기본 `iad1`이면 지적 구획이 비어 보임 |
@@ -95,6 +97,7 @@ npm run lint
 
 | 날짜 | 내용 |
 |------|------|
+| 2026-09-28 | GitHub·Vercel `autofankorea-dev/dashboard`, Supabase `fkkrjljeqxpbmazfnync` |
 | 2026-08-21 | 모델 구획: Vercel Functions `icn1`(서울). `web/vercel.json` |
 | 2026-06-14 | RS-DB-C raw LIVE 조회 |
 | 2026-06-14 | Cloud Agent 지침 제거 (EC2 전용으로 분리) |

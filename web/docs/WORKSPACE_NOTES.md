@@ -1,6 +1,6 @@
 # 운영 메모 (스냅샷)
 
-> 갱신: 2026-07-30 · `dashboard/web`  
+> 갱신: 2026-09-28 · `dashboard/web`  
 > **진실의 원천은 `git status` / `origin/main`이다.** 이 파일은 메모일 뿐이다.  
 > 문서 허브: [`README.md`](./README.md) · 배포: [`CLOUD_DEPLOY.md`](./CLOUD_DEPLOY.md)
 
@@ -13,6 +13,9 @@
 | 항목 | 상태 |
 |------|------|
 | 에이전트 | 단일 (`SI1/.cursor/rules/single-agent.mdc`) |
+| Repo | `github.com/autofankorea-dev/dashboard` |
+| Vercel | `autofankorea-dev/dashboard` |
+| Supabase | `fkkrjljeqxpbmazfnync` |
 | 배포 | `commit → push → main → Vercel 자동` |
 | Production | `https://smart.autofankorea.com` — **2026-08-28 제품 패키징 종료 (GO)** |
 | CLI / Redeploy | 특수 케이스만 |

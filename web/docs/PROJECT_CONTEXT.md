@@ -8,7 +8,7 @@
 
 - **대상 폴더**: `web/` (Next.js 앱).
 - **목적**: Supabase IoT 데이터 권한별 조회 · 컨트롤러 명령.
-- **Supabase**: 운영 프로젝트는 `.env.local` 기준 (키·ref 문서에 하드코딩하지 말 것).
+- **Supabase**: `fkkrjljeqxpbmazfnync`. 키는 `.env.local`만 두고 문서에 적지 않는다.
 
 ## 2. 기술 스택
 
@@ -226,7 +226,8 @@ AVR-2000 / AUTOFAN **실물 패널 레이아웃**은 추후. 브로슈어·홈�
 
 ## 13. Git / 브랜치
 
-- 원격: `github.com/SIJackLee/dashboard`
+- 원격: `github.com/autofankorea-dev/dashboard`
+- Vercel: `autofankorea-dev/dashboard`
 - 작업 브랜치(스택): `feature/auth-access-gate` → `feature/admin-user-access`
   - `feature/admin-user-access`에 관리자·실데이터·명령·축사 차트 커밋 누적
 - 최근 커밋 예: `3374425` 축사 차트, `386537a` 원격 명령
