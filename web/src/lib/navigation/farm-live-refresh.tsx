@@ -38,6 +38,7 @@ import {
 import {
   mergeLiveBarnSnapshots,
   mergeLiveReadings,
+  retainLiveList,
 } from "@/lib/farm/merge-live-slice";
 import {
   getFarmPanelCache,
@@ -160,6 +161,28 @@ type ApplyPanelArgs = {
   >;
 };
 
+function retainCardSlice(prev: FarmLiveSlice, next: FarmLiveSlice): FarmLiveSlice {
+  const readings = retainLiveList(prev.readings, next.readings);
+  const barnSnapshots = retainLiveList(prev.barnSnapshots, next.barnSnapshots);
+  const controller = next.controller
+    ? {
+        ...next.controller,
+        readings: retainLiveList(
+          prev.controller?.readings ?? prev.readings,
+          next.controller.readings,
+        ),
+      }
+    : prev.controller;
+  if (
+    readings === next.readings &&
+    barnSnapshots === next.barnSnapshots &&
+    controller === next.controller
+  ) {
+    return next;
+  }
+  return { ...next, readings, barnSnapshots, controller };
+}
+
 function applyFreshPanel({
   farmId,
   data,
@@ -168,7 +191,7 @@ function applyFreshPanel({
   setThermoPatch,
 }: ApplyPanelArgs): void {
   setSlice((prev) => {
-    const next = sliceFromPanel(data);
+    const next = retainCardSlice(prev, sliceFromPanel(data));
     const merged: FarmLiveSlice =
       !hasStallTrendByPeriod(next.trendByPeriod) &&
       hasStallTrendByPeriod(prev.trendByPeriod)
@@ -190,7 +213,8 @@ type ApplyLiveArgs = {
 };
 
 /** LIVE만 패치 — trend·alarm·command history·낙관적 patch 유지.
- *  readings/barnSnapshots는 측정값이 같으면 이전 참조 재사용. */
+ *  readings/barnSnapshots는 측정값이 같으면 이전 참조 재사용.
+ *  빈 응답은 기존 카드를 유지한다. */
 function applyLivePatch({
   farmKey,
   data,
@@ -198,9 +222,11 @@ function applyLivePatch({
   moduleAlarmsRef,
 }: ApplyLiveArgs): void {
   let alarmSettings: AlarmSettings | undefined;
+  let appliedReadings = data.readings;
   setSlice((prev) => {
     alarmSettings = prev.controller?.alarmSettings;
     const readings = mergeLiveReadings(prev.readings, data.readings);
+    appliedReadings = readings;
     const barnSnapshots = mergeLiveBarnSnapshots(
       prev.barnSnapshots,
       data.barnSnapshots,
@@ -253,7 +279,7 @@ function applyLivePatch({
   moduleAlarmsRef.current = data.moduleAlarms;
   publishSituationFromRef(
     moduleAlarmsRef,
-    data.readings ?? [],
+    appliedReadings,
     alarmSettings,
   );
 }
@@ -471,7 +497,7 @@ export function FarmLiveRefreshProvider({
     // skip 시 캐시도 갱신하지 않음 — UI·캐시 신선도 불일치 방지
     if (shouldSkipScopedPanelHydrate(sliceRef.current, data)) return;
     setSlice((prev) => {
-      const next = sliceFromPanel(data);
+      const next = retainCardSlice(prev, sliceFromPanel(data));
       const merged: FarmLiveSlice =
         !hasStallTrendByPeriod(next.trendByPeriod) &&
         hasStallTrendByPeriod(prev.trendByPeriod)
