@@ -2319,7 +2319,8 @@ export function UnifiedBarnTrendPanel({
           markerDensity={
             (scoped?.categories.length ?? 0) <= 48 ? "all" : "sparse"
           }
-          markerRadiusPx={isMobileStack ? chartUiPx(1.4) : chartUiPx(1.6)}
+          // Data dots have their own pixel size, independent of toolbar/text scale.
+          markerRadiusPx={isMobileStack ? 1.4 : 1.6}
           animate={!overview}
           layerClipWipe={!overview}
           splitBandGuides={splitBandGuides}

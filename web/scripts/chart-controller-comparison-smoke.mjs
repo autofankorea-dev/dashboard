@@ -5,7 +5,7 @@
  * CHART_SMOKE_BROWSER_PATH may point to a Chromium executable (default: installed Chrome).
  */
 import assert from "node:assert/strict";
-import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
@@ -96,6 +96,47 @@ try {
   const graph = (key) =>
     controllerTile(key).locator('svg[aria-label="추이 차트"]');
   const checkbox = (key) => controllerTile(key).getByRole("checkbox");
+  const markerChecks = [];
+  const verifyExpandedDots = async (key, radiusPx, label) => {
+    await page.emulateMedia({ reducedMotion: "no-preference" });
+    await page.mouse.move(0, 0);
+    // Record animation frames, not just the settled chart: a stale, scaled
+    // viewBox previously inflated dots to 35x43px during expansion.
+    await page.evaluate(({ radiusPx }) => {
+      window.__chartDotSamples = [];
+      const start = performance.now();
+      const tick = () => {
+        const svg = document.querySelector('[data-chart-comparison-panels] svg[aria-label="추이 차트"]');
+        const dot = svg && [...svg.querySelectorAll("ellipse")].find(
+          (node) => node.getAttribute("fill") !== "none" &&
+            Math.abs(Number(node.getAttribute("rx")) - radiusPx) < 0.0001,
+        );
+        if (dot) {
+          const rect = dot.getBoundingClientRect();
+          window.__chartDotSamples.push({ width: rect.width, height: rect.height });
+        }
+        if (performance.now() - start < 1800) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }, { radiusPx });
+    await controllerTile(key).getByRole("button", { name: /개별 그래프 보기/ }).click();
+    await mode("single");
+    await page.mouse.move(0, 0);
+    await delay(1900);
+    const samples = await page.evaluate(() => window.__chartDotSamples);
+    assert.ok(samples.length >= 3, `${label}: sampled visible dots`);
+    const diameter = radiusPx * 2;
+    const maxWidth = Math.max(...samples.map((sample) => sample.width));
+    const maxHeight = Math.max(...samples.map((sample) => sample.height));
+    assert.ok(maxWidth <= diameter + 0.4 && maxHeight <= diameter + 0.4,
+      `${label}: dots must not inflate during expansion (${maxWidth}x${maxHeight})`);
+    const last = samples.at(-1);
+    assert.ok(Math.abs(last.width - diameter) < 0.15 && Math.abs(last.height - diameter) < 0.15,
+      `${label}: settled dots must be circular at ${diameter}px`);
+    markerChecks.push({ label, frames: samples.length, maxWidth, maxHeight, settled: last });
+    await page.screenshot({ path: join(output, `expanded-${label}.png`) });
+    await page.emulateMedia({ reducedMotion: "reduce" });
+  };
   await mode("batch");
   assert.equal(
     await page.locator("[data-farm-chart-lab-batch-stalls]").count(),
@@ -126,9 +167,7 @@ try {
   );
   await graph("SP03:1:1").waitFor();
   await page.screenshot({ path: join(output, "hierarchy-desktop.png") });
-  await controllerTile("SP03:1:2")
-    .getByRole("button", { name: /個別|개별 그래프 보기/ })
-    .click();
+  await verifyExpandedDots("SP03:1:2", 1.6, "desktop");
   await mode("single");
   assert.equal(
     await page
@@ -296,6 +335,9 @@ try {
   await mode("batch");
   await page.getByRole("region", { name: "베이비하우스 1번 축사 컨트롤러 미니그래프", exact: true }).waitFor();
   await page.screenshot({ path: join(output, "hierarchy-mobile.png") });
+  await verifyExpandedDots("SP04:1:1", 1.4, "mobile");
+  await page.getByRole("button", { name: "미니그래프 목록", exact: true }).click();
+  await mode("batch");
   await page
     .getByRole("button", { name: "테스트 빈 농장", exact: true })
     .click();
@@ -305,6 +347,8 @@ try {
     0,
   );
   assert.deepEqual(errors, [], "No browser errors");
+  writeFileSync(join(output, "expanded-marker-checks.json"), JSON.stringify(markerChecks, null, 2));
+  console.log("Expanded marker checks:", JSON.stringify(markerChecks));
   console.log(
     "chart-controller-comparison-smoke: PASS (hierarchy, isolated controller, same/cross-barn and cross-type comparison, URL reload, shared lookback/zoom/reset, removal, mobile, empty farm)",
   );

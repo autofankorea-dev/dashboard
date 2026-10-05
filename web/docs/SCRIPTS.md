@@ -45,7 +45,7 @@ GitLab `web:test` / `web:verify-design`, GitHub `.github/workflows/web-verify.ym
 | 파일 | 용도 |
 |------|------|
 | `e2e-farm-hub-boot-smoke.mjs` (`npm run smoke:boot`) | 부트 스모크 — 미인증 `/farm`→`/login` 가드·로그인 렌더 (**시크릿 불필요·CI 친화**) |
-| `chart-controller-comparison-smoke.mjs` (`npm run smoke:chart-comparison`) | 가상 데이터로 미니그래프 3단계·개별/비교·URL 복원·공통 확대·모바일 검증. 로컬 Next 서버와 임시 `/auth` fixture를 생성하고 종료 때 제거. Chrome 필요 (`CHART_SMOKE_BROWSER_PATH`로 Chromium 경로 지정 가능). 운영 계정·DB 불필요 |
+| `chart-controller-comparison-smoke.mjs` (`npm run smoke:chart-comparison`) | 가상 데이터로 미니그래프 3단계·개별/비교·URL 복원·공통 확대·모바일 검증. PC·모바일 확장 애니메이션의 매 프레임 dot 크기와 최종 원형 크기도 검사. 로컬 Next 서버와 임시 `/auth` fixture를 생성하고 종료 때 제거. Chrome 필요 (`CHART_SMOKE_BROWSER_PATH`로 Chromium 경로 지정 가능). 운영 계정·DB 불필요 |
 | `farm-hub-url-manual-smoke.mjs` (`npm run smoke:hub-url`) | 허브 URL·탭·soft home + 404 폴백 — [`VERCEL_PREVIEW_GATE.md`](./VERCEL_PREVIEW_GATE.md) · [`HUB_STABILITY_P0.md`](./HUB_STABILITY_P0.md) (test-accounts 필요) |
 | `test:e2e` (npm) | 위 둘 묶음 — 부트(미인증)→인증 핵심 플로 E2E 게이트. 서버 기동 + `.env.local`(Supabase) 필요 |
 | `verify-channel-bulk-commands.mjs` | 채널 일괄 명령 |

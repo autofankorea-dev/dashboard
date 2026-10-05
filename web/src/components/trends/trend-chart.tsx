@@ -545,9 +545,11 @@ export function TrendChart({
     const el = plotRef.current;
     if (!el || typeof ResizeObserver === "undefined") return;
     let tid = 0;
-    const apply = () => {
+    const apply = (size?: { width: number; height: number }) => {
       const run = () => {
-        const rect = el.getBoundingClientRect();
+        // SVG coordinates use layout pixels. Ancestor expand transforms affect
+        // getBoundingClientRect(), but must not affect the viewBox or dot size.
+        const rect = size ?? { width: el.clientWidth, height: el.clientHeight };
         if (rect.width > 0 && rect.height > 0) {
           setPlotPx((prev) =>
             Math.abs(prev.w - rect.width) < 0.5 &&
@@ -569,7 +571,10 @@ export function TrendChart({
       tid = window.setTimeout(run, 100);
     };
     apply();
-    const ro = new ResizeObserver(apply);
+    const ro = new ResizeObserver((entries) => {
+      const entry = entries.find((item) => item.target === el);
+      if (entry) apply(entry.contentRect);
+    });
     ro.observe(el);
     return () => {
       window.clearTimeout(tid);
