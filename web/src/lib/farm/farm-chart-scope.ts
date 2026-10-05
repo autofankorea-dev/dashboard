@@ -166,7 +166,8 @@ export function chartScopeLabel(
   }
   const hit = readings.find((r) => r.controllerKey === scope.controllerKey);
   if (hit) {
-    return `${tyLabel} · ${formatControllerNoLabel(hit.eqpmnNo)}`;
+    const stallLabel = scope.stallNo.startsWith("__") ? "축사 미지정" : `${scope.stallNo}번 축사`;
+    return `${tyLabel} · ${stallLabel} · 컨트롤러 ${formatControllerNoLabel(hit.eqpmnNo)}`;
   }
   return `${tyLabel} · ${scope.stallNo}번 · 컨트롤러`;
 }
@@ -852,4 +853,10 @@ export function applyFarmChartScopeParams(
   params.set(CHART_STALL_PARAM, scope.stallNo.trim());
   if (scope.level === "stall") return;
   params.set(CHART_CTRL_PARAM, scope.controllerKey);
+}
+
+/** 비교 대상은 두 개까지. 같은 키는 해제하며 세 번째 선택은 기존 쌍을 유지한다. */
+export function toggleFarmChartComparisonKey(keys: string[], key: string): string[] {
+  if (keys.includes(key)) return keys.filter((existing) => existing !== key);
+  return keys.length < 2 ? [...keys, key] : keys;
 }

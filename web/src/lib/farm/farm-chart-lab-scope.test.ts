@@ -4,6 +4,11 @@
 import assert from "node:assert/strict";
 import type { BarnReading } from "@/lib/data/iot";
 import {
+  buildFarmChartTree,
+  applyFarmChartLabSelectionParams,
+  resolveFarmChartLabSelection,
+  chartScopeLabel,
+  toggleFarmChartComparisonKey,
   dismissFarmChartLabHero,
   farmChartLabControllerScopes,
   farmChartLabScopeKey,
@@ -127,6 +132,71 @@ assert.equal(
 assert.deepEqual(
   uniqueFarmChartLabStalls([a, b]).map((s) => s.controllerKey),
   ["a"],
+);
+
+const hierarchyReadings = [
+  { stallTyCode: "SP03", stallNo: "1", controllerKey: "a", eqpmnNo: "2" },
+  { stallTyCode: "SP03", stallNo: "1", controllerKey: "b", eqpmnNo: "1" },
+  { stallTyCode: "SP03", stallNo: "2", controllerKey: "c", eqpmnNo: "1" },
+] as BarnReading[];
+const hierarchy = buildFarmChartTree(hierarchyReadings);
+assert.deepEqual(
+  hierarchy[0].stalls.map((stall) =>
+    stall.controllers.map((ctrl) => ctrl.controllerKey),
+  ),
+  [["b", "a"], ["c"]],
+);
+const controllerScopes = farmChartLabControllerScopes(hierarchyReadings);
+const controllerIndex = indexReadingsByChartScope(hierarchyReadings);
+for (const scope of controllerScopes) {
+  const values = controllerIndex.get(farmChartLabScopeKey(scope));
+  assert.equal(
+    values?.length,
+    1,
+    "controller mini graph must contain one controller, not its barn",
+  );
+  assert.equal(values?.[0].controllerKey, scope.controllerKey);
+}
+const crossBarn = farmChartLabSelectionFromKeys(controllerScopes, {
+  mode: "compare",
+  primaryKey: "SP03:1:b",
+  partnerKey: "SP03:2:c",
+});
+assert.equal(crossBarn.mode, "compare");
+assert.equal(crossBarn.primary?.stallNo, "1");
+assert.equal(crossBarn.partner?.stallNo, "2");
+const comparisonParams = new URLSearchParams();
+applyFarmChartLabSelectionParams(comparisonParams, crossBarn);
+assert.deepEqual(
+  resolveFarmChartLabSelection(comparisonParams),
+  crossBarn,
+  "cross-barn comparison must survive URL reload",
+);
+assert.notEqual(
+  chartScopeLabel(crossBarn.primary!, hierarchyReadings),
+  chartScopeLabel(crossBarn.partner!, hierarchyReadings),
+  "same controller number in different barns must be distinguishable",
+);
+assert.deepEqual(toggleFarmChartComparisonKey([], "a"), ["a"]);
+assert.deepEqual(toggleFarmChartComparisonKey(["a"], "b"), ["a", "b"]);
+assert.deepEqual(toggleFarmChartComparisonKey(["a", "b"], "c"), ["a", "b"]);
+assert.deepEqual(toggleFarmChartComparisonKey(["a", "b"], "a"), ["b"]);
+assert.deepEqual(toggleFarmChartComparisonKey(["b"], "c"), ["b", "c"]);
+assert.equal(
+  farmChartLabSelectionFromKeys([a, b], {
+    mode: "compare",
+    primaryKey: "SP03:1:a",
+    partnerKey: "SP03:1:a",
+  }).mode,
+  "single",
+);
+assert.equal(
+  farmChartLabSelectionFromKeys([a, b], {
+    mode: "compare",
+    primaryKey: "SP03:1:a",
+    partnerKey: "removed",
+  }).mode,
+  "single",
 );
 
 console.log("farm-chart-lab-scope.test.ts: ok");

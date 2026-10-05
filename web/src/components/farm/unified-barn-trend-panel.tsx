@@ -245,6 +245,8 @@ type Props = {
   onScopeChange?: (scope: FarmChartScope) => void;
   /** P2 — URL/DELIN handoff 초기 Y밴드·X구간 */
   initialZoom?: ChartTrendZoomHint | null;
+  /** 비교 두 칸의 공통 구간. undefined는 기존 개별 줌. */
+  comparisonZoom?: ChartTrendZoomHint | null;
   /** E — 집중 칩·스코프 → URL chartYBand 동기화 */
   onZoomChange?: (zoom: ChartTrendZoomHint | null) => void;
   /** 컨트롤러 집계에서 명령 이력 전용 차트 */
@@ -322,6 +324,7 @@ export function UnifiedBarnTrendPanel({
   chartScope,
   onScopeChange,
   initialZoom = null,
+  comparisonZoom,
   onZoomChange,
   commandPaneOpen = false,
   guidedXScopeGesture = null,
@@ -350,6 +353,7 @@ export function UnifiedBarnTrendPanel({
   controllerSelectEmpty = false,
   className,
 }: Props) {
+  const comparisonActive = comparisonZoom !== undefined;
   const liveRefresh = useFarmLiveRefreshOptional();
   const [ownedLayers, setOwnedLayers] =
     useState<UnifiedLayerFlags>(DEFAULT_UNIFIED_LAYERS);
@@ -719,7 +723,7 @@ export function UnifiedBarnTrendPanel({
 
     if (useBrushCanvas && context30d) {
       const hourly = collect("30d", true);
-      if (hourly && controllerWindowHasValues(hourly)) return hourly;
+      if (hourly && (comparisonActive || controllerWindowHasValues(hourly))) return hourly;
     }
     const h24 = collect("24h", false);
     if (h24 && controllerWindowHasValues(h24)) {
@@ -746,6 +750,7 @@ export function UnifiedBarnTrendPanel({
     brushWindow,
     uplinkCoverage,
     overview,
+    comparisonActive,
   ]);
   /** SSR/첫 hydration은 셸만 맞추고 SVG용 집계는 background render에서 계산한다. */
   const clientReady = useSyncExternalStore(
@@ -762,12 +767,15 @@ export function UnifiedBarnTrendPanel({
   /** M1 — 다운샘플+집계는 layout 무관 1회, 보간은 Y매핑만 */
   const downsampledWindow = useMemo(() => {
     if (!deferredWindowBundle) return null;
+    // A comparison uses the shared hourly grid (at most 720 buckets). Independent
+    // LTTB sampling would give the same zoom ratios different timestamps.
+    if (comparisonActive) return deferredWindowBundle;
     return downsampleSeriesForChart(
       deferredWindowBundle.seriesList,
       deferredWindowBundle.categories,
       plotWidthPx,
     );
-  }, [deferredWindowBundle, plotWidthPx]);
+  }, [deferredWindowBundle, plotWidthPx, comparisonActive]);
 
   const trendRaw = useMemo(() => {
     if (!downsampledWindow) return null;
@@ -887,9 +895,15 @@ export function UnifiedBarnTrendPanel({
     return () => window.clearTimeout(timer);
   }, [xScopeRangeMs, window15m, onNeedWindow15m]);
 
-  /** P2 — URL/DELIN 줌 힌트 1회 적용 (온도 레인 포커스 등) */
+  const effectiveZoom = comparisonZoom === undefined ? initialZoom : comparisonZoom;
+  const [seenComparisonZoom, setSeenComparisonZoom] = useState(comparisonZoom);
+  if (comparisonZoom !== seenComparisonZoom) {
+    setSeenComparisonZoom(comparisonZoom);
+    if (comparisonZoom === null) setXScopeStack([]);
+  }
+  /** URL 힌트와 비교 두 칸의 공통 줌 적용. */
   useEffect(() => {
-    if (!initialZoom) {
+    if (!effectiveZoom) {
       initialZoomKeyRef.current = "";
       return;
     }
@@ -898,37 +912,37 @@ export function UnifiedBarnTrendPanel({
     if (n < 3) return;
     const key = [
       period,
-      initialZoom.yBands.join("+"),
-      initialZoom.startRatio.toFixed(3),
-      initialZoom.endRatio.toFixed(3),
+      effectiveZoom.yBands.join("+"),
+      effectiveZoom.startRatio.toFixed(3),
+      effectiveZoom.endRatio.toFixed(3),
       String(n),
     ].join("|");
     if (initialZoomKeyRef.current === key) return;
     let start: number;
     let end: number;
     if (
-      initialZoom.startIndex != null &&
-      initialZoom.endIndex != null &&
-      Number.isFinite(initialZoom.startIndex) &&
-      Number.isFinite(initialZoom.endIndex)
+      effectiveZoom.startIndex != null &&
+      effectiveZoom.endIndex != null &&
+      Number.isFinite(effectiveZoom.startIndex) &&
+      Number.isFinite(effectiveZoom.endIndex)
     ) {
       start = Math.max(
         0,
         Math.min(
           n - 1,
-          Math.round(Math.min(initialZoom.startIndex, initialZoom.endIndex)),
+          Math.round(Math.min(effectiveZoom.startIndex, effectiveZoom.endIndex)),
         ),
       );
       end = Math.max(
         0,
         Math.min(
           n - 1,
-          Math.round(Math.max(initialZoom.startIndex, initialZoom.endIndex)),
+          Math.round(Math.max(effectiveZoom.startIndex, effectiveZoom.endIndex)),
         ),
       );
     } else {
-      const i0 = Math.round(initialZoom.startRatio * (n - 1));
-      const i1 = Math.round(initialZoom.endRatio * (n - 1));
+      const i0 = Math.round(effectiveZoom.startRatio * (n - 1));
+      const i1 = Math.round(effectiveZoom.endRatio * (n - 1));
       start = Math.max(0, Math.min(i0, i1));
       end = Math.min(n - 1, Math.max(i0, i1));
     }
@@ -938,7 +952,7 @@ export function UnifiedBarnTrendPanel({
     }
     if (end - start < 2) return;
     initialZoomKeyRef.current = key;
-    const measureBands = initialZoom.yBands.filter((b) => b !== "command");
+    const measureBands = effectiveZoom.yBands.filter((b) => b !== "command");
     setXScopeStack([
       {
         start,
@@ -949,7 +963,7 @@ export function UnifiedBarnTrendPanel({
       },
     ]);
     bumpScopeMotion("in");
-  }, [initialZoom, picked, period, bumpScopeMotion]);
+  }, [effectiveZoom, comparisonZoom, picked, period, bumpScopeMotion]);
 
   const scoped = useMemo(() => {
     if (!picked) return null;
@@ -970,7 +984,7 @@ export function UnifiedBarnTrendPanel({
       cats: string[],
     ) => {
       if (cats.length < 2 || seriesList.length < 1) return null;
-      const down = downsampleSeriesForChart(seriesList, cats, plotWidthPx);
+      const down = comparisonActive ? { seriesList, categories: cats } : downsampleSeriesForChart(seriesList, cats, plotWidthPx);
       const raw = aggregateUnifiedBarnTrendRaw(
         down.seriesList,
         down.categories,
@@ -1094,6 +1108,7 @@ export function UnifiedBarnTrendPanel({
     chartScope.level,
     trendRaw,
     overlayAlign,
+    comparisonActive,
   ]);
 
   const chartCategories = scoped?.categories ?? EMPTY_CHART_CATEGORIES;
@@ -1230,9 +1245,14 @@ export function UnifiedBarnTrendPanel({
     (entry: ScopeEntry | null) => {
       if (!onZoomChange) return;
       const n = picked?.categories.length ?? 0;
-      onZoomChange(chartScopeEntryToZoomHint(entry, n));
+      if (comparisonZoom !== undefined && entry && n > 1) {
+        // Transfer the common time window without per-panel absolute indices.
+        onZoomChange({ yBands: entry.yBands ?? [], startRatio: entry.start / (n - 1), endRatio: entry.end / (n - 1) });
+      } else {
+        onZoomChange(chartScopeEntryToZoomHint(entry, n));
+      }
     },
-    [onZoomChange, picked?.categories.length],
+    [onZoomChange, picked?.categories.length, comparisonZoom],
   );
 
   /** 부모 URL 동기화 — 렌더/updater 중 setState 금지 */
@@ -2308,7 +2328,7 @@ export function UnifiedBarnTrendPanel({
           xScopeSelect={!overview}
           onLookbackWheel={overview ? undefined : onLookbackWheel}
           onXScopeCommit={(range) =>
-            commitXScope(range, activeGuidedXScope ? "replace" : "push")
+            commitXScope(range, activeGuidedXScope ? "replace" : "push", { timeOnly: comparisonActive })
           }
           guidedXScopeGesture={activeGuidedXScope}
           onGuidedXScopeComplete={onGuidedXScopeComplete}

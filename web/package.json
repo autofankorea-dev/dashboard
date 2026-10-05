@@ -37,6 +37,7 @@
     "verify:hub": "node scripts/verify-hub.mjs",
     "smoke:hub-url": "node scripts/farm-hub-url-manual-smoke.mjs",
     "smoke:boot": "node scripts/e2e-farm-hub-boot-smoke.mjs",
+    "smoke:chart-comparison": "node scripts/chart-controller-comparison-smoke.mjs",
     "test:e2e": "node scripts/e2e-farm-hub-boot-smoke.mjs && node scripts/farm-hub-url-manual-smoke.mjs",
     "cap:sync": "npx cap sync android",
     "cap:open": "npx cap open android",

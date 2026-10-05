@@ -35,9 +35,11 @@ import {
 import type { FarmKey } from "@/lib/data/farm-key";
 import { normalizeStallTyCode } from "@/lib/data/stall-type";
 import {
+  EMPTY_FARM_CHART_LAB_SELECTION,
+  toggleFarmChartComparisonKey,
+  type ChartTrendZoomHint,
   buildFarmChartTree,
   chartScopeLabel,
-  controllersShareStall,
   dismissFarmChartLabHero,
   farmChartLabControllerScopes,
   farmChartLabScopeKey,
@@ -48,20 +50,15 @@ import {
   indexReadingsByChartScope,
   spScopeFromStallTy,
   stallScopeFromController,
-  uniqueFarmChartLabStalls,
   type FarmChartControllerScope,
   type FarmChartLabMode,
   type FarmChartLabSelection,
   type FarmChartScope,
 } from "@/lib/farm/farm-chart-scope";
-import {
-  useFarmTrendUplinkCoverage,
-} from "@/lib/farm/use-farm-trend-uplink-coverage";
+import { useFarmTrendUplinkCoverage } from "@/lib/farm/use-farm-trend-uplink-coverage";
 import type { UplinkCoverageIndex } from "@/lib/farm/trend-uplink-coverage";
 import {
   DEFAULT_UNIFIED_LAYERS,
-  splitYVisibilityFromLayers,
-  andSplitYVisibility,
   type UnifiedMetricAvailability,
 } from "@/lib/farm/unified-barn-trend-series";
 import { farmChartUi } from "@/lib/ui/farm-chart-ui-scale";
@@ -79,7 +76,10 @@ export type { FarmChartLabMode };
 type Props = {
   readings: BarnReading[];
   farmKey?: FarmKey | null;
-  controllerTrendByPeriod?: Record<TrendPeriodId, TrendControllerPeriodData> | null;
+  controllerTrendByPeriod?: Record<
+    TrendPeriodId,
+    TrendControllerPeriodData
+  > | null;
   trendLoading?: boolean;
   trendError?: boolean;
   trendExtending?: boolean;
@@ -100,20 +100,6 @@ type Props = {
 function labBatchListClass(compact: boolean): string {
   if (compact) return "grid grid-cols-2 content-start gap-2.5";
   return "flex flex-wrap content-start gap-2.5 md:gap-3";
-}
-
-function hiddenControllersExceptFirst(
-  controllers: BarnReading[],
-): Set<string> {
-  const first =
-    controllers.find(
-      (reading) => String(reading.eqpmnNo ?? "").replace(/^0+/, "") === "1",
-    ) ?? controllers[0];
-  return new Set(
-    controllers
-      .filter((reading) => reading.controllerKey !== first?.controllerKey)
-      .map((reading) => reading.controllerKey),
-  );
 }
 
 export function FarmChartLabView({
@@ -144,132 +130,110 @@ export function FarmChartLabView({
     () => indexReadingsByChartScope(readings),
     [readings],
   );
-  const stallAnchors = useMemo(
-    () => uniqueFarmChartLabStalls(scopes),
-    [scopes],
-  );
   const [openSp, setOpenSp] = useState<string | null>(null);
-  const [localMode, setLocalMode] = useState<FarmChartLabMode>("batch");
-  const [localPrimaryKey, setLocalPrimaryKey] = useState<string | null>(null);
-  const [localPartnerKey, setLocalPartnerKey] = useState<string | null>(null);
-  const urlBound = typeof onSelectionChange === "function";
-  const storedMode = urlBound ? (selection?.mode ?? "batch") : localMode;
-  const primaryKey = urlBound
-    ? selection?.primary
-      ? farmChartLabScopeKey(selection.primary)
-      : null
-    : localPrimaryKey;
-  const partnerKey = urlBound
-    ? selection?.partner
-      ? farmChartLabScopeKey(selection.partner)
-      : null
-    : localPartnerKey;
-  /** 비교 UI는 보류. 옛 비교 URL은 펼친 축사만 연다. */
-  const mode: FarmChartLabMode =
-    storedMode === "compare"
-      ? primaryKey
-        ? "single"
-        : "batch"
-      : storedMode;
+  const [openStall, setOpenStall] = useState<string | null>(null);
+  const [localSelection, setLocalSelection] = useState<FarmChartLabSelection>(
+    EMPTY_FARM_CHART_LAB_SELECTION,
+  );
+  const currentSelection = onSelectionChange
+    ? (selection ?? EMPTY_FARM_CHART_LAB_SELECTION)
+    : localSelection;
+  const resolved = farmChartLabSelectionFromKeys(scopes, {
+    mode: currentSelection.mode,
+    primaryKey: currentSelection.primary
+      ? farmChartLabScopeKey(currentSelection.primary)
+      : null,
+    partnerKey: currentSelection.partner
+      ? farmChartLabScopeKey(currentSelection.partner)
+      : null,
+  });
+  const { mode, primary, partner } = resolved;
+  const heroScopes = [primary, partner].filter(
+    (scope): scope is FarmChartControllerScope => scope != null,
+  );
+  const [comparisonKeys, setComparisonKeys] = useState<string[]>([]);
+  const comparisonScopes = comparisonKeys.flatMap((key) => {
+    const scope = scopes.find(
+      (candidate) => farmChartLabScopeKey(candidate) === key,
+    );
+    return scope ? [scope] : [];
+  });
+  const toggleComparison = (key: string) => {
+    setComparisonKeys((prev) =>
+      toggleFarmChartComparisonKey(
+        prev.filter((existing) =>
+          scopes.some((scope) => farmChartLabScopeKey(scope) === existing),
+        ),
+        key,
+      ),
+    );
+  };
   const [sharedBrushWindow, setSharedBrushWindow] = useState<BrushWindow>(
     () => BRUSH_PERIOD_WINDOW["24h"],
   );
-  const resetLookbackTo24h = useCallback(() => {
-    setSharedBrushWindow(BRUSH_PERIOD_WINDOW["24h"]);
-  }, []);
-  const ignoreLookbackChange = useCallback((_next: BrushWindow) => {
-    /* 일괄 칸은 24시간 고정. 펼친 카드에서 휠로 과거를 연다. */
-  }, []);
+  const [comparisonZoom, setComparisonZoom] =
+    useState<ChartTrendZoomHint | null>(null);
   const [layers, setLayers] = useState(DEFAULT_UNIFIED_LAYERS);
   const [alarmRangeOn, setAlarmRangeOn] = useState({ temp: true, hum: true });
-  const [metricAvailable, setMetricAvailable] =
-    useState<UnifiedMetricAvailability>({
-      temp: false,
-      hum: false,
-      motors: false,
-    });
-  const [metricsSettled, setMetricsSettled] = useState(false);
-  const onMetricAvailable = useCallback((next: UnifiedMetricAvailability) => {
-    setMetricsSettled(true);
-    setMetricAvailable((prev) =>
-      prev.temp === next.temp &&
-      prev.hum === next.hum &&
-      prev.motors === next.motors
-        ? prev
-        : next,
-    );
-  }, []);
-  const layerVisibility = useMemo(
-    () => splitYVisibilityFromLayers(layers),
-    [layers],
+  const [availabilityByKey, setAvailabilityByKey] = useState<
+    Record<string, UnifiedMetricAvailability>
+  >({});
+  const onMetricAvailable = useCallback(
+    (key: string, next: UnifiedMetricAvailability) => {
+      setAvailabilityByKey((prev) => {
+        const old = prev[key];
+        return old?.temp === next.temp &&
+          old.hum === next.hum &&
+          old.motors === next.motors
+          ? prev
+          : { ...prev, [key]: next };
+      });
+    },
+    [],
   );
-  const dataVisibility = useMemo(
-    () => andSplitYVisibility(layerVisibility, metricAvailable),
-    [layerVisibility, metricAvailable],
+  const metricsSettled = heroScopes.every(
+    (scope) => availabilityByKey[farmChartLabScopeKey(scope)] != null,
   );
+  const metricAvailable = {
+    temp: heroScopes.some(
+      (scope) => availabilityByKey[farmChartLabScopeKey(scope)]?.temp,
+    ),
+    hum: heroScopes.some(
+      (scope) => availabilityByKey[farmChartLabScopeKey(scope)]?.hum,
+    ),
+    motors: heroScopes.some(
+      (scope) => availabilityByKey[farmChartLabScopeKey(scope)]?.motors,
+    ),
+  };
   const sharedLayers: SharedChartLayerDisplay = useMemo(
     () => ({ layers, alarmRangeOn }),
     [layers, alarmRangeOn],
   );
   const cycleGroupLayers = useCallback((group: LayerGroupId) => {
-    setLayers((prev) => {
-      const mode = detectLayerGroupMode(
-        prev,
-        UNIFIED_LAYER_TOOLBAR_AVAILABLE,
-        group,
-      );
-      return applyLayerGroupMode(
+    setLayers((prev) =>
+      applyLayerGroupMode(
         prev,
         group,
-        nextLayerGroupMode(mode),
+        nextLayerGroupMode(
+          detectLayerGroupMode(prev, UNIFIED_LAYER_TOOLBAR_AVAILABLE, group),
+        ),
         UNIFIED_LAYER_TOOLBAR_AVAILABLE,
-      );
-    });
+      ),
+    );
   }, []);
-
-  const primaryAnchor = primaryKey
-    ? (scopes.find((s) => farmChartLabScopeKey(s) === primaryKey) ?? null)
-    : null;
-  const heroStallKey = primaryAnchor
-    ? farmChartLabStallKey(primaryAnchor)
-    : null;
-  const heroControllers = useMemo(
-    () => {
-      const anchor = primaryKey
-        ? (scopes.find((s) => farmChartLabScopeKey(s) === primaryKey) ?? null)
-        : null;
-      if (!anchor) return [];
-      const scope = stallScopeFromController(anchor);
-      return (
-        readingsByScope.get(farmChartScopeKey(scope)) ??
-        filterReadingsByChartScope(readings, scope)
-      );
-    },
-    [primaryKey, readings, readingsByScope, scopes],
-  );
-  const defaultHiddenCtrlKeys = useMemo(
-    () => hiddenControllersExceptFirst(heroControllers),
-    [heroControllers],
-  );
-  const [controllerVisibility, setControllerVisibility] = useState<{
-    stallKey: string;
-    hidden: Set<string>;
-  } | null>(null);
-  const hiddenCtrlKeys =
-    controllerVisibility?.stallKey === heroStallKey
-      ? controllerVisibility.hidden
-      : defaultHiddenCtrlKeys;
-  const controllerToggles = useMemo(
-    () =>
-      heroControllers.map((reading) => ({
-        key: reading.controllerKey,
-        eqpmnNo: reading.eqpmnNo,
-        on: !hiddenCtrlKeys.has(reading.controllerKey),
-      })),
-    [heroControllers, hiddenCtrlKeys],
-  );
-
+  const changeBrushWindow = useCallback((next: BrushWindow) => {
+    setSharedBrushWindow(next);
+    setComparisonZoom(null);
+  }, []);
+  const ignoreLookbackChange = useCallback((_next: BrushWindow) => {}, []);
+  const [zoomPeriod, setZoomPeriod] = useState(period);
+  if (period !== zoomPeriod) {
+    setZoomPeriod(period);
+    setComparisonZoom(null);
+  }
   const labRootRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  const listScrollRef = useRef(0);
   const [expandOrigin, setExpandOrigin] = useState<{
     left: number;
     top: number;
@@ -277,7 +241,10 @@ export function FarmChartLabView({
     height: number;
   } | null>(null);
   const settleExpand = useCallback(() => setExpandOrigin(null), []);
-
+  useLayoutEffect(() => {
+    if (mode === "batch" && listRef.current)
+      listRef.current.scrollTop = listScrollRef.current;
+  }, [mode]);
   const uplinkCoverageSnap = useFarmTrendUplinkCoverage({
     farmKey: farmKey ?? null,
     enabled: layersToolbarActive,
@@ -292,140 +259,132 @@ export function FarmChartLabView({
         uplinkCoverageSnap.h24,
         uplinkCoverageSnap.d30,
       ].filter((index): index is UplinkCoverageIndex => index != null),
-    [
-      uplinkCoverageSnap.window,
-      uplinkCoverageSnap.h24,
-      uplinkCoverageSnap.d30,
-    ],
+    [uplinkCoverageSnap.window, uplinkCoverageSnap.h24, uplinkCoverageSnap.d30],
   );
-
   const commitSelection = (next: FarmChartLabSelection) => {
-    if (onSelectionChange) {
-      onSelectionChange(next);
-      return;
-    }
-    setLocalMode(next.mode);
-    setLocalPrimaryKey(
-      next.primary ? farmChartLabScopeKey(next.primary) : null,
-    );
-    setLocalPartnerKey(
-      next.partner ? farmChartLabScopeKey(next.partner) : null,
-    );
+    if (onSelectionChange) onSelectionChange(next);
+    else setLocalSelection(next);
   };
-
-  const openSingle = (scope: FarmChartControllerScope) => {
-    setControllerVisibility(null);
-    if (urlBound) {
-      commitSelection({ mode: "single", primary: scope, partner: null });
-      return;
+  const returnToList = () => {
+    if (primary && openSp == null) {
+      setOpenSp(normalizeStallTyCode(primary.stallTyCode));
+      setOpenStall(farmChartLabStallKey(primary));
     }
-    const key = farmChartLabScopeKey(scope);
-    setLocalPrimaryKey(key);
-    if (localPartnerKey === key) setLocalPartnerKey(null);
-    setLocalMode("single");
+    setExpandOrigin(null);
+    commitSelection(EMPTY_FARM_CHART_LAB_SELECTION);
   };
-  const expandFromTile = (
+  const openSingle = (
     scope: FarmChartControllerScope,
-    tileEl: HTMLElement | null,
+    tile: HTMLElement | null,
   ) => {
+    listScrollRef.current = listRef.current?.scrollTop ?? 0;
     setSharedBrushWindow(BRUSH_PERIOD_WINDOW["24h"]);
-    if (tileEl) {
-      const r = tileEl.getBoundingClientRect();
-      setExpandOrigin({
-        left: r.left,
-        top: r.top,
-        width: r.width,
-        height: r.height,
-      });
-    } else {
-      setExpandOrigin(null);
-    }
-    openSingle(scope);
+    setComparisonZoom(null);
+    const rect = tile?.getBoundingClientRect();
+    setExpandOrigin(
+      rect
+        ? {
+            left: rect.left,
+            top: rect.top,
+            width: rect.width,
+            height: rect.height,
+          }
+        : null,
+    );
+    commitSelection({ mode: "single", primary: scope, partner: null });
   };
   const dismissHero = (scope: FarmChartControllerScope) => {
-    const next = dismissFarmChartLabHero({
-      dismissedKey: farmChartLabScopeKey(scope),
-      primaryKey,
-      partnerKey,
-    });
-    if (next.mode === "batch") {
-      setOpenSp(normalizeStallTyCode(scope.stallTyCode));
-      resetLookbackTo24h();
-    }
-    if (urlBound) {
-      commitSelection(farmChartLabSelectionFromKeys(scopes, next));
+    if (mode === "single") {
+      returnToList();
       return;
     }
-    setLocalPrimaryKey(next.primaryKey);
-    setLocalPartnerKey(next.partnerKey);
-    setLocalMode(next.mode);
+    const next = dismissFarmChartLabHero({
+      dismissedKey: farmChartLabScopeKey(scope),
+      primaryKey: primary ? farmChartLabScopeKey(primary) : null,
+      partnerKey: partner ? farmChartLabScopeKey(partner) : null,
+    });
+    setComparisonZoom(null);
+    commitSelection(farmChartLabSelectionFromKeys(scopes, next));
   };
-
-  const firstCtrlOfStall = (
-    stall: Extract<FarmChartScope, { level: "stall" }>,
-  ) =>
-    scopes.find(
-      (s) =>
-        farmChartLabStallKey(s) === farmChartLabStallKey(stall),
-    ) ?? null;
-
-  const isHeroAnchor = (scope: FarmChartControllerScope) => {
-    if (mode === "batch") return false;
-    if (!primaryAnchor) return false;
-    return controllersShareStall(scope, primaryAnchor);
+  const chooseComparison = () => {
+    setComparisonKeys(heroScopes.map(farmChartLabScopeKey));
+    returnToList();
   };
-
+  const startComparison = () => {
+    if (comparisonScopes.length !== 2) return;
+    listScrollRef.current = listRef.current?.scrollTop ?? 0;
+    setSharedBrushWindow(BRUSH_PERIOD_WINDOW["24h"]);
+    setComparisonZoom(null);
+    setExpandOrigin(null);
+    commitSelection({
+      mode: "compare",
+      primary: comparisonScopes[0],
+      partner: comparisonScopes[1],
+    });
+  };
   const renderTile = (
     scope: FarmChartScope,
-    size: "cell" | "hero" | "peer",
+    size: "cell" | "hero",
     index = 0,
-    anchor?: FarmChartControllerScope | null,
   ) => {
     const key = farmChartScopeKey(scope);
-    const selected =
-      size === "hero" &&
-      Boolean(anchor && farmChartLabScopeKey(anchor) === primaryKey);
     const action =
-      mode === "batch" && scope.level === "sp"
-        ? {
-            label: "이 축사유형의 축사 보기",
-            onClick: () => {
-              const ty = normalizeStallTyCode(scope.stallTyCode);
-              setOpenSp((prev) => (prev === ty ? null : ty));
-            },
-          }
-        : mode === "batch" && scope.level === "stall"
+      size !== "cell"
+        ? null
+        : scope.level === "sp"
           ? {
-              label: "이 축사 펼치기",
-              onClick: (e: MouseEvent<HTMLButtonElement>) => {
-                const tile = e.currentTarget.closest<HTMLElement>(
-                  "[data-farm-chart-tile]",
-                );
-                const ctrl = firstCtrlOfStall(scope);
-                if (ctrl) expandFromTile(ctrl, tile);
+              label: `${chartScopeLabel(scope, readings)}의 축사 보기`,
+              onClick: () => {
+                const ty = normalizeStallTyCode(scope.stallTyCode);
+                setOpenSp((prev) => (prev === ty ? null : ty));
+                setOpenStall(null);
               },
             }
-            : null;
+          : scope.level === "stall"
+            ? {
+                label: `${chartScopeLabel(scope, readings)}의 컨트롤러 보기`,
+                onClick: () =>
+                  setOpenStall((prev) =>
+                    prev === farmChartLabStallKey(scope)
+                      ? null
+                      : farmChartLabStallKey(scope),
+                  ),
+              }
+            : scope.level === "controller"
+              ? {
+                  label: `${chartScopeLabel(scope, readings)} 개별 그래프 보기`,
+                  onClick: (event: MouseEvent<HTMLButtonElement>) =>
+                    openSingle(
+                      scope,
+                      event.currentTarget.closest<HTMLElement>(
+                        "[data-farm-chart-tile]",
+                      ),
+                    ),
+                }
+              : null;
+    const checked = comparisonKeys.includes(key);
     return (
       <LabTile
         key={key}
         scope={scope}
         readings={readings}
         scopedReadings={
-          readingsByScope.get(farmChartScopeKey(scope)) ??
+          readingsByScope.get(key) ??
           filterReadingsByChartScope(readings, scope)
         }
         size={size}
-        selected={selected}
+        selected={
+          size === "cell" &&
+          (scope.level === "sp"
+            ? openSp === normalizeStallTyCode(scope.stallTyCode)
+            : scope.level === "stall"
+              ? openStall === farmChartLabStallKey(scope)
+              : checked)
+        }
         index={index}
         action={action}
-        overlayControllers={size === "hero"}
-        hiddenCtrlKeys={
-          size === "hero" && index === 0 ? hiddenCtrlKeys : undefined
-        }
-        onMetricAvailable={
-          size === "hero" && index === 0 ? onMetricAvailable : undefined
-        }
+        overlayControllers={false}
+        onMetricAvailable={size === "hero" ? onMetricAvailable : undefined}
         controllerTrendByPeriod={controllerTrendByPeriod}
         trendLoading={trendLoading}
         trendError={trendError}
@@ -437,170 +396,244 @@ export function FarmChartLabView({
         period={period}
         hidePeriodBrush
         brushWindow={
-          mode === "batch"
-            ? BRUSH_PERIOD_WINDOW["24h"]
-            : sharedBrushWindow
+          size === "cell" ? BRUSH_PERIOD_WINDOW["24h"] : sharedBrushWindow
         }
         onBrushWindowChange={
-          mode === "batch" ? ignoreLookbackChange : setSharedBrushWindow
+          size === "cell" ? ignoreLookbackChange : changeBrushWindow
+        }
+        comparisonZoom={
+          size === "hero" && mode === "compare" ? comparisonZoom : undefined
+        }
+        onZoomChange={
+          size === "hero" && mode === "compare" ? setComparisonZoom : undefined
         }
         alarmSettings={alarmSettings}
         thermoSettings={thermoSettings}
-        canCommand={canCommand}
+        canCommand={canCommand && mode !== "compare"}
         isMobileStack={isMobileStack}
         sharedLayers={sharedLayers}
-        layerChrome={
-          size === "hero" && index === 0 && layersToolbarActive
-            ? layerToolbar
-            : null
-        }
-        expandFrom={size === "hero" && index === 0 ? expandOrigin : null}
+        expandFrom={size === "hero" && mode === "single" ? expandOrigin : null}
         onExpandSettled={settleExpand}
         onDismiss={
-          size === "hero" && anchor
-            ? () => dismissHero(anchor)
+          size === "hero" && scope.level === "controller"
+            ? () => dismissHero(scope)
             : undefined
+        }
+        selectionControl={
+          size === "cell" && scope.level === "controller" ? (
+            <label className="relative z-20 flex min-h-10 cursor-pointer items-center gap-2 border-t px-2 text-xs">
+              <input
+                type="checkbox"
+                checked={checked}
+                disabled={!checked && comparisonScopes.length >= 2}
+                aria-label={`${chartScopeLabel(scope, readings)} 비교 선택`}
+                onChange={() => toggleComparison(key)}
+              />
+              비교 선택
+            </label>
+          ) : null
         }
       />
     );
   };
-
-  const heroAnchors = stallAnchors.filter(isHeroAnchor);
-  const layerToolbar = layersToolbarActive ? (
-      <div
-        className="farm-chart-toolbar-fit relative flex w-full min-w-0 max-w-full items-center rounded-xl border bg-muted/40 p-2 md:inline-flex md:w-auto md:flex-wrap"
-        data-farm-chart-layers-shell=""
-      >
-      <UnifiedTrendLayerToolbar
-        compact={isMobileStack}
-        layers={layers}
-        available={{
-          ...UNIFIED_LAYER_TOOLBAR_AVAILABLE,
-          temp: metricAvailable.temp,
-          hum: metricAvailable.hum,
-          motors: metricAvailable.motors,
-        }}
-        metricsPending={!metricsSettled}
-        onCycleGroup={cycleGroupLayers}
-        tempAlarmOn={alarmRangeOn.temp}
-        humAlarmOn={alarmRangeOn.hum}
-        tempAlarmAvailable={Boolean(
-          dataVisibility.showTemp && layers.temp,
-        )}
-        humAlarmAvailable={Boolean(
-          dataVisibility.showHum &&
-            (layers.hum ||
-              layers.humDev ||
-              layers.humBand ||
-              layers.humEma),
-        )}
-        onToggleTempAlarm={() =>
-          setAlarmRangeOn((prev) => ({ ...prev, temp: !prev.temp }))
-        }
-        onToggleHumAlarm={() =>
-          setAlarmRangeOn((prev) => ({ ...prev, hum: !prev.hum }))
-        }
-        controllerToggles={controllerToggles}
-        onToggleController={(key) => {
-          if (!heroStallKey) return;
-          setControllerVisibility((prev) => {
-            const current =
-              prev?.stallKey === heroStallKey
-                ? prev.hidden
-                : hiddenCtrlKeys;
-            const next = new Set(current);
-            if (next.has(key)) next.delete(key);
-            else next.add(key);
-            return { stallKey: heroStallKey, hidden: next };
-          });
-        }}
-      />
-    </div>
-  ) : null;
-
-  const openSpNode =
-    openSp == null
-      ? null
-      : (tree.find(
-          (sp) => normalizeStallTyCode(sp.stallTyCode) === openSp,
-        ) ?? null);
-
+  const openSpNode = tree.find(
+    (sp) => normalizeStallTyCode(sp.stallTyCode) === openSp,
+  );
+  const openStallNode = openSpNode?.stalls.find(
+    (stall) =>
+      farmChartLabStallKey({
+        stallTyCode: openSpNode.stallTyCode,
+        stallNo: stall.stallNo,
+      }) === openStall,
+  );
+  const toolbar =
+    mode !== "batch" && layersToolbarActive ? (
+      <div className="farm-chart-ui farm-chart-toolbar-fit flex shrink-0 items-center rounded-xl border bg-muted/40 p-2">
+        <UnifiedTrendLayerToolbar
+          compact={isMobileStack}
+          layers={layers}
+          available={{
+            ...UNIFIED_LAYER_TOOLBAR_AVAILABLE,
+            temp: metricAvailable.temp,
+            hum: metricAvailable.hum,
+            motors: metricAvailable.motors,
+          }}
+          metricsPending={!metricsSettled}
+          onCycleGroup={cycleGroupLayers}
+          tempAlarmOn={alarmRangeOn.temp}
+          humAlarmOn={alarmRangeOn.hum}
+          tempAlarmAvailable={metricAvailable.temp && layers.temp}
+          humAlarmAvailable={metricAvailable.hum && layers.hum}
+          onToggleTempAlarm={() =>
+            setAlarmRangeOn((prev) => ({ ...prev, temp: !prev.temp }))
+          }
+          onToggleHumAlarm={() =>
+            setAlarmRangeOn((prev) => ({ ...prev, hum: !prev.hum }))
+          }
+        />
+      </div>
+    ) : null;
   return (
     <div
       ref={labRootRef}
       className="flex h-full min-h-0 flex-1 flex-col gap-2 overflow-hidden px-1"
       data-farm-chart-lab=""
       data-tour-id="farm-chart-view"
+      data-chart-lab-mode={mode}
     >
       {scopes.length === 0 ? (
         <p className={cn(dashboardTypography.meta, "px-3 py-6")}>
           컨트롤러가 없습니다.
         </p>
       ) : mode === "batch" ? (
-        <div className="min-h-0 flex-1 overflow-y-auto">
+        <>
+          <div ref={listRef} className="min-h-0 flex-1 overflow-y-auto">
+            <div
+              className={cn(
+                "max-w-full space-y-3",
+                dashboardHubSurface.well,
+                dashboardHubSurface.gridGap,
+              )}
+            >
+              <section aria-label="축사유형 미니그래프">
+                <h2 className="mb-2 text-sm font-medium">축사유형</h2>
+                <div
+                  className={labBatchListClass(isMobileStack)}
+                  data-farm-chart-lab-batch-sp=""
+                >
+                  {tree.map((sp, index) =>
+                    renderTile(
+                      spScopeFromStallTy(sp.stallTyCode),
+                      "cell",
+                      index,
+                    ),
+                  )}
+                </div>
+              </section>
+              {openSpNode ? (
+                <section aria-label={`${openSpNode.label} 축사 미니그래프`}>
+                  <h2 className="mb-2 text-sm font-medium">
+                    {openSpNode.label} · 축사
+                  </h2>
+                  <div
+                    className={labBatchListClass(isMobileStack)}
+                    data-farm-chart-lab-batch-stalls=""
+                  >
+                    {openSpNode.stalls.map((stall, index) =>
+                      renderTile(
+                        stallScopeFromController({
+                          stallTyCode: openSpNode.stallTyCode,
+                          stallNo: stall.stallNo,
+                        }),
+                        "cell",
+                        index,
+                      ),
+                    )}
+                  </div>
+                </section>
+              ) : null}
+              {openSpNode && openStallNode ? (
+                <section
+                  aria-label={`${openSpNode.label} ${openStallNode.label} 컨트롤러 미니그래프`}
+                >
+                  <h2 className="mb-2 text-sm font-medium">
+                    {openSpNode.label} · {openStallNode.label} · 컨트롤러
+                  </h2>
+                  <div
+                    className={labBatchListClass(isMobileStack)}
+                    data-farm-chart-lab-batch-controllers=""
+                  >
+                    {openStallNode.controllers.map((controller, index) =>
+                      renderTile(
+                        {
+                          level: "controller",
+                          stallTyCode: openSpNode.stallTyCode,
+                          stallNo: openStallNode.stallNo,
+                          controllerKey: controller.controllerKey,
+                        },
+                        "cell",
+                        index,
+                      ),
+                    )}
+                  </div>
+                </section>
+              ) : null}
+            </div>
+          </div>
+          <div
+            className="flex shrink-0 flex-wrap items-center gap-2 rounded-lg border bg-card p-2"
+            data-chart-comparison-selection=""
+          >
+            <span className="text-sm" role="status">
+              비교 대상 {comparisonScopes.length}/2
+            </span>
+            {comparisonScopes.map((scope) => (
+              <button
+                key={farmChartLabScopeKey(scope)}
+                type="button"
+                className="min-h-10 rounded-md border px-2 text-xs"
+                aria-label={`${chartScopeLabel(scope, readings)} 비교 선택 해제`}
+                onClick={() => toggleComparison(farmChartLabScopeKey(scope))}
+              >
+                {chartScopeLabel(scope, readings)} ×
+              </button>
+            ))}
+            <button
+              type="button"
+              className="ml-auto min-h-10 rounded-md bg-primary px-3 text-sm text-primary-foreground disabled:opacity-40"
+              disabled={comparisonScopes.length !== 2}
+              onClick={startComparison}
+            >
+              비교하기
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <button
+              type="button"
+              className="min-h-10 rounded-md border px-3 text-sm"
+              onClick={returnToList}
+            >
+              미니그래프 목록
+            </button>
+            <span className="text-sm font-medium">
+              {mode === "compare" ? "컨트롤러 비교" : "컨트롤러 개별 그래프"}
+            </span>
+            <button
+              type="button"
+              className="ml-auto min-h-10 rounded-md border px-3 text-sm"
+              onClick={chooseComparison}
+            >
+              {mode === "compare" ? "비교 대상 변경" : "비교 대상 고르기"}
+            </button>
+          </div>
+          {toolbar}
           <div
             className={cn(
-              "h-fit max-w-full space-y-2.5",
-              isMobileStack ? "w-full" : "w-fit",
-              dashboardHubSurface.well,
-              dashboardHubSurface.gridGap,
+              "flex min-h-0 flex-1 gap-2.5",
+              isMobileStack
+                ? "flex-col overflow-y-auto"
+                : "flex-row overflow-hidden",
             )}
+            data-chart-comparison-panels=""
           >
-            <div
-              className={labBatchListClass(isMobileStack)}
-              data-farm-chart-lab-batch-sp=""
-            >
-              {tree.map((sp, index) => {
-                const scope = spScopeFromStallTy(sp.stallTyCode);
-                const dimmed =
-                  openSp != null &&
-                  openSp !== normalizeStallTyCode(sp.stallTyCode);
-                return (
-                  <div
-                    key={farmChartScopeKey(scope)}
-                    className={cn(
-                      motionClass.transitionOpacity,
-                      "duration-motion-normal",
-                      dimmed && "opacity-40",
-                    )}
-                  >
-                    {renderTile(scope, "cell", index)}
-                  </div>
-                );
-              })}
-            </div>
-            {openSpNode ? (
+            {heroScopes.map((scope, index) => (
               <div
-                className={labBatchListClass(isMobileStack)}
-                data-farm-chart-lab-batch-stalls=""
-              >
-                {openSpNode.stalls.map((stall, index) =>
-                  renderTile(
-                    stallScopeFromController({
-                      stallTyCode: openSpNode.stallTyCode,
-                      stallNo: stall.stallNo,
-                    }),
-                    "cell",
-                    index,
-                  ),
+                key={farmChartLabScopeKey(scope)}
+                className={cn(
+                  "flex min-w-0 flex-1 flex-col",
+                  mode === "compare" && isMobileStack
+                    ? "min-h-[20rem] shrink-0 basis-[20rem]"
+                    : "min-h-0",
                 )}
+              >
+                {renderTile(scope, "hero", index)}
               </div>
-            ) : null}
+            ))}
           </div>
-        </div>
-      ) : (
-        <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-hidden">
-          <div className="flex min-h-0 flex-1 flex-col gap-2.5 overflow-hidden">
-            {heroAnchors.map((anchor, index) =>
-              renderTile(
-                stallScopeFromController(anchor),
-                "hero",
-                index,
-                anchor,
-              ),
-            )}
-          </div>
-        </div>
+        </>
       )}
     </div>
   );
@@ -631,6 +664,9 @@ function LabTile({
   canCommand,
   isMobileStack,
   sharedLayers,
+  selectionControl = null,
+  comparisonZoom,
+  onZoomChange,
   layerChrome = null,
   expandFrom = null,
   onExpandSettled,
@@ -651,8 +687,17 @@ function LabTile({
   } | null;
   overlayControllers?: boolean;
   hiddenCtrlKeys?: Set<string>;
-  onMetricAvailable?: (available: UnifiedMetricAvailability) => void;
-  controllerTrendByPeriod?: Record<TrendPeriodId, TrendControllerPeriodData> | null;
+  onMetricAvailable?: (
+    key: string,
+    available: UnifiedMetricAvailability,
+  ) => void;
+  selectionControl?: ReactNode;
+  comparisonZoom?: ChartTrendZoomHint | null;
+  onZoomChange?: (zoom: ChartTrendZoomHint | null) => void;
+  controllerTrendByPeriod?: Record<
+    TrendPeriodId,
+    TrendControllerPeriodData
+  > | null;
   trendLoading?: boolean;
   trendError?: boolean;
   trendExtending?: boolean;
@@ -680,6 +725,13 @@ function LabTile({
   onDismiss?: () => void;
 }) {
   const tileRef = useRef<HTMLDivElement>(null);
+  const scopeKey = farmChartScopeKey(scope);
+  const reportMetricAvailable = useCallback(
+    (available: UnifiedMetricAvailability) => {
+      onMetricAvailable?.(scopeKey, available);
+    },
+    [scopeKey, onMetricAvailable],
+  );
   const overview = size !== "hero";
   const controllers = useMemo(
     () =>
@@ -700,7 +752,9 @@ function LabTile({
   useLayoutEffect(() => {
     const el = tileRef.current;
     if (size !== "hero" || !expandFrom || !el) return;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduce = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     if (reduce) {
       onExpandSettled?.();
       return;
@@ -750,6 +804,17 @@ function LabTile({
     <div
       ref={tileRef}
       data-farm-chart-tile=""
+      data-chart-scope-level={scope.level}
+      data-chart-lookback-hours={
+        overview
+          ? 24
+          : brushWindow
+            ? Math.round(brushWindow.width * 30 * 24)
+            : undefined
+      }
+      data-chart-controller-key={
+        scope.level === "controller" ? scope.controllerKey : undefined
+      }
       className={cn(
         "relative flex min-h-0 min-w-0 flex-col overflow-hidden",
         overview ? dashboardHubSurface.tile : "rounded-xl border bg-card",
@@ -777,63 +842,72 @@ function LabTile({
       }
     >
       {layerChrome ? (
-        <div className="flex shrink-0 items-center px-2 pt-2">{layerChrome}</div>
+        <div className="flex shrink-0 items-center px-2 pt-2">
+          {layerChrome}
+        </div>
       ) : null}
-      <UnifiedBarnTrendPanel
-        label={label}
-        controllers={controllers}
-        controllerTrendByPeriod={controllerTrendByPeriod}
-        trendLoading={trendLoading}
-        trendError={trendError}
-        trendExtending={trendExtending}
-        window15mLoading={window15mLoading}
-        window15m={window15m}
-        onNeedWindow15m={onNeedWindow15m}
-        uplinkCoverage={uplinkCoverage}
-        period={period}
-        alarmSettings={alarmSettings}
-        thermoSettings={thermoSettings}
-        chartScope={scope}
-        plotFill={size === "hero"}
-        overlayControllers={overlayControllers}
-        onMetricAvailable={size === "hero" ? onMetricAvailable : undefined}
-        controllerSelectEmpty={controllerSelectEmpty}
-        chartHeight={overview ? 64 : undefined}
-        headingMode={overview ? "overview" : "widget"}
-        hidePeriodBrush={hidePeriodBrush}
-        brushWindow={brushWindow}
-        onBrushWindowChange={onBrushWindowChange}
-        sharedLayers={sharedLayers}
-        canCommand={canCommand}
-        isMobileStack={isMobileStack}
-        headerActions={
-          onDismiss ? (
-            <button
-              type="button"
-              onClick={onDismiss}
-              className={cn(
-                "inline-flex size-8 items-center justify-center rounded-md text-muted-foreground",
-                "hover:bg-muted/50 hover:text-foreground",
-                motionClass.microHover,
-              )}
-              aria-label={`${label} 차트 끄기`}
-              title="차트 끄기"
-            >
-              <X className="size-4" aria-hidden />
-            </button>
-          ) : undefined
-        }
-        className="mt-0 h-full min-h-0 flex-1"
-      />
-      {action ? (
-        <button
-          type="button"
-          className="absolute inset-0 z-10 cursor-pointer"
-          aria-label={action.label}
-          title={action.label}
-          onClick={action.onClick}
+      <div className="relative flex min-h-0 flex-1 flex-col">
+        <UnifiedBarnTrendPanel
+          label={label}
+          controllers={controllers}
+          controllerTrendByPeriod={controllerTrendByPeriod}
+          trendLoading={trendLoading}
+          trendError={trendError}
+          trendExtending={trendExtending}
+          window15mLoading={window15mLoading}
+          window15m={window15m}
+          onNeedWindow15m={onNeedWindow15m}
+          uplinkCoverage={uplinkCoverage}
+          period={period}
+          alarmSettings={alarmSettings}
+          thermoSettings={thermoSettings}
+          chartScope={scope}
+          plotFill={size === "hero"}
+          overlayControllers={overlayControllers}
+          onMetricAvailable={
+            size === "hero" ? reportMetricAvailable : undefined
+          }
+          comparisonZoom={comparisonZoom}
+          onZoomChange={onZoomChange}
+          controllerSelectEmpty={controllerSelectEmpty}
+          chartHeight={overview ? 64 : undefined}
+          headingMode={overview ? "overview" : "widget"}
+          hidePeriodBrush={hidePeriodBrush}
+          brushWindow={brushWindow}
+          onBrushWindowChange={onBrushWindowChange}
+          sharedLayers={sharedLayers}
+          canCommand={canCommand}
+          isMobileStack={isMobileStack}
+          headerActions={
+            onDismiss ? (
+              <button
+                type="button"
+                onClick={onDismiss}
+                className={cn(
+                  "inline-flex size-8 items-center justify-center rounded-md text-muted-foreground",
+                  "hover:bg-muted/50 hover:text-foreground",
+                  motionClass.microHover,
+                )}
+                aria-label={`${label} 차트 끄기`}
+                title="차트 끄기"
+              >
+                <X className="size-4" aria-hidden />
+              </button>
+            ) : undefined
+          }
+          className="mt-0 h-full min-h-0 flex-1"
         />
-      ) : null}
+        {action ? (
+          <button
+            type="button"
+            className="absolute inset-0 z-10 cursor-pointer"
+            aria-label={action.label}
+            title={action.label}
+            onClick={action.onClick}
+          />
+        ) : null}
+      </div>
+      {selectionControl}
     </div>
   );
 }
