@@ -8,6 +8,8 @@ import {
   controllerEnvCoverFillClass,
   controllerEnvCoverInkClass,
   controllerEnvCoverLabel,
+  controllerEnvCoverStatus,
+  controllerEnvCoverReceivedLabel,
   controllerEnvCoverLevel,
   controllerEnvCoverReason,
   controllerEnvCoverRingClass,
@@ -15,6 +17,19 @@ import {
   controllerEnvMetricTextClass,
   worstControllerEnvCoverLevel,
 } from "./controller-env-cover";
+
+{
+  const fresh = { status: "normal" as const, tempC: 25.3, humidityPct: 55, stallTyCode: "SP07" };
+  assert.deepEqual(controllerEnvCoverStatus(fresh), { environment: "환경 정상", communication: "통신 정상", stale: false });
+  assert.equal(controllerEnvCoverStatus({ ...fresh, tempC: 60 }).environment, "환경 경고");
+  assert.equal(controllerEnvCoverStatus({ ...fresh, status: "caution" }).environment, "환경 확인 필요");
+  assert.equal(controllerEnvCoverStatus({ ...fresh, status: "caution" }).communication, "통신 주의");
+  assert.equal(controllerEnvCoverStatus({ ...fresh, status: "offline" }).communication, "통신 경고");
+  assert.equal(controllerEnvCoverStatus({ ...fresh, tempC: null, humidityPct: null }).environment, "환경 확인 필요");
+  assert.equal(controllerEnvCoverStatus({ ...fresh, tempC: NaN, humidityPct: NaN }).environment, "환경 확인 필요");
+  assert.equal(controllerEnvCoverReceivedLabel("invalid"), "마지막 수신 확인 불가");
+  assert.ok(controllerEnvCoverReceivedLabel("2026-10-06T00:00:00Z").includes("09:00"), "last reception is shown in KST");
+}
 
 {
   assert.equal(controllerEnvCoverLabel("ok"), "정상");

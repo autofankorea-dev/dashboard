@@ -10,7 +10,8 @@ import {
 } from "@/lib/farm/controller-summary-display";
 import {
   controllerEnvCoverInkClass,
-  controllerEnvCoverLabel,
+  controllerEnvCoverStatus,
+  controllerEnvCoverReceivedLabel,
   controllerEnvCoverReason,
   type ControllerEnvCoverLevel,
 } from "@/lib/farm/controller-env-cover";
@@ -81,9 +82,12 @@ export function ControllerEnvCover({
   const typeLabel = formatControllerHeaderStallType(reading);
   const stallLabel = formatControllerHeaderStallUnit(reading);
   const ctrlLabel = `컨트롤러 ${formatControllerNoLabel(reading.eqpmnNo)}`;
-  const statusLabel = controllerEnvCoverLabel(level);
+  const status = controllerEnvCoverStatus(reading, alarmSettings);
+  const displayLevel = status.stale ? reading.status === "offline" ? "offline" : "warn" : level;
+  const statusLabel = `${status.environment}, ${status.communication}`;
+  const receivedLabel = controllerEnvCoverReceivedLabel(reading.receivedAt);
   const reason = controllerEnvCoverReason(reading, alarmSettings);
-  const onFill = level !== "offline";
+  const onFill = displayLevel !== "offline";
   const reasonAria = [reason.valueLabel, reason.bandLabel]
     .filter(Boolean)
     .join(" ");
@@ -129,7 +133,8 @@ export function ControllerEnvCover({
     <button
       type="button"
       data-farm-env-cover="on"
-      aria-label={`${typeLabel} ${stallLabel} ${ctrlLabel}, ${statusLabel}${reasonAria ? `, ${reasonAria}` : ""}${applyAria ? `, 적용 ${applyAria}` : ""}. 상세 보기`}
+      data-cover-status-level={displayLevel}
+      aria-label={`${typeLabel} ${stallLabel} ${ctrlLabel}, ${statusLabel}${status.stale ? `, ${receivedLabel}` : ""}${reasonAria ? `, ${status.stale ? "마지막 측정 " : ""}${reasonAria}` : ""}${applyAria ? `, 적용 ${applyAria}` : ""}. 상세 보기`}
       onClick={(e) => {
         e.stopPropagation();
         requestOpen();
@@ -137,9 +142,9 @@ export function ControllerEnvCover({
       className={cn(
         "absolute inset-0 z-10 flex flex-col justify-between gap-1 p-2.5 text-left sm:p-3",
         dashboardAffordance.hitSurface,
-        COVER_FILL[level],
+        COVER_FILL[displayLevel],
         dashboardChroma.statusFilmGlassRim,
-        controllerEnvCoverInkClass(level),
+        controllerEnvCoverInkClass(displayLevel),
         exiting && "pointer-events-none",
         exiting ? motionClass.exitFade : animateEnter ? motionClass.enterFade : null,
       )}
@@ -193,6 +198,11 @@ export function ControllerEnvCover({
         </span>
       </span>
       <span className="flex min-h-0 flex-1 flex-col justify-center gap-1">
+        {status.stale ? (
+          <span className={dashboardTypography.envCoverMeta}>
+            {reason.valueLabel ? "마지막 측정 · " : ""}{receivedLabel}
+          </span>
+        ) : null}
         {reason.valueLabel ? (
           <>
             <span
@@ -228,12 +238,13 @@ export function ControllerEnvCover({
       >
         <span
           className={cn(
-            "break-keep opacity-70",
+            "flex min-w-0 flex-col break-keep opacity-70",
             dashboardTypography.envCoverStatus,
             onFill && "text-current",
           )}
         >
-          {statusLabel}
+          <span data-cover-environment-status="">{status.environment}</span>
+          <span data-cover-communication-status="">{status.communication}</span>
         </span>
         <ChevronRight
           className={cn(dashboardAffordance.hitHint, onFill && "text-current")}

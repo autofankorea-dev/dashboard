@@ -150,6 +150,33 @@ export function controllerEnvCoverLabel(level: ControllerEnvCoverLevel): string 
   return "연결 끊김";
 }
 
+/** Environment alarms and communication freshness are independent readouts. */
+export function controllerEnvCoverStatus(
+  reading: CoverReasonReading,
+  alarmSettings?: AlarmSettings,
+): { environment: string; communication: string; stale: boolean } {
+  const hasValue = [reading.tempC, reading.humidityPct].some(
+    (value) => value != null && Number.isFinite(value),
+  );
+  const stale = reading.status !== "normal";
+  const tint = roomEnvTint(reading, alarmSettings);
+  return {
+    environment: stale || !hasValue ? "환경 확인 필요"
+      : tint === "danger" ? "환경 경고" : tint === "warn" ? "환경 주의" : "환경 정상",
+    communication: reading.status === "offline" ? "통신 경고"
+      : reading.status === "caution" ? "통신 주의" : "통신 정상",
+    stale,
+  };
+}
+
+export function controllerEnvCoverReceivedLabel(receivedAt: string): string {
+  const date = new Date(receivedAt);
+  if (!Number.isFinite(date.getTime())) return "마지막 수신 확인 불가";
+  return `마지막 수신 ${new Intl.DateTimeFormat("ko-KR", {
+    timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false,
+  }).format(date)}`;
+}
+
 export type ControllerEnvCoverReason = {
   valueLabel: string | null;
   bandLabel: string | null;
