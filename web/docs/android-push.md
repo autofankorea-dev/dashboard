@@ -23,11 +23,11 @@ farm_module_alarm (active)
 
 iPhone은 Safari 모바일 웹만 (푸시 없음). iOS Capacitor는 이후 단계.
 
-## DB (iot-cloud 적용됨)
+## DB
 
 Migration: [`supabase/migrations/20260803120000_user_push_and_outbox.sql`](../supabase/migrations/20260803120000_user_push_and_outbox.sql)
 
-원격 `ompufmezugftzoergdbn`에 `user_push_and_outbox` 적용 완료 (2026-08-03).
+원격 Supabase 프로젝트는 `fkkrjljeqxpbmazfnync`다. `user_push_and_outbox` migration 파일은 2026-08-03이다.
 
 ## Edge Secrets · 배포
 

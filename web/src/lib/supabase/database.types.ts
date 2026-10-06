@@ -5,7 +5,7 @@
  * 재노출하고, 대시보드가 실제 호출하는 farm_trend_* JSON RPC용 편의 별칭만 파생한다.
  *
  * 재생성:
- *   npx supabase gen types typescript --project-id ompufmezugftzoergdbn \
+ *   npx supabase gen types typescript --project-id fkkrjljeqxpbmazfnync \
  *     > src/lib/supabase/database.types.generated.ts
  *   (또는 Supabase MCP generate_typescript_types)
  */

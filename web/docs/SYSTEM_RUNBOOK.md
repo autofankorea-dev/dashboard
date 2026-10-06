@@ -33,7 +33,9 @@
 
 | 항목 | 값 |
 |------|-----|
-| Repo | `github.com/SIJackLee/dashboard` |
+| Repo | `github.com/autofankorea-dev/dashboard` |
+| Vercel | `autofankorea-dev/dashboard` |
+| Supabase | `fkkrjljeqxpbmazfnync` |
 | Root | `web` |
 | Functions | `icn1` |
 
