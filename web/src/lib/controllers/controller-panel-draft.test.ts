@@ -8,6 +8,8 @@ import {
   formatChannelGlanceCells,
   isChannelDraftDirty,
   mergeDirtyChannelSaves,
+  syncPanelChannelDrafts,
+  latestPanelCommand,
   type PanelChannelContext,
   type PanelDraft,
 } from "./controller-panel-draft";
@@ -198,6 +200,39 @@ assert.equal(isChannelDraftDirty(draftA, draftA), false);
     deviation: "+3.0",
     vent: "20–70",
   });
+}
+
+{
+  const pending = {
+    ...draftA, id: "submitted-a", channel: "A" as const, status: "pending" as const,
+    createdAt: "2026-10-06T01:00:00Z", sentAt: null, appliedAt: null,
+    farmKey: { lsindRegistNo: "TEST", itemCode: "P00" }, moduleUid: 1,
+    controllerKey: "test", stallTyCode: "SP01", stallNo: "01", eqpmnNo: "01",
+    note: null, errorMsg: null,
+  };
+  const waiting = [{ ...channels[0], command: pending }];
+  const snapshots = { A: draftA };
+  const synced = syncPanelChannelDrafts(waiting, { A: draftA, B: draftB }, {}, snapshots);
+  assert.equal(synced.A?.setpointTemp, 24, "old LIVE must not undo submitted value");
+  assert.equal(collectDirtyChannelSaves(waiting, synced, snapshots).length, 0, "no duplicate send while awaiting LIVE");
+  assert.equal(syncPanelChannelDrafts(waiting, {}, {}, {}).A?.setpointTemp, 24, "panel remount restores pending command");
+  const failed = { ...pending, status: "failed" as const };
+  const partial = [{ ...waiting[0], command: failed }, channels[1]];
+  const failureDrafts = syncPanelChannelDrafts(partial, synced, { B: true }, snapshots);
+  assert.equal(failureDrafts.A?.setpointTemp, 24, "failed values remain available to retry");
+  assert.equal(failureDrafts.B, draftB, "other channel edits survive partial failure");
+  assert.deepEqual(collectDirtyChannelSaves(partial, failureDrafts, snapshots).map((s) => s.slot), ["A", "B"]);
+  const confirmed = [{ ...waiting[0], liveBaseline: draftA, command: { ...pending, status: "applied" as const } }];
+  assert.equal(collectDirtyChannelSaves(confirmed, synced, {}).length, 0, "LIVE confirmation does not re-dirty input");
+  assert.equal(latestPanelCommand([pending, failed], "A")?.status, "failed", "terminal update wins for the same command");
+  assert.equal(latestPanelCommand([pending], "B"), null, "channel scopes remain isolated");
+  const allWaiting = channels.map((ctx, index) => ({
+    ...ctx,
+    command: { ...pending, ...[draftA, draftB, draftC][index], id: ctx.slot, channel: ctx.slot },
+  }));
+  const restored = syncPanelChannelDrafts(allWaiting, {}, {}, {});
+  assert.deepEqual([restored.A, restored.B, restored.C], [draftA, draftB, draftC], "all channels restore independent submitted values");
+  assert.equal(collectDirtyChannelSaves(allWaiting, restored, {}).length, 0);
 }
 
 console.log("controller-panel-draft.test.ts ok");

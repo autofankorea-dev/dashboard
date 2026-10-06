@@ -19,6 +19,9 @@ import {
   collectDirtyChannelSaves,
   mergeDirtyChannelSaves,
   panelChannelKey,
+  displayThermoForChannel,
+  syncPanelChannelDrafts,
+  panelCommandFailed,
   type ChannelGlanceRow,
   type DirtyChannelSave,
   type PanelChannelContext,
@@ -134,15 +137,6 @@ function panelDraftToFields(d: PanelDraft): Record<PanelMenuId, number> {
   };
 }
 
-function draftToThermo(d: PanelDraft): ThermoValues {
-  return {
-    setpointTemp: d.setpointTemp,
-    tempDeviation: d.tempDeviation,
-    minVentPct: d.minVentPct,
-    maxVentPct: d.maxVentPct,
-  };
-}
-
 function fieldsToThermo(
   f: Record<PanelMenuId, number>,
 ): ThermoValues {
@@ -174,6 +168,7 @@ export function useControllerPanel(
   liveBaseline?: ThermoValues | null,
   channelContexts?: PanelChannelContext[],
   onBulkCommandsRegistered?: (items: BulkSentCommandItem[]) => void,
+  latestCommand?: import("@/lib/data/commands").ThermoCommand | null,
 ) {
   const [pending, setPending] = useState(false);
   const [activeMenu, setActiveMenu] = useState<PanelMenuId>("setpoint");
@@ -253,13 +248,20 @@ export function useControllerPanel(
     setMessage(null);
   }
 
-  /** LIVE가 제출값과 일치하면 saveBaseline 해제 → 이후 dirty는 LIVE 기준 */
-  if (
-    saveBaseline &&
-    liveBaseline &&
-    thermoValuesMatch(draftToThermo(saveBaseline), liveBaseline)
-  ) {
-    setSaveBaselineByKey((prev) => patchKeyMap(prev, channelKey, null));
+  // Release every channel's snapshot, including inactive tabs and failed commands.
+  const releasedKeys = channelContexts?.length
+    ? channelContexts.filter((ctx) => saveBaselineByKey[ctx.slot] &&
+        (panelCommandFailed(ctx.command) || (ctx.liveBaseline &&
+          thermoValuesMatch(saveBaselineByKey[ctx.slot]!, ctx.liveBaseline))))
+        .map((ctx) => ctx.slot)
+    : saveBaseline && (panelCommandFailed(latestCommand) ||
+        (liveBaseline && thermoValuesMatch(saveBaseline, liveBaseline))) ? [channelKey] : [];
+  if (releasedKeys.length) {
+    setSaveBaselineByKey((prev) => {
+      const next = { ...prev };
+      for (const key of releasedKeys) next[key] = null;
+      return next;
+    });
   }
 
   /**
@@ -270,42 +272,21 @@ export function useControllerPanel(
     if (!targetKey) return;
     setDraftByKey((prev) => {
       if (channelContexts && channelContexts.length > 0) {
-        let next = prev;
-        for (const ctx of channelContexts) {
-          if (editedByKeyRef.current[ctx.slot]) continue;
-          const source = ctx.liveBaseline
-            ? {
-                setpointTemp: ctx.liveBaseline.setpointTemp,
-                tempDeviation: ctx.liveBaseline.tempDeviation,
-                minVentPct: ctx.liveBaseline.minVentPct,
-                maxVentPct: ctx.liveBaseline.maxVentPct,
-              }
-            : ctx.knownSettings
-              ? draftFromSettings(ctx.knownSettings)
-              : null;
-          const cur = next[ctx.slot] ?? null;
-          if (source == null) {
-            if (cur == null) continue;
-            next = patchKeyMap(next, ctx.slot, null);
-            continue;
-          }
-          if (draftsEqual(cur, source)) continue;
-          next = patchKeyMap(next, ctx.slot, source);
-        }
-        return next;
+        return syncPanelChannelDrafts(channelContexts, prev, editedByKeyRef.current, saveBaselineByKeyRef.current);
       }
       const key = channelKeyRef.current;
-      const s = knownSettingsRef.current;
+      const s = displayThermoForChannel(knownSettingsRef.current, liveBaseline ?? null,
+        saveBaselineByKeyRef.current[key], latestCommand);
       if (!s) {
         if (hasEditedRef.current) return prev;
         return patchKeyMap(prev, key, null);
       }
-      const synced = draftFromSettings(s);
+      const synced = { ...s };
       if (hasEditedRef.current && prev[key]) return prev;
       const cur = prev[key] ?? null;
       return draftsEqual(cur, synced) ? prev : patchKeyMap(prev, key, synced);
     });
-  }, [settingsKey, targetKey, channelKey, channelSyncKey, channelContexts]);
+  }, [settingsKey, targetKey, channelKey, channelSyncKey, channelContexts, liveBaseline, latestCommand]);
 
   const markActiveEdited = useCallback(() => {
     setEditedByKey((prev) => patchKeyMap(prev, channelKey, true));
@@ -577,6 +558,11 @@ export function useControllerPanel(
             tone: "error",
             text: formatUserError(result.error ?? result.failed[0]?.error ?? "unknown"),
           });
+        } else if (!result.ok) {
+          const failedSlots = dirtySaves.filter((row) =>
+            !result.sentItems.some((item) => item.command.channel === row.slot))
+            .map((row) => row.slot).join("·");
+          setMessage({ tone: "error", text: `${failedSlots}채널 전송 실패. 입력값을 유지했습니다. 다시 적용하세요.` });
         }
       });
       return;
@@ -658,12 +644,11 @@ export function useControllerPanel(
   );
 
   /**
-   * 「현재」표시 — 적용·명령값(knownSettings) 우선.
-   * 통신 연결 시 명령은 곧 컨트롤러에 전달된다는 신뢰 모델 (LIVE/ACK 대기 불필요).
+   * 「현재」표시는 실제 수신값. 제출값은 초안/진행 표시와 구분한다.
    */
   const currentValues = useMemo((): Record<PanelMenuId, number> | null => {
-    if (knownSettings) return panelDraftToFields(draftFromSettings(knownSettings));
     if (liveBaseline) return thermoToFields(liveBaseline);
+    if (knownSettings?.source === "live") return panelDraftToFields(draftFromSettings(knownSettings));
     return null;
   }, [knownSettings, liveBaseline]);
 
@@ -671,11 +656,12 @@ export function useControllerPanel(
    * dirty 기준 — 방금 제출한 값 > 명령/낙관 knownSettings > LIVE.
    */
   const dirtyBaseline = useMemo((): Record<PanelMenuId, number> | null => {
+    if (panelCommandFailed(latestCommand)) return liveBaseline ? thermoToFields(liveBaseline) : null;
     if (saveBaseline) return panelDraftToFields(saveBaseline);
     if (knownSettings) return panelDraftToFields(draftFromSettings(knownSettings));
     if (liveBaseline) return thermoToFields(liveBaseline);
     return null;
-  }, [saveBaseline, knownSettings, liveBaseline]);
+  }, [saveBaseline, knownSettings, liveBaseline, latestCommand]);
 
   const isFieldChanged = useCallback(
     (menu: PanelMenuId): boolean => {

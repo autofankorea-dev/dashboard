@@ -14,9 +14,10 @@ import {
 import { MENU_STEPS } from "@/lib/controllers/controller-panel-map";
 import type { PresetCreateField } from "@/lib/farm/command-presets";
 import { useControllerPanel } from "@/components/controllers/use-controller-panel";
-import type {
-  DirtyChannelSave,
-  PanelChannelContext,
+import {
+  latestPanelCommand,
+  type DirtyChannelSave,
+  type PanelChannelContext,
 } from "@/lib/controllers/controller-panel-draft";
 import type { BulkSentCommandItem } from "@/app/(dashboard)/controllers/actions";
 import { useCommandPipelineTracker } from "@/components/controllers/use-command-pipeline-tracker";
@@ -289,6 +290,17 @@ export function BarnListAccordionPanel({
 
   const panelTarget = detail ?? reading;
 
+  const panelCommands = useMemo(() => [
+    ...(applyQueue?.rows.map((row) => row.command) ?? []),
+    ...(pipeline.command ? [pipeline.command] : []),
+    ...commands,
+  ].filter((cmd) => farmKeyId(cmd.farmKey) === farmKeyId(reading.farmKey) &&
+    cmd.moduleUid === reading.moduleUid && cmd.controllerKey === reading.controllerKey),
+  [applyQueue?.rows, pipeline.command, commands, reading.farmKey, reading.moduleUid, reading.controllerKey]);
+  const panelChannelContexts = useMemo(() => channelContexts?.map((ctx) => ({
+    ...ctx, command: latestPanelCommand(panelCommands, ctx.slot),
+  })), [channelContexts, panelCommands]);
+
   const panel = useControllerPanel(
     panelTarget,
     knownSettings,
@@ -297,8 +309,9 @@ export function BarnListAccordionPanel({
     hasChannels ? channelEqpmnCode : undefined,
     registerCommand,
     liveThermo,
-    channelContexts,
+    panelChannelContexts,
     registerBulkCommands,
+    latestPanelCommand(panelCommands, hasChannels ? activeChannel : undefined),
   );
 
   const presetScope = useMemo((): CommandPresetScope | null => {
@@ -633,6 +646,7 @@ export function BarnListAccordionPanel({
           ) : null
         }
       />
+      {panelError ? <p role="alert" className="text-xs text-destructive">{panelError}</p> : null}
     </div>
   );
 

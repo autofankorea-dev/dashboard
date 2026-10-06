@@ -1,4 +1,5 @@
 import type { ChannelSlot } from "@/lib/data/iot-channel";
+import type { ThermoCommand } from "@/lib/data/commands";
 import {
   thermoValuesMatch,
   type ControllerThermoSettings,
@@ -21,7 +22,51 @@ export type PanelChannelContext = {
   eqpmnCode: string;
   knownSettings: ControllerThermoSettings | null;
   liveBaseline: PanelThermoValues | null;
+  command?: ThermoCommand | null;
 };
+
+export function latestPanelCommand(commands: readonly ThermoCommand[], slot?: ChannelSlot): ThermoCommand | null {
+  const rank = { pending: 1, sent: 2, applied: 3, failed: 4, cancelled: 4 };
+  return [...commands].filter((cmd) => (cmd.channel ?? undefined) === slot)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || rank[b.status] - rank[a.status])[0] ?? null;
+}
+
+export function panelCommandFailed(command?: ThermoCommand | null): boolean {
+  return command?.status === "failed" || command?.status === "cancelled";
+}
+
+/** Display a submitted command throughout ACK/LIVE latency, including on remount. */
+export function displayThermoForChannel(
+  known: ControllerThermoSettings | null,
+  live: PanelThermoValues | null,
+  submitted?: PanelDraft | null,
+  command?: ThermoCommand | null,
+): PanelThermoValues | null {
+  if (command) return {
+    setpointTemp: command.setpointTemp, tempDeviation: command.tempDeviation,
+    minVentPct: command.minVentPct, maxVentPct: command.maxVentPct,
+  };
+  if (submitted) return submitted;
+  if (known && known.source !== "live") return known;
+  return currentThermoForChannel(known, live);
+}
+
+export function syncPanelChannelDrafts(
+  channels: PanelChannelContext[],
+  drafts: Record<string, PanelDraft | null>,
+  edited: Record<string, boolean>,
+  submitted: Record<string, PanelDraft | null>,
+): Record<string, PanelDraft | null> {
+  let next = drafts;
+  for (const ctx of channels) {
+    if (edited[ctx.slot]) continue;
+    const source = displayThermoForChannel(ctx.knownSettings, ctx.liveBaseline, submitted[ctx.slot], ctx.command);
+    const current = next[ctx.slot] ?? null;
+    if (current === source || (current && source && thermoValuesMatch(current, source))) continue;
+    next = { ...next, [ctx.slot]: source };
+  }
+  return next;
+}
 
 export function panelChannelKey(channel?: ChannelSlot | null): string {
   return channel ?? "";
@@ -40,9 +85,12 @@ export function dirtyBaselineForChannel(
   saveBaseline: PanelDraft | null | undefined,
   known: ControllerThermoSettings | null,
   live: PanelThermoValues | null,
+  command?: ThermoCommand | null,
 ): PanelThermoValues | null {
+  if (panelCommandFailed(command)) return currentThermoForChannel(null, live);
+  if (command) return displayThermoForChannel(known, live, null, command);
   if (saveBaseline) return saveBaseline;
-  return currentThermoForChannel(known, live);
+  return displayThermoForChannel(known, live, null, command);
 }
 
 export function isChannelDraftDirty(
@@ -102,11 +150,12 @@ export function buildChannelGlanceRows(
       saveBaselineByKey[slot],
       ctx.knownSettings,
       ctx.liveBaseline,
+      ctx.command,
     );
     return {
       slot,
       present: true,
-      values: draft ?? current,
+      values: draft ?? displayThermoForChannel(ctx.knownSettings, ctx.liveBaseline, saveBaselineByKey[slot], ctx.command) ?? current,
       dirty: isChannelDraftDirty(draft, baseline),
     };
   });
@@ -125,6 +174,7 @@ export function collectDirtyChannelSaves(
       saveBaselineByKey[ctx.slot],
       ctx.knownSettings,
       ctx.liveBaseline,
+      ctx.command,
     );
     if (!isChannelDraftDirty(draft, baseline) || !draft) continue;
     out.push({
