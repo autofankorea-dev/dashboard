@@ -463,12 +463,9 @@ export function FarmChartLabView({
           tempAlarmOn={alarmRangeOn.temp}
           humAlarmOn={alarmRangeOn.hum}
           tempAlarmAvailable={metricAvailable.temp && layers.temp}
-          humAlarmAvailable={metricAvailable.hum && layers.hum}
+          humAlarmAvailable={false}
           onToggleTempAlarm={() =>
             setAlarmRangeOn((prev) => ({ ...prev, temp: !prev.temp }))
-          }
-          onToggleHumAlarm={() =>
-            setAlarmRangeOn((prev) => ({ ...prev, hum: !prev.hum }))
           }
         />
       </div>

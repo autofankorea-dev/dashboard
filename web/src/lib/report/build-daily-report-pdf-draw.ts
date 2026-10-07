@@ -17,7 +17,7 @@ import {
   MUTED,
   PAGE_H,
   PAGE_W,
-  RECOMMEND_GUIDE_LEGEND,
+  ALARM_GUIDE_LEGEND,
   RULE,
   countSeriesPoints,
   finiteExtent,
@@ -368,7 +368,7 @@ export function periodRow(
   return y + 11 + chartH + 10;
 }
 
-/** 허브 차트와 같이 지표마다 고유 행 · 풀폭. 권장/가이드와 그래프 최저·최고를 함께 표기. */
+/** 허브 차트와 같이 지표마다 고유 행 · 풀폭. 장비 경보 가이드와 그래프 최저·최고를 함께 표기. */
 export function periodStack(
   ctx: CanvasRenderingContext2D,
   yStart: number,
@@ -378,7 +378,7 @@ export function periodStack(
   guides: { temp?: ChartGuide; humidity?: ChartGuide },
   chartH = 96,
   emptyHint = "기록 부족",
-  guideLegend = RECOMMEND_GUIDE_LEGEND,
+  guideLegend = ALARM_GUIDE_LEGEND,
 ): number {
   const print = downsampleDailyReportSeriesForPrint(series);
   let y = yStart;

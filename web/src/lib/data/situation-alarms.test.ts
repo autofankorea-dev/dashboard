@@ -1,5 +1,5 @@
 /**
- * 이상상황 종 = 모듈 + 통신두절 + 알람값 초과 (+ 미중복 권장 이탈)
+ * 이상상황 종 = 모듈 + 통신두절 + 알람값 초과
  * 실행: npx tsx src/lib/data/situation-alarms.test.ts
  */
 import assert from "node:assert/strict";
@@ -7,7 +7,6 @@ import {
   DEFAULT_ALARM_SETTINGS,
   SITUATION_FIELD_ALARM_TYPE,
   SITUATION_OFFLINE_TYPE,
-  SITUATION_RECOMMEND_TYPE,
   isModuleAlarmRow,
   mergeSituationAlarms,
   type AlarmRow,
@@ -100,10 +99,8 @@ const tightField: AlarmSettings = {
     [],
     [reading({ controllerKey: "c4", status: "normal", tempC: 25 })],
   );
-  assert.equal(merged.length, 1);
-  assert.equal(merged[0]!.alarmType, SITUATION_RECOMMEND_TYPE);
-  assert.match(merged[0]!.detail, /25/);
-  console.log("situation-alarms: recommend-only when field settings omitted — ok");
+  assert.equal(merged.length, 0);
+  console.log("situation-alarms: device band only when profile settings omitted — ok");
 }
 
 {
@@ -114,9 +111,8 @@ const tightField: AlarmSettings = {
   );
   assert.equal(merged.length, 1);
   assert.equal(merged[0]!.alarmType, SITUATION_FIELD_ALARM_TYPE);
-  assert.ok(!merged.some((a) => a.alarmType === SITUATION_RECOMMEND_TYPE));
   assert.match(merged[0]!.detail, /25/);
-  console.log("situation-alarms: field alarm hides duplicate recommend — ok");
+  console.log("situation-alarms: device alarm survives recommendation removal — ok");
 }
 
 {
@@ -133,9 +129,8 @@ const tightField: AlarmSettings = {
     ],
     DEFAULT_ALARM_SETTINGS,
   );
-  assert.equal(merged.length, 1);
-  assert.equal(merged[0]!.alarmType, SITUATION_RECOMMEND_TYPE);
-  console.log("situation-alarms: wide field window still shows recommend — ok");
+  assert.equal(merged.length, 0);
+  console.log("situation-alarms: inside device band generates no recommendation alarm — ok");
 }
 
 {
@@ -147,8 +142,19 @@ const tightField: AlarmSettings = {
   assert.equal(merged.length, 1);
   assert.equal(merged[0]!.alarmType, SITUATION_OFFLINE_TYPE);
   assert.ok(!merged.some((a) => a.alarmType === SITUATION_FIELD_ALARM_TYPE));
-  assert.ok(!merged.some((a) => a.alarmType === SITUATION_RECOMMEND_TYPE));
-  console.log("situation-alarms: offline skips field/recommend — ok");
+  console.log("situation-alarms: offline skips temperature alarm — ok");
 }
 
 console.log("situation-alarms.test.ts: all ok");
+
+{
+  const r = reading({ controllerKey: "no-device-band", status: "normal", tempC: 50, humidityPct: 99 });
+  r.alarmLowTempC = null;
+  r.alarmHighTempC = null;
+  assert.deepEqual(mergeSituationAlarms([], [r]), []);
+  r.alarmLowTempC = 10;
+  r.alarmHighTempC = 60;
+  assert.deepEqual(mergeSituationAlarms([], [r]), []);
+  r.alarmHighTempC = 35;
+  assert.equal(mergeSituationAlarms([], [r])[0]?.alarmType, SITUATION_FIELD_ALARM_TYPE);
+}

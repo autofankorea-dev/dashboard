@@ -32,6 +32,8 @@ const readings: BarnReading[] = [
   stallTyCode,
   label: `fixture ${index}`,
   tempC: 24 + index,
+  alarmLowTempC: 10 + index,
+  alarmHighTempC: 35 + index,
   humidityPct: index === 3 ? null : 60 + index,
   fanSupply: 40,
   fanExhaust: 50,

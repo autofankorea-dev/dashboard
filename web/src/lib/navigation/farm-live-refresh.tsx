@@ -635,7 +635,7 @@ export function FarmLiveRefreshProvider({
     alarmPatch ?? slice.controller?.alarmSettings,
   );
 
-  /** TopBar — 모듈 에러 + LIVE 통신두절·알람값 초과·권장 이탈 */
+  /** TopBar — 모듈 에러 + LIVE 통신두절·장비 경보값 초과 */
   useEffect(() => {
     if (!farmKey) {
       moduleAlarmsRef.current = [];

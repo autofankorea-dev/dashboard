@@ -23,7 +23,7 @@ export type XScopeCommitRange = {
 };
 
 /**
- * DELIN 등 — 실제 X스코프 UI와 동일 경로로 클릭→드래그→커밋 시연.
+ * 구간 안내 — 실제 X스코프 UI와 동일 경로로 클릭→드래그→커밋 시연.
  * token 증가 시 재생. CSS 오버레이가 아님.
  */
 export type GuidedXScopeGesture = {
@@ -60,7 +60,7 @@ type UseTrendScopeGestureOptions = {
  * X스코프(구간 줌) 제스처 상태·핸들러를 캡슐화한다.
  *
  * - 실제 드래그(pointerDown→move→up) 직사각형 draft + 커밋
- * - DELIN 시연용 guided 제스처(RAF 애니메이션 → 동일 커밋 경로)
+ * - 구간 시연용 guided 제스처(RAF 애니메이션 → 동일 커밋 경로)
  * - 스코프 끔 시 draft 즉시 폐기 (prop sync + effect)
  *
  * trend-chart.tsx 내부 로직을 동작 변경 없이 1:1 이동. 렌더 시점 기하 매퍼는
@@ -128,7 +128,7 @@ export function useTrendScopeGesture(opts: UseTrendScopeGestureOptions) {
   };
 
   /**
-   * 실제 X스코프 draft UI로 클릭→드래그→커밋 (DELIN 시연).
+   * 실제 X스코프 draft UI로 클릭→드래그→커밋 (구간 시연).
    */
   useEffect(() => {
     const g = guidedXScopeGesture;

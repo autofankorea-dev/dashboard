@@ -5,10 +5,8 @@ import { CHANNEL_SLOT_LABELS } from "@/lib/data/iot-channel";
 import {
   buildDailyReportBriefing,
   farmBriefingFacts,
-  riskBriefingFacts,
   typeBriefingFacts,
   type DailyReportBriefing,
-  type DailyReportRiskWindow,
   type DailyReportTypeBrief,
 } from "@/lib/report/daily-report-briefing";
 import {
@@ -29,9 +27,7 @@ import {
   MARGIN,
   MUTED,
   PAGE_W,
-  RECOMMEND_GUIDE_LEGEND,
   averageFarmSeries,
-  bandGuide,
   collectAttentionRows,
   farmAlarmGuides,
   fmt,
@@ -40,7 +36,6 @@ import {
   statusLabel,
   toneFromControllerStatus,
   toneFromJudge,
-  typeChartGuides,
 } from "@/lib/report/build-daily-report-pdf-base";
 import {
   addCanvasPage,
@@ -817,7 +812,7 @@ function paintCoverWeeklyBriefing(
   tableHeaderBar(
     ctx,
     y,
-    ["유형", "동", "평균 온도", "평균 습도", "30일 권장구간 밖"],
+    ["유형", "동", "평균 온도", "평균 습도", "수신"],
     cols,
     theme,
   );
@@ -831,7 +826,7 @@ function paintCoverWeeklyBriefing(
     ctx.fillText(`${fmt(type.avgTemp30d)}℃`, cols[2]!, y);
     ctx.fillText(`${fmt(type.avgHum30d, 0)}%`, cols[3]!, y);
     ctx.fillText(
-      type.hoursOutsideTemp30d == null ? "—" : `${type.hoursOutsideTemp30d}시간`,
+      type.judge,
       cols[4]!,
       y,
     );
@@ -862,23 +857,14 @@ function paintStallTypeBriefing(
     theme,
   );
   let y = MARGIN + 48;
-  const recTemp = type.recommendTemp
-    ? `${type.recommendTemp.lo}~${type.recommendTemp.hi}℃`
-    : "—";
   const kpis: [string, string, KpiTone?][] = [
     [`${fmt(type.avgTemp30d)}℃`, "30일 온도"],
     [`${fmt(type.avgHum30d, 0)}%`, "30일 습도"],
-    [recTemp, "권장 온도"],
-    [
-      type.hoursOutsideTemp30d == null ? "—" : `${type.hoursOutsideTemp30d}시간`,
-      "권장 밖",
-      (type.hoursOutsideTemp30d ?? 0) > 0 ? "caution" : "ok",
-    ],
     [`${type.online}/${type.controllerTotal}`, "온라인"],
     [type.judge, "수신", toneFromJudge(type.judge)],
   ];
   const gap = 4;
-  const w = (PAGE_W - MARGIN * 2 - gap * 5) / 6;
+  const w = (PAGE_W - MARGIN * 2 - gap * 3) / 4;
   kpis.forEach(([v, l, tone], i) => {
     kpiBox(ctx, MARGIN + i * (w + gap), y, w, v, l, 34, tone);
   });
@@ -889,10 +875,10 @@ function paintStallTypeBriefing(
     `${type.stallLabel} 30일 · 1시간`,
     type.series30d,
     theme,
-    typeChartGuides(type, farmAlarmGuides(payload)),
+    farmAlarmGuides(payload),
     86,
     "기록 부족",
-    RECOMMEND_GUIDE_LEGEND,
+    ALARM_GUIDE_LEGEND,
   );
 
   ctx.fillStyle = INK;
@@ -931,95 +917,8 @@ function paintStallTypeBriefing(
   footer(ctx, pageNo, totalPages, theme);
 }
 
-function riskSideLabel(side: DailyReportRiskWindow["side"]): string {
-  if (side === "low") return "저온";
-  if (side === "both") return "고온·저온";
-  if (side === "high") return "고온";
-  return "—";
-}
-
-function paintRiskWindowBriefing(
-  ctx: CanvasRenderingContext2D,
-  payload: DailyReportPayload,
-  risk: DailyReportRiskWindow,
-  theme: DailyReportPdfTheme,
-  totalPages: number,
-) {
-  const windowLine = risk.found
-    ? `${risk.startLabel} ~ ${risk.endLabel}`
-    : "30일";
-  headerBand(
-    ctx,
-    "권장구간 이탈",
-    [payload.farmLabel, windowLine, "30일 중 가장 긴 구간"],
-    theme,
-  );
-  let y = MARGIN + 48;
-  const peak =
-    !risk.found
-      ? "—"
-      : risk.side === "low"
-        ? `${risk.peakExcess.toFixed(1)}℃`
-        : `+${risk.peakExcess.toFixed(1)}℃`;
-  const kpis: [string, string, KpiTone?][] = [
-    [risk.found ? `${risk.hours}시간` : "없음", "지속"],
-    [peak, "이탈 폭", risk.found ? "danger" : "ok"],
-    [risk.found ? risk.stallLabel : "—", "가장 긴 유형"],
-    [riskSideLabel(risk.side), "방향", risk.found ? "caution" : "ok"],
-  ];
-  const gap = 4;
-  const w = (PAGE_W - MARGIN * 2 - gap * 3) / 4;
-  kpis.forEach(([v, l, tone], i) => {
-    kpiBox(ctx, MARGIN + i * (w + gap), y, w, v, l, 34, tone);
-  });
-  y += 44;
-
-  if (risk.found) {
-    const fallback = farmAlarmGuides(payload);
-    y = periodStack(
-      ctx,
-      y,
-      "이탈 구간",
-      risk.series,
-      theme,
-      {
-        temp: bandGuide(risk.recommendTemp, fallback.temp),
-        humidity: bandGuide(risk.recommendHum, fallback.humidity),
-      },
-      90,
-      "기록 부족",
-      RECOMMEND_GUIDE_LEGEND,
-    );
-
-    ctx.fillStyle = INK;
-    ctx.font = `bold 11px ${FONT}`;
-    ctx.fillText("구간 시각", MARGIN, y);
-    y += 12;
-    const cols = [MARGIN + 6, MARGIN + 100, MARGIN + 180, MARGIN + 260];
-    tableHeaderBar(ctx, y, ["시각", "온도", "습도", "권장"], cols, theme);
-    y += 12;
-    ctx.font = `9px ${FONT}`;
-    for (const row of risk.samples) {
-      if (y > CONTENT_BOTTOM - 70) break;
-      ctx.fillStyle = INK;
-      ctx.fillText(row.label, cols[0]!, y);
-      ctx.fillStyle = row.outsideTemp ? KPI_TONE.danger.value : INK;
-      ctx.fillText(`${fmt(row.temp)}℃`, cols[1]!, y);
-      ctx.fillStyle = INK;
-      ctx.fillText(`${fmt(row.humidity, 0)}%`, cols[2]!, y);
-      ctx.fillStyle = row.outsideTemp ? KPI_TONE.danger.value : MUTED;
-      ctx.fillText(row.outsideTemp ? "밖" : "안", cols[3]!, y);
-      y += 13;
-    }
-    y += 12;
-  }
-
-  paintBriefParagraphs(ctx, y, "브리핑", riskBriefingFacts(risk));
-  footer(ctx, totalPages, totalPages, theme);
-}
-
 function briefingPageCount(typeCount: number): number {
-  return 1 + typeCount + 1;
+  return 1 + typeCount;
 }
 
 export function renderDailyReportBriefingPreview(
@@ -1044,9 +943,6 @@ export function renderDailyReportBriefingPreview(
     );
     pages.push(page.canvas);
   });
-  const risk = createPageCanvas();
-  paintRiskWindowBriefing(risk.ctx, payload, briefing.risk, theme, totalPages);
-  pages.push(risk.canvas);
   return pages;
 }
 
@@ -1089,14 +985,6 @@ export async function buildAndDownloadDailyReportPdf(
     addCanvasPage(pdf, canvas, first);
     first = false;
     await yieldFrame();
-  }
-
-  {
-    pageNo += 1;
-    reportProgress("권장구간 이탈");
-    const { canvas, ctx } = createPageCanvas();
-    paintRiskWindowBriefing(ctx, payload, briefing.risk, theme, totalPages);
-    addCanvasPage(pdf, canvas, first);
   }
 
   const filename = dailyReportPdfFilename(payload);

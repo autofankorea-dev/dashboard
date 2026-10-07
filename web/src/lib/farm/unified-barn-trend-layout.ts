@@ -159,7 +159,7 @@ export type TempBrokenAxisPlotZones = {
 };
 
 /**
- * 온도 칸 — 위쪽이 더위 초과, 아래가 권장±여유.
+ * 온도 칸 — 위쪽이 더위 초과, 아래가 기준±여유.
  * 모터 칸 유무와 무관. 겹쳐보기(한 슬롯)에도 쓴다. 온도 단독(원단위 ℃)에서는 null.
  */
 export function tempBrokenAxisPlotZones(

@@ -1,9 +1,7 @@
-import { DEFAULT_ALARM_THRESHOLDS } from "@/lib/data/alarms";
 import { CHANNEL_SLOT_LABELS } from "@/lib/data/iot-channel";
 import { TREND_CHART_COLORS_PRINT } from "@/lib/farm/trend-chart-series";
 import {
   averageBarnsSeries,
-  type DailyReportTypeBrief,
 } from "@/lib/report/daily-report-briefing";
 import {
   type DailyReportPayload,
@@ -144,17 +142,6 @@ export function finiteExtent(
 
 export type ChartGuide = { lo: number; hi: number; name: string };
 
-export const FARM_ALARM_FALLBACK: ChartGuide = {
-  lo: DEFAULT_ALARM_THRESHOLDS.tempLow,
-  hi: DEFAULT_ALARM_THRESHOLDS.tempHigh,
-  name: "가이드",
-};
-export const FARM_HUM_FALLBACK: ChartGuide = {
-  lo: DEFAULT_ALARM_THRESHOLDS.humidityLow,
-  hi: DEFAULT_ALARM_THRESHOLDS.humidityHigh,
-  name: "가이드",
-};
-
 export function farmAlarmGuides(payload: DailyReportPayload): {
   temp?: ChartGuide;
   humidity?: ChartGuide;
@@ -166,30 +153,8 @@ export function farmAlarmGuides(payload: DailyReportPayload): {
   };
 }
 
-export function bandGuide(
-  band: { lo: number; hi: number } | null,
-  fallback: ChartGuide | undefined,
-): ChartGuide | undefined {
-  return band ? { lo: band.lo, hi: band.hi, name: "권장" } : fallback;
-}
-
-export function typeChartGuides(
-  type: DailyReportTypeBrief,
-  fallback: { temp?: ChartGuide; humidity?: ChartGuide },
-): {
-  temp?: ChartGuide;
-  humidity?: ChartGuide;
-} {
-  return {
-    temp: bandGuide(type.recommendTemp, fallback.temp),
-    humidity: bandGuide(type.recommendHum, fallback.humidity),
-  };
-}
-
 export const ALARM_GUIDE_LEGEND =
   "주황 파선 = 현재 장비 경보 상·하한 (공통값일 때)  ·  회색 점선 = 이 그래프의 최저·최고";
-export const RECOMMEND_GUIDE_LEGEND =
-  "주황 파선 = 생육 권장 상·하한  ·  회색 점선 = 이 그래프의 최저·최고";
 
 export function formatDataRange(
   ext: { min: number; max: number } | null,

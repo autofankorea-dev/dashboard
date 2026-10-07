@@ -328,7 +328,7 @@ export const OVERFLOW_FIT_PAD_RATIO = 0.12;
 export const OVERFLOW_FIT_MIN_PAD_C = 0.25;
 /** @deprecated 연속 ℃/px 위칸 최소 폭. 이탈 자체 스케일에서는 쓰지 않음 */
 export const SPLIT_Y_TEMP_OVERFLOW_MIN_C = 5;
-/** 겹쳐보기 권장 구간(꺾임 아래)에서 온·습 상·하한을 같은 높이에 두는 헤드룸 */
+/** 겹쳐보기 기준 구간(꺾임 아래)에서 온·습 상·하한을 같은 높이에 두는 헤드룸 */
 export const OVERLAY_ALIGN_HEAD_FRAC = 0.2;
 
 export function alarmEdgeDomain(
@@ -556,7 +556,7 @@ function unmapMetricAnchoredFromBand(
   return alarmLo + ((splitY - c.coreLo) / (c.coreHi - c.coreLo)) * alarmSpan;
 }
 
-/** 겹쳐보기 — 온·습 권장 가장자리는 꺾임 아래(선형 칸)에 맞춘다. */
+/** 겹쳐보기 — 온·습 기준 가장자리는 꺾임 아래(선형 칸)에 맞춘다. */
 function overlayBrokenLinearSlot(
   layout: SplitYLayout,
 ): { lo: number; hi: number } | null {
@@ -678,7 +678,7 @@ function resolveTempBrokenMappingDomain(
   return [linear[0], overflowHi];
 }
 
-/** 권장(선형) 밖 실측 min–max + 여유. 위칸만 이 폭으로 채움. */
+/** 기준(선형) 밖 실측 min–max + 여유. 위칸만 이 폭으로 채움. */
 export function fitOverflowValueDomain(
   min: number,
   max: number,
@@ -842,7 +842,7 @@ export type SplitYBandScaleTick = {
 
 /**
  * 분리 밴드 왼쪽 눈금 — 기본은 온·습·모터 상·하한의 중간값.
- * 권장 띠가 있는 패널은 온·습 권장 중간값을 건너뛰고 현장 알람 평균을 둔다.
+ * 기준 띠가 있는 패널은 온·습 기준 중간값을 건너뛰고 현장 알람 평균을 둔다.
  * 오버레이에서는 왼쪽 눈금을 그리지 않는다.
  */
 export function buildSplitYBandScaleTicks(opts: {
@@ -955,7 +955,7 @@ export function mapHumPctToSplitY(
 
 /**
  * 온도℃ → 주패널 밴드.
- * `anchor` 지정 시 권장 구간은 꺾임 아래에 맞추고, 초과는 위칸 이탈 스케일.
+ * `anchor` 지정 시 기준 구간은 꺾임 아래에 맞추고, 초과는 위칸 이탈 스케일.
  * 아니면 `domain`(auto-fit) 또는 알람±여유 선형.
  */
 export function mapTempCToSplitY(
@@ -1370,7 +1370,7 @@ export type UnifiedBarnTrendBuild = {
   rightDomain: [number, number];
   /** 온도 매핑에 쓴 ℃ 도메인 (표시 최솟·최댓값 + 여유) */
   tempDomain: [number, number];
-  /** 꺾인 축 위칸 — 권장 밖 실측 min–max. 없으면 위칸 매핑 없음 */
+  /** 꺾인 축 위칸 — 기준 밖 실측 min–max. 없으면 위칸 매핑 없음 */
   tempOverflowDomain: [number, number] | null;
   controllerCount: number;
   tempRangeLabel: string;

@@ -1,8 +1,8 @@
 /**
- * 실행: npx tsx src/lib/ui/delin-guided-scope-jitter.test.ts
+ * 실행: npx tsx src/lib/ui/guided-scope-jitter.test.ts
  */
 import assert from "node:assert/strict";
-import { humanizeGuidedScopeRect } from "./delin-guided-scope-jitter";
+import { humanizeGuidedScopeRect } from "./guided-scope-jitter";
 
 function seq(values: number[]): () => number {
   let i = 0;
@@ -48,4 +48,4 @@ const base = {
   assert.ok(b.endRatio <= base.endRatio + 1e-9);
 }
 
-console.log("delin-guided-scope-jitter: ok");
+console.log("guided-scope-jitter: ok");

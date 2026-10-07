@@ -12,9 +12,7 @@ import type {
 import {
   averageBarnsSeries,
   buildDailyReportBriefing,
-  countOutsideBand,
   farmBriefingFacts,
-  riskBriefingFacts,
   typeBriefingFacts,
   worstJudge,
 } from "./daily-report-briefing";
@@ -71,12 +69,7 @@ function barn(partial: {
   };
 }
 
-describe("countOutsideBand / worstJudge", () => {
-  it("counts hours outside the band", () => {
-    assert.equal(countOutsideBand([16, 18, 21, 22, null], 16, 21), 1);
-    assert.equal(countOutsideBand([15, 15], 16, 21), 2);
-  });
-
+describe("worstJudge", () => {
   it("picks the worst judge", () => {
     assert.equal(worstJudge(["정상", "수신 지연"]), "수신 지연");
     assert.equal(worstJudge(["수신 지연", "통신 두절"]), "통신 두절");
@@ -87,7 +80,7 @@ describe("buildDailyReportBriefing", () => {
   const cats7 = ["1일 00시", "1일 01시", "1일 02시", "1일 03시"];
   const cats30 = Array.from({ length: 12 }, (_, i) => `8/${10 + i} 00시`);
 
-  it("groups barns by stall type and finds the longest 30d recommend run", () => {
+  it("groups measured data without a recommendation or historical alarm judgment", () => {
     const preg7 = seriesFromTemp(cats7, [24, 25, 24, 23]);
     const farrow7 = seriesFromTemp(cats7, [26, 26, 25, 25]);
     const preg30 = seriesFromTemp(
@@ -138,12 +131,10 @@ describe("buildDailyReportBriefing", () => {
     assert.equal(briefing.types.length, 2);
     assert.equal(briefing.types[0]?.stallLabel, "임신사");
     assert.equal(briefing.types[0]?.barnCount, 2);
-    assert.ok((briefing.types[0]?.hoursOutsideTemp30d ?? 0) >= 3);
-    assert.equal(briefing.risk.found, true);
-    assert.equal(briefing.risk.stallLabel, "임신사");
-    assert.ok(briefing.risk.hours >= 4);
-    assert.equal(briefing.risk.side, "high");
-    assert.ok(briefing.risk.peakExcess >= 3);
+    assert.equal(briefing.types[0]?.avgTemp30d, 20.25);
+    assert.ok(!("risk" in briefing));
+    assert.ok(!("recommendTemp" in briefing.types[0]!));
+    assert.ok(!("hoursOutsideTemp30d" in briefing.types[0]!));
 
     const farmFacts = farmBriefingFacts(briefing, payload).join(" ");
     assert.match(farmFacts, /30일 농장 평균 온도/);
@@ -152,15 +143,11 @@ describe("buildDailyReportBriefing", () => {
 
     const typeFacts = typeBriefingFacts(briefing.types[0]!).join(" ");
     assert.match(typeFacts, /임신사 30일 평균/);
-    assert.match(typeFacts, /권장 16~21℃/);
+    assert.doesNotMatch(farmFacts + typeFacts, /권장|이탈|SP0|farmKey/);
 
-    const riskFacts = riskBriefingFacts(briefing.risk).join(" ");
-    assert.match(riskFacts, /임신사/);
-    assert.match(riskFacts, /시간/);
-    assert.match(riskFacts, /이상상황/);
   });
 
-  it("keeps an empty risk page when nothing leaves the band", () => {
+  it("reports measured averages for an in-range series", () => {
     const inside = seriesFromTemp(cats7, [18, 19, 18, 19]);
     const payload = {
       farmLabel: "햇살농장",
@@ -183,8 +170,9 @@ describe("buildDailyReportBriefing", () => {
       ],
     } as DailyReportPayload;
     const briefing = buildDailyReportBriefing(payload);
-    assert.equal(briefing.risk.found, false);
-    assert.match(riskBriefingFacts(briefing.risk).join(" "), /없습니다/);
+    assert.equal(briefing.farmAvgTemp30d, 18);
+    assert.equal(briefing.farmAvgHum30d, 55);
+    assert.ok(!("risk" in briefing));
   });
 
   it("averages matching slots across barns", () => {

@@ -104,7 +104,7 @@ function roomEnvTint(
   return channels.temp === null && channels.humidity === null ? null : "ok";
 }
 
-/** 필드 카드 덮개 채점 — 장비 raw의 저온·고온 경보값. 권장은 델린이 제시. */
+/** 필드 카드 덮개 채점 — 장비 raw의 저온·고온 경보값. */
 export function controllerEnvCoverLevel(
   reading: CoverReasonReading,
   alarmSettings?: AlarmSettings,

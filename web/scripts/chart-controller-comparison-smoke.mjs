@@ -24,6 +24,8 @@ let server;
 let browser;
 let page;
 let ownedFixture = false;
+let ownedReportFixture = false;
+const reportFixtureDir = join(root, "src/app/auth/report-policy-smoke");
 const errors = [];
 try {
   assert.ok(
@@ -36,6 +38,13 @@ try {
     join(root, "scripts/fixtures/chart-controller-comparison-page.tsx"),
     join(fixtureDir, "page.tsx"),
   );
+  assert.ok(!existsSync(reportFixtureDir), "Refusing to overwrite an existing report fixture");
+  mkdirSync(reportFixtureDir, { recursive: true });
+  ownedReportFixture = true;
+  const reportSource = readFileSync(join(root, "src/app/pdf-briefing-preview/page.tsx"), "utf8")
+    .replace('import { renderDailyReportBriefingPreview }', 'import { buildAndDownloadDailyReportPdf, renderDailyReportBriefingPreview }')
+    .replace('<div ref={ref}', '<button onClick={() => buildAndDownloadDailyReportPdf(dailyReportContentPreviewPayload())}>테스트 PDF 다운로드</button><div ref={ref}');
+  writeFileSync(join(reportFixtureDir, "page.tsx"), reportSource);
   mkdirSync(output, { recursive: true });
   server = spawn(
     process.execPath,
@@ -169,6 +178,11 @@ try {
   await page.screenshot({ path: join(output, "hierarchy-desktop.png") });
   await verifyExpandedDots("SP03:1:2", 1.6, "desktop");
   await mode("single");
+  assert.doesNotMatch(await lab.innerText(), /권장|DELIN/);
+  assert.equal(await page.getByRole("button", { name: /^습도 알람/ }).count(), 0);
+  assert.equal(await controllerTile("SP03:1:2").getByText("36℃", { exact: true }).count(), 1);
+  assert.equal(await controllerTile("SP03:1:2").getByText("11℃", { exact: true }).count(), 1);
+  assert.match(await controllerTile("SP03:1:2").innerText(), /36/);
   assert.equal(
     await page
       .locator("[data-chart-comparison-panels] [data-farm-chart-tile]")
@@ -346,11 +360,36 @@ try {
     await lab.getByRole("button", { name: "비교하기", exact: true }).count(),
     0,
   );
+  await page.setViewportSize({ width: 1100, height: 1000 });
+  await page.addInitScript(() => {
+    window.__reportText = [];
+    const original = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function (text, ...args) {
+      window.__reportText.push(String(text));
+      return original.call(this, text, ...args);
+    };
+  });
+  await page.goto(`http://localhost:${port}/auth/report-policy-smoke`);
+  await page.waitForFunction(() => document.querySelectorAll("figure canvas").length >= 2);
+  const reportCount = await page.locator("figure canvas").count();
+  assert.equal(reportCount, 3, "Farm cover plus two stall-type pages; no risk page");
+  const reportText = await page.evaluate(() => window.__reportText.join(" "));
+  assert.doesNotMatch(reportText, /권장|이탈/);
+  assert.match(reportText, /현재 장비 경보/);
+  for (let i = 0; i < reportCount; i++) {
+    const data = await page.locator("figure canvas").nth(i).evaluate((canvas) => canvas.toDataURL("image/png").split(",")[1]);
+    writeFileSync(join(output, `report-page-${i + 1}.png`), Buffer.from(data, "base64"));
+  }
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "테스트 PDF 다운로드", exact: true }).click();
+  const download = await downloadPromise;
+  await download.saveAs(join(output, "measured-report.pdf"));
+
   assert.deepEqual(errors, [], "No browser errors");
   writeFileSync(join(output, "expanded-marker-checks.json"), JSON.stringify(markerChecks, null, 2));
   console.log("Expanded marker checks:", JSON.stringify(markerChecks));
   console.log(
-    "chart-controller-comparison-smoke: PASS (hierarchy, isolated controller, same/cross-barn and cross-type comparison, URL reload, shared lookback/zoom/reset, removal, mobile, empty farm)",
+    "chart-controller-comparison-smoke: PASS (hierarchy, isolated controller, same/cross-barn and cross-type comparison, URL reload, shared lookback/zoom/reset, removal, mobile, empty farm, device alarm guides, recommendation removal, 3-page PDF download)",
   );
   console.log(`Screenshots: ${output}`);
 } catch (error) {
@@ -382,6 +421,15 @@ try {
         stop.on("close", done);
       });
     } else server.kill("SIGTERM");
+  }
+  if (ownedReportFixture) {
+    assert.equal(reportFixtureDir, resolve(root, "src/app/auth/report-policy-smoke"));
+    rmSync(reportFixtureDir, { recursive: true });
+    const types = join(root, ".next/dev/types");
+    for (const rel of ["app/auth/report-policy-smoke/page.ts", "validator.ts"]) {
+      const path = join(types, rel);
+      if (existsSync(path) && readFileSync(path, "utf8").includes("report-policy-smoke")) rmSync(path);
+    }
   }
   if (ownedFixture) {
     assert.equal(

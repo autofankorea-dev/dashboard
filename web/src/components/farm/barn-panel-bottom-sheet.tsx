@@ -34,7 +34,7 @@ function prefersReducedMotion(): boolean {
 function sheetPeekHost(): HTMLElement | null {
   if (typeof document === "undefined") return null;
   return (
-    document.querySelector<HTMLElement>("[data-delin-badge-host]") ??
+    document.querySelector<HTMLElement>("[data-dashboard-overlay-host]") ??
     document.querySelector<HTMLElement>("[data-viewport-preview]") ??
     document.body
   );

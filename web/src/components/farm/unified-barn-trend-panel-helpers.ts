@@ -55,7 +55,7 @@ export function farmAlarmMidValue(lo: number, hi: number): number | null {
 
 /**
  * 차트 스케일 라벨 id → 알람 상·하한.
- * `temp-hi`는 권장 띠가 없을 때. `temp-farm-hi`는 현장 알람 편차 커밋용.
+ * `temp-hi`는 기준 띠가 없을 때. `temp-farm-hi`는 현장 알람 편차 커밋용.
  */
 export const SCALE_EDGE_ALARM_KEY: Record<string, keyof AlarmThresholds> = {
   "temp-hi": "tempHigh",

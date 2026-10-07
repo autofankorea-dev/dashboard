@@ -426,7 +426,7 @@ export type ChartTrendZoomHint = {
   startRatio: number;
   endRatio: number;
   /**
-   * 다운샘플 카테고리 절대 인덱스 (DELIN 가이드 커밋용).
+   * 다운샘플 카테고리 절대 인덱스 (차트 가이드 커밋용).
    * 있으면 비율→인덱스 재변환보다 이걸 우선.
    */
   startIndex?: number;

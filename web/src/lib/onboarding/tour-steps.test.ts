@@ -24,12 +24,8 @@ import { getTourStepsForScope } from "./tour-steps";
   assert.equal(brush?.selector, '[data-tour-id="farm-chart-unified-trend"]');
   assert.match(brush?.body ?? "", /24시간/);
   assert.match(brush?.body ?? "", /30일/);
-  const delin = getTourStepsForScope("field").find((s) => s.id === "f-delin");
-  assert.match(delin?.body ?? "", /일령별 권장/);
-  assert.doesNotMatch(delin?.body ?? "", /물을 수/);
-  assert.equal(
-    getTourStepsForScope("chart").some((s) => s.id === "c-delin"),
-    false,
-  );
+  const steps = [...getTourStepsForScope("field"), ...getTourStepsForScope("chart")];
+  assert.ok(!steps.some((s) => /DELIN|권장|일령/.test(JSON.stringify(s))));
+  assert.match(control?.body ?? "", /장비 경보/);
   console.log("tour-steps.test.ts: ok");
 }

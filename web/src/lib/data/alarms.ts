@@ -13,16 +13,10 @@ import {
 } from "@/lib/farm/farm-chart-scope";
 import { applyChartViewParams } from "@/lib/farm/farm-view-url";
 import { formatAlarmBaselinePair } from "@/lib/data/alarm-baseline";
-import {
-  pigEnvBandForStallTy,
-  pigEnvFitOffBand,
-  pigEnvFitToBand,
-} from "@/lib/farm/pig-env-recommend";
 
-/** 종(이상상황) 행 제목 — 델린 해설과 같은 문구 */
+/** 종(이상상황) 행 제목 */
 export const SITUATION_OFFLINE_TYPE = "통신 두절";
 export const SITUATION_FIELD_ALARM_TYPE = "알람값 초과";
-export const SITUATION_RECOMMEND_TYPE = "권장 이탈";
 
 export type AlarmSeverity = "warning" | "critical";
 
@@ -59,7 +53,7 @@ export function isSituationLiveStateRow(a: AlarmRow): boolean {
   return !isModuleAlarmRow(a);
 }
 
-/** 일보 PDF — 모듈 에러 + 통신 두절만 (알람값 초과·권장 이탈 제외) */
+/** 일보 PDF — 모듈 에러 + 통신 두절만 (장비 경보값 초과 제외) */
 export function isDailyReportSituationRow(a: AlarmRow): boolean {
   return isModuleAlarmRow(a) || a.alarmType === SITUATION_OFFLINE_TYPE;
 }
@@ -90,8 +84,7 @@ export function situationAlarmMetaLine(a: AlarmRow): string {
     }),
   ];
   if (
-    (a.alarmType === SITUATION_FIELD_ALARM_TYPE ||
-      a.alarmType === SITUATION_RECOMMEND_TYPE) &&
+    a.alarmType === SITUATION_FIELD_ALARM_TYPE &&
     a.detail.trim()
   ) {
     parts.push(a.detail.trim());
@@ -296,46 +289,7 @@ export function fieldAlarmExceedToAlarmRows(
   return rows;
 }
 
-/** 축사유형 권장 이탈 — 현장 알람에 이미 오른 컨트롤러는 제외. */
-export function recommendOffbandToAlarmRows(
-  readings: BarnReading[],
-  skipControllerKeys: ReadonlySet<string>,
-): AlarmRow[] {
-  const rows: AlarmRow[] = [];
-  for (const r of readings) {
-    if (r.status === "offline") continue;
-    if (skipControllerKeys.has(r.controllerKey)) continue;
-    const band = pigEnvBandForStallTy(r.stallTyCode);
-    if (!band) continue;
-    const parts: string[] = [];
-    const tempFit = pigEnvFitToBand(r.tempC, band.tempMinC, band.tempMaxC);
-    if (pigEnvFitOffBand(tempFit) && r.tempC != null) {
-      parts.push(
-        `온도 ${situationReadingValueLabel(r.tempC, "℃")} (권장 ${band.tempMinC}~${band.tempMaxC}℃)`,
-      );
-    }
-    const humFit = pigEnvFitToBand(
-      r.humidityPct,
-      band.humidityMinPct,
-      band.humidityMaxPct,
-    );
-    if (pigEnvFitOffBand(humFit) && r.humidityPct != null) {
-      parts.push(
-        `습도 ${situationReadingValueLabel(r.humidityPct, "%")} (권장 ${band.humidityMinPct}~${band.humidityMaxPct}%)`,
-      );
-    }
-    if (parts.length === 0) continue;
-    rows.push(
-      makeAlarm(r, SITUATION_RECOMMEND_TYPE, "warning", parts.join(" · ")),
-    );
-  }
-  return rows;
-}
-
-/**
- * 이상상황 종 = 모듈 에러코드 + 통신 두절 + 알람값 초과
- * (+ 현장 알람에 안 오른 권장 이탈).
- */
+/** 이상상황 = 모듈 에러코드 + 통신 두절 + 장비 경보값 초과. */
 export function mergeSituationAlarms(
   moduleAlarms: AlarmRow[],
   readings: BarnReading[],
@@ -343,12 +297,10 @@ export function mergeSituationAlarms(
 ): AlarmRow[] {
   const offline = offlineReadingsToAlarmRows(readings);
   const field = fieldAlarmExceedToAlarmRows(readings, settings ?? DEFAULT_ALARM_SETTINGS);
-  const fieldKeys = new Set(field.map((a) => a.controllerKey));
-  const recommend = recommendOffbandToAlarmRows(readings, fieldKeys);
   const seen = new Set(
     moduleAlarms.map((a) => `${a.controllerKey}\0${a.alarmType}`),
   );
-  const extras = [...offline, ...field, ...recommend].filter((o) => {
+  const extras = [...offline, ...field].filter((o) => {
     const key = `${o.controllerKey}\0${o.alarmType}`;
     if (seen.has(key)) return false;
     seen.add(key);

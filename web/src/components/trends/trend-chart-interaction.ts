@@ -174,7 +174,7 @@ export function pickDraggableScaleEdgeHit(
 
 /**
  * 거터 클릭 — 그 쪽(left/right) 칩만 본다.
- * 왼쪽은 알람 기준(중간값), 오른쪽은 권장/상하한.
+ * 왼쪽은 알람 기준(중간값), 오른쪽은 장비 경보 상하한.
  */
 export function pickGutterScaleEdgeId(
   labels: readonly ScaleEdgeGutterLabel[],

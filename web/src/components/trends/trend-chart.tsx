@@ -166,7 +166,7 @@ type TrendChartProps = {
   scaleEdgeLabels?: TrendScaleEdgeLabel[];
   /** 위젯 왼쪽 Y칸 상단 표기 (알람). */
   yGutterStartCaption?: string;
-  /** 위젯 오른쪽 Y칸 상단 표기 (권장). */
+  /** 위젯 오른쪽 Y칸 상단 단위 표기. */
   yGutterEndCaption?: string;
   /** 플롯 안 투명 구간(현장 알람 범위 등). */
   rangeBands?: TrendRangeBand[];
@@ -256,7 +256,7 @@ type TrendChartProps = {
     yEndRatio: number;
   }) => void;
   /**
-   * DELIN 등 — 실제 X스코프 UI와 동일 경로로 클릭→드래그→커밋 시연.
+   * 구간 안내 — 실제 X스코프 UI와 동일 경로로 클릭→드래그→커밋 시연.
    * token 증가 시 재생. CSS 오버레이가 아님.
    */
   guidedXScopeGesture?: {
@@ -1470,7 +1470,7 @@ export function TrendChart({
     };
     /** 플롯 본문·명령 레인 모두 시간 줌 가능 — 알람선 전체폭 hit로 X스코프를 가로채지 않음.
      *  알람 세로 조절은 좌·우측 숫자 라벨 더블클릭·우클릭 숫자 입력
-     *  (권장 띠가 있으면 좌측 현장 알람, 없으면 우측).
+     *  (현재 장비 경보값을 표시).
      *  명령 레인 유지띠 탭/드래그는 EventLaneHtmlOverlay가 처리. */
     if (xScopeSelect) onXScopePointerDown(e);
   };

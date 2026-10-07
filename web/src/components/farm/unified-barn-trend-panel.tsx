@@ -34,7 +34,6 @@ import {
 } from "@/lib/data/alarms";
 import type { BarnReading } from "@/lib/data/iot";
 import { normalizeStallTyCode } from "@/lib/data/stall-type";
-import { pigEnvBandForStallTy } from "@/lib/farm/pig-env-recommend";
 import {
   emptyTrendControllerPeriodData,
   isContextControllerTrend30d,
@@ -61,7 +60,6 @@ import {
   downsampleSeriesForChart,
   FARM_ALARM_RANGE_FILL,
   FARM_ALARM_RANGE_FILL_OPACITY,
-  FARM_ALARM_RANGE_HUM_OVERLAY_OPACITY,
   FARM_ALARM_RANGE_TEMP_OVERLAY_OPACITY,
   farmAlarmMidValue,
   mapIndexWindowToSlice,
@@ -108,7 +106,6 @@ import { TREND_CHART_COLORS } from "@/lib/farm/trend-chart-series";
 import {
   aggregateUnifiedBarnTrendRaw,
   DEFAULT_UNIFIED_LAYERS,
-  mapHumPctToSplitY,
   mapMotorPctToSplitY,
   mapTempCToSplitY,
   tempBrokenAxisPlotZones,
@@ -132,8 +129,6 @@ import {
   allocateUnifiedChartBandHeights,
   unifiedYBandsScopeLabel,
   OVERLAY_ALIGN_ANCHOR,
-  alarmEdgeDomain,
-  SPLIT_Y_HUM_EDGE_PAD_PCT,
   type UnifiedLayerFlags,
   type UnifiedMetricAvailability,
   type UnifiedYBandId,
@@ -145,7 +140,7 @@ import { motionDuration } from "@/lib/ui/motion-tokens";
 import {
   humanizeGuidedScopeRect,
   type GuidedScopeRect,
-} from "@/lib/ui/delin-guided-scope-jitter";
+} from "@/lib/ui/guided-scope-jitter";
 import { dashboardChroma, dashboardControlFill, dashboardUi } from "@/lib/ui/dashboard-page-ui";
 import {
   chartUiPx,
@@ -238,7 +233,7 @@ type Props = {
   chartScope: FarmChartScope;
   /** 한계 이탈 tip 우클릭 → 컨트롤러 스코프 */
   onScopeChange?: (scope: FarmChartScope) => void;
-  /** P2 — URL/DELIN handoff 초기 Y밴드·X구간 */
+  /** P2 — URL 초기 확대 초기 Y밴드·X구간 */
   initialZoom?: ChartTrendZoomHint | null;
   /** 비교 두 칸의 공통 구간. undefined는 기존 개별 줌. */
   comparisonZoom?: ChartTrendZoomHint | null;
@@ -247,7 +242,7 @@ type Props = {
   /** 컨트롤러 집계에서 명령 이력 전용 차트 */
   commandPaneOpen?: boolean;
   /**
-   * DELIN — 실제 X스코프 UI로 클릭→드래그→커밋 시연.
+   * 구간 안내 — 실제 X스코프 UI로 클릭→드래그→커밋 시연.
    * token 증가 시 재생. CSS 오버레이 아님.
    */
   guidedXScopeGesture?: {
@@ -465,22 +460,14 @@ export function UnifiedBarnTrendPanel({
   }, [alarmSettings, alarmScopeKey, scopedReadings]);
 
   const mappingThresholds = baseThresholds;
-  const recommendBand = useMemo(() => {
-    const code =
-      chartScope.level === "farm" ? null : chartScope.stallTyCode;
-    return pigEnvBandForStallTy(code);
-  }, [chartScope]);
   const plotThresholds: AlarmThresholds = useMemo(
-    () =>
-      recommendBand
-        ? {
-            tempLow: recommendBand.tempMinC,
-            tempHigh: recommendBand.tempMaxC,
-            humidityLow: recommendBand.humidityMinPct,
-            humidityHigh: recommendBand.humidityMaxPct,
-          }
-        : { tempLow: Number.isFinite(mappingThresholds.tempLow) ? mappingThresholds.tempLow : 0, tempHigh: Number.isFinite(mappingThresholds.tempHigh) ? mappingThresholds.tempHigh : 50, humidityLow: 0, humidityHigh: 100 },
-    [recommendBand, mappingThresholds],
+    () => ({
+      tempLow: Number.isFinite(mappingThresholds.tempLow) ? mappingThresholds.tempLow : 0,
+      tempHigh: Number.isFinite(mappingThresholds.tempHigh) ? mappingThresholds.tempHigh : 50,
+      humidityLow: 0,
+      humidityHigh: 100,
+    }),
+    [mappingThresholds],
   );
 
   const layerVisibility = useMemo(
@@ -1468,10 +1455,7 @@ export function UnifiedBarnTrendPanel({
       ? resolvedGuidedXScope
       : null;
 
-  /**
-   * 우측 Y — 축사유형 권장 상·하한(숫자 저장 없음).
-   * 권장 띠가 있으면 좌측은 현장 알람 기준, 구간은 기준±편차다.
-   */
+  /** 현재 장비 경보 상·하한과 실측 축 눈금. */
   const { scaleEdgeLabels, alarmRangeBands } = useMemo((): {
     scaleEdgeLabels: TrendScaleEdgeLabel[];
     alarmRangeBands: TrendRangeBand[];
@@ -1483,13 +1467,10 @@ export function UnifiedBarnTrendPanel({
     const mapHi = plotThresholds.tempHigh;
     const mapHumLo = plotThresholds.humidityLow;
     const mapHumHi = plotThresholds.humidityHigh;
-    const guideEditEnabled = alarmEditEnabled && !recommendBand;
-    const farmAlarmEditEnabled =
-      alarmEditEnabled && (Boolean(recommendBand) || Boolean(overlayAlign));
-    const tempHiTitle = recommendBand ? "권장 온도 상한" : "온도 상한";
-    const tempLoTitle = recommendBand ? "권장 온도 하한" : "온도 하한";
-    const humHiTitle = recommendBand ? "권장 습도 상한" : "습도 상한";
-    const humLoTitle = recommendBand ? "권장 습도 하한" : "습도 하한";
+    const guideEditEnabled = alarmEditEnabled;
+    const farmAlarmEditEnabled = alarmEditEnabled;
+    const tempHiTitle = "현재 장비 고온 경보";
+    const tempLoTitle = "현재 장비 저온 경보";
     const push = (
       id: string,
       chartY: number | null,
@@ -1536,7 +1517,7 @@ export function UnifiedBarnTrendPanel({
       });
     };
 
-    if ((recommendBand || Number.isFinite(mappingThresholds.tempLow)) && scopeVisibility.showTemp && layers.temp && built.available.temp) {
+    if (Number.isFinite(mappingThresholds.tempLow) && scopeVisibility.showTemp && layers.temp && built.available.temp) {
       push(
         "temp-hi",
         mapTempCToSplitY(
@@ -1593,7 +1574,7 @@ export function UnifiedBarnTrendPanel({
           "",
           "var(--border)",
           undefined,
-          "권장 구간 위",
+          "경보 구간 위",
           true,
           false,
           undefined,
@@ -1605,66 +1586,7 @@ export function UnifiedBarnTrendPanel({
         );
       }
     }
-    if (
-      recommendBand && scopeVisibility.showHum &&
-      (layers.hum || layers.humDev || layers.humBand || layers.humEma)
-    ) {
-      push(
-        "hum-hi",
-        mapHumPctToSplitY(
-          plotThresholds.humidityHigh,
-          mapHumLo,
-          mapHumHi,
-          layout,
-          overlayAlign
-            ? undefined
-            : chartLeftUnit === "%"
-              ? undefined
-              : alarmEdgeDomain(mapHumLo, mapHumHi, SPLIT_Y_HUM_EDGE_PAD_PCT),
-          overlayAlign,
-        ),
-        formatTrendBandEdge(plotThresholds.humidityHigh, "%"),
-        TREND_CHART_COLORS.humidity,
-        "overline",
-        humHiTitle,
-        true,
-        guideEditEnabled,
-        plotThresholds.humidityHigh,
-        {
-          lineStrokeWidth: 1.65,
-          lineDasharray: "2 2",
-          lineHighlight: true,
-        },
-      );
-      push(
-        "hum-lo",
-        mapHumPctToSplitY(
-          plotThresholds.humidityLow,
-          mapHumLo,
-          mapHumHi,
-          layout,
-          overlayAlign
-            ? undefined
-            : chartLeftUnit === "%"
-              ? undefined
-              : alarmEdgeDomain(mapHumLo, mapHumHi, SPLIT_Y_HUM_EDGE_PAD_PCT),
-          overlayAlign,
-        ),
-        formatTrendBandEdge(plotThresholds.humidityLow, "%"),
-        TREND_CHART_COLORS.humidity,
-        "underline",
-        humLoTitle,
-        true,
-        guideEditEnabled,
-        plotThresholds.humidityLow,
-        {
-          lineStrokeWidth: 1.65,
-          lineDasharray: "2 2",
-          lineHighlight: true,
-        },
-      );
-    }
-    if (recommendBand) {
+    {
       const tempFarmLayout = overlayAlign ? layout : tempMapLayout;
       const tempFarmDomain = overlayAlign ? undefined : tempMapDomain;
       if (
@@ -1737,79 +1659,6 @@ export function UnifiedBarnTrendPanel({
           });
         }
       }
-      if (
-        alarmRangeOn.hum &&
-        scopeVisibility.showHum &&
-        (layers.hum || layers.humDev || layers.humBand || layers.humEma)
-      ) {
-        const humDomain = overlayAlign
-          ? undefined
-          : alarmEdgeDomain(
-              mapHumLo,
-              mapHumHi,
-              SPLIT_Y_HUM_EDGE_PAD_PCT,
-            );
-        const humFarmHiY = mapHumPctToSplitY(
-          mappingThresholds.humidityHigh,
-          mapHumLo,
-          mapHumHi,
-          layout,
-          humDomain,
-          overlayAlign,
-        );
-        const humFarmLoY = mapHumPctToSplitY(
-          mappingThresholds.humidityLow,
-          mapHumLo,
-          mapHumHi,
-          layout,
-          humDomain,
-          overlayAlign,
-        );
-        const humFarmMid = farmAlarmMidValue(
-          mappingThresholds.humidityLow,
-          mappingThresholds.humidityHigh,
-        );
-        if (humFarmMid != null) {
-          push(
-            "hum-farm-mid",
-            mapHumPctToSplitY(
-              humFarmMid,
-              mapHumLo,
-              mapHumHi,
-              layout,
-              humDomain,
-              overlayAlign,
-            ),
-            formatTrendBandEdge(humFarmMid, "%"),
-            TREND_CHART_COLORS.humidity,
-            undefined,
-            "습도 알람 기준",
-            false,
-            farmAlarmEditEnabled,
-            humFarmMid,
-            { side: "left", labelIcon: "hum-alarm" },
-          );
-        }
-        if (
-          humFarmHiY != null &&
-          Number.isFinite(humFarmHiY) &&
-          humFarmLoY != null &&
-          Number.isFinite(humFarmLoY)
-        ) {
-          rangeBands.push({
-            id: "hum-farm-range",
-            lo: humFarmLoY,
-            hi: humFarmHiY,
-            axis: "left",
-            color: overlayAlign
-              ? TREND_CHART_COLORS.humidity
-              : FARM_ALARM_RANGE_FILL,
-            fillOpacity: overlayAlign
-              ? FARM_ALARM_RANGE_HUM_OVERLAY_OPACITY
-              : FARM_ALARM_RANGE_FILL_OPACITY,
-          });
-        }
-      }
     }
     if (!chartLeftUnit) {
       const ticks = buildSplitYBandScaleTicks({
@@ -1831,50 +1680,13 @@ export function UnifiedBarnTrendPanel({
         humidityHigh: mapHumHi,
       });
       for (const tick of ticks) {
-        if (
-          recommendBand &&
-          (tick.id === "band-tick-temp-mid" || tick.id === "band-tick-hum-mid")
-        ) {
-          continue;
-        }
-        const tickIsAlarmMid =
-          tick.id === "band-tick-temp-mid" || tick.id === "band-tick-hum-mid";
-        if (
-          tickIsAlarmMid &&
-          ((tick.unit === "℃" && !alarmRangeOn.temp) ||
-            (tick.unit === "%" && !alarmRangeOn.hum))
-        ) {
-          continue;
-        }
+        // The device midpoint is already labeled by temp-farm-mid. Other ticks are measured-axis labels.
+        if (tick.id === "band-tick-temp-mid" && alarmRangeOn.temp &&
+            Number.isFinite(mappingThresholds.tempLow) && Number.isFinite(mappingThresholds.tempHigh)) continue;
         push(
-          tick.id,
-          tick.chartY,
-          formatTrendBandEdge(tick.value, tick.unit),
-          tickIsAlarmMid
-            ? tick.unit === "℃"
-              ? TREND_CHART_COLORS.temp
-              : TREND_CHART_COLORS.humidity
-            : "var(--muted-foreground)",
-          undefined,
-          tickIsAlarmMid
-            ? tick.unit === "℃"
-              ? "현재 장비 경보 기준"
-              : "습도 알람 기준"
-            : "눈금",
-          !tickIsAlarmMid,
-          tickIsAlarmMid && alarmEditEnabled,
-          tickIsAlarmMid ? tick.value : undefined,
-          {
-            side: "left",
-            lineStrokeWidth: tickIsAlarmMid ? 0 : 0.35,
-            lineDasharray: "solid",
-            lineHighlight: false,
-            labelIcon: tickIsAlarmMid
-              ? tick.unit === "℃"
-                ? "temp-alarm"
-                : "hum-alarm"
-              : undefined,
-          },
+          tick.id, tick.chartY, formatTrendBandEdge(tick.value, tick.unit),
+          "var(--muted-foreground)", undefined, "눈금", true, false, undefined,
+          { side: "left", lineStrokeWidth: 0.35, lineDasharray: "solid", lineHighlight: false },
         );
       }
     }
@@ -1884,7 +1696,6 @@ export function UnifiedBarnTrendPanel({
     layers,
     plotThresholds,
     mappingThresholds,
-    recommendBand,
     layout,
     scopeVisibility,
     alarmEditEnabled,
@@ -1943,16 +1754,9 @@ export function UnifiedBarnTrendPanel({
           tempAlarmAvailable={Boolean(
             scopeVisibility.showTemp && layers.temp && built.available.temp,
           )}
-          humAlarmAvailable={Boolean(
-            scopeVisibility.showHum &&
-              built.available.hum &&
-              (layers.hum || layers.humDev || layers.humBand || layers.humEma),
-          )}
+          humAlarmAvailable={false}
           onToggleTempAlarm={() =>
             setOwnedAlarmRangeOn((prev) => ({ ...prev, temp: !prev.temp }))
-          }
-          onToggleHumAlarm={() =>
-            setOwnedAlarmRangeOn((prev) => ({ ...prev, hum: !prev.hum }))
           }
         />
       </div>

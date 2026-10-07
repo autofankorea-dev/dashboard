@@ -42,12 +42,12 @@
 |------|------|
 | [`protocol/README.md`](./protocol/README.md) | 데이터폼·개선안 인덱스 (레포 루트에서 이 폴더로 이동) |
 
-### 허브 · DELIN · 디자인
+### 허브 · 환경 판정 · 디자인
 
 | 문서 | 내용 |
 |------|------|
 | [`farm-hub-url.md`](./farm-hub-url.md) | `/farm` URL·탭·epoch |
-| [`aria-protocol.md`](./aria-protocol.md) | 델린(DELIN) 뱃지 정본 |
+| [`ENVIRONMENT_STATUS_POLICY.md`](./ENVIRONMENT_STATUS_POLICY.md) | 장비 경보·통신 상태·차트·보고서 기준 |
 | [`UI_MOTION.md`](./UI_MOTION.md) | 모션 |
 | [`UI_DENSITY.md`](./UI_DENSITY.md) | 밀도·맵 수치 |
 | [`UI_ELEVATION.md`](./UI_ELEVATION.md) | elevation |
@@ -55,7 +55,6 @@
 | [`UI_SURFACES.md`](./UI_SURFACES.md) | 면 종류(A–H) · Glass 전 분류 |
 | [`UI_AFFORDANCE.md`](./UI_AFFORDANCE.md) | 버튼·표시·히트 계약 (명령/도구/선택군/칩/히트면/잉크) |
 | [`UI_FEEDBACK.md`](./UI_FEEDBACK.md) | ops-feedback |
-| [`UI_ARIA_PRESENCE.md`](./UI_ARIA_PRESENCE.md) | DELIN 뱃지 presence |
 | [`UI_VISUAL_QA.md`](./UI_VISUAL_QA.md) | 시각 QA |
 | [`UI_DARK_VISIBILITY.md`](./UI_DARK_VISIBILITY.md) | 다크모드 가시성 현황·P0–P6 적용 |
 

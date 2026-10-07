@@ -57,7 +57,7 @@ export function DashboardViewportShell({ children }: Props) {
         >
           <div
             className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
-            data-delin-badge-host=""
+            data-dashboard-overlay-host=""
           >
             {children}
           </div>

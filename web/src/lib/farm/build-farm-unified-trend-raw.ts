@@ -1,5 +1,5 @@
 /**
- * DELIN/차트 공통 — 컨트롤러 목록으로 UnifiedBarnTrendRaw 집계.
+ * 차트 공통 — 컨트롤러 목록으로 UnifiedBarnTrendRaw 집계.
  * 알람 초과 X구간 계산과 패널 집계가 같은 다운샘플을 쓰도록 한다.
  */
 import type { AlarmThresholds } from "@/lib/data/alarms";

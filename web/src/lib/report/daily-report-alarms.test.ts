@@ -69,7 +69,7 @@ const moduleRow: AlarmRow = {
     ],
   );
   const rows = toDailyReportAlarmRows(merged);
-  assert.ok(merged.some((a) => a.alarmType === "권장 이탈"));
+  assert.ok(!merged.some((a) => a.alarmType === "권장 이탈"));
   assert.equal(rows.length, 2);
   assert.equal(rows[0]!.source, "module");
   assert.equal(rows[1]!.source, "offline");

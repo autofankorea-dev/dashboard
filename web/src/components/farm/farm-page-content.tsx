@@ -17,7 +17,6 @@ import type { BarnReading } from "@/lib/data/iot";
 import { normalizeStallTyCode } from "@/lib/data/stall-type";
 import { stallKeyFromReading } from "@/lib/data/reading-hierarchy";
 import type { TrendPeriodData, TrendPeriodId } from "@/lib/data/farm-trend-types";
-import { DelinEnvBadge } from "@/components/farm/delin-env-badge";
 import { FarmMapView } from "@/components/farm/farm-map-view";
 import { FarmChartLabView } from "@/components/farm/farm-chart-lab-view";
 import { BarnTable } from "@/components/farm/barn-table";
@@ -60,7 +59,6 @@ import {
   parseFarmKeyId,
   type FarmKey,
 } from "@/lib/data/farm-key";
-import { parseBarnCatalogKey } from "@/lib/data/barn-catalog";
 import {
   invalidateFarmControllerTrendCache,
   prefetchFarmControllerTrend,
@@ -85,7 +83,6 @@ import { cn } from "@/lib/utils";
 import { useFieldListFilterMotion } from "@/components/farm/use-field-list-filter-motion";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { useFarmTourActive } from "@/lib/onboarding/use-farm-tour-active";
-import { delinEnabled } from "@/lib/aria/delin-enabled";
 import { STAGGER_MOUNT_MIN_READINGS } from "@/lib/farm/stagger-mount";
 
 type Props = {
@@ -432,27 +429,6 @@ export function FarmPageContent({
     () => resolveFarmChartLabSelection(shallowParams),
     [shallowParams],
   );
-
-  /** 델린 뱃지는 필드만. 차트·목록·모델에서는 숨김 */
-  const showDelinEnvBadge =
-    delinEnabled() && Boolean(gridFarmKey) && view === "map";
-  const delinBadgeStallTy = useMemo(() => {
-    if (!showDelinEnvBadge) return null;
-    if (fieldMerge && fieldSelectedBarnId) {
-      const barn = barnSnapshots.find((b) => b.meta.id === fieldSelectedBarnId);
-      const ty = barn
-        ? parseBarnCatalogKey(barn.meta.id)?.stallTyCode
-        : null;
-      if (ty) return ty;
-    }
-    return shallowParams.get("sp");
-  }, [
-    showDelinEnvBadge,
-    fieldMerge,
-    fieldSelectedBarnId,
-    barnSnapshots,
-    shallowParams,
-  ]);
 
   const onTrendPeriodChange = useCallback(
     (period: TrendPeriodId) => {
@@ -923,12 +899,6 @@ export function FarmPageContent({
           </div>
         ) : null}
 
-        {showDelinEnvBadge ? (
-          <DelinEnvBadge
-            readings={readings}
-            stallTyCode={delinBadgeStallTy}
-          />
-        ) : null}
       </div>
     </div>
   );

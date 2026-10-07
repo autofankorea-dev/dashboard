@@ -1,12 +1,3 @@
-# DELIN 뱃지 presence
+# 폐기된 DELIN 문서
 
-허브에서 DELIN은 **우측 하단 뱃지**만 쓴다. 오브·스테이지·말하기 도크는 폐기했다.
-
-정본: [`aria-protocol.md`](./aria-protocol.md) · 코드: `delin-env-badge.tsx`.
-
-| 면 | 역할 |
-|----|------|
-| 뱃지 | 필드 우측 하단. 아이콘 → 숫자 → 말풍선. 차트에서는 숨김 |
-| 말풍선 | 이름 DELIN, 제목, 축사유형별 짧은 목록 |
-
-신규 글로우·무한 펄스·H6는 승인 후. 뱃지는 status 톤(`ok`/`warn`/`danger`)만 쓴다.
+DELIN 및 환경 권장 정책은 제거되었습니다. 현재 기준은 [환경 상태 정책](./ENVIRONMENT_STATUS_POLICY.md)을 참조하세요.

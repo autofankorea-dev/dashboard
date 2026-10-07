@@ -70,65 +70,11 @@ async function main() {
       "C: 온도값 또는 단절/지연 상태 문구 없음",
     );
 
-    // E — ARIA tab
-    await page.goto(`${BASE}/farm?lsind=FARM01&item=P00&view=aria`, {
-      waitUntil: "load",
-    });
+    // E — retired assistant URLs resolve to the field without a DELIN badge.
+    await page.goto(`${BASE}/farm?lsind=FARM01&item=P00&view=aria`, { waitUntil: "load" });
     await page.waitForTimeout(2500);
-    const ariaText = await page.locator("body").innerText();
-    const ariaHidden =
-      /준비 중|곧 제공|비활성|숨김|DELIN.*off/i.test(ariaText) &&
-      !/질의|질문|음성|델린|ARIA/i.test(ariaText);
-    report.delin = {
-      pageLoaded: true,
-      bodyHasInternalIds: /farmKey|alarmItems|FARM01\/P00|lsindRegistNo/.test(
-        ariaText,
-      ),
-      hasUiChrome: /델린|DELIN|ARIA|질의|질문|차트/.test(ariaText),
-      likelyDisabled: ariaHidden,
-      snippet: ariaText.replace(/\s+/g, " ").slice(0, 500),
-    };
-    assert(!report.delin.bodyHasInternalIds, "E: 내부 ID/필드명 노출");
-
-    if (report.delin.hasUiChrome && !report.delin.likelyDisabled) {
-      const textAsk = page.getByRole("button", { name: /글로 묻기/ }).first();
-      if (await textAsk.isVisible().catch(() => false)) {
-        await textAsk.click();
-        await page.waitForTimeout(500);
-      }
-      const input = page
-        .locator(
-          'textarea[placeholder*="질문"], textarea, input[placeholder*="질문"]',
-        )
-        .first();
-      if (await input.isVisible().catch(() => false)) {
-        await input.fill("지금 농장 상태 간단히 알려줘");
-        const send = page
-          .locator(
-            'button:has-text("보내"), button:has-text("전송"), button[type="submit"]',
-          )
-          .first();
-        if (await send.isVisible().catch(() => false)) {
-          await send.click();
-          await page.waitForTimeout(10000);
-          const after = await page.locator("body").innerText();
-          report.delin.asked = true;
-          report.delin.appliedHallucination =
-            /적용했습니다|명령을 전송했습니다/.test(after);
-          report.delin.internalIdsAfter =
-            /farmKey|alarmItems|lsindRegistNo/.test(after);
-          assert(!report.delin.appliedHallucination, "E: CTRL 적용 환각");
-          assert(!report.delin.internalIdsAfter, "E: 답변 내부 ID 노출");
-          report.delin.afterSnippet = after.replace(/\s+/g, " ").slice(0, 600);
-        } else {
-          report.delin.asked = false;
-          report.delin.note = "전송 버튼 없음 — UI 스모크만";
-        }
-      } else {
-        report.delin.asked = false;
-        report.delin.note = "입력창 없음 — companion/게이트 확인";
-      }
-    }
+    assert.equal(await page.locator('[data-testid="delin-env-badge-root"]').count(), 0);
+    report.retiredAssistant = { badgeRemoved: true };
 
     report.ok = true;
   } finally {
