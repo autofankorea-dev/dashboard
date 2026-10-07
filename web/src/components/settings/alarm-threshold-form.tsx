@@ -5,11 +5,14 @@ import type { AlarmSettings } from "@/lib/data/alarms";
 import type { ThermoCommand } from "@/lib/data/commands";
 import { parseDeviceAlarms } from "@/lib/controllers/device-alarm-command";
 import { sendDeviceSettingsCommandsAction } from "@/app/(dashboard)/controllers/actions";
+import type { CommandChannelValues } from "@/lib/controllers/combined-channel-command";
 export type AlarmThresholdHeaderState = {
   scopeDescription: string; scopeHasOverride: boolean; scopeReady: boolean; hasChanges: boolean;
   pending: boolean; validationError: string | null; collapsedSummary: string;
   glanceCells: { temp: string; tempDev: string; humidity: string };
-  onSave: () => void; onApplyDefaults: () => void; onClear: () => void;
+  onSave: (channels?: CommandChannelValues[], onCommitted?: () => void) => void; onApplyDefaults: () => void; onClear: () => void;
+  values: { lowTempC: string; highTempC: string };
+  onChange: (field: "lowTempC" | "highTempC", value: number) => void;
 };
 type Props = {
   initialSettings: AlarmSettings; readings: BarnReading[];
@@ -18,8 +21,9 @@ type Props = {
   onHeaderState?: (state: AlarmThresholdHeaderState | null) => void;
   submitCommands?: typeof sendDeviceSettingsCommandsAction;
   commands?: ThermoCommand[]; onCommandQueued?: (command: ThermoCommand) => void;
+  headless?: boolean;
 };
-export function AlarmThresholdForm({ readings, fixedScope, disabled, onHeaderState, commands = [], onCommandQueued, submitCommands = sendDeviceSettingsCommandsAction }: Props) {
+export function AlarmThresholdForm({ readings, fixedScope, disabled, onHeaderState, commands = [], onCommandQueued, headless, submitCommands = sendDeviceSettingsCommandsAction }: Props) {
   const reading = readings.find(r => r.key === fixedScope?.readingKey);
   const latest = [...commands].sort((a,b) => b.createdAt.localeCompare(a.createdAt) || ({pending:1,sent:2,applied:3,failed:3,cancelled:3}[b.status] - {pending:1,sent:2,applied:3,failed:3,cancelled:3}[a.status])).find(c => c.alarmSettings && c.controllerKey === reading?.controllerKey && c.moduleUid === reading?.moduleUid && c.farmKey.lsindRegistNo === reading?.farmKey.lsindRegistNo && c.farmKey.itemCode === reading?.farmKey.itemCode);
   const awaitingFreshApplied = latest?.status === "applied" && latest.appliedAt && (reading?.receivedAt ?? "") <= latest.appliedAt &&
@@ -43,22 +47,27 @@ export function AlarmThresholdForm({ readings, fixedScope, disabled, onHeaderSta
   const values = useMemo(() => low.trim() && high.trim() ? parseDeviceAlarms({ lowTempC: Number(low), highTempC: Number(high) }) : null, [low, high]);
   const busy = pending || latest?.status === "pending" || latest?.status === "sent";
   const validationError = values ? null : "0~100℃, 0.1℃ 단위로 저온 < 고온을 입력하세요.";
-  const onSave = useCallback(() => {
+  const onChange = useCallback((field: "lowTempC" | "highTempC", value: number) => {
+    if (disabled || busy) return;
+    (field === "lowTempC" ? setLow : setHigh)(String(value)); setDirty(true);
+  }, [disabled, busy]);
+  const onSave = useCallback((channels?: CommandChannelValues[], onCommitted?: () => void) => {
     if (!reading || reading.status === "offline" || disabled || busy || !values) return;
     setPending(true); setError(null);
     void submitCommands([{ key: reading.key, ...reading.farmKey, moduleUid: reading.moduleUid,
-      stallTyCode: reading.stallTyCode ?? "", stallNo: reading.stallNo ?? "", eqpmnNo: reading.eqpmnNo, alarmSettings: values }])
-      .then(result => { const cmd = result.sentItems[0]?.command; if (cmd) { setDirty(false); onCommandQueued?.(cmd); } else setError(result.error ?? result.failed[0]?.error ?? "전송 실패"); })
+      stallTyCode: reading.stallTyCode ?? "", stallNo: reading.stallNo ?? "", eqpmnNo: reading.eqpmnNo, alarmSettings: values, channels }])
+      .then(result => { const cmd = result.sentItems[0]?.command; if (cmd) { setDirty(false); onCommitted?.(); onCommandQueued?.(cmd); } else setError(result.error ?? result.failed[0]?.error ?? "전송 실패"); })
       .catch(() => setError("전송 요청에 실패했습니다. 입력값을 유지합니다."))
       .finally(() => setPending(false));
   }, [reading, disabled, busy, values, onCommandQueued, submitCommands]);
   useEffect(() => {
     const reset = () => { setLow(reading?.alarmLowTempC == null ? "" : String(reading.alarmLowTempC)); setHigh(reading?.alarmHighTempC == null ? "" : String(reading.alarmHighTempC)); setDirty(false); };
     onHeaderState?.({ scopeDescription: "컨트롤러 장비 경보", scopeHasOverride: false, scopeReady: Boolean(reading),
-      hasChanges: dirty, pending: busy, validationError,
+      hasChanges: dirty && (Number(low) !== sourceLow || Number(high) !== sourceHigh), pending: busy, validationError,
       collapsedSummary: values ? `저온 ${low}℃ · 고온 ${high}℃` : "경보값 미수신",
-      glanceCells: { temp: low || "—", tempDev: high || "—", humidity: "—" }, onSave, onClear: reset, onApplyDefaults: reset });
-  }, [onHeaderState, reading, dirty, latest?.status, busy, validationError, low, high, onSave, values]);
+      glanceCells: { temp: low || "—", tempDev: high || "—", humidity: "—" }, values: { lowTempC: low, highTempC: high }, onChange, onSave, onClear: reset, onApplyDefaults: reset });
+  }, [onHeaderState, reading, dirty, latest?.status, busy, validationError, low, high, onSave, values, sourceLow, sourceHigh, onChange]);
+  if (headless) return error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null;
   return <div className="space-y-3" data-device-alarm-settings>
     <p className="text-sm text-muted-foreground">컨트롤러 공통 경보 · 장비 수신값</p>
     <p className="text-sm">현재 저온 {reading?.alarmLowTempC ?? "—"}℃ / 고온 {reading?.alarmHighTempC ?? "—"}℃</p>

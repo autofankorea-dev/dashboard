@@ -161,30 +161,59 @@ try {
     await unified.getByRole('button',{name:trigger}).click();
     const dialog = page.getByRole('dialog',{name:'채널 · 알람 설정',exact:true});
     await dialog.waitFor();
-    for (const slot of ['A','B','C']) assert.ok(await dialog.getByRole('region',{name:`${slot}채널`,exact:true}).isVisible());
-    assert.ok(await dialog.getByRole('spinbutton',{name:'저온 경보',exact:true}).isVisible());
-    assert.ok(await dialog.getByRole('spinbutton',{name:'고온 경보',exact:true}).isVisible());
+    assert.ok(await dialog.getByRole('table',{name:'채널 설정'}).isVisible());
+    assert.equal(await dialog.locator('[data-stepper]').count(),2, 'exactly one shared minus/plus pair');
+    assert.equal(await dialog.locator('[data-unified-settings-table] [data-stepper]').count(),0);
     if (trigger.source === '^A채널') {
-      await dialog.getByRole('spinbutton',{name:'저온 경보',exact:true}).fill('12');
-      await dialog.getByRole('region',{name:'B채널',exact:true}).getByRole('button',{name:'설정 ℃ 올리기',exact:true}).click();
+      await dialog.getByRole('button',{name:'저온 경보 선택',exact:true}).click();
+      await dialog.getByRole('spinbutton',{name:'알람 · 저온 경보',exact:true}).fill('12');
+      await dialog.getByRole('button',{name:'B채널 설정온도 선택',exact:true}).click();
+      await dialog.getByRole('button',{name:'B채널 · 설정온도 올리기',exact:true}).click();
+      await dialog.getByRole('button',{name:'B채널 최저환기 선택',exact:true}).click();
+      await dialog.getByRole('button',{name:'B채널 · 최저환기 올리기',exact:true}).click();
     }
-    assert.equal(await dialog.getByRole('spinbutton',{name:'저온 경보',exact:true}).inputValue(),'12');
+    assert.ok((await dialog.getByRole('button',{name:'저온 경보 선택',exact:true}).innerText()).includes('12.0℃'));
+    assert.ok((await dialog.getByRole('button',{name:'B채널 설정온도 선택',exact:true}).innerText()).includes('24.1℃'));
+    assert.ok((await dialog.getByRole('button',{name:'B채널 최저환기 선택',exact:true}).innerText()).includes('21%'));
     await dialog.getByRole('button',{name:'닫기',exact:true}).click();
   }
+  await unified.getByRole('button',{name:/^장비 경보/}).click();
+  let editor = page.getByRole('dialog',{name:'채널 · 알람 설정',exact:true});
+  await editor.getByRole('button',{name:'변경값 적용',exact:true}).click();
+  const confirm = page.getByRole('alertdialog');
+  await confirm.waitFor();
+  assert.ok((await confirm.innerText()).includes('채널 B'));
+  assert.ok((await confirm.innerText()).includes('저온 경보'));
+  assert.ok((await confirm.innerText()).includes('12'));
+  await confirm.getByRole('button',{name:'취소',exact:true}).click();
+  await page.getByRole('dialog',{name:'채널 · 알람 설정',exact:true}).getByRole('button',{name:'닫기',exact:true}).click();
   await page.screenshot({path:join(output,'controller-states-desktop.png')});
   await page.setViewportSize({width:390,height:844});
   await delay(300);
   await unified.getByRole('button',{name:/^장비 경보/}).click();
   const mobileDialog = page.getByRole('dialog',{name:'채널 · 알람 설정',exact:true});
-  assert.ok(await mobileDialog.getByRole('spinbutton',{name:'고온 경보',exact:true}).isVisible());
-  assert.ok(await mobileDialog.getByRole('region',{name:'C채널',exact:true}).isVisible());
+  await mobileDialog.waitFor();
+  assert.equal(await mobileDialog.locator('[data-stepper]').count(),2);
+  const card = await mobileDialog.boundingBox();
+  assert.ok(card.x >= 0 && card.x + card.width <= 391);
   await page.screenshot({path:join(output,'unified-settings-mobile.png')});
+  await page.setViewportSize({width:390,height:640});
+  await delay(150);
+  const compactCard = await mobileDialog.boundingBox();
+  assert.ok(compactCard.y >= 0 && compactCard.y + compactCard.height <= 641, 'shared control and apply fit short mobile screens');
+  await page.setViewportSize({width:390,height:844});
   await mobileDialog.getByRole('button',{name:'닫기',exact:true}).click();
+  await alarm.getByRole('button',{name:'통합 전송 테스트',exact:true}).click();
+  await page.waitForFunction(() => document.querySelector('[data-submitted-targets]')?.textContent.includes('EC02'));
+  const submittedTargets = JSON.parse(await alarm.locator('[data-submitted-targets]').textContent());
+  assert.equal(submittedTargets.length,1);
+  assert.deepEqual(submittedTargets[0].channels.map(ch => ch.channel),['B']);
+  assert.deepEqual(submittedTargets[0].alarmSettings,{lowTempC:12,highTempC:36});
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
   for(const node of await page.locator('[data-cover-communication-status]').all()) assert.ok(await node.isVisible());
   await page.screenshot({path:join(output,'controller-states-mobile.png'),fullPage:true});
   assert.deepEqual(errors,[], 'No browser errors');
-  console.log('controller-state-smoke: PASS (pending old LIVE, failed retry, channel isolation, remount, LIVE confirmation, environment/communication labels, mobile)');
+  console.log('controller-state-smoke: PASS (raw restoration, shared stepper, table selection, draft persistence, combined confirmation, one-controller one-message submission, desktop/mobile)');
 } catch (error) {
   console.error("Browser errors:", errors);
   if (page) {

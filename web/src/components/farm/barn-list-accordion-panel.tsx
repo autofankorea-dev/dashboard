@@ -7,12 +7,7 @@ import {
   type AlarmThresholdHeaderState,
 } from "@/components/settings/alarm-threshold-form";
 import { useControllerDetail } from "@/components/controllers/use-controller-detail";
-import {
-  SettingsChannelStepperGrid,
-  SettingsChannelWell,
-} from "@/components/farm/settings-channel-stepper-grid";
-import { MENU_STEPS } from "@/lib/controllers/controller-panel-map";
-import type { PresetCreateField } from "@/lib/farm/command-presets";
+import { UnifiedSettingsTable, SharedSettingsStepper, type SettingsCell } from "@/components/farm/unified-settings-table";
 import { useControllerPanel } from "@/components/controllers/use-controller-panel";
 import {
   latestPanelCommand,
@@ -26,7 +21,6 @@ import { CommandConfirmOverlay } from "@/components/farm/command-confirm-overlay
 import { SettingsEditOverlay } from "@/components/farm/settings-edit-overlay";
 import { SettingsCommandPresetStrip } from "@/components/farm/settings-command-preset-strip";
 import { useCommandPresets } from "@/components/farm/use-command-presets";
-import { SettingsAllChannelGrid } from "@/components/farm/settings-all-channel-grid";
 import { useSettingsApplyOverlay } from "@/components/farm/use-settings-apply-overlay";
 import { useApplyQueueOptional } from "@/components/farm/apply-queue-context";
 import { useApplyQueueStripPresence } from "@/components/farm/use-apply-queue-strip-presence";
@@ -41,7 +35,7 @@ import {
   SettingsGlanceStrip,
   type SettingsGlanceFocus,
 } from "@/components/farm/settings-glance-strip";
-import { type PanelDraft } from "@/lib/controllers/controller-panel-draft";
+import { type PanelDraft, type PanelThermoValues } from "@/lib/controllers/controller-panel-draft";
 import { BusyButtonLabel } from "@/components/common/busy-button-label";
 import { useFarmLiveRefreshOptional } from "@/lib/navigation/farm-live-refresh";
 import type { BarnReading } from "@/lib/data/iot";
@@ -128,6 +122,7 @@ export function BarnListAccordionPanel({
   const [thresholdHeader, setThresholdHeader] =
     useState<AlarmThresholdHeaderState | null>(null);
   const [focus, setFocus] = useState<SettingsGlanceFocus | null>(null);
+  const [selectedCell, setSelectedCell] = useState<SettingsCell>({slot:"A",field:"setpoint"});
   const [activeChannel, setActiveChannel] = useState<ChannelSlot>("A");
   const [confirmModel, setConfirmModel] = useState<CommandConfirmModel | null>(
     null,
@@ -329,7 +324,6 @@ export function BarnListAccordionPanel({
   const online =
     isReadingOnline(reading.status) || isReadingOnline(detail?.status);
   /** settings 미확인이어도 편집은 허용(기본 draft). 저장은 hasChanges 필요 */
-  const controlsDisabled = !canCommand || panel.pending;
 
   const farmId = farmKeyId(reading.farmKey);
   const spCode = normalizeStallTyCode(reading.stallTyCode);
@@ -358,16 +352,22 @@ export function BarnListAccordionPanel({
     !thresholdHeader!.validationError &&
     thresholdHeader!.scopeReady &&
     thresholdHeader!.hasChanges;
-  const saveDisabled = isSaving || !canSaveControl;
+  const alarmChanged = Boolean(thresholdHeader?.hasChanges);
+  const invalidVent = panel.dirtySaves.some(row => row.values.minVentPct > row.values.maxVentPct);
+  const canSaveChanges = (canSaveControl || canSaveAlarm) && (!alarmChanged || canSaveAlarm) && !invalidVent && !(alarmChanged && canSaveControl && !hasChannels);
+  const saveDisabled = isSaving || !canSaveChanges;
   const saveDisabledReason = (() => {
     if (panel.pending || applyBusy) return "적용 중…";
     if (thresholdHeader?.pending) return "저장 중…";
     if (!canCommand) return "조회 전용 계정입니다. 설정 변경 권한이 없습니다.";
     if (!online) return "오프라인이라 적용할 수 없습니다.";
-    if (!panel.settingsKnown && !panel.hasEdited) {
+    if (invalidVent) return "최저 환기는 최고 환기 이하여야 합니다.";
+    if (alarmChanged && thresholdHeader?.validationError) return thresholdHeader.validationError;
+    if (!alarmChanged && !panel.settingsKnown && !panel.hasEdited) {
       return "설정값을 불러오는 중…";
     }
-    if (!canSaveControl) return "변경된 명령이 없습니다.";
+    if (alarmChanged && canSaveControl && !hasChannels) return "채널 정보를 수신한 뒤 함께 적용할 수 있습니다.";
+    if (!canSaveChanges) return "변경된 명령이 없습니다.";
     return null;
   })();
   const defaultsDisabled = !canCommand || isSaving;
@@ -377,11 +377,15 @@ export function BarnListAccordionPanel({
   }, []);
 
   const handleSaveControl = () => {
-    if (isSaving || !canSaveControl) return;
+    if (isSaving || !canSaveChanges) return;
     const focusedEl = document.activeElement;
     if (focusedEl instanceof HTMLElement) focusedEl.blur();
     window.setTimeout(() => {
       const dirty = panel.peekDirtySaves();
+      const alarmLines = alarmChanged && thresholdHeader ? [
+        {label:"저온 경보",from:`${panelTarget.alarmLowTempC ?? "—"}℃`,fromWarn:false,to:`${thresholdHeader.values.lowTempC}℃`},
+        {label:"고온 경보",from:`${panelTarget.alarmHighTempC ?? "—"}℃`,fromWarn:false,to:`${thresholdHeader.values.highTempC}℃`},
+      ] : [];
       if (dirty.length > 0) {
         const model = buildMultiChannelCommandConfirmModel({
           target: formatCommandConfirmTarget({
@@ -399,7 +403,12 @@ export function BarnListAccordionPanel({
         });
         confirmSentRef.current = false;
         confirmControlSavesRef.current = dirty;
-        setConfirmModel(model);
+        setConfirmModel({...model, lines:[...model.lines,...alarmLines]});
+        return;
+      }
+      if (alarmLines.length && !canSaveControl) {
+        confirmSentRef.current = false; confirmControlSavesRef.current = [];
+        setConfirmModel({title:"변경값 적용",target:formatCommandConfirmTarget({stallTyCode:reading.stallTyCode,stallNo:reading.stallNo,eqpmnNo:reading.eqpmnNo,onlineCount:1}),lines:alarmLines});
         return;
       }
       const current = panel.currentValues
@@ -429,12 +438,6 @@ export function BarnListAccordionPanel({
     }, 0);
   };
 
-  const handleSaveAlarm = () => {
-    if (isSaving || !canSaveAlarm) return;
-    thresholdHeader!.onSave();
-    closeEditor();
-  };
-
   const dismissConfirm = useCallback(() => {
     if (panel.pending) return;
     confirmControlSavesRef.current = null;
@@ -447,8 +450,11 @@ export function BarnListAccordionPanel({
     const queued = confirmControlSavesRef.current ?? undefined;
     confirmControlSavesRef.current = null;
     setConfirmModel(null);
-    panel.save(queued);
-  }, [panel]);
+    if (alarmChanged && thresholdHeader) {
+      thresholdHeader.onSave((queued ?? []).map(row => ({channel:row.slot,eqpmnCode:row.eqpmnCode,...row.values})), () => panel.acceptSaves(queued ?? []));
+    } else panel.save(queued);
+    closeEditor();
+  }, [panel, alarmChanged, thresholdHeader, closeEditor]);
 
   const handleApplyDefaults = () => {
     panel.applyDefaults();
@@ -508,6 +514,7 @@ export function BarnListAccordionPanel({
       handleOverlayDismiss();
     }
     setFocus(next);
+    setSelectedCell(next === "alarm" ? {slot:"alarm",field:"lowTempC"} : {slot: next === "ctrl" ? "ctrl" : next,field:"setpoint"});
     if (next === "A" || next === "B" || next === "C") {
       if (channelSlots.includes(next)) setActiveChannel(next);
     }
@@ -518,8 +525,6 @@ export function BarnListAccordionPanel({
   const alarmCells =
     thresholdHeader?.glanceCells ??
     { temp: String(reading.alarmLowTempC ?? "—"), tempDev: String(reading.alarmHighTempC ?? "—"), humidity: "—" };
-  const showControlEditor =
-    editorOpen && (!hasChannels || channelSlots.length > 0);
 
   const alarmForm = (
     <AlarmThresholdForm
@@ -530,6 +535,7 @@ export function BarnListAccordionPanel({
       onCommandQueued={registerCommand}
       fixedScope={thresholdScope}
       embedded
+      headless
       density="mobileSplit"
       disabled={!canCommand}
       sliderTitleClassName={LIST_SLIDER_TITLE}
@@ -538,41 +544,19 @@ export function BarnListAccordionPanel({
     />
   );
 
-  const handleControlField = (field: PresetCreateField, value: number) => {
-    if (field === "setpointTemp") {
-      panel.setField("setpoint", value);
-      return;
-    }
-    if (field === "tempDeviation") {
-      panel.setField("deviation", value);
-      return;
-    }
-    if (field === "minVentPct") {
-      const max = panel.sliderValues.maxVent;
-      panel.setVentRange(value, value > max ? value : max);
-      return;
-    }
-    const min = panel.sliderValues.minVent;
-    panel.setVentRange(value < min ? value : min, value);
-  };
-
-  const controlBody = (
-    <div className="flex flex-col gap-3">
-      {panel.currentValues ? (
-        <p className="text-[11px] tabular-nums text-muted-foreground">
-          현재 {panel.currentValues.setpoint.toFixed(1)}℃ +
-          {panel.currentValues.deviation.toFixed(1)}℃
-        </p>
-      ) : null}
-      {hasChannels ? <SettingsAllChannelGrid rows={panel.channelGlanceRows} currentBySlot={Object.fromEntries((panelChannelContexts ?? []).map((ctx) => [ctx.slot, ctx.liveBaseline]))} disabled={controlsDisabled} onChange={panel.setChannelField} /> : <SettingsChannelWell><SettingsChannelStepperGrid
-        draft={fieldsToDraft(panel.sliderValues)} disabled={controlsDisabled}
-        ventStep={MENU_STEPS.minVent.step} onChange={handleControlField}
-      /></SettingsChannelWell>}
-      <p className="text-[11px] text-muted-foreground">
-        설정·편차 0.1℃, 환기 1%. −/+를 꾹 누르면 연속입니다.
-      </p>
-    </div>
-  );
+  const tableRows = hasChannels ? panel.channelGlanceRows : [{slot:"ctrl" as const,values:fieldsToDraft(panel.sliderValues),present:true}];
+  const currentBySlot: Partial<Record<ChannelSlot | "ctrl", PanelThermoValues | null>> = {...Object.fromEntries((panelChannelContexts ?? []).map(ctx => [ctx.slot,ctx.liveBaseline])),ctrl:panel.currentValues ? fieldsToDraft(panel.currentValues) : null};
+  const fieldKey = {setpoint:"setpointTemp",deviation:"tempDeviation",minVent:"minVentPct",maxVent:"maxVentPct"} as const;
+  const selectedValue = selectedCell.slot === "alarm" ? thresholdHeader?.values[selectedCell.field] ? Number(thresholdHeader.values[selectedCell.field]) : null
+    : tableRows.find(row => row.slot === selectedCell.slot)?.values?.[fieldKey[selectedCell.field]] ?? null;
+  const selectedRaw = selectedCell.slot === "alarm" ? (selectedCell.field === "lowTempC" ? panelTarget.alarmLowTempC : panelTarget.alarmHighTempC) ?? null
+    : currentBySlot[selectedCell.slot]?.[fieldKey[selectedCell.field]] ?? null;
+  const sharedStepper = <SharedSettingsStepper selected={selectedCell} value={selectedValue} raw={selectedRaw} disabled={!canCommand || isSaving}
+    onChange={value => {
+      if (selectedCell.slot === "alarm") thresholdHeader?.onChange(selectedCell.field,value);
+      else if (selectedCell.slot === "ctrl") panel.setField(selectedCell.field,value);
+      else panel.setChannelField(selectedCell.slot,selectedCell.field,value);
+    }} />;
 
   const settingsSections = (
     <div className="flex flex-col gap-2">
@@ -615,25 +599,12 @@ export function BarnListAccordionPanel({
   );
 
   const editorBody = (
-    <div className="space-y-5" data-unified-controller-settings>
-      {showControlEditor ? (
-        <section aria-label="채널 설정" className="space-y-3">
-          <h3 className="text-sm font-semibold">{hasChannels ? "A/B/C 채널 설정" : "컨트롤러 설정"}</h3>
-          {controlBody}
-          {canCommand ? <button type="button" disabled={saveDisabled} title={saveDisabledReason ?? undefined}
-            onClick={handleSaveControl} className={cn("min-h-11 w-full rounded-md px-3 py-2 text-sm", dashboardAffordance.action)}>
-            채널 명령 적용
-          </button> : null}
-        </section>
-      ) : null}
-      <section aria-label="알람 설정" className={cn("space-y-3 border-t pt-4", !editorOpen && "hidden")}>
-        <h3 className="text-sm font-semibold">저온 · 고온 알람</h3>
-        {alarmForm}
-        {canCommand ? <button type="button" disabled={isSaving || !canSaveAlarm} onClick={handleSaveAlarm}
-          className={cn("min-h-11 w-full rounded-md px-3 py-2 text-sm", dashboardAffordance.action)}>
-          알람 명령 적용
-        </button> : null}
-      </section>
+    <div className="space-y-3" data-unified-controller-settings>
+      <UnifiedSettingsTable rows={tableRows} current={currentBySlot} selected={selectedCell} onSelect={setSelectedCell}
+        alarm={{lowTempC:thresholdHeader?.values.lowTempC ?? "",highTempC:thresholdHeader?.values.highTempC ?? "",currentLow:panelTarget.alarmLowTempC,currentHigh:panelTarget.alarmHighTempC}} disabled={!canCommand || isSaving} />
+      {alarmForm}
+      {alarmChanged && thresholdHeader?.validationError ? <p role="alert" className="text-xs text-destructive">{thresholdHeader.validationError}</p> : null}
+      <p className="text-xs text-muted-foreground">채널 {panel.dirtyChannelSlots.length}개 변경 · 알람 {alarmChanged ? "변경됨" : "변경 없음"}</p>
     </div>
   );
 
@@ -682,7 +653,7 @@ export function BarnListAccordionPanel({
             >
               <BusyButtonLabel
                 busy={panel.pending || applyBusy}
-                idleLabel="명령 적용"
+                idleLabel="변경값 적용"
                 busyLabel="적용 중…"
               />
             </button>
@@ -693,7 +664,7 @@ export function BarnListAccordionPanel({
             </p>
           ) : (
             <p className="text-right text-xs text-muted-foreground">
-              바뀐 채널만 현장으로 전송합니다.
+              바뀐 채널과 알람만 현장으로 전송합니다.
             </p>
           )}
         </>
@@ -705,10 +676,13 @@ export function BarnListAccordionPanel({
     <>
       <SettingsEditOverlay
         open={editorOpen}
-        wide={showControlEditor}
+        spacious
+        footerContent={sharedStepper}
         title="채널 · 알람 설정"
-        primaryLabel={null}
-        hint="변경한 항목의 명령 적용을 누르면 장비로 전송합니다."
+        primaryLabel={canCommand ? "변경값 적용" : null}
+        primaryDisabled={saveDisabled}
+        onPrimary={handleSaveControl}
+        hint={saveDisabledReason ?? "변경된 채널과 알람을 컨트롤러별 한 건으로 전송합니다."}
         onClose={closeEditor}
       >
         {editorBody}

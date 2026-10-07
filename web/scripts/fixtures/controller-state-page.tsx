@@ -72,12 +72,14 @@ function PanelProbe({ stage, slot }: { stage: Stage; slot: "A" | "B" }) {
 }
 
 function AlarmProbe() {
+  const [submittedTargets, setSubmittedTargets] = useState<DeviceSettingsTarget[]>([]);
   const [rawHigh, setRawHigh] = useState(35);
   const reading = useMemo(() => ({...base, alarmHighTempC: rawHigh}), [rawHigh]);
   const [header, setHeader] = useState<AlarmThresholdHeaderState | null>(null);
   const [command, setCommand] = useState<ThermoCommand | null>(null);
   const [mount, setMount] = useState(0);
   const submit = useCallback(async (targets: DeviceSettingsTarget[]): Promise<SendBulkThermoCommandResult> => {
+    setSubmittedTargets(targets);
     const t = targets[0]!;
     const c: ThermoCommand = { id: "alarm-mock", createdAt: "2026-10-07T00:00:00Z", sentAt: null, appliedAt: null,
       farmKey: base.farmKey, moduleUid: base.moduleUid, controllerKey: base.controllerKey, stallTyCode: "SP07", stallNo: "01", eqpmnNo: "01",
@@ -92,6 +94,8 @@ function AlarmProbe() {
     <button onClick={() => setCommand(c => c ? {...c,status:"sent"} : c)}>경보 전송 테스트</button>
     <button onClick={() => setCommand(c => c ? {...c,status:"failed"} : c)}>경보 실패 테스트</button>
     <button onClick={() => setRawHigh(36)}>경보 raw 수신 테스트</button>
+    <button onClick={() => header?.onSave([{channel:"B",eqpmnCode:"EC02",...old,setpointTemp:24.1}])}>통합 전송 테스트</button>
+    <p data-submitted-targets className="break-all">{JSON.stringify(submittedTargets)}</p>
   </section>;
 }
 

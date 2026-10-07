@@ -785,6 +785,7 @@ export function useControllerPanel(
     applyDefaults,
     applyChannelDrafts,
     save,
+    acceptSaves: (saves: DirtyChannelSave[]) => markSavesCommitted(saves.map(row => row.slot), Object.fromEntries(saves.map(row => [row.slot, row.values]))),
     pending,
     message,
     canCommand,

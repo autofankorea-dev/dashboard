@@ -22,6 +22,7 @@ type Props = {
   decimals: number;
   disabled?: boolean;
   onChange: (next: number) => void;
+  large?: boolean;
 };
 
 function clampStepped(
@@ -90,11 +91,15 @@ function HoldStepButton({
   disabled,
   onStep,
   children,
+  large = false,
+  order,
 }: {
   label: string;
   disabled: boolean;
   onStep: () => void;
   children: string;
+  large?: boolean;
+  order?: number;
 }) {
   const { start, stop } = useHoldRepeat(onStep, !disabled);
 
@@ -104,11 +109,13 @@ function HoldStepButton({
       data-stepper=""
       aria-label={label}
       disabled={disabled}
+      style={order ? {order} : undefined}
       className={cn(
         "inline-flex size-7 shrink-0 items-center justify-center rounded-md text-sm font-medium leading-none outline-none",
         motionClass.microHover,
         dashboardAffordance.tool,
         "touch-manipulation select-none",
+        large && "size-11 text-xl",
       )}
       onPointerDown={(e) => {
         if (e.button !== 0 || disabled) return;
@@ -143,6 +150,7 @@ export function SettingsStepperField({
   decimals,
   disabled = false,
   onChange,
+  large = false,
 }: Props) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(() => formatStepped(value, decimals));
@@ -155,6 +163,7 @@ export function SettingsStepperField({
   }, [value]);
 
   const commit = (raw: string) => {
+    if (!raw.trim()) return;
     const n = Number(raw);
     if (!Number.isFinite(n)) return;
     const next = clampStepped(n, step, min, max);
@@ -170,10 +179,10 @@ export function SettingsStepperField({
 
   return (
     <label className="flex min-w-0 flex-col gap-1">
-      <span className="text-[11px] leading-none text-muted-foreground">
+      <span className={large ? "sr-only" : "text-[11px] leading-none text-muted-foreground"}>
         {label}
       </span>
-      <span className="flex items-center gap-1">
+      <span className="flex items-center gap-2">
         <input
           type="number"
           inputMode={decimals > 0 ? "decimal" : "numeric"}
@@ -191,10 +200,13 @@ export function SettingsStepperField({
             commit(text);
             setEditing(false);
           }}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => { setText(e.target.value); if (large && e.target.value.trim()) commit(e.target.value); }}
           className="h-7 w-14 shrink-0 rounded-md border border-border bg-card px-1 text-center text-[11px] tabular-nums outline-none [appearance:textfield] disabled:opacity-60 [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          style={large ? { height: 44, width: "100%", flex: 1, fontSize: 20, order: 2 } : undefined}
         />
         <HoldStepButton
+          large={large}
+          order={large ? 1 : undefined}
           label={`${label} 내리기`}
           disabled={disabled || atMin}
           onStep={() => nudge(-1)}
@@ -202,6 +214,8 @@ export function SettingsStepperField({
           −
         </HoldStepButton>
         <HoldStepButton
+          large={large}
+          order={large ? 3 : undefined}
           label={`${label} 올리기`}
           disabled={disabled || atMax}
           onStep={() => nudge(1)}

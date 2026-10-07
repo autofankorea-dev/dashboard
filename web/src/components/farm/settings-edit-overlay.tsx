@@ -29,6 +29,8 @@ type Props = {
   closeLabel?: string;
   /** 생성 카드처럼 본문이 넓을 때 */
   wide?: boolean;
+  footerContent?: ReactNode;
+  spacious?: boolean;
   /** 기본은 확인 버튼. 이름 입력 등은 `content`. */
   focusTarget?: "primary" | "content";
 };
@@ -54,6 +56,8 @@ export function SettingsEditOverlay({
   onPrimary,
   closeLabel = "닫기",
   wide = false,
+  footerContent,
+  spacious = false,
   focusTarget = "primary",
 }: Props) {
   const mounted = useSyncExternalStore(emptySubscribe, clientTrue, serverFalse);
@@ -144,7 +148,7 @@ export function SettingsEditOverlay({
         className={cn(
           motionClass.commandCard,
           "w-full rounded-xl border bg-card px-4 py-4 text-left ring-1 ring-border/60 select-none",
-          wide
+          spacious ? "max-w-[min(100vw-2rem,48rem)]" : wide
             ? "max-w-[min(100vw-2rem,28rem)]"
             : "max-w-[min(100vw-2rem,25rem)]",
           "[&_input]:select-text [&_textarea]:select-text",
@@ -163,9 +167,10 @@ export function SettingsEditOverlay({
         >
           {title}
         </p>
-        <div className="mt-3 max-h-[min(60dvh,32rem)] overflow-y-auto">
+        <div className={cn("mt-3 overflow-y-auto", spacious ? "max-h-[min(50dvh,calc(100dvh-20rem))]" : "max-h-[min(60dvh,32rem)]")}>
           {children}
         </div>
+        {footerContent && open ? <div className="mt-3">{footerContent}</div> : null}
         <div className={cn("mt-4 flex items-center justify-center gap-2", !open && "hidden")}>
           <button
             ref={closeRef}
