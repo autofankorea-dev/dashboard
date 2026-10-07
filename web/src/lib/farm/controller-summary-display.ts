@@ -252,11 +252,11 @@ export function resolveReadingAlarmThresholds(
 }
 
 export function formatTempAlarmRange(thresholds: AlarmThresholds): string {
-  return `${thresholds.tempLow}–${thresholds.tempHigh}℃`;
+  return Number.isFinite(thresholds.tempLow) ? `${thresholds.tempLow}–${thresholds.tempHigh}℃` : "경보값 미수신";
 }
 
 export function formatHumidityAlarmRange(thresholds: AlarmThresholds): string {
-  return `${thresholds.humidityLow}–${thresholds.humidityHigh}%`;
+  return Number.isFinite(thresholds.humidityLow) ? `${thresholds.humidityLow}–${thresholds.humidityHigh}%` : "습도 경보 기준 없음";
 }
 
 export type AlarmBreached = "high" | "low";
@@ -287,7 +287,7 @@ export function gaugePctInAlarmRange(
   low: number,
   high: number
 ): number {
-  if (high <= low) return 0;
+  if (!Number.isFinite(value) || !Number.isFinite(low) || !Number.isFinite(high) || high <= low) return 0;
   const pct = ((value - low) / (high - low)) * 100;
   return Math.max(0, Math.min(100, pct));
 }
@@ -305,6 +305,7 @@ export function buildGaugeFillSegments(
   high: number,
   offline: boolean
 ): GaugeFillSegments {
+  if (!Number.isFinite(low) || !Number.isFinite(high) || low >= high) return { span: 1, cur: 0, rest: 1, pct: null };
   const span = Math.max(high - low, 1);
   if (offline || value == null) {
     return { span, cur: 0, rest: span, pct: null };

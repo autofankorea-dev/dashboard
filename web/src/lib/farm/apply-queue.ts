@@ -181,7 +181,7 @@ export function applyQueueChannelStripForReading<
   );
   const seen = new Set<string>();
   const items: ApplyQueueChannelStripItem[] = [];
-  for (const row of matched.flatMap((r) => commandChannelViews(r.command).map((command) => ({ ...r, command, id: r.command.channels?.length ? `${r.id}:${command.channel}` : r.id })))) {
+  for (const row of matched.flatMap((r) => (commandChannelViews(r.command).length ? commandChannelViews(r.command) : [r.command]).map((command) => ({ ...r, command, id: r.command.channels?.length ? `${r.id}:${command.channel}` : r.id })))) {
     const slot = row.command.channel ?? null;
     const dedupe = slot ?? "_";
     if (seen.has(dedupe)) continue;

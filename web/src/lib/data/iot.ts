@@ -56,6 +56,8 @@ export type BarnReading = {
 
   label: string;
 
+  alarmLowTempC?: number | null;
+  alarmHighTempC?: number | null;
   tempC: number | null;
 
   humidityPct: number | null;

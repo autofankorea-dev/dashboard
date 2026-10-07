@@ -1,0 +1,141 @@
+--- a/C.py
++++ b/C.py
+@@ -164,7 +164,7 @@
+ 
+     latest_by_target: dict[tuple, dict] = {}
+     for row in rows:
+-        latest_by_target[(_command_dedupe_key(row), str(row["id"]) if row.get("action") == "SET_CHANNELS_THERMO" else "")] = row
++        latest_by_target[(_command_dedupe_key(row), str(row["id"]) if row.get("action") in ("SET_CHANNELS_THERMO", "SET_CONTROLLER_SETTINGS") else "")] = row
+ 
+     send_rows = list(latest_by_target.values())
+     send_ids = {str(row["id"]) for row in send_rows}
+--- a/wire_command.py
++++ b/wire_command.py
+@@ -135,7 +135,7 @@
+ 
+ def validate_thermo_command(row: dict[str, Any]) -> None:
+     action = row.get("action", ACTION_SET_CTRL_THERMO)
+-    if action not in (ACTION_SET_CTRL_THERMO, ACTION_SET_CHANNEL_THERMO, ACTION_SET_CHANNELS_THERMO):
++    if action not in (ACTION_SET_CTRL_THERMO, ACTION_SET_CHANNEL_THERMO, ACTION_SET_CHANNELS_THERMO, "SET_CONTROLLER_SETTINGS"):
+         raise CommandError(f"unsupported action: {action}")
+ 
+     lsind = row.get("lsind_regist_no")
+@@ -159,7 +159,11 @@
+     _normalize_stall_ty(stall_ty)
+     _normalize_stall_no(stall_no)
+     _normalize_eqpmn_no(eqpmn_no)
+-    if action == ACTION_SET_CHANNELS_THERMO:
++    if action == "SET_CONTROLLER_SETTINGS":
++        command_alarms(row)
++        if (row.get("payload_json") or {}).get("command_channels"):
++            command_channels(row)
++    elif action == ACTION_SET_CHANNELS_THERMO:
+         command_channels(row)
+     else:
+         _validate_thermo_values(row)
+@@ -228,6 +232,41 @@
+     return sorted(out, key=lambda c: c["channel"])
+ 
+ 
++def command_alarms(row: dict) -> dict:
++    raw = (row.get("payload_json") or {}).get("alarm_settings")
++    if not isinstance(raw, dict):
++        raise CommandError("alarm_settings required")
++    values = []
++    for key in ("lowTempC", "highTempC"):
++        v = raw.get(key)
++        if isinstance(v, bool) or not isinstance(v, (int, float)):
++            raise CommandError("invalid alarm number")
++        n = _to_decimal(v, key)
++        if not n.is_finite() or not 0 <= n <= 100 or n * 10 % 1:
++            raise CommandError("invalid alarm range or precision")
++        values.append(n)
++    if values[0] >= values[1]:
++        raise CommandError("low alarm must be below high alarm")
++    return raw
++
++
++def build_device_settings_wire_bytes(row: dict) -> bytes:
++    alarm = command_alarms(row)
++    raw_channels = (row.get("payload_json") or {}).get("command_channels", [])
++    if not isinstance(raw_channels, list):
++        raise CommandError("invalid command_channels")
++    if raw_channels:
++        body = bytearray(build_combined_command_wire_bytes(row)[:27])
++    else:
++        body = bytearray([255] * 27)
++        body[:6] = bytes([14, 1, _stall_ty_to_wire(_normalize_stall_ty(row["stall_ty_code"])),
++            int(_normalize_stall_no(row["stall_no"])), int(_normalize_eqpmn_no(row["eqpmn_no"])), 0])
++    body[0] = 14
++    body[1] = 1
++    body.extend(struct.pack("<HH", _temp_to_x10(_to_decimal(alarm["lowTempC"], "lowTempC")), _temp_to_x10(_to_decimal(alarm["highTempC"], "highTempC"))))
++    return bytes(body) + struct.pack("<H", crc16_ccitt_false(body))
++
++
+ def build_combined_command_wire_bytes(row: dict) -> bytes:
+     channels = command_channels(row)
+     body = bytearray([0xFF] * 27)
+@@ -247,6 +286,8 @@
+ def build_command_wire_bytes(row: dict[str, Any]) -> bytes:
+     """Encode 15 B 0x0C cmd packet (docs/wire-v00c-cmd-binary.md)."""
+     validate_thermo_command(row)
++    if row.get("action") == "SET_CONTROLLER_SETTINGS":
++        return build_device_settings_wire_bytes(row)
+     if row.get("action") == ACTION_SET_CHANNELS_THERMO:
+         return build_combined_command_wire_bytes(row)
+ 
+@@ -340,6 +381,12 @@
+         payload["command_channels"] = command_channels(row)
+         payload["wire_ver"] = 0x0D
+         payload["channel_mask"] = packet[5]
++    if action == "SET_CONTROLLER_SETTINGS":
++        payload["alarm_settings"] = command_alarms(row)
++        payload["command_channels"] = command_channels(row) if (row.get("payload_json") or {}).get("command_channels") else []
++        payload["wire_ver"] = 14
++        payload["flags"] = 1
++        payload["channel_mask"] = packet[5]
+     return payload
+ 
+ 
+--- a/command_ack.py
++++ b/command_ack.py
+@@ -117,7 +117,20 @@
+     if not cmd_key:
+         return None
+ 
+-    if cmd.get("action") == "SET_CHANNELS_THERMO":
++    if cmd.get("action") == "SET_CONTROLLER_SETTINGS":
++        from wire_command import command_alarms, CommandError
++        try:
++            alarms = command_alarms(cmd)
++        except (CommandError, ValueError):
++            return None
++        actual = thermo_by_key.get(cmd_key, {})
++        for field, expected in (("alarmLowTempC", alarms["lowTempC"]), ("alarmHighTempC", alarms["highTempC"])):
++            value = _to_decimal(actual.get(field))
++            if value is None or not value.is_finite() or abs(value - Decimal(str(expected))) > Decimal("0.05"):
++                return None
++        if not (cmd.get("payload_json") or {}).get("command_channels"):
++            return cmd_key, actual
++    if cmd.get("action") in ("SET_CHANNELS_THERMO", "SET_CONTROLLER_SETTINGS"):
+         from wire_command import command_channels, CommandError
+         try:
+             channels = command_channels(cmd)
+@@ -182,6 +195,8 @@
+         if not base:
+             continue
+ 
++        if "alarmLowTempC" in ctrl or "alarmHighTempC" in ctrl:
++            thermo_by_key[base] = {**(ctrl.get("thermo") or {}), "alarmLowTempC": ctrl.get("alarmLowTempC"), "alarmHighTempC": ctrl.get("alarmHighTempC")}
+         channels = ctrl.get("channels")
+         if isinstance(channels, list) and channels:
+             for ch in channels:
+@@ -200,7 +215,7 @@
+ 
+         thermo = ctrl.get("thermo")
+         if isinstance(thermo, dict):
+-            thermo_by_key[base] = thermo
++            thermo_by_key[base] = {**thermo_by_key.get(base, {}), **thermo}
+     return thermo_by_key
+ 
+ 

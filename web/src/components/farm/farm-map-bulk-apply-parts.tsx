@@ -1,3 +1,4 @@
+import { deviceAlarmThresholds } from "@/lib/data/device-alarm-thresholds";
 import type { BulkThermoCommand } from "@/app/(dashboard)/controllers/actions";
 import type { ControllerGridData } from "@/lib/farm/controller-grid-data";
 import {
@@ -6,16 +7,9 @@ import {
 } from "@/lib/controllers/controller-settings";
 import { EDIT_START_DRAFT } from "@/lib/controllers/controller-panel-map";
 import {
-  buildAlarmScopeKey,
-  resolveThresholdsForScope,
-} from "@/lib/data/alarm-scope";
-import {
-  DEFAULT_ALARM_SETTINGS,
-  DEFAULT_ALARM_THRESHOLDS,
   type AlarmSettings,
   type AlarmThresholds,
 } from "@/lib/data/alarms";
-import { farmKeyId } from "@/lib/data/farm-key";
 import type { BarnReading } from "@/lib/data/iot";
 import { type ChannelSlot } from "@/lib/data/iot-channel";
 import { isReadingOnline } from "@/lib/data/reading-display";
@@ -180,20 +174,11 @@ export function bulkAlarmDraftSeed(
   selectedSps: readonly string[],
   alarmSettings: AlarmSettings | null | undefined,
 ): AlarmThresholds {
-  const settings = alarmSettings ?? DEFAULT_ALARM_SETTINGS;
-  const sp = selectedSps[0];
-  const sample =
-    targets.find(
-      (r) => sp != null && normalizeStallTyCode(r.stallTyCode) === sp,
-    ) ?? targets[0];
-  if (!sample || !sp) return DEFAULT_ALARM_THRESHOLDS;
-  return resolveThresholdsForScope(
-    settings,
-    buildAlarmScopeKey({
-      farmId: farmKeyId(sample.farmKey),
-      sp: normalizeStallTyCode(sp),
-    }),
-  );
+  void alarmSettings;
+  const sample = targets.find(r => selectedSps.includes(normalizeStallTyCode(r.stallTyCode))) ?? targets[0];
+  const t = deviceAlarmThresholds(sample ?? {});
+  // Input draft only, not a measured/device default.
+  return { tempLow: Number.isFinite(t.tempLow) ? t.tempLow : 0, tempHigh: Number.isFinite(t.tempHigh) ? t.tempHigh : 100, humidityLow: 0, humidityHigh: 100 };
 }
 
 function thermoValuesForReading(

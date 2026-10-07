@@ -1,3 +1,4 @@
+import { deviceAlarmThresholds, commonDeviceAlarmThresholds } from "./device-alarm-thresholds";
 import type { BarnReading } from "@/lib/data/iot";
 import { farmKeyId } from "@/lib/data/farm-key";
 import { farmShortLabelFromId } from "@/lib/data/farm-summaries";
@@ -41,43 +42,12 @@ function parseAlarmScopeKey(key: string): AlarmScopeParts | null {
   return parts.farmId ? parts : null;
 }
 
-function scopeCandidatesForReading(r: BarnReading): string[] {
-  const farmId = farmKeyId(r.farmKey);
-  const sp = normalizeStallTyCode(r.stallTyCode);
-  const stall = stallKeyFromReading(r);
-  const keys: string[] = [];
-
-  if (r.controllerKey) {
-    keys.push(
-      buildAlarmScopeKey({
-        farmId,
-        sp,
-        stall,
-        controllerKey: r.controllerKey,
-      })
-    );
-  }
-  keys.push(buildAlarmScopeKey({ farmId, sp, stall }));
-  keys.push(buildAlarmScopeKey({ farmId, sp }));
-  keys.push(buildAlarmScopeKey({ farmId }));
-  return keys;
-}
-
 export function resolveThresholdsForReading(
   settings: AlarmSettings,
   r: BarnReading
 ): AlarmThresholds {
-  for (const key of scopeCandidatesForReading(r)) {
-    const hit = settings.byScope?.[key];
-    if (hit) return hit;
-  }
-
-  const sp = normalizeStallTyCode(r.stallTyCode);
-  if (sp !== "UNK" && settings.byStallTyCode[sp]) {
-    return settings.byStallTyCode[sp];
-  }
-
-  return settings.global;
+  void settings;
+  return deviceAlarmThresholds(r);
 }
 
 export function alarmThresholdsEqual(
@@ -186,16 +156,8 @@ export function resolveThresholdsForChartScope(
   scopeKey: string | null,
   readings: BarnReading[],
 ): AlarmThresholds {
-  if (readings.length) {
-    const resolved = readings.map((r) =>
-      resolveThresholdsForReading(settings, r),
-    );
-    const first = resolved[0]!;
-    if (resolved.every((t) => alarmThresholdsEqual(t, first))) {
-      return first;
-    }
-  }
-  return resolveThresholdsForScope(settings, scopeKey);
+  void settings; void scopeKey;
+  return commonDeviceAlarmThresholds(readings);
 }
 
 export function activeScopeKeyFromSelection(

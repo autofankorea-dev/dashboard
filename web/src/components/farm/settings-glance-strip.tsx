@@ -118,15 +118,15 @@ export function SettingsGlanceStrip({
       )}
       <div className={cn(GRID, "px-1")}>
         <span />
-        <ColHead>온도</ColHead>
-        <ColHead>편차</ColHead>
-        <ColHead>습도</ColHead>
+        <ColHead>저온 ℃</ColHead>
+        <ColHead>고온 ℃</ColHead>
+        <ColHead>상태</ColHead>
       </div>
       <button
         type="button"
         disabled={disabled}
         aria-pressed={focus === "alarm"}
-        aria-label={`알림 기준 ${alarmSummary}`}
+        aria-label={`장비 경보 ${alarmSummary}`}
         onClick={() => onFocus("alarm")}
         className={cn(
           GRID,
@@ -145,13 +145,13 @@ export function SettingsGlanceStrip({
               focus === "alarm" ? "text-primary" : "text-muted-foreground",
             )}
           >
-            알림
+            경보
           </span>
-          {alarmDirty ? <DirtyDot label="알림 변경됨" /> : null}
+          {alarmDirty ? <DirtyDot label="경보 변경됨" /> : null}
         </span>
         <NumCell>{alarmCells.temp}</NumCell>
         <NumCell>{alarmCells.tempDev}</NumCell>
-        <NumCell>{alarmCells.humidity}</NumCell>
+        <NumCell>{ctrlApply ? `${applyStageLabel(ctrlApply)} ${ctrlApply.filled}/3` : "장비"}</NumCell>
       </button>
     </div>
   );

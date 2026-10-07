@@ -42,7 +42,7 @@ function fmtTime(iso: string) {
 }
 
 function fmtCommand(c: ThermoCommand) {
-  return c.channels?.length ? c.channels.map((ch) => `${ch.channel}: ${ch.setpointTemp}℃ +${ch.tempDeviation} · 환기 ${ch.minVentPct}~${ch.maxVentPct}%`).join(" / ") : `환기 ${c.minVentPct}~${c.maxVentPct}% · ${c.setpointTemp}℃ +${c.tempDeviation}`;
+  return c.alarmSettings ? `저온 ${c.alarmSettings.lowTempC}℃ · 고온 ${c.alarmSettings.highTempC}℃${c.channels?.length ? " · " + c.channels.map(ch => `${ch.channel}: ${ch.setpointTemp}℃ +${ch.tempDeviation} · 환기 ${ch.minVentPct}~${ch.maxVentPct}%`).join(" / ") : ""}` : c.channels?.length ? c.channels.map((ch) => `${ch.channel}: ${ch.setpointTemp}℃ +${ch.tempDeviation} · 환기 ${ch.minVentPct}~${ch.maxVentPct}%`).join(" / ") : `환기 ${c.minVentPct}~${c.maxVentPct}% · ${c.setpointTemp}℃ +${c.tempDeviation}`;
 }
 
 type Props = {

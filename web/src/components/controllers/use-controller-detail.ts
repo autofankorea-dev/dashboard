@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { appendFarmKeyParams } from "@/lib/data/farm-key";
 import type { ControllerReading } from "@/lib/data/iot";
 import { useDeferredLoading } from "@/lib/ui/use-deferred-loading";
@@ -182,6 +182,15 @@ export function useControllerDetail(
   ]);
 
   const showLoading = useDeferredLoading(loading);
+  const mergedReading = useMemo(() => {
+    if (!base || !detail) return base;
+    const merged = { ...base, ...detail };
+    if ((base.receivedAt ?? "") >= (detail.receivedAt ?? "")) {
+      merged.alarmLowTempC = base.alarmLowTempC;
+      merged.alarmHighTempC = base.alarmHighTempC;
+    }
+    return merged;
+  }, [base, detail]);
 
   if (!base) {
     return {
@@ -194,7 +203,7 @@ export function useControllerDetail(
   }
 
   return {
-    reading: detail ? { ...base, ...detail } : base,
+    reading: mergedReading,
     loading,
     showLoading,
     error,

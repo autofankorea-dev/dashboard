@@ -85,14 +85,14 @@ export type DailyReportPayload = {
   /** LIVE 기준 이상상황 (모듈 에러코드 + 통신두절) */
   alarms: DailyReportAlarmRow[];
   /**
-   * 표지 그래프 가이드 — 이 농장에 저장된 알람 상·하한
-   * (농장 스코프 → 없으면 계정 전역 → 기본 10~35℃ / 30~90%).
+   * 표지 그래프 가이드 — 모든 컨트롤러가 같은 현재 장비 경보값일 때만 표시
+   * 서로 다르거나 미수신이면 null. 습도 장비 경보는 없음.
    */
   alarmGuide: {
-    tempLow: number;
-    tempHigh: number;
-    humidityLow: number;
-    humidityHigh: number;
+    tempLow: number | null;
+    tempHigh: number | null;
+    humidityLow: number | null;
+    humidityHigh: number | null;
   };
 };
 

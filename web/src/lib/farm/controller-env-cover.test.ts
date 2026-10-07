@@ -19,7 +19,7 @@ import {
 } from "./controller-env-cover";
 
 {
-  const fresh = { status: "normal" as const, tempC: 25.3, humidityPct: 55, stallTyCode: "SP07" };
+  const fresh = { alarmLowTempC: 10, alarmHighTempC: 35, status: "normal" as const, tempC: 25.3, humidityPct: 55, stallTyCode: "SP07" };
   assert.deepEqual(controllerEnvCoverStatus(fresh), { environment: "환경 정상", communication: "통신 정상", stale: false });
   assert.equal(controllerEnvCoverStatus({ ...fresh, tempC: 60 }).environment, "환경 경고");
   assert.equal(controllerEnvCoverStatus({ ...fresh, status: "caution" }).environment, "환경 확인 필요");
@@ -41,6 +41,7 @@ import {
 {
   assert.equal(
     controllerEnvCoverLevel({
+      alarmLowTempC: 10, alarmHighTempC: 35,
       status: "offline",
       tempC: 24,
       humidityPct: 55,
@@ -52,6 +53,7 @@ import {
 
 {
   const level = controllerEnvCoverLevel({
+    alarmLowTempC: 10, alarmHighTempC: 35,
     status: "normal",
     tempC: 36.5,
     humidityPct: 93,
@@ -64,6 +66,7 @@ import {
   // 알람 구간 안이어도 측정 정체(caution)면 덮개 「주의」
   assert.equal(
     controllerEnvCoverLevel({
+      alarmLowTempC: 10, alarmHighTempC: 35,
       status: "caution",
       tempC: 25.3,
       humidityPct: 55,
@@ -74,6 +77,7 @@ import {
   // 이미 알람 위험이면 caution으로 완화하지 않음
   assert.equal(
     controllerEnvCoverLevel({
+      alarmLowTempC: 10, alarmHighTempC: 35,
       status: "caution",
       tempC: 36.5,
       humidityPct: 93,
@@ -85,6 +89,7 @@ import {
 
 {
   const level = controllerEnvCoverLevel({
+    alarmLowTempC: 10, alarmHighTempC: 35,
     status: "normal",
     tempC: 34,
     humidityPct: 55,
@@ -97,12 +102,14 @@ import {
   assert.equal(
     worstControllerEnvCoverLevel([
       {
+        alarmLowTempC: 10, alarmHighTempC: 35,
         status: "normal",
         tempC: 20,
         humidityPct: 60,
         stallTyCode: "SP05",
       },
       {
+        alarmLowTempC: 10, alarmHighTempC: 35,
         status: "normal",
         tempC: 36,
         humidityPct: 55,
@@ -114,12 +121,14 @@ import {
   assert.equal(
     worstControllerEnvCoverLevel([
       {
+        alarmLowTempC: 10, alarmHighTempC: 35,
         status: "offline",
         tempC: 20,
         humidityPct: 60,
         stallTyCode: "SP05",
       },
       {
+        alarmLowTempC: 10, alarmHighTempC: 35,
         status: "normal",
         tempC: 20,
         humidityPct: 60,
@@ -131,6 +140,7 @@ import {
   assert.equal(
     worstControllerEnvCoverLevel([
       {
+        alarmLowTempC: 10, alarmHighTempC: 35,
         status: "offline",
         tempC: 20,
         humidityPct: 60,
@@ -190,6 +200,7 @@ import {
 
 {
   const offline = controllerEnvCoverReason({
+    alarmLowTempC: 10, alarmHighTempC: 35,
     status: "offline",
     tempC: 24,
     humidityPct: 55,
@@ -201,35 +212,38 @@ import {
 
 {
   const tempFirst = controllerEnvCoverReason({
+    alarmLowTempC: 10, alarmHighTempC: 35,
     status: "normal",
     tempC: 36.5,
     humidityPct: 93,
     stallTyCode: "SP02",
   });
   assert.equal(tempFirst.valueLabel, "36.5℃");
-  assert.equal(tempFirst.bandLabel, "알람 22.5℃ ±12.5℃");
+  assert.equal(tempFirst.bandLabel, "장비 경보 10~35℃");
 }
 
 {
   const humidityOnly = controllerEnvCoverReason({
+    alarmLowTempC: 10, alarmHighTempC: 35,
     status: "normal",
     tempC: 18,
     humidityPct: 93,
     stallTyCode: "SP02",
   });
-  assert.equal(humidityOnly.valueLabel, "93.0%");
-  assert.equal(humidityOnly.bandLabel, "알람 60% ±30%");
+  assert.equal(humidityOnly.valueLabel, "18.0℃");
+  assert.equal(humidityOnly.bandLabel, "장비 경보 10~35℃");
 }
 
 {
   const okTemp = controllerEnvCoverReason({
+    alarmLowTempC: 10, alarmHighTempC: 35,
     status: "normal",
     tempC: 20,
     humidityPct: 60,
     stallTyCode: "SP05",
   });
   assert.equal(okTemp.valueLabel, "20.0℃");
-  assert.equal(okTemp.bandLabel, "알람 22.5℃ ±12.5℃");
+  assert.equal(okTemp.bandLabel, "장비 경보 10~35℃");
 }
 
 {

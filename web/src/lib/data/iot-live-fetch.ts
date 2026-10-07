@@ -103,6 +103,8 @@ function toNum(v: unknown): number | null {
 }
 
 type ListDbRow = {
+  alarm_low_temp_c?: string | number | null;
+  alarm_high_temp_c?: string | number | null;
   raw_id: number;
   lsind_regist_no: string;
   item_code: string;
@@ -133,7 +135,7 @@ type ListDbRow = {
  */
 const LAST_KNOWN_SOURCE = "iot_room_state_decoded";
 const LAST_KNOWN_COLS =
-  "raw_id, lsind_regist_no, item_code, module_uid, controller_key, eqpmn_no, stall_ty_code, stall_no, wire_ver, packet_mode, run_mode, temp_c, humidity_pct, fan_supply_pct, fan_exhaust_pct, fan_intake_pct, setpoint_temp, temp_deviation, min_vent_pct, max_vent_pct, mesure_dt, received_at";
+  "raw_id, lsind_regist_no, item_code, module_uid, controller_key, eqpmn_no, stall_ty_code, stall_no, wire_ver, packet_mode, run_mode, temp_c, humidity_pct, fan_supply_pct, fan_exhaust_pct, fan_intake_pct, setpoint_temp, temp_deviation, min_vent_pct, max_vent_pct, mesure_dt, received_at, alarm_low_temp_c:decoded_json->>alarmLowTempC, alarm_high_temp_c:decoded_json->>alarmHighTempC";
 
 function thermoFromListRow(row: ListDbRow) {
   const setpointTemp = toNum(row.setpoint_temp);
@@ -184,6 +186,8 @@ function listRowToReading(row: ListDbRow): BarnReading | null {
     stallNo,
     stallTyCode,
     label: formatControllerSlotLabel({ stallNo, eqpmnNo }),
+    alarmLowTempC: toNum(row.alarm_low_temp_c),
+    alarmHighTempC: toNum(row.alarm_high_temp_c),
     tempC: Number.isFinite(tempC!) ? tempC : null,
     humidityPct: Number.isFinite(humidityPct!) ? humidityPct : null,
     fanSupply: toNum(row.fan_supply_pct),
@@ -218,6 +222,8 @@ function decodedLatestDbRowToLiveRow(row: {
   decoded_json: {
     tempsC?: (string | null)[];
     humidityPct?: string | null;
+    alarmLowTempC?: string | null;
+    alarmHighTempC?: string | null;
     channels?: RawLiveControllerRow["channels"];
     runMode?: number;
   };
@@ -237,6 +243,8 @@ function decodedLatestDbRowToLiveRow(row: {
     mesure_dt: row.mesure_dt,
     run_mode: row.run_mode ?? j.runMode ?? undefined,
     temps_c: j.tempsC,
+    alarm_low_temp_c: j.alarmLowTempC,
+    alarm_high_temp_c: j.alarmHighTempC,
     humidity_pct:
       j.humidityPct ??
       (row.humidity_pct != null ? String(row.humidity_pct) : null),
@@ -282,6 +290,8 @@ function expandRawLiveRowToReading(row: RawLiveControllerRow): BarnReading {
     stallNo,
     stallTyCode,
     label: formatControllerSlotLabel({ stallNo, eqpmnNo }),
+    alarmLowTempC: toNum(row.alarm_low_temp_c),
+    alarmHighTempC: toNum(row.alarm_high_temp_c),
     tempC: pickPrimaryTemp(tempsC, fromChannels),
     humidityPct,
     fanSupply: fromChannels?.fanSupply ?? null,

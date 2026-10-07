@@ -1,6 +1,6 @@
 import "server-only";
 
-import { farmKeyId, type FarmKey } from "@/lib/data/farm-key";
+import { type FarmKey } from "@/lib/data/farm-key";
 import { getFarmControllerTrendAllPeriods } from "@/lib/data/farm-trend-history";
 import type {
   TrendControllerPeriodData,
@@ -9,8 +9,7 @@ import type {
 } from "@/lib/data/farm-trend-types";
 import { fetchLiveReadings } from "@/lib/data/iot-live-fetch";
 import { mergeSituationAlarms } from "@/lib/data/alarms";
-import { buildAlarmScopeKey, resolveThresholdsForScope } from "@/lib/data/alarm-scope";
-import { getAlarmSettings } from "@/lib/data/alarm-settings";
+import { commonDeviceAlarmThresholds } from "@/lib/data/device-alarm-thresholds";
 import { fetchActiveModuleAlarms } from "@/lib/data/module-alarms";
 import { getFarmLocation } from "@/lib/data/farm-location";
 import { farmDisplayLabel } from "@/lib/data/farm-summaries";
@@ -181,19 +180,16 @@ function countFinite(values: (number | null)[]): number {
 export async function buildDailyReportPayload(
   farmKey: FarmKey,
 ): Promise<DailyReportPayload> {
-  const [trends, readings, moduleAlarms, location, alarmSettings] =
+  const [trends, readings, moduleAlarms, location] =
     await Promise.all([
       getFarmControllerTrendAllPeriods({ farmKey }),
       fetchLiveReadings({ farmKey }),
       fetchActiveModuleAlarms(farmKey),
       getFarmLocation(farmKey),
-      getAlarmSettings(),
     ]);
 
-  const alarmGuide = resolveThresholdsForScope(
-    alarmSettings,
-    buildAlarmScopeKey({ farmId: farmKeyId(farmKey) }),
-  );
+  const common = commonDeviceAlarmThresholds(readings);
+  const alarmGuide = { tempLow: Number.isFinite(common.tempLow) ? common.tempLow : null, tempHigh: Number.isFinite(common.tempHigh) ? common.tempHigh : null, humidityLow: null, humidityHigh: null };
 
   const alarms = toDailyReportAlarmRows(
     mergeSituationAlarms(moduleAlarms, readings),

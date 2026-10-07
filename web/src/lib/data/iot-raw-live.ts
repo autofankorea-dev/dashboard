@@ -15,6 +15,8 @@ export type RawLiveControllerRow = {
   run_mode?: number;
   temps_c?: (string | null)[];
   humidity_pct?: string | null;
+  alarm_low_temp_c?: string | null;
+  alarm_high_temp_c?: string | null;
   channels: DecodedControllerPayload["channels"];
 };
 

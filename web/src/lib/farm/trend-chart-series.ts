@@ -18,7 +18,7 @@ import {
 export function tempTrendLeftDomain(
   thresholds: AlarmThresholds = DEFAULT_ALARM_THRESHOLDS
 ): [number, number] {
-  return [thresholds.tempLow, thresholds.tempHigh];
+  return Number.isFinite(thresholds.tempLow) && Number.isFinite(thresholds.tempHigh) ? [thresholds.tempLow, thresholds.tempHigh] : [0, 50];
 }
 
 /** 알람 상·하한 — 채널 시리즈와 분리, status-warn만 */
@@ -27,6 +27,7 @@ export const ALARM_REF_COLOR = "var(--status-warn)";
 export function tempTrendReferenceLines(
   thresholds: AlarmThresholds = DEFAULT_ALARM_THRESHOLDS
 ): TrendReferenceLine[] {
+  if (!Number.isFinite(thresholds.tempLow) || !Number.isFinite(thresholds.tempHigh)) return [];
   return [
     {
       value: thresholds.tempLow,
@@ -47,6 +48,7 @@ export function humidityTrendReferenceLines(
   thresholds: AlarmThresholds = DEFAULT_ALARM_THRESHOLDS,
   axis: "left" | "right" = "left"
 ): TrendReferenceLine[] {
+  if (!Number.isFinite(thresholds.humidityLow) || !Number.isFinite(thresholds.humidityHigh)) return [];
   return [
     {
       value: thresholds.humidityLow,
@@ -111,7 +113,7 @@ type StallMetrics = Pick<
 export function humidityTrendLeftDomain(
   thresholds: AlarmThresholds = DEFAULT_ALARM_THRESHOLDS
 ): [number, number] {
-  return [thresholds.humidityLow, thresholds.humidityHigh];
+  return Number.isFinite(thresholds.humidityLow) && Number.isFinite(thresholds.humidityHigh) ? [thresholds.humidityLow, thresholds.humidityHigh] : [0, 100];
 }
 
 export function fanTrendReferenceLines(

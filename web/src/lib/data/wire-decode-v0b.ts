@@ -37,5 +37,7 @@ export type DecodedControllerPayload = {
   tempsC?: (string | null)[];
   /** v0x0C — row-level humidity */
   humidityPct?: string | null;
+  alarmLowTempC?: string | null;
+  alarmHighTempC?: string | null;
   channels: DecodedChannel[];
 };

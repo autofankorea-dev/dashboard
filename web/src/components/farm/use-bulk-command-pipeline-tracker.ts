@@ -173,6 +173,7 @@ function commandAlreadyLive(
   readingByKey: Map<string, BarnReading>,
   thermoSettings: Record<string, ControllerThermoSettings>,
 ): boolean {
+  if (command.action === "SET_CONTROLLER_SETTINGS") return command.status === "applied";
   if (!isAckDone(command.status)) return false;
   const reading = readingByKey.get(key);
   if (!reading) return false;

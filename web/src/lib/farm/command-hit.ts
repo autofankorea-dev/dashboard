@@ -302,6 +302,7 @@ export function commandLiveConfirmed(
   thermoSettings: Record<string, ControllerThermoSettings> = {},
   confirmedIds?: ReadonlySet<string>,
 ): boolean {
+  if (command.action === "SET_CONTROLLER_SETTINGS") return command.status === "applied";
   if (command.channels?.length) return commandChannelViews(command).every((view) => commandLiveConfirmed(view, readings, thermoSettings));
   if (confirmedIds?.has(command.id)) return true;
   if (command.status !== "sent" && command.status !== "applied") return false;
@@ -502,7 +503,7 @@ export function selectCommandHitResult(opts: {
       );
       const abs = commandAbsTempWindow(command, aBase);
       const mark: CommandHitMark = {
-        id: command.action === "SET_CHANNELS_THERMO" ? `${command.id}:${command.channel}` : command.id,
+        id: ["SET_CHANNELS_THERMO", "SET_CONTROLLER_SETTINGS"].includes(command.action ?? "") ? `${command.id}:${command.channel}` : command.id,
         at: command.createdAt,
         x,
         stage: "확인",

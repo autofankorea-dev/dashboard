@@ -73,7 +73,7 @@ export function CoverChannelApplyStrip({
           <span
             key={item.id}
             className={cn(
-              "grid grid-cols-[1rem_minmax(0,1fr)_1.25rem] items-center gap-1.5",
+              "grid grid-cols-[2rem_minmax(0,1fr)_1.25rem] items-center gap-1.5",
               leaving.has(item.id) && motionClass.exitFade,
             )}
           >
@@ -84,7 +84,7 @@ export function CoverChannelApplyStrip({
                 "text-current",
               )}
             >
-              {item.slot ?? "—"}
+              {item.slot ?? "공통"}
             </span>
             <CoverApplyGauge filled={item.filled} />
             <span className="flex justify-end text-current">

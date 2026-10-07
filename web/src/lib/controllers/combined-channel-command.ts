@@ -36,10 +36,10 @@ export function parseCommandChannels(raw: unknown): CommandChannelValues[] | nul
 }
 
 /** Views share one DB command ID/status; each view carries its channel's values. */
-export function commandChannelViews<T extends { channels?: CommandChannelValues[] }>(command: T): T[] {
+export function commandChannelViews<T extends { channels?: CommandChannelValues[]; action?: string }>(command: T): T[] {
   return command.channels?.length
     ? command.channels.map((values) => ({ ...command, ...values, channels: undefined }))
-    : [command];
+    : command.action === "SET_CONTROLLER_SETTINGS" ? [] : [command];
 }
 
 export function encodeCombinedCommandBody(input: {

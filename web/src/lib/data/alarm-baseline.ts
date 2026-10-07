@@ -56,6 +56,7 @@ export function formatAlarmBaselinePair(
   hi: number,
   unit: "℃" | "%",
 ): string {
+  if (!Number.isFinite(lo) || !Number.isFinite(hi)) return "—";
   const { baseline, deviation } = alarmBaselineFromRange(lo, hi);
   const fmt = (n: number) =>
     unit === "%"
@@ -79,11 +80,11 @@ export function formatAlarmGlanceCells(t: AlarmThresholds): {
   const temp = alarmBaselineFromRange(t.tempLow, t.tempHigh);
   const hum = alarmBaselineFromRange(t.humidityLow, t.humidityHigh);
   const fmtTemp = (n: number) =>
-    Number.isInteger(n) ? String(n) : n.toFixed(1);
+    !Number.isFinite(n) ? "—" : Number.isInteger(n) ? String(n) : n.toFixed(1);
   return {
     temp: fmtTemp(temp.baseline),
     tempDev: `±${fmtTemp(temp.deviation)}`,
-    humidity: `${Math.round(hum.baseline)}±${Math.round(hum.deviation)}`,
+    humidity: Number.isFinite(hum.baseline) ? `${Math.round(hum.baseline)}±${Math.round(hum.deviation)}` : "—",
   };
 }
 

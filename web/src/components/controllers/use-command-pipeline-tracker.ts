@@ -76,7 +76,7 @@ function findLatestForTarget(
         farmKeyId(c.farmKey) === farmKeyId(farmKey) &&
         c.moduleUid === moduleUid &&
         c.controllerKey === controllerKey &&
-        (hasChannels ? commandChannelViews(c).some((v) => v.channel === activeChannel) : !c.channel)
+        (c.action === "SET_CONTROLLER_SETTINGS" || (hasChannels ? commandChannelViews(c).some((v) => v.channel === activeChannel) : !c.channel))
     ) ?? null
   );
 }
@@ -220,7 +220,7 @@ export function useCommandPipelineTracker(opts: TrackerOpts) {
   const commandId = command?.id;
   const commandStatus = command?.status;
   const channelView = command ? commandChannelViews(command).find((c) => c.channel === activeChannel) ?? command : null;
-  const isCombined = Boolean(command?.channels?.length);
+  const isCombined = Boolean(command?.channels?.length) || command?.action === "SET_CONTROLLER_SETTINGS";
   const commandSetpoint = channelView?.setpointTemp;
   const commandDeviation = channelView?.tempDeviation;
   const commandMinVent = channelView?.minVentPct;
@@ -282,6 +282,7 @@ export function useCommandPipelineTracker(opts: TrackerOpts) {
     }
     if (!hasTimedId(userInitiatedCommandIds, commandId)) return;
     if (commandStatus === "pending" || (isCombined && commandStatus !== "applied")) return;
+    if (command?.action === "SET_CONTROLLER_SETTINGS") { confirmedForIdRef.current = commandId; queueMicrotask(() => setLiveConfirmed(true)); return; }
     if (
       commandSetpoint == null ||
       commandDeviation == null ||
@@ -325,6 +326,7 @@ export function useCommandPipelineTracker(opts: TrackerOpts) {
     commandId,
     commandStatus,
     isCombined,
+    command?.action,
     commandSetpoint,
     commandDeviation,
     commandMinVent,

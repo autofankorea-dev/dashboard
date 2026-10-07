@@ -2,6 +2,8 @@
 
 import { encodeCombinedCommandBody, type CommandChannelValues } from "@/lib/controllers/combined-channel-command";
 
+import { encodeDeviceSettingsBody, type DeviceAlarmValues } from "@/lib/controllers/device-alarm-command";
+
 const CMD_WIRE_VER = 0x0c;
 const FLAG_CHANNEL_CMD = 0x01;
 const CHANNEL_CTRL_SENTINEL = 0xff;
@@ -22,6 +24,7 @@ export type CommandWireInput = {
   maxVentPct: number;
   wireHex?: string | null;
   channels?: CommandChannelValues[];
+  alarmSettings?: DeviceAlarmValues;
 };
 
 function crc16CcittFalse(data: Uint8Array): number {
@@ -75,8 +78,8 @@ export function formatCommandWireBytes(hex: string): string {
 }
 
 export function encodeCommandWireHex(input: CommandWireInput): string | null {
-  if (input.action === "SET_CHANNELS_THERMO") {
-    const body = encodeCombinedCommandBody(input);
+  if (input.action === "SET_CHANNELS_THERMO" || input.action === "SET_CONTROLLER_SETTINGS") {
+    const body = input.action === "SET_CONTROLLER_SETTINGS" ? encodeDeviceSettingsBody(input) : encodeCombinedCommandBody(input);
     if (!body) return null;
     const crc = crc16CcittFalse(body);
     return bytesToHex(Uint8Array.from([...body, crc & 255, crc >> 8]));

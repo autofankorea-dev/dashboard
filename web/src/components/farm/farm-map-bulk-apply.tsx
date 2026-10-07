@@ -20,19 +20,16 @@ import { AlarmDomainIcon } from "@/components/settings/alarm-domain-icon";
 import { ThresholdRangeSlider } from "@/components/settings/threshold-range-slider";
 import {
   sendBulkThermoCommandAction,
+  sendDeviceSettingsCommandsAction,
   type SendBulkThermoCommandResult,
 } from "@/app/(dashboard)/controllers/actions";
-import { saveAlarmSettingsInlineAction } from "@/lib/actions/app-settings-actions";
-import { formatAlarmBaselineSummary } from "@/lib/data/alarm-baseline";
+import { parseDeviceAlarms } from "@/lib/controllers/device-alarm-command";
 import type { ControllerGridData } from "@/lib/farm/controller-grid-data";
 import {
-  DEFAULT_ALARM_SETTINGS,
   DEFAULT_ALARM_THRESHOLDS,
-  validateAlarmThresholds,
   type AlarmSettings,
   type AlarmThresholds,
 } from "@/lib/data/alarms";
-import { applyBulkSpAlarmThresholds } from "@/lib/data/alarm-scope";
 import { normalizeStallTyCode } from "@/lib/data/stall-type";
 import { isReadingOnline } from "@/lib/data/reading-display";
 import type { InlineStatusTone } from "@/components/common/inline-status-toast";
@@ -211,15 +208,15 @@ export function formatBulkApplyFeedback(
 
   if (result.alarm) {
     if (result.alarm.ok) {
-      parts.push(`알람 유형 ${result.alarm.spCount}개 갱신`);
+      parts.push(`경보 명령 ${result.alarm.spCount}건 접수`);
       if ((result.alarm.clearedOverrides ?? 0) > 0) {
         parts.push(`개별 설정 ${result.alarm.clearedOverrides}건 제거`);
       }
     } else {
       parts.push(
         result.alarm.error
-          ? `알람 저장 실패 (${result.alarm.error})`
-          : "알람 저장 실패",
+          ? `경보 명령 접수 실패 (${result.alarm.error})`
+          : "경보 명령 접수 실패",
       );
     }
   }
@@ -483,7 +480,7 @@ export function FarmMapBulkApply({
       return;
     }
     if (applyAlarm) {
-      const err = validateAlarmThresholds(alarm);
+      const err = parseDeviceAlarms({ lowTempC: alarm.tempLow, highTempC: alarm.tempHigh }) ? null : "저온 < 고온, 0~100℃, 0.1℃ 단위로 입력하세요.";
       if (err) {
         setError(err);
         return;
@@ -495,6 +492,7 @@ export function FarmMapBulkApply({
     let control: SendBulkThermoCommandResult | null = null;
     let alarmResult: ApplyResult["alarm"] = null;
     let channelSkipped = 0;
+    let combinedChannels: Parameters<typeof sendBulkThermoCommandAction>[0] = [];
 
     try {
       // 1) 제어값(온도/환기) — 온라인 컨트롤러·활성 채널별 명령
@@ -523,26 +521,20 @@ export function FarmMapBulkApply({
           }
           // 제어 0건이어도 알람만 이어서 적용
         } else {
-          control = await sendBulkThermoCommandAction(commands);
+          if (applyAlarm) { combinedChannels = commands; channelSkipped += commands.filter(c => !c.channel).length; }
+          else control = await sendBulkThermoCommandAction(commands);
         }
       }
 
-      // 2) 임계 가이드 — farm+sp override + 하위 stall·controller override cascade
+      // 2) 컨트롤러별 저온·고온 경보 — 선택 채널과 같은 패킷으로 전송
       if (applyAlarm) {
         setApplyPhase("alarm");
-        const base = controller.alarmSettings ?? DEFAULT_ALARM_SETTINGS;
-        const { settings, spScopeKeys, clearedOverrides } =
-          applyBulkSpAlarmThresholds(base, targets, spSet, alarm);
-        const fd = new FormData();
-        fd.set("settings_json", JSON.stringify(settings));
-        const res = await saveAlarmSettingsInlineAction(fd);
-        alarmResult = {
-          ok: res.ok,
-          spCount: spScopeKeys.length,
-          clearedOverrides,
-          error: res.error,
-          settings: res.ok ? settings : undefined,
-        };
+        const res = await sendDeviceSettingsCommandsAction(onlineTargets.map(r => ({ key: r.key, ...r.farmKey, moduleUid: r.moduleUid,
+          stallTyCode: r.stallTyCode ?? "", stallNo: r.stallNo ?? "", eqpmnNo: r.eqpmnNo,
+          channels: combinedChannels.filter(c => c.key === r.key && c.channel).map(c => ({ channel: c.channel!, eqpmnCode: c.eqpmnCode!, setpointTemp: c.setpointTemp, tempDeviation: c.tempDeviation, minVentPct: c.minVentPct, maxVentPct: c.maxVentPct })),
+          alarmSettings: { lowTempC: alarm.tempLow, highTempC: alarm.tempHigh } })));
+        alarmResult = { ok: res.ok, spCount: res.sent, error: res.error ?? res.failed[0]?.error };
+        control = control ? { ok: control.ok && res.ok, sent: control.sent + res.sent, failed: [...control.failed, ...res.failed], sentItems: [...control.sentItems, ...res.sentItems] } : res;
       }
 
       const applied: ApplyResult = { control, alarm: alarmResult };
@@ -609,7 +601,7 @@ export function FarmMapBulkApply({
           .filter(Boolean)
           .join(" · ");
   const alarmSummary = applyAlarm
-    ? formatAlarmBaselineSummary(alarm)
+    ? `저온 ${alarm.tempLow}℃ · 고온 ${alarm.tempHigh}℃`
     : "적용 안 함";
 
   const tempSectionBody = (collapsible: boolean) => (
@@ -713,7 +705,7 @@ export function FarmMapBulkApply({
             aria-hidden
           />
         }
-        label="온·습 알람 (기준·편차)"
+        label="장비 저온·고온 경보"
       />
       <div
         className={cn(
@@ -722,17 +714,16 @@ export function FarmMapBulkApply({
         )}
       >
         <ThresholdRangeSlider
-          title="온도 알림"
+          title="저온 · 고온 경보"
           icon={
             <AlarmDomainIcon domain="temp" sizeClass={dashboardUi.iconSm} />
           }
-          min={10}
-          max={35}
+          min={0}
+          max={100}
           step={0.1}
           low={alarm.tempLow}
           high={alarm.tempHigh}
           unit="℃"
-          valueMode="baseline-dev"
           accentClass="bg-channel-temp/35"
           axisMode="editable"
           axisInputSize="dashboard"
@@ -744,36 +735,7 @@ export function FarmMapBulkApply({
             setAlarm((a) => ({ ...a, tempLow: low, tempHigh: high }))
           }
         />
-        <ThresholdRangeSlider
-          title="습도 알림"
-          icon={
-            <AlarmDomainIcon
-              domain="humidity"
-              sizeClass={dashboardUi.iconSm}
-            />
-          }
-          min={0}
-          max={100}
-          step={1}
-          low={alarm.humidityLow}
-          high={alarm.humidityHigh}
-          unit="%"
-          valueMode="baseline-dev"
-          accentClass="bg-channel-info/35"
-          axisMode="editable"
-          axisInputSize="dashboard"
-          bare
-          compact={false}
-          titleClassName={bulkModalSectionTitle}
-          disabled={!applyAlarm}
-          onChange={(low, high) =>
-            setAlarm((a) => ({
-              ...a,
-              humidityLow: low,
-              humidityHigh: high,
-            }))
-          }
-        />
+
       </div>
     </>
   );

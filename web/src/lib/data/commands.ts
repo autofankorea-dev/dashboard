@@ -1,4 +1,5 @@
 import "server-only";
+import { parseDeviceAlarms, type DeviceAlarmValues } from "@/lib/controllers/device-alarm-command";
 import { parseCommandChannels, type CommandChannelValues } from "@/lib/controllers/combined-channel-command";
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -45,6 +46,7 @@ export type ThermoCommand = {
   /** 전송된 0x0C 15바이트. 없으면 필드에서 재구성 */
   wireHex?: string | null;
   channels?: CommandChannelValues[];
+  alarmSettings?: DeviceAlarmValues;
 };
 
 type Row = {
@@ -138,7 +140,8 @@ export function mapThermoCommandRow(row: Row): ThermoCommand {
     channelKey,
     action: row.action?.trim() || undefined,
     wireHex: wireHexFromPayload(row.payload_json),
-    channels: row.action === "SET_CHANNELS_THERMO" ? parseCommandChannels((row.payload_json as { command_channels?: unknown } | null)?.command_channels) ?? undefined : undefined,
+    alarmSettings: row.action === "SET_CONTROLLER_SETTINGS" ? parseDeviceAlarms((row.payload_json as { alarm_settings?: unknown } | null)?.alarm_settings) ?? undefined : undefined,
+    channels: ["SET_CHANNELS_THERMO", "SET_CONTROLLER_SETTINGS"].includes(row.action ?? "") ? parseCommandChannels((row.payload_json as { command_channels?: unknown } | null)?.command_channels) ?? undefined : undefined,
   };
 }
 

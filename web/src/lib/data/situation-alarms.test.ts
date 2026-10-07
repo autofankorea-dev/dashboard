@@ -28,6 +28,8 @@ function reading(
     stallNo: partial.stallNo ?? "1",
     stallTyCode: partial.stallTyCode ?? "SP01",
     label: partial.label ?? partial.controllerKey,
+    alarmLowTempC: partial.alarmLowTempC ?? 10,
+    alarmHighTempC: partial.alarmHighTempC ?? 35,
     tempC: partial.tempC ?? 18,
     humidityPct: partial.humidityPct ?? 55,
     fanSupply: null,
@@ -107,7 +109,7 @@ const tightField: AlarmSettings = {
 {
   const merged = mergeSituationAlarms(
     [],
-    [reading({ controllerKey: "c5", status: "normal", tempC: 25 })],
+    [reading({ controllerKey: "c5", status: "normal", tempC: 25, alarmLowTempC: 16, alarmHighTempC: 19 })],
     tightField,
   );
   assert.equal(merged.length, 1);

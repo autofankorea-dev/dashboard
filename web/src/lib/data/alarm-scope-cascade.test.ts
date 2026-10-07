@@ -111,7 +111,7 @@ const base: AlarmSettings = {
   assert.equal(mixedResolved.tempHigh, 27);
   assert.equal(
     resolveThresholdsForChartScope(stallOnlyCtrl, stallKey, []).tempHigh,
-    19,
+    NaN,
   );
 }
 

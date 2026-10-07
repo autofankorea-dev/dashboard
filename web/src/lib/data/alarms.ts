@@ -1,3 +1,4 @@
+import { deviceAlarmThresholds } from "./device-alarm-thresholds";
 import type { BarnReading, ControllerStatus } from "@/lib/data/iot";
 import type { FarmKey } from "@/lib/data/farm-key";
 import { appendFarmKeyParams } from "@/lib/data/farm-key";
@@ -138,15 +139,13 @@ export function resolveThresholds(
 
 export function deriveAlarmsFromReadings(
   readings: BarnReading[],
-  settings: AlarmSettings | AlarmThresholds = DEFAULT_ALARM_SETTINGS
+  _settings: AlarmSettings | AlarmThresholds = DEFAULT_ALARM_SETTINGS
 ): AlarmRow[] {
   const rows: AlarmRow[] = [];
 
   for (const r of readings) {
     const thresholds =
-      "global" in settings
-        ? resolveThresholdsForReading(settings, r)
-        : settings;
+      deviceAlarmThresholds(r);
 
     if (r.tempC != null) {
       if (r.tempC >= thresholds.tempHigh) {
@@ -343,9 +342,7 @@ export function mergeSituationAlarms(
   settings?: AlarmSettings | null,
 ): AlarmRow[] {
   const offline = offlineReadingsToAlarmRows(readings);
-  const field = settings
-    ? fieldAlarmExceedToAlarmRows(readings, settings)
-    : [];
+  const field = fieldAlarmExceedToAlarmRows(readings, settings ?? DEFAULT_ALARM_SETTINGS);
   const fieldKeys = new Set(field.map((a) => a.controllerKey));
   const recommend = recommendOffbandToAlarmRows(readings, fieldKeys);
   const seen = new Set(

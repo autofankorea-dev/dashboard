@@ -1,5 +1,6 @@
 "use server";
 
+import { parseDeviceAlarms, DEVICE_SETTINGS_ACTION, type DeviceAlarmValues } from "@/lib/controllers/device-alarm-command";
 import { COMBINED_CHANNEL_ACTION, parseCommandChannels } from "@/lib/controllers/combined-channel-command";
 
 import { revalidatePath } from "next/cache";
@@ -422,4 +423,44 @@ export async function saveControllerDisplayNameAction(
   revalidatePath("/farm");
   revalidatePath("/alarms");
   return { ok: true };
+}
+
+export type DeviceSettingsTarget = {
+  key: string; lsindRegistNo: string; itemCode: string; moduleUid: number;
+  stallTyCode: string; stallNo: string; eqpmnNo: string;
+  alarmSettings: DeviceAlarmValues;
+  channels?: import("@/lib/controllers/combined-channel-command").CommandChannelValues[];
+};
+/** RLS-scoped command, never a profile write. One controller → one packet. */
+export async function sendDeviceSettingsCommandsAction(targets: DeviceSettingsTarget[]): Promise<SendBulkThermoCommandResult> {
+  const empty = (error: string): SendBulkThermoCommandResult => ({ ok: false, error, sent: 0, failed: [], sentItems: [] });
+  const user = await getCurrentUser();
+  if (!user) return empty("unauthorized");
+  if (!canCommand(user)) return empty("forbidden");
+  if (!Array.isArray(targets) || !targets.length || targets.length > 100) return empty("invalid_targets");
+  const supabase = await createClient();
+  const failed: SendBulkThermoCommandResult["failed"] = [], sentItems: BulkSentCommandItem[] = [];
+  for (const t of targets) {
+    const alarmSettings = parseDeviceAlarms(t?.alarmSettings);
+    const channels = t?.channels?.length ? parseCommandChannels(t.channels) : [];
+    if (!t || !alarmSettings || !channels || !t.key || !t.lsindRegistNo || !t.itemCode ||
+        !Number.isInteger(t.moduleUid) || t.moduleUid < 1 ||
+        !/^SP(0[1-9]|10)$/.test(t.stallTyCode) || !/^(0[1-9]|[12][0-9]|3[0-2])$/.test(t.stallNo) ||
+        !/^(0[1-9]|10)$/.test(t.eqpmnNo)) { failed.push({ key: t?.key ?? "", error: "invalid_values" }); continue; }
+    if (!canEditFarmScope(user, t)) { failed.push({ key: t.key, error: "forbidden" }); continue; }
+    // Legacy NOT NULL columns are compatibility storage, excluded by the channel mask.
+    const values = channels[0] ?? { setpointTemp: 25, tempDeviation: 2, minVentPct: 0, maxVentPct: 100 };
+    const { data, error } = await supabase.from("ctrl_thermo_command").insert({
+      created_by: user.id, lsind_regist_no: t.lsindRegistNo, item_code: t.itemCode, module_uid: t.moduleUid,
+      ctrl_idx: Number(t.eqpmnNo) - 1, stall_ty_code: t.stallTyCode, stall_no: t.stallNo, eqpmn_no: t.eqpmnNo,
+      channel: null, eqpmn_code: null, action: DEVICE_SETTINGS_ACTION, status: "pending",
+      setpoint_temp: values.setpointTemp, temp_deviation: values.tempDeviation, min_vent_pct: values.minVentPct, max_vent_pct: values.maxVentPct,
+      payload_json: { command_channels: channels, alarm_settings: alarmSettings }, note: null,
+    }).select(THERMO_COMMAND_SELECT).single();
+    if (error || !data) { failed.push({ key: t.key, error: error?.message ?? "insert_failed" }); continue; }
+    const command = mapThermoCommandRow(data as ThermoCommandRow);
+    sentItems.push({ key: t.key, id: command.id, command });
+    revalidateLiveCache(farmScopeCacheKey(t.lsindRegistNo, t.itemCode));
+  }
+  return { ok: failed.length === 0, sent: sentItems.length, failed, sentItems };
 }

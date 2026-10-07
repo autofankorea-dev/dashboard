@@ -3,7 +3,6 @@ import {
   type AlarmSettings,
   type AlarmThresholds,
 } from "@/lib/data/alarms";
-import { formatAlarmBaselinePair } from "@/lib/data/alarm-baseline";
 import { resolveThresholdsForReading } from "@/lib/data/alarm-scope";
 import type { BarnReading } from "@/lib/data/iot";
 import { formatHumidityPct, formatTempC } from "@/lib/data/farm-summaries";
@@ -26,7 +25,7 @@ const COVER_LEVEL_RANK: Record<ControllerEnvCoverLevel, number> = {
 
 type CoverReasonReading = Pick<
   BarnReading,
-  "status" | "tempC" | "humidityPct" | "stallTyCode"
+  "status" | "tempC" | "humidityPct" | "stallTyCode" | "alarmLowTempC" | "alarmHighTempC"
 > &
   Partial<Pick<BarnReading, "farmKey" | "stallNo" | "controllerKey" | "eqpmnNo">>;
 
@@ -35,7 +34,7 @@ function alarmChannelTint(
   low: number,
   high: number,
 ): RoomEnvTint | null {
-  if (value == null || !Number.isFinite(value)) return null;
+  if (value == null || !Number.isFinite(value) || !Number.isFinite(low) || !Number.isFinite(high) || low >= high) return null;
   const sev = sevOfScore(severityScore(value, { lo: low, hi: high }));
   if (sev === "warning") return "danger";
   if (sev === "caution") return "warn";
@@ -56,6 +55,8 @@ function envAlarmThresholds(
     stallTyCode: reading.stallTyCode ?? null,
     label: "",
     tempC: reading.tempC,
+    alarmLowTempC: reading.alarmLowTempC,
+    alarmHighTempC: reading.alarmHighTempC,
     humidityPct: reading.humidityPct,
     fanSupply: null,
     fanExhaust: null,
@@ -100,16 +101,16 @@ function roomEnvTint(
   if (channels.temp === "warn" || channels.humidity === "warn") {
     return "warn";
   }
-  return "ok";
+  return channels.temp === null && channels.humidity === null ? null : "ok";
 }
 
-/** 필드 카드 덮개 채점 — 사용자가 정한 알람 상·하한. 권장은 델린이 제시. */
+/** 필드 카드 덮개 채점 — 장비 raw의 저온·고온 경보값. 권장은 델린이 제시. */
 export function controllerEnvCoverLevel(
   reading: CoverReasonReading,
   alarmSettings?: AlarmSettings,
 ): ControllerEnvCoverLevel {
   if (reading.status === "offline") return "offline";
-  const tint = roomEnvTint(reading, alarmSettings) ?? "ok";
+  const tint = roomEnvTint(reading, alarmSettings) ?? "warn";
   /**
    * 측정 정체(수신은 최신·측정시각 정체 → LIVE `caution`)면
    * 알람 구간 안이어도 덮개를 「주의」로 강등. 이미 위험이면 유지.
@@ -161,7 +162,7 @@ export function controllerEnvCoverStatus(
   const stale = reading.status !== "normal";
   const tint = roomEnvTint(reading, alarmSettings);
   return {
-    environment: stale || !hasValue ? "환경 확인 필요"
+    environment: stale || !hasValue || tint === null ? "환경 확인 필요"
       : tint === "danger" ? "환경 경고" : tint === "warn" ? "환경 주의" : "환경 정상",
     communication: reading.status === "offline" ? "통신 경고"
       : reading.status === "caution" ? "통신 주의" : "통신 정상",
@@ -188,7 +189,7 @@ function channelOff(tint: RoomEnvTint | null | undefined): boolean {
 
 function tempAlarmBandLabel(reading: CoverReasonReading, alarmSettings?: AlarmSettings): string {
   const band = envAlarmThresholds(reading, alarmSettings);
-  return `알람 ${formatAlarmBaselinePair(band.tempLow, band.tempHigh, "℃")}`;
+  return Number.isFinite(band.tempLow) ? `장비 경보 ${band.tempLow}~${band.tempHigh}℃` : "경보값 미수신";
 }
 
 function humidityAlarmBandLabel(
@@ -196,7 +197,7 @@ function humidityAlarmBandLabel(
   alarmSettings?: AlarmSettings,
 ): string {
   const band = envAlarmThresholds(reading, alarmSettings);
-  return `알람 ${formatAlarmBaselinePair(band.humidityLow, band.humidityHigh, "%")}`;
+  void band; return "습도 경보 기준 없음";
 }
 
 /**

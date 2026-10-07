@@ -1,7 +1,10 @@
 "use client";
 
 // Synthetic UI states only; never invokes a device command action.
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { AlarmThresholdForm, type AlarmThresholdHeaderState } from "@/components/settings/alarm-threshold-form";
+import { DEFAULT_ALARM_SETTINGS } from "@/lib/data/alarms";
+import type { DeviceSettingsTarget, SendBulkThermoCommandResult } from "@/app/(dashboard)/controllers/actions";
 import { useControllerPanel } from "@/components/controllers/use-controller-panel";
 import { ControllerEnvCover } from "@/components/farm/controller-env-cover";
 import { ControllerPanelFeedback } from "@/components/farm/controller-panel-feedback";
@@ -15,6 +18,7 @@ import type { PanelChannelContext } from "@/lib/controllers/controller-panel-dra
 const base: BarnReading = {
   key: "fixture", farmKey: { lsindRegistNo: "TEST", itemCode: "P00" }, moduleUid: 1,
   controllerKey: "SP07:1:1", stallTyCode: "SP07", stallNo: "1", eqpmnNo: "1", label: "test",
+  alarmLowTempC: 10, alarmHighTempC: 35,
   tempC: 25.3, humidityPct: 55, fanSupply: null, fanExhaust: null, fanIntake: null,
   fanSupplySeries: [], fanExhaustSeries: [], fanIntakeSeries: [],
   receivedAt: "2026-10-06T00:00:00Z", mesureDt: "2026-10-06T00:00:00Z",
@@ -60,6 +64,27 @@ function PanelProbe({ stage, slot }: { stage: Stage; slot: "A" | "B" }) {
   </section>;
 }
 
+function AlarmProbe() {
+  const [header, setHeader] = useState<AlarmThresholdHeaderState | null>(null);
+  const [command, setCommand] = useState<ThermoCommand | null>(null);
+  const [mount, setMount] = useState(0);
+  const submit = useCallback(async (targets: DeviceSettingsTarget[]): Promise<SendBulkThermoCommandResult> => {
+    const t = targets[0]!;
+    const c: ThermoCommand = { id: "alarm-mock", createdAt: "2026-10-07T00:00:00Z", sentAt: null, appliedAt: null,
+      farmKey: base.farmKey, moduleUid: base.moduleUid, controllerKey: base.controllerKey, stallTyCode: "SP07", stallNo: "01", eqpmnNo: "01",
+      ...old, status: "pending", note: null, errorMsg: null, action: "SET_CONTROLLER_SETTINGS", alarmSettings: t.alarmSettings };
+    return { ok: true, sent: 1, failed: [], sentItems: [{ key: base.key, id: c.id, command: c }] };
+  }, []);
+  return <section data-alarm-probe className="max-w-md rounded-lg border p-3">
+    <AlarmThresholdForm key={mount} initialSettings={DEFAULT_ALARM_SETTINGS} readings={[base]} fixedScope={{ farmId: "TEST", spCode: "SP07", stallKey: "1", readingKey: base.key }}
+      commands={command ? [command] : []} onHeaderState={setHeader} submitCommands={submit} onCommandQueued={setCommand} />
+    <button disabled={!header?.hasChanges || header.pending || Boolean(header.validationError)} onClick={() => header?.onSave()}>경보 적용 테스트</button>
+    <button onClick={() => setMount(n => n+1)}>경보 재진입 테스트</button>
+    <button onClick={() => setCommand(c => c ? {...c,status:"sent"} : c)}>경보 전송 테스트</button>
+    <button onClick={() => setCommand(c => c ? {...c,status:"failed"} : c)}>경보 실패 테스트</button>
+  </section>;
+}
+
 export default function ControllerStateFixture() {
   const [ready, setReady] = useState(false);
   const [stage, setStage] = useState<Stage>("idle");
@@ -71,6 +96,7 @@ export default function ControllerStateFixture() {
     ["env-caution", { ...base, stallTyCode: "SP05", tempC: 34 }],
     ["caution", { ...base, status: "caution" }], ["offline", { ...base, status: "offline" }],
     ["stale-alarm", { ...base, status: "caution", tempC: 60 }],
+    ["missing-alarm", { ...base, alarmLowTempC: null, alarmHighTempC: null }],
     ["empty", { ...base, tempC: null, humidityPct: null }],
   ];
   return <main data-fixture-ready={ready} className="p-4">
@@ -80,6 +106,7 @@ export default function ControllerStateFixture() {
       <button onClick={() => setSlot(slot === "A" ? "B" : "A")}>채널 전환</button>
       <button onClick={() => setMount((value) => value + 1)}>패널 재진입</button>
     </div>
+    <AlarmProbe />
     <PanelProbe key={mount} stage={stage} slot={slot} />
     <div className="flex flex-wrap gap-4">
       {covers.map(([id, reading]) => <div key={id} data-fixture-cover={id}

@@ -54,8 +54,6 @@ import {
 } from "@/lib/controllers/controller-settings";
 import { resolveReadingThermo } from "@/lib/farm/controller-summary-display";
 import { DEFAULT_ALARM_SETTINGS, type AlarmSettings } from "@/lib/data/alarms";
-import { formatAlarmGlanceCells } from "@/lib/data/alarm-baseline";
-import { resolveThresholdsForReading } from "@/lib/data/alarm-scope";
 import { channelBySlot, type ChannelSlot } from "@/lib/data/iot-channel";
 import { farmKeyId } from "@/lib/data/farm-key";
 import { applyQueueChannelStripForReading } from "@/lib/farm/apply-queue";
@@ -490,9 +488,9 @@ export function BarnListAccordionPanel({
     panel.message?.tone === "error" ? panel.message.text : null;
 
   const { overlay, dismiss: dismissOverlay } = useSettingsApplyOverlay({
-    isSaving,
-    commandBusy: panel.pending,
-    alarmBusy: Boolean(thresholdHeader?.pending),
+    isSaving: panel.pending || applyBusy,
+    commandBusy: panel.pending || applyBusy,
+    alarmBusy: false,
     suppressCommandStatus: true,
     command: pipeline.command,
     liveConfirmed: pipeline.liveConfirmed,
@@ -522,12 +520,10 @@ export function BarnListAccordionPanel({
   };
 
   const alarmSummary =
-    thresholdHeader?.collapsedSummary ?? "온도 · 습도 알람";
+    thresholdHeader?.collapsedSummary ?? "장비 저온 · 고온 경보";
   const alarmCells =
     thresholdHeader?.glanceCells ??
-    formatAlarmGlanceCells(
-      resolveThresholdsForReading(effectiveAlarmSettings, reading),
-    );
+    { temp: String(reading.alarmLowTempC ?? "—"), tempDev: String(reading.alarmHighTempC ?? "—"), humidity: "—" };
   const focusedSlot =
     focus === "A" || focus === "B" || focus === "C" ? focus : null;
   const showControlEditor =
@@ -539,12 +535,12 @@ export function BarnListAccordionPanel({
     channelSlots.length === 0;
 
   const editorTitle = alarmLayer
-    ? "알림 기준"
+    ? "저온 · 고온 경보"
     : hasChannels && focusedSlot
       ? "A/B/C 채널 설정"
       : "설정온도 · 편차";
   const editorPrimaryLabel = alarmLayer
-    ? "알림 저장"
+    ? "명령 적용"
     : showMissingChannel
       ? null
       : "반영";
@@ -552,7 +548,7 @@ export function BarnListAccordionPanel({
     ? isSaving || !canSaveAlarm
     : false;
   const editorHint = alarmLayer
-    ? "현장 명령이 아닙니다."
+    ? "컨트롤러 공통 경보값을 장비로 전송합니다."
     : showMissingChannel
       ? undefined
       : "표에만 기록합니다. 현장 전송은 명령 적용입니다.";
@@ -561,7 +557,9 @@ export function BarnListAccordionPanel({
     <AlarmThresholdForm
       key={reading.key}
       initialSettings={effectiveAlarmSettings}
-      readings={readings}
+      readings={readings.map(r => r.key === reading.key ? (detail ?? reading) : r)}
+      commands={panelCommands}
+      onCommandQueued={registerCommand}
       fixedScope={thresholdScope}
       embedded
       density="mobileSplit"

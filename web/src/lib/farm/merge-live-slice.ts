@@ -77,6 +77,8 @@ export function liveReadingUnchanged(
     prev.status === next.status &&
     prev.receivedAt === next.receivedAt &&
     prev.mesureDt === next.mesureDt &&
+    sameNum(prev.alarmLowTempC, next.alarmLowTempC) &&
+    sameNum(prev.alarmHighTempC, next.alarmHighTempC) &&
     sameNum(prev.tempC, next.tempC) &&
     sameNum(prev.humidityPct, next.humidityPct) &&
     sameNum(prev.fanSupply, next.fanSupply) &&

@@ -156,37 +156,29 @@ export const FARM_HUM_FALLBACK: ChartGuide = {
 };
 
 export function farmAlarmGuides(payload: DailyReportPayload): {
-  temp: ChartGuide;
-  humidity: ChartGuide;
+  temp?: ChartGuide;
+  humidity?: ChartGuide;
 } {
   const g = payload.alarmGuide;
   return {
-    temp: {
-      lo: g?.tempLow ?? FARM_ALARM_FALLBACK.lo,
-      hi: g?.tempHigh ?? FARM_ALARM_FALLBACK.hi,
-      name: "가이드",
-    },
-    humidity: {
-      lo: g?.humidityLow ?? FARM_HUM_FALLBACK.lo,
-      hi: g?.humidityHigh ?? FARM_HUM_FALLBACK.hi,
-      name: "가이드",
-    },
+    temp: g?.tempLow != null && g?.tempHigh != null ? { lo: g.tempLow, hi: g.tempHigh, name: "현재 장비 경보" } : undefined,
+    humidity: undefined,
   };
 }
 
 export function bandGuide(
   band: { lo: number; hi: number } | null,
-  fallback: ChartGuide,
-): ChartGuide {
+  fallback: ChartGuide | undefined,
+): ChartGuide | undefined {
   return band ? { lo: band.lo, hi: band.hi, name: "권장" } : fallback;
 }
 
 export function typeChartGuides(
   type: DailyReportTypeBrief,
-  fallback: { temp: ChartGuide; humidity: ChartGuide },
+  fallback: { temp?: ChartGuide; humidity?: ChartGuide },
 ): {
-  temp: ChartGuide;
-  humidity: ChartGuide;
+  temp?: ChartGuide;
+  humidity?: ChartGuide;
 } {
   return {
     temp: bandGuide(type.recommendTemp, fallback.temp),
@@ -195,7 +187,7 @@ export function typeChartGuides(
 }
 
 export const ALARM_GUIDE_LEGEND =
-  "주황 파선 = 설정한 알람 상·하한  ·  회색 점선 = 이 그래프의 최저·최고";
+  "주황 파선 = 현재 장비 경보 상·하한 (공통값일 때)  ·  회색 점선 = 이 그래프의 최저·최고";
 export const RECOMMEND_GUIDE_LEGEND =
   "주황 파선 = 생육 권장 상·하한  ·  회색 점선 = 이 그래프의 최저·최고";
 

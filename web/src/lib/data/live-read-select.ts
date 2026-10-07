@@ -8,7 +8,7 @@ export const LIVE_LEGACY_SOURCE = "v_iot_decoded_latest" as const;
 
 /** list tier — channels[] / decoded_json 금지 (카드·soft refresh) */
 export const LIVE_LIST_COLS_CORE =
-  "raw_id, lsind_regist_no, item_code, module_uid, controller_key, eqpmn_no, stall_ty_code, stall_no, wire_ver, packet_mode, run_mode, temp_c, humidity_pct, fan_supply_pct, fan_exhaust_pct, fan_intake_pct, mesure_dt, received_at";
+  "raw_id, lsind_regist_no, item_code, module_uid, controller_key, eqpmn_no, stall_ty_code, stall_no, wire_ver, packet_mode, run_mode, temp_c, humidity_pct, alarm_low_temp_c, alarm_high_temp_c, fan_supply_pct, fan_exhaust_pct, fan_intake_pct, mesure_dt, received_at";
 
 export const LIVE_LIST_COLS_THERMO =
   "setpoint_temp, temp_deviation, min_vent_pct, max_vent_pct";

@@ -41,12 +41,12 @@ export function bandHalf(b: Band): number {
 
 /** 정규화 편차 점수. 값/밴드가 유효하지 않으면 null. */
 export function severityScore(value: number | null | undefined, band: Band | null): number | null {
-  if (value == null || !Number.isFinite(value) || !band) return null;
+  if (value == null || !Number.isFinite(value) || !band || !Number.isFinite(band.lo) || !Number.isFinite(band.hi) || band.lo >= band.hi) return null;
   return Math.abs(value - bandCenter(band)) / bandHalf(band);
 }
 
 export function sevOfScore(s: number | null): Sev {
-  if (s == null) return "normal";
+  if (s == null || !Number.isFinite(s)) return "neutral";
   if (s <= S_CAUTION) return "normal";
   if (s <= S_WARNING) return "caution";
   return "warning";
@@ -86,11 +86,13 @@ export function binWorst(scores: (number | null)[], bars: number): (number | nul
 /* ---------- 밴드 빌더 ---------- */
 
 /** 온도 알람 구간 — 그래프 상하한·주의/경고 판정용. */
-export function tempBand(thresholds: AlarmThresholds): Band {
+export function tempBand(thresholds: AlarmThresholds): Band | null {
+  if (!Number.isFinite(thresholds.tempLow) || !Number.isFinite(thresholds.tempHigh) || thresholds.tempLow >= thresholds.tempHigh) return null;
   return { lo: thresholds.tempLow, hi: thresholds.tempHigh };
 }
 
-export function humidityBand(thresholds: AlarmThresholds): Band {
+export function humidityBand(thresholds: AlarmThresholds): Band | null {
+  if (!Number.isFinite(thresholds.humidityLow) || !Number.isFinite(thresholds.humidityHigh) || thresholds.humidityLow >= thresholds.humidityHigh) return null;
   return { lo: thresholds.humidityLow, hi: thresholds.humidityHigh };
 }
 
@@ -146,7 +148,7 @@ export const SEV_COLOR: Record<Sev, string> = {
 };
 
 export const SEV_LABEL: Record<Sev, string> = {
-  neutral: "이력",
+  neutral: "미판정",
   normal: "정상",
   caution: "주의",
   warning: "경고",

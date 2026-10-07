@@ -119,7 +119,7 @@ try {
   await page.waitForFunction(() => document.querySelector('[data-panel-current]')?.textContent === '26');
   assert.equal(await page.locator('[data-controller-panel-feedback][role="status"]').count(),1);
   assert.equal(await page.locator('[data-feedback-layer="overlay"]').count(),0);
-  for (const [id,env,comm] of [['normal','환경 정상','통신 정상'],['alarm','환경 경고','통신 정상'],['env-caution','환경 주의','통신 정상'],['stale-alarm','환경 확인 필요','통신 주의'],['caution','환경 확인 필요','통신 주의'],['offline','환경 확인 필요','통신 경고'],['empty','환경 확인 필요','통신 정상']]) {
+  for (const [id,env,comm] of [['normal','환경 정상','통신 정상'],['alarm','환경 경고','통신 정상'],['env-caution','환경 주의','통신 정상'],['stale-alarm','환경 확인 필요','통신 주의'],['caution','환경 확인 필요','통신 주의'],['offline','환경 확인 필요','통신 경고'],['empty','환경 확인 필요','통신 정상'],['missing-alarm','환경 확인 필요','통신 정상']]) {
     const cover=page.locator(`[data-fixture-cover="${id}"]`);
     assert.equal(await cover.locator('[data-cover-environment-status]').textContent(),env);
     assert.equal(await cover.locator('[data-cover-communication-status]').textContent(),comm);
@@ -127,6 +127,21 @@ try {
     if(id==='stale-alarm') assert.equal(await cover.locator('button').getAttribute('data-cover-status-level'),'warn');
     if(id==='caution'||id==='offline') assert.ok((await cover.innerText()).includes('마지막 수신'));
   }
+  const alarm = page.locator('[data-alarm-probe]');
+  await alarm.getByRole('spinbutton',{name:'저온 경보',exact:true}).fill('12');
+  await alarm.getByRole('spinbutton',{name:'고온 경보',exact:true}).fill('40');
+  await alarm.getByRole('button',{name:'경보 적용 테스트',exact:true}).click();
+  await alarm.getByText('접수 · 1/3',{exact:true}).waitFor();
+  assert.equal(await alarm.getByRole('spinbutton',{name:'고온 경보',exact:true}).inputValue(),'40');
+  assert.ok((await alarm.innerText()).includes('현재 저온 10℃ / 고온 35℃'));
+  await alarm.getByRole('button',{name:'경보 재진입 테스트',exact:true}).click();
+  await alarm.getByText('접수 · 1/3',{exact:true}).waitFor();
+  assert.equal(await alarm.getByRole('spinbutton',{name:'고온 경보',exact:true}).inputValue(),'40');
+  await alarm.getByRole('button',{name:'경보 전송 테스트',exact:true}).click();
+  await alarm.getByText('전송 · 2/3 · 장비 응답 대기',{exact:true}).waitFor();
+  await alarm.getByRole('button',{name:'경보 실패 테스트',exact:true}).click();
+  await alarm.getByText('전송 실패 · 입력값을 확인 후 다시 적용하세요.',{exact:true}).waitFor();
+  assert.equal(await alarm.getByRole('spinbutton',{name:'저온 경보',exact:true}).inputValue(),'12');
   await page.screenshot({path:join(output,'controller-states-desktop.png')});
   await page.setViewportSize({width:390,height:844});
   await delay(300);

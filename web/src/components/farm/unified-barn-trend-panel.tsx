@@ -4,7 +4,6 @@ import { useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, use
 import { PanelRight } from "lucide-react";
 import {
   TrendChart,
-  type ScaleEdgeNumericCommitEvent,
   type TrendCommandSettingSeg,
   type TrendRangeBand,
   type TrendScaleEdgeLabel,
@@ -25,15 +24,13 @@ import {
   nextLayerGroupMode,
   type SharedChartLayerDisplay,
 } from "@/components/farm/unified-trend-layer-toolbar";
-import { saveAlarmSettingsInlineAction } from "@/lib/actions/app-settings-actions";
+
 import {
-  applyScopeAlarmThresholdsWithCascade,
   resolveThresholdsForChartScope,
 } from "@/lib/data/alarm-scope";
 import type { AlarmSettings, AlarmThresholds } from "@/lib/data/alarms";
 import {
   DEFAULT_ALARM_SETTINGS,
-  validateAlarmThresholds,
 } from "@/lib/data/alarms";
 import type { BarnReading } from "@/lib/data/iot";
 import { normalizeStallTyCode } from "@/lib/data/stall-type";
@@ -70,7 +67,6 @@ import {
   mapIndexWindowToSlice,
   sliceControllerSeries,
 } from "@/components/farm/unified-barn-trend-panel-helpers";
-import { applyAlarmScaleEdgeCommit } from "@/lib/data/alarm-baseline";
 import {
   window15mCovers,
 } from "@/lib/farm/trend-brush-coverage";
@@ -144,7 +140,6 @@ import {
 } from "@/lib/farm/unified-barn-trend-series";
 import { invertSplitYCrosshairValues } from "@/lib/farm/farm-crosshair-readout";
 import { useUnifiedChartBandTransition } from "@/lib/farm/use-split-y-layout-transition";
-import { useFarmLiveRefreshOptional } from "@/lib/navigation/farm-live-refresh";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { motionDuration } from "@/lib/ui/motion-tokens";
 import {
@@ -329,7 +324,7 @@ export function UnifiedBarnTrendPanel({
   commandPaneOpen = false,
   guidedXScopeGesture = null,
   onGuidedXScopeComplete,
-  canCommand = false,
+  canCommand: _canCommand = false,
   isMobileStack = false,
   chartHeight,
   plotFill = false,
@@ -354,7 +349,6 @@ export function UnifiedBarnTrendPanel({
   className,
 }: Props) {
   const comparisonActive = comparisonZoom !== undefined;
-  const liveRefresh = useFarmLiveRefreshOptional();
   const [ownedLayers, setOwnedLayers] =
     useState<UnifiedLayerFlags>(DEFAULT_UNIFIED_LAYERS);
   const [ownedAlarmRangeOn, setOwnedAlarmRangeOn] = useState({
@@ -423,12 +417,6 @@ export function UnifiedBarnTrendPanel({
     setChartPlotWidth((prev) => (Math.abs(prev - w) < 8 ? prev : w));
   }, []);
   const plotWidthPx = chartPlotWidth > 32 ? chartPlotWidth : 800;
-  const [draftThresholds, setDraftThresholds] = useState<AlarmThresholds | null>(
-    null,
-  );
-  const [alarmSaving, setAlarmSaving] = useState(false);
-  const [alarmSaveError, setAlarmSaveError] = useState<string | null>(null);
-  const draftRef = useRef<AlarmThresholds | null>(null);
   const [scopeMotionKey, setScopeMotionKey] = useState(0);
   const [scopeMotionDir, setScopeMotionDir] = useState<"in" | "out">("in");
   const bumpScopeMotion = useCallback((dir: "in" | "out") => {
@@ -467,13 +455,6 @@ export function UnifiedBarnTrendPanel({
     [scopedReadings, chartScope],
   );
 
-  const [alarmScopeEpoch, setAlarmScopeEpoch] = useState(alarmScopeKey ?? "");
-  if ((alarmScopeKey ?? "") !== alarmScopeEpoch) {
-    setAlarmScopeEpoch(alarmScopeKey ?? "");
-    setDraftThresholds(null);
-    setAlarmSaveError(null);
-  }
-
   const baseThresholds = useMemo(() => {
     const settings = alarmSettings ?? DEFAULT_ALARM_SETTINGS;
     return resolveThresholdsForChartScope(
@@ -483,7 +464,7 @@ export function UnifiedBarnTrendPanel({
     );
   }, [alarmSettings, alarmScopeKey, scopedReadings]);
 
-  const mappingThresholds = draftThresholds ?? baseThresholds;
+  const mappingThresholds = baseThresholds;
   const recommendBand = useMemo(() => {
     const code =
       chartScope.level === "farm" ? null : chartScope.stallTyCode;
@@ -498,7 +479,7 @@ export function UnifiedBarnTrendPanel({
             humidityLow: recommendBand.humidityMinPct,
             humidityHigh: recommendBand.humidityMaxPct,
           }
-        : mappingThresholds,
+        : { tempLow: Number.isFinite(mappingThresholds.tempLow) ? mappingThresholds.tempLow : 0, tempHigh: Number.isFinite(mappingThresholds.tempHigh) ? mappingThresholds.tempHigh : 50, humidityLow: 0, humidityHigh: 100 },
     [recommendBand, mappingThresholds],
   );
 
@@ -1353,7 +1334,7 @@ export function UnifiedBarnTrendPanel({
   }, [xScopeStack.length, popXScope]);
 
   const alarmEditEnabled =
-    canCommand && Boolean(alarmScopeKey) && !alarmSaving;
+    false;
 
   /** 가이드 제스처 토큰 변경 시 스택 비움 — TrendChart 전달은 비운 뒤 */
   const gestureToken = guidedXScopeGesture?.token ?? 0;
@@ -1487,74 +1468,6 @@ export function UnifiedBarnTrendPanel({
       ? resolvedGuidedXScope
       : null;
 
-  const persistAlarmDraft = (nextDraft: AlarmThresholds) => {
-    if (!alarmScopeKey || !canCommand) return;
-    const err = validateAlarmThresholds(nextDraft);
-    if (err) {
-      setAlarmSaveError(err);
-      setDraftThresholds(null);
-      draftRef.current = null;
-      return;
-    }
-    const previous = alarmSettings ?? DEFAULT_ALARM_SETTINGS;
-    /** farm/sp 저장 시 하위·legacy 유형 오버라이드 제거 — 스코프 상속 */
-    const cascadeStallTy =
-      !alarmScopeKey.includes("|stall:") &&
-      !alarmScopeKey.includes("|ctrl:");
-    const { settings: nextSettings } = applyScopeAlarmThresholdsWithCascade(
-      previous,
-      alarmScopeKey,
-      nextDraft,
-      cascadeStallTy
-        ? {
-            stallTyCodesToClear: scopedReadings
-              .map((r) => normalizeStallTyCode(r.stallTyCode))
-              .filter((sp) => sp !== "UNK"),
-          }
-        : undefined,
-    );
-    setAlarmSaving(true);
-    setAlarmSaveError(null);
-    const formData = new FormData();
-    formData.set("settings_json", JSON.stringify(nextSettings));
-    void (async () => {
-      try {
-        const result = await saveAlarmSettingsInlineAction(formData);
-        if (!result.ok) {
-          setAlarmSaveError(result.error ?? "임계 가이드 저장에 실패했습니다.");
-          setDraftThresholds(null);
-          draftRef.current = null;
-          return;
-        }
-        liveRefresh?.patchAlarmSettings(nextSettings);
-        setDraftThresholds(null);
-        draftRef.current = null;
-      } finally {
-        setAlarmSaving(false);
-      }
-    })();
-  };
-
-  const onScaleEdgeNumericCommit = (event: ScaleEdgeNumericCommitEvent) => {
-    if (!canCommand || !alarmScopeKey || alarmSaving) return;
-    const next = applyAlarmScaleEdgeCommit(
-      draftRef.current ?? baseThresholds,
-      event.id,
-      event.value,
-    );
-    if (!next) return;
-    const unchanged =
-      next.tempHigh === baseThresholds.tempHigh &&
-      next.tempLow === baseThresholds.tempLow &&
-      next.humidityHigh === baseThresholds.humidityHigh &&
-      next.humidityLow === baseThresholds.humidityLow;
-    if (unchanged) return;
-    draftRef.current = next;
-    setDraftThresholds(next);
-    setAlarmSaveError(null);
-    persistAlarmDraft(next);
-  };
-
   /**
    * 우측 Y — 축사유형 권장 상·하한(숫자 저장 없음).
    * 권장 띠가 있으면 좌측은 현장 알람 기준, 구간은 기준±편차다.
@@ -1623,7 +1536,7 @@ export function UnifiedBarnTrendPanel({
       });
     };
 
-    if (scopeVisibility.showTemp && layers.temp && built.available.temp) {
+    if ((recommendBand || Number.isFinite(mappingThresholds.tempLow)) && scopeVisibility.showTemp && layers.temp && built.available.temp) {
       push(
         "temp-hi",
         mapTempCToSplitY(
@@ -1693,7 +1606,7 @@ export function UnifiedBarnTrendPanel({
       }
     }
     if (
-      scopeVisibility.showHum &&
+      recommendBand && scopeVisibility.showHum &&
       (layers.hum || layers.humDev || layers.humBand || layers.humEma)
     ) {
       push(
@@ -1797,7 +1710,7 @@ export function UnifiedBarnTrendPanel({
             formatTrendBandEdge(tempFarmMid, "℃"),
             TREND_CHART_COLORS.temp,
             undefined,
-            "온도 알람 기준",
+            "현재 장비 경보 기준",
             false,
             farmAlarmEditEnabled,
             tempFarmMid,
@@ -1945,7 +1858,7 @@ export function UnifiedBarnTrendPanel({
           undefined,
           tickIsAlarmMid
             ? tick.unit === "℃"
-              ? "온도 알람 기준"
+              ? "현재 장비 경보 기준"
               : "습도 알람 기준"
             : "눈금",
           !tickIsAlarmMid,
@@ -2350,9 +2263,6 @@ export function UnifiedBarnTrendPanel({
                 }
               : undefined
           }
-          onScaleEdgeNumericCommit={
-            alarmEditEnabled ? onScaleEdgeNumericCommit : undefined
-          }
           overlayHoverMerge={overlayActive}
           crosshairValues={crosshairValues}
         />
@@ -2414,15 +2324,6 @@ export function UnifiedBarnTrendPanel({
                     : "통합 추이 데이터가 없습니다."}
         </p>
       )}
-
-      {alarmSaveError ? (
-        <p
-          className="text-[0.65rem] text-destructive"
-          role="alert"
-        >
-          {alarmSaveError}
-        </p>
-      ) : null}
 
       {useBrushCanvas && !hidePeriodBrush ? (
         <div className="shrink-0">
