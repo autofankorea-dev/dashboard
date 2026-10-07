@@ -105,14 +105,14 @@ export function worstJudge(judges: string[]): string {
   return "정상";
 }
 
-function fmt1(n: number | null | undefined): string {
-  if (n == null || Number.isNaN(n)) return "—";
-  return n.toFixed(1);
+function fmt1(n: number | null | undefined, unit = ""): string {
+  if (n == null || !Number.isFinite(n)) return "—";
+  return `${n.toFixed(1)}${unit}`;
 }
 
-function fmt0(n: number | null | undefined): string {
-  if (n == null || Number.isNaN(n)) return "—";
-  return n.toFixed(0);
+function fmt0(n: number | null | undefined, unit = ""): string {
+  if (n == null || !Number.isFinite(n)) return "—";
+  return `${n.toFixed(0)}${unit}`;
 }
 
 export function buildDailyReportBriefing(
@@ -168,7 +168,7 @@ export function farmBriefingFacts(
 ): string[] {
   const lines: string[] = [];
   lines.push(
-    `30일 농장 평균 온도 ${fmt1(briefing.farmAvgTemp30d)}℃, 습도 ${fmt0(briefing.farmAvgHum30d)}%.`,
+    `30일 농장 평균 온도 ${fmt1(briefing.farmAvgTemp30d, "℃")}, 습도 ${fmt0(briefing.farmAvgHum30d, "%")}.`,
   );
 
   const ov = payload.overview;
@@ -188,8 +188,8 @@ export function typeBriefingFacts(type: DailyReportTypeBrief): string[] {
   const lines: string[] = [];
   lines.push(
     type.avgTemp30d == null
-      ? `${type.stallLabel} 30일 온도 기록이 부족합니다. 평균 습도 ${fmt0(type.avgHum30d)}%.`
-      : `${type.stallLabel} 30일 평균 온도 ${fmt1(type.avgTemp30d)}℃, 습도 ${fmt0(type.avgHum30d)}%.`,
+      ? `${type.stallLabel} 30일 온도 기록이 부족합니다. 평균 습도 ${fmt0(type.avgHum30d, "%")}.`
+      : `${type.stallLabel} 30일 평균 온도 ${fmt1(type.avgTemp30d, "℃")}, 습도 ${fmt0(type.avgHum30d, "%")}.`,
   );
 
   const delayed = type.barns.filter((b) => b.judge === "수신 지연").length;

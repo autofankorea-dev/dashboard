@@ -111,11 +111,11 @@ export function farmShortLabelFromId(farmId: string): string {
 }
 
 export function formatHumidityPct(v: number | null): string {
-  return v == null ? "—" : `${v.toFixed(1)}%`;
+  return v == null || !Number.isFinite(v) ? "—" : `${v.toFixed(1)}%`;
 }
 
 export function formatTempC(v: number | null): string {
-  return v == null ? "—" : `${v.toFixed(1)}℃`;
+  return v == null || !Number.isFinite(v) ? "—" : `${v.toFixed(1)}℃`;
 }
 
 export function isFarmHealthy(farm: FarmSummaryRow): boolean {

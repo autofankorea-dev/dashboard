@@ -307,7 +307,7 @@ export function buildGaugeFillSegments(
 ): GaugeFillSegments {
   if (!Number.isFinite(low) || !Number.isFinite(high) || low >= high) return { span: 1, cur: 0, rest: 1, pct: null };
   const span = Math.max(high - low, 1);
-  if (offline || value == null) {
+  if (offline || value == null || !Number.isFinite(value)) {
     return { span, cur: 0, rest: span, pct: null };
   }
   const cur = Math.max(0, Math.min(span, value - low));

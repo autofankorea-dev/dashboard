@@ -10,7 +10,7 @@ export function sensorValueForDisplay(
   value: number | null | undefined
 ): number | null {
   if (!isReadingOnline(status)) return null;
-  return value ?? null;
+  return value != null && Number.isFinite(value) ? value : null;
 }
 
 /** 미수신·null — 「--」 대신 값 미표시 */
@@ -18,7 +18,7 @@ export function formatSensorNumber(
   value: number | null | undefined,
   digits = 1
 ): string | null {
-  if (value === null || value === undefined) return null;
+  if (value == null || !Number.isFinite(value)) return null;
   return value.toFixed(digits);
 }
 
@@ -54,7 +54,7 @@ export function operationPctForDisplay(
 ): number | null {
   if (!reading || !isReadingOnline(reading.status)) return null;
   const vals = [reading.fanSupply, reading.fanExhaust, reading.fanIntake].filter(
-    (v): v is number => v != null
+    (v): v is number => v != null && Number.isFinite(v)
   );
   if (vals.length === 0) return null;
   const avg = vals.reduce((a, b) => a + b, 0) / vals.length;

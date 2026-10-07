@@ -182,7 +182,7 @@ function buildGaugeAriaLabel({
   setpoint?: number;
   setDev?: number;
 }): string {
-  const parts = [`${label} ${displayValue}${unit}`, `알람 ${low}–${high}${unit}`];
+  const parts = [displayValue === "—" ? `${label}값 미수신` : `${label} ${displayValue}${unit}`, `알람 ${low}–${high}${unit}`];
   if (label === "온도" && setpoint != null && setDev != null) {
     parts.push(`설정 ${setpoint}±${setDev}${unit}`);
   }
@@ -203,7 +203,7 @@ function MetricValue({
   const Icon = label === "온도" ? Thermometer : Droplets;
 
   return (
-    <div className="flex min-w-0 items-center gap-1.5">
+    <div className="flex min-w-0 items-center gap-1.5" title={displayValue === "—" ? `${label}값 미수신` : undefined}>
       <Icon className={cn("size-4 shrink-0", accent)} aria-hidden />
       <span
         className={cn(
@@ -255,6 +255,10 @@ export function CardMetricGauge({
   bandGlowOut?: boolean;
   glowVar?: string;
 }) {
+  // Retired or missing alarm limits are not measurements and must never render as NaN%.
+  if (!Number.isFinite(low) || !Number.isFinite(high) || low >= high) {
+    return showValue ? <div className={className}><MetricValue label={label} displayValue={displayValue} unit={unit} offline={offline} breached={false} compact={compact} /></div> : null;
+  }
   const { span, cur, rest, pct } = buildGaugeFillSegments(value, low, high, offline);
   const band =
     label === "온도" && setpoint != null && setDev != null

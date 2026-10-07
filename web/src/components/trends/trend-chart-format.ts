@@ -131,7 +131,7 @@ export function formatTrendHoverValue(
   unit: string,
   seriesName: string,
 ): string {
-  if (!Number.isFinite(value)) return "–";
+  if (!Number.isFinite(value)) return "—";
   const motorLike =
     unit === "%" &&
     (seriesName.startsWith("채널") ||
@@ -149,7 +149,7 @@ export function formatTrendHoverValue(
 
 /** 한계 끝단 라벨 — 정수면 그대로, 아니면 소수 1자리. */
 export function formatTrendBandEdge(value: number, unit: string): string {
-  if (!Number.isFinite(value)) return "–";
+  if (!Number.isFinite(value)) return "—";
   const rounded =
     Math.abs(value - Math.round(value)) < 1e-6
       ? String(Math.round(value))

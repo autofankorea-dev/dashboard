@@ -82,6 +82,13 @@ try {
   await page.route('**/api/live/controller?**', route => route.fulfill({json:{}}));
   await page.goto(base, { timeout: 120000 });
   await page.locator('[data-fixture-ready="true"]').waitFor();
+  const sensors = page.locator('[data-missing-sensor-probe]');
+  assert.ok((await sensors.innerText()).includes('—'));
+  assert.equal(await sensors.getByLabel('습도값 미수신',{exact:true}).count(),1);
+  assert.ok((await sensors.innerText()).includes('0'));
+  assert.ok((await sensors.innerText()).includes('65.0%'),'Retired alarm limits must not hide valid humidity');
+  assert.ok(!(await sensors.innerText()).includes('NaN'));
+  assert.ok(!(await sensors.innerText()).includes('—%'));
   const value = page.locator('[data-panel-value]');
   const dirty = page.locator('[data-panel-dirty]');
   const check = async (locator, expected) => {

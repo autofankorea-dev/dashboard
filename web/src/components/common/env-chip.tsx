@@ -43,7 +43,7 @@ export function EnvChip({
 }: EnvChipProps) {
   const conf = kindMap[kind];
   const Icon = conf.icon;
-  const hasValue = value != null && value !== "" && value !== "--";
+  const hasValue = value != null && value.trim() !== "" && Number.isFinite(Number(value));
   const iconClass = compact
     ? dashboardUi.gridCellIconCompact
     : dashboardUi.gridCellIconDefault;
@@ -53,7 +53,7 @@ export function EnvChip({
   const unitClass = compact
     ? dashboardUi.gridCellMetaCompact
     : dashboardUi.tableMeta;
-  const aria = hasValue ? `${conf.label} ${value}${conf.unit}` : conf.label;
+  const aria = hasValue ? `${conf.label} ${value}${conf.unit}` : `${conf.label}값 미수신`;
   const readout = (
     <>
       <Icon className={cn(iconClass, conf.className)} aria-hidden />
@@ -71,7 +71,7 @@ export function EnvChip({
             </span>
           </>
         ) : (
-          <span className="text-muted-foreground">—</span>
+        <span className="text-muted-foreground" title={`${conf.label}값 미수신`}>—</span>
         )}
       </span>
       {tone ? <span className="sr-only">{tone}</span> : null}
@@ -109,7 +109,7 @@ export function EnvChip({
         "flex items-center gap-2 px-3 py-2",
         dashboardAffordance.dataPocket,
       )}
-      aria-label={hasValue ? `${conf.label} ${value}${conf.unit}` : conf.label}
+      aria-label={aria}
     >
       <Icon className={cn(dashboardUi.iconSm, conf.className)} aria-hidden />
       {hasValue ? (
@@ -118,7 +118,7 @@ export function EnvChip({
           <span className={cn("ml-1", dashboardUi.tableMeta)}>{conf.unit}</span>
         </p>
       ) : (
-        <span className={cn(dashboardUi.value, "leading-none text-muted-foreground")}>
+        <span title={`${conf.label}값 미수신`} className={cn(dashboardUi.value, "leading-none text-muted-foreground")}>
           —
         </span>
       )}

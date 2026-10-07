@@ -22,6 +22,7 @@ import { useHydrationSafeDashboardCompact } from "@/components/layout/dashboard-
 import { normalizeStallTyCode } from "@/lib/data/stall-type";
 import { StatusBadge } from "@/components/common/status-badge";
 import { EnvChip } from "@/components/common/env-chip";
+import { formatSensorNumberForDisplay } from "@/lib/data/reading-display";
 import { StallUnitNoMark } from "@/components/farm/controller-summary-parts";
 import { dashboardChroma, dashboardUi, dashboardTypography } from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";
@@ -549,21 +550,13 @@ export function BarnListSummary({
                 <EnvChip
                   kind="temp"
                   value={
-                    summary.status === "offline"
-                      ? null
-                      : summary.tempC != null
-                        ? summary.tempC.toFixed(1)
-                        : null
+                    formatSensorNumberForDisplay(summary.status, summary.tempC)
                   }
                 />
                 <EnvChip
                   kind="humidity"
                   value={
-                    summary.status === "offline"
-                      ? null
-                      : summary.humidityPct != null
-                        ? summary.humidityPct.toFixed(0)
-                        : null
+                    formatSensorNumberForDisplay(summary.status, summary.humidityPct, 0)
                   }
                 />
               </div>

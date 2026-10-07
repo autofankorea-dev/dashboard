@@ -54,9 +54,9 @@ export function toneFromJudge(judge: string): KpiTone {
   return "ok";
 }
 
-export function fmt(n: number | null | undefined, digits = 1): string {
-  if (n == null || Number.isNaN(n)) return "—";
-  return n.toFixed(digits);
+export function fmt(n: number | null | undefined, digits = 1, unit = ""): string {
+  if (n == null || !Number.isFinite(n)) return "—";
+  return `${n.toFixed(digits)}${unit}`;
 }
 
 export function statusLabel(status: string): string {

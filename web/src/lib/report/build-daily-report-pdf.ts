@@ -133,8 +133,8 @@ function paintCoverPage(
     ctx.fillStyle = INK;
     ctx.fillText(`${b.stallLabel} ${b.stallNo}`, indexCols[0]!, y);
     ctx.fillText(String(b.kpi.total), indexCols[1]!, y);
-    ctx.fillText(`${fmt(b.kpi.tempNow)}℃`, indexCols[2]!, y);
-    ctx.fillText(`${fmt(b.kpi.humNow)}%`, indexCols[3]!, y);
+    ctx.fillText(fmt(b.kpi.tempNow, 1, "℃"), indexCols[2]!, y);
+    ctx.fillText(fmt(b.kpi.humNow, 1, "%"), indexCols[3]!, y);
     ctx.fillStyle = KPI_TONE[toneFromJudge(b.kpi.judge)].value;
     ctx.fillText(b.kpi.judge, indexCols[4]!, y);
     y += 13;
@@ -194,8 +194,8 @@ function paintCoverPage(
           row.status === "offline" ? "#B91C1C" : "#B45309";
         ctx.fillText(statusLabel(row.status), aCols[2]!, y);
         ctx.fillStyle = INK;
-        ctx.fillText(`${fmt(row.tempC)}℃`, aCols[3]!, y);
-        ctx.fillText(`${fmt(row.humidityPct)}%`, aCols[4]!, y);
+        ctx.fillText(fmt(row.tempC, 1, "℃"), aCols[3]!, y);
+        ctx.fillText(fmt(row.humidityPct, 1, "%"), aCols[4]!, y);
         y += 12;
       }
     }
@@ -342,8 +342,8 @@ function paintBarnIndex(
     ctx.fillStyle = INK;
     ctx.fillText(`${b.stallLabel} ${b.stallNo}`, indexCols[0]!, y);
     ctx.fillText(String(b.kpi.total), indexCols[1]!, y);
-    ctx.fillText(`${fmt(b.kpi.tempNow)}℃`, indexCols[2]!, y);
-    ctx.fillText(`${fmt(b.kpi.humNow)}%`, indexCols[3]!, y);
+    ctx.fillText(fmt(b.kpi.tempNow, 1, "℃"), indexCols[2]!, y);
+    ctx.fillText(fmt(b.kpi.humNow, 1, "%"), indexCols[3]!, y);
     ctx.fillStyle = KPI_TONE[toneFromJudge(b.kpi.judge)].value;
     ctx.fillText(b.kpi.judge, indexCols[4]!, y);
     y += 13;
@@ -440,8 +440,8 @@ function paintControllerTable(
     ctx.fillStyle = KPI_TONE[toneFromControllerStatus(c.status)].value;
     ctx.fillText(statusLabel(c.status), cols[1]!, y);
     ctx.fillStyle = INK;
-    ctx.fillText(`${fmt(c.tempC)}℃`, cols[2]!, y);
-    ctx.fillText(`${fmt(c.humidityPct)}%`, cols[3]!, y);
+    ctx.fillText(fmt(c.tempC, 1, "℃"), cols[2]!, y);
+    ctx.fillText(fmt(c.humidityPct, 1, "%"), cols[3]!, y);
     ctx.fillText(c.motorA == null ? "—" : fmt(c.motorA, 0), cols[4]!, y);
     ctx.fillText(c.motorB == null ? "—" : fmt(c.motorB, 0), cols[5]!, y);
     ctx.fillText(c.motorC == null ? "—" : fmt(c.motorC, 0), cols[6]!, y);
@@ -458,35 +458,35 @@ function paintBarnKpiRow(
 ): number {
   const kpiItems: [string, string, KpiTone?][] = compact
     ? [
-        [`${fmt(barn.kpi.tempNow)}℃`, "온도"],
-        [`${fmt(barn.kpi.humNow)}%`, "습도"],
+        [fmt(barn.kpi.tempNow, 1, "℃"), "온도"],
+        [fmt(barn.kpi.humNow, 1, "%"), "습도"],
         [
-          barn.kpi.motorA == null ? "—" : `${fmt(barn.kpi.motorA, 0)}%`,
+          barn.kpi.motorA == null ? "—" : fmt(barn.kpi.motorA, 0, "%"),
           CHANNEL_SLOT_LABELS.A,
         ],
         [
-          barn.kpi.motorB == null ? "—" : `${fmt(barn.kpi.motorB, 0)}%`,
+          barn.kpi.motorB == null ? "—" : fmt(barn.kpi.motorB, 0, "%"),
           CHANNEL_SLOT_LABELS.B,
         ],
         [
-          barn.kpi.motorC == null ? "—" : `${fmt(barn.kpi.motorC, 0)}%`,
+          barn.kpi.motorC == null ? "—" : fmt(barn.kpi.motorC, 0, "%"),
           CHANNEL_SLOT_LABELS.C,
         ],
         [barn.kpi.judge, "판정", toneFromJudge(barn.kpi.judge)],
       ]
     : [
-        [`${fmt(barn.kpi.tempNow)}℃`, "온도"],
-        [`${fmt(barn.kpi.humNow)}%`, "습도"],
+        [fmt(barn.kpi.tempNow, 1, "℃"), "온도"],
+        [fmt(barn.kpi.humNow, 1, "%"), "습도"],
         [
-          barn.kpi.motorA == null ? "—" : `${fmt(barn.kpi.motorA, 0)}%`,
+          barn.kpi.motorA == null ? "—" : fmt(barn.kpi.motorA, 0, "%"),
           CHANNEL_SLOT_LABELS.A,
         ],
         [
-          barn.kpi.motorB == null ? "—" : `${fmt(barn.kpi.motorB, 0)}%`,
+          barn.kpi.motorB == null ? "—" : fmt(barn.kpi.motorB, 0, "%"),
           CHANNEL_SLOT_LABELS.B,
         ],
         [
-          barn.kpi.motorC == null ? "—" : `${fmt(barn.kpi.motorC, 0)}%`,
+          barn.kpi.motorC == null ? "—" : fmt(barn.kpi.motorC, 0, "%"),
           CHANNEL_SLOT_LABELS.C,
         ],
         [`${fmt(barn.kpi.tMin24)}~${fmt(barn.kpi.tMax24)}℃`, "24h 온도"],
@@ -659,18 +659,18 @@ function paintAppendixSample(
   let y = MARGIN + 46;
   const kpiW = (PAGE_W - MARGIN * 2 - 20) / 6;
   const kpis: [string, string, KpiTone?][] = [
-    [`${fmt(hit.ctrl.tempC)}℃`, "온도"],
-    [`${fmt(hit.ctrl.humidityPct)}%`, "습도"],
+    [fmt(hit.ctrl.tempC, 1, "℃"), "온도"],
+    [fmt(hit.ctrl.humidityPct, 1, "%"), "습도"],
     [
-      hit.ctrl.motorA == null ? "—" : `${fmt(hit.ctrl.motorA, 0)}%`,
+      hit.ctrl.motorA == null ? "—" : fmt(hit.ctrl.motorA, 0, "%"),
       CHANNEL_SLOT_LABELS.A,
     ],
     [
-      hit.ctrl.motorB == null ? "—" : `${fmt(hit.ctrl.motorB, 0)}%`,
+      hit.ctrl.motorB == null ? "—" : fmt(hit.ctrl.motorB, 0, "%"),
       CHANNEL_SLOT_LABELS.B,
     ],
     [
-      hit.ctrl.motorC == null ? "—" : `${fmt(hit.ctrl.motorC, 0)}%`,
+      hit.ctrl.motorC == null ? "—" : fmt(hit.ctrl.motorC, 0, "%"),
       CHANNEL_SLOT_LABELS.C,
     ],
     [
@@ -823,8 +823,8 @@ function paintCoverWeeklyBriefing(
     ctx.fillStyle = INK;
     ctx.fillText(type.stallLabel, cols[0]!, y);
     ctx.fillText(String(type.barnCount), cols[1]!, y);
-    ctx.fillText(`${fmt(type.avgTemp30d)}℃`, cols[2]!, y);
-    ctx.fillText(`${fmt(type.avgHum30d, 0)}%`, cols[3]!, y);
+    ctx.fillText(fmt(type.avgTemp30d, 1, "℃"), cols[2]!, y);
+    ctx.fillText(fmt(type.avgHum30d, 0, "%"), cols[3]!, y);
     ctx.fillText(
       type.judge,
       cols[4]!,
@@ -858,8 +858,8 @@ function paintStallTypeBriefing(
   );
   let y = MARGIN + 48;
   const kpis: [string, string, KpiTone?][] = [
-    [`${fmt(type.avgTemp30d)}℃`, "30일 온도"],
-    [`${fmt(type.avgHum30d, 0)}%`, "30일 습도"],
+    [fmt(type.avgTemp30d, 1, "℃"), "30일 온도"],
+    [fmt(type.avgHum30d, 0, "%"), "30일 습도"],
     [`${type.online}/${type.controllerTotal}`, "온라인"],
     [type.judge, "수신", toneFromJudge(type.judge)],
   ];
@@ -906,8 +906,8 @@ function paintStallTypeBriefing(
     ctx.fillStyle = INK;
     ctx.fillText(`${row.stallLabel} ${row.stallNo}`, cols[0]!, y);
     ctx.fillText(String(row.total), cols[1]!, y);
-    ctx.fillText(`${fmt(row.tempNow)}℃`, cols[2]!, y);
-    ctx.fillText(`${fmt(row.humNow)}%`, cols[3]!, y);
+    ctx.fillText(fmt(row.tempNow, 1, "℃"), cols[2]!, y);
+    ctx.fillText(fmt(row.humNow, 1, "%"), cols[3]!, y);
     ctx.fillStyle = KPI_TONE[toneFromJudge(row.judge)].value;
     ctx.fillText(row.judge, cols[4]!, y);
     y += 13;

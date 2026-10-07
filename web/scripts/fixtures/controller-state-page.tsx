@@ -16,6 +16,8 @@ import { controllerEnvCoverLevel } from "@/lib/farm/controller-env-cover";
 import type { BarnReading } from "@/lib/data/iot";
 import type { ThermoCommand } from "@/lib/data/commands";
 import type { PanelChannelContext } from "@/lib/controllers/controller-panel-draft";
+import { EnvMetricPanel } from "@/components/farm/controller-summary-gauge-parts";
+import { EnvChip } from "@/components/common/env-chip";
 
 const base: BarnReading = {
   key: "fixture", farmKey: { lsindRegistNo: "TEST", itemCode: "P00" }, moduleUid: 1,
@@ -114,6 +116,12 @@ export default function ControllerStateFixture() {
     ["empty", { ...base, tempC: null, humidityPct: null }],
   ];
   return <main data-fixture-ready={ready} className="p-4">
+    <section data-missing-sensor-probe className="max-w-md">
+      <EnvChip kind="humidity" value="NaN" />
+      <EnvChip kind="humidity" value="0" />
+      <EnvMetricPanel offline={false} temp={{value:24,displayValue:"24.0",low:10,high:35,breached:false}}
+        humidity={{value:65,displayValue:"65.0",low:NaN,high:NaN,breached:false}} />
+    </section>
     <div className="flex flex-wrap gap-2">
       {(["idle", "pending", "failed", "applied"] as Stage[]).map((value) =>
         <button key={value} onClick={() => setStage(value)}>{value}</button>)}
