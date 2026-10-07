@@ -72,6 +72,7 @@ import { dashboardAffordance } from "@/lib/ui/dashboard-page-ui";
 const LIST_PANEL_META = "text-xs tabular-nums text-muted-foreground";
 const LIST_SLIDER_TITLE = "text-xs font-semibold";
 const LIST_SLIDER_AXIS = "text-[11px] leading-snug text-muted-foreground";
+const EMPTY_COMMANDS: ThermoCommand[] = [];
 
 type Props = {
   reading: BarnReading;
@@ -118,7 +119,7 @@ export function BarnListAccordionPanel({
   reading,
   readings,
   thermoSettings,
-  commands = [],
+  commands = EMPTY_COMMANDS,
   alarmSettings,
   canCommand,
   collapsibleSections = false,
@@ -347,7 +348,6 @@ export function BarnListAccordionPanel({
   const isSaving =
     panel.pending || applyBusy || Boolean(thresholdHeader?.pending);
   const editorOpen = focus != null && confirmModel == null;
-  const alarmLayer = focus === "alarm";
   const canSaveControl =
     online && canCommand && !panel.pending && panel.hasChanges;
   const canSaveAlarm =
@@ -432,6 +432,7 @@ export function BarnListAccordionPanel({
   const handleSaveAlarm = () => {
     if (isSaving || !canSaveAlarm) return;
     thresholdHeader!.onSave();
+    closeEditor();
   };
 
   const dismissConfirm = useCallback(() => {
@@ -477,13 +478,6 @@ export function BarnListAccordionPanel({
     return "ok" as const;
   };
 
-  const handleEditorPrimary = () => {
-    if (alarmLayer) {
-      handleSaveAlarm();
-    }
-    closeEditor();
-  };
-
   const panelError =
     panel.message?.tone === "error" ? panel.message.text : null;
 
@@ -524,34 +518,8 @@ export function BarnListAccordionPanel({
   const alarmCells =
     thresholdHeader?.glanceCells ??
     { temp: String(reading.alarmLowTempC ?? "—"), tempDev: String(reading.alarmHighTempC ?? "—"), humidity: "—" };
-  const focusedSlot =
-    focus === "A" || focus === "B" || focus === "C" ? focus : null;
   const showControlEditor =
-    editorOpen && !alarmLayer && (!hasChannels || channelSlots.length > 0);
-  const showMissingChannel =
-    editorOpen &&
-    hasChannels &&
-    Boolean(focusedSlot) &&
-    channelSlots.length === 0;
-
-  const editorTitle = alarmLayer
-    ? "저온 · 고온 경보"
-    : hasChannels && focusedSlot
-      ? "A/B/C 채널 설정"
-      : "설정온도 · 편차";
-  const editorPrimaryLabel = alarmLayer
-    ? "명령 적용"
-    : showMissingChannel
-      ? null
-      : "반영";
-  const editorPrimaryDisabled = alarmLayer
-    ? isSaving || !canSaveAlarm
-    : false;
-  const editorHint = alarmLayer
-    ? "컨트롤러 공통 경보값을 장비로 전송합니다."
-    : showMissingChannel
-      ? undefined
-      : "표에만 기록합니다. 현장 전송은 명령 적용입니다.";
+    editorOpen && (!hasChannels || channelSlots.length > 0);
 
   const alarmForm = (
     <AlarmThresholdForm
@@ -647,17 +615,26 @@ export function BarnListAccordionPanel({
   );
 
   const editorBody = (
-    <>
-      {showControlEditor ? controlBody : null}
-      {showMissingChannel && focusedSlot ? (
-        <p className={LIST_PANEL_META}>
-          {focusedSlot}채널은 이 컨트롤러에 없습니다. 보내기 대상이 아닙니다.
-        </p>
+    <div className="space-y-5" data-unified-controller-settings>
+      {showControlEditor ? (
+        <section aria-label="채널 설정" className="space-y-3">
+          <h3 className="text-sm font-semibold">{hasChannels ? "A/B/C 채널 설정" : "컨트롤러 설정"}</h3>
+          {controlBody}
+          {canCommand ? <button type="button" disabled={saveDisabled} title={saveDisabledReason ?? undefined}
+            onClick={handleSaveControl} className={cn("min-h-11 w-full rounded-md px-3 py-2 text-sm", dashboardAffordance.action)}>
+            채널 명령 적용
+          </button> : null}
+        </section>
       ) : null}
-      <div className={alarmLayer && editorOpen ? "block" : "hidden"}>
+      <section aria-label="알람 설정" className={cn("space-y-3 border-t pt-4", !editorOpen && "hidden")}>
+        <h3 className="text-sm font-semibold">저온 · 고온 알람</h3>
         {alarmForm}
-      </div>
-    </>
+        {canCommand ? <button type="button" disabled={isSaving || !canSaveAlarm} onClick={handleSaveAlarm}
+          className={cn("min-h-11 w-full rounded-md px-3 py-2 text-sm", dashboardAffordance.action)}>
+          알람 명령 적용
+        </button> : null}
+      </section>
+    </div>
   );
 
   const readOnlyBanner = !canCommand ? (
@@ -729,14 +706,10 @@ export function BarnListAccordionPanel({
       <SettingsEditOverlay
         open={editorOpen}
         wide={showControlEditor}
-        title={editorTitle}
-        primaryLabel={canCommand ? editorPrimaryLabel : null}
-        primaryBusyLabel={alarmLayer ? "저장 중…" : undefined}
-        primaryDisabled={editorPrimaryDisabled}
-        busy={alarmLayer ? Boolean(thresholdHeader?.pending) : false}
-        hint={editorHint}
+        title="채널 · 알람 설정"
+        primaryLabel={null}
+        hint="변경한 항목의 명령 적용을 누르면 장비로 전송합니다."
         onClose={closeEditor}
-        onPrimary={editorPrimaryLabel ? handleEditorPrimary : undefined}
       >
         {editorBody}
       </SettingsEditOverlay>

@@ -84,7 +84,7 @@ export function CoverChannelApplyStrip({
                 "text-current",
               )}
             >
-              {item.slot ?? "공통"}
+              {item.slot ?? "알람"}
             </span>
             <CoverApplyGauge filled={item.filled} />
             <span className="flex justify-end text-current">

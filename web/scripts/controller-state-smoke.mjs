@@ -79,6 +79,7 @@ try {
     if (message.type() === "error") errors.push(message.text());
   });
   page.setDefaultTimeout(20000);
+  await page.route('**/api/live/controller?**', route => route.fulfill({json:{}}));
   await page.goto(base, { timeout: 120000 });
   await page.locator('[data-fixture-ready="true"]').waitFor();
   const value = page.locator('[data-panel-value]');
@@ -142,9 +143,31 @@ try {
   await alarm.getByRole('button',{name:'경보 실패 테스트',exact:true}).click();
   await alarm.getByText('전송 실패 · 입력값을 확인 후 다시 적용하세요.',{exact:true}).waitFor();
   assert.equal(await alarm.getByRole('spinbutton',{name:'저온 경보',exact:true}).inputValue(),'12');
+  const unified = page.locator('[data-unified-probe]');
+  assert.equal(await unified.locator('[data-alarm-strip-probe]').innerText(), '알람');
+  for (const trigger of [/^A채널/, /^B채널/, /^C채널/, /^장비 경보/]) {
+    await unified.getByRole('button',{name:trigger}).click();
+    const dialog = page.getByRole('dialog',{name:'채널 · 알람 설정',exact:true});
+    await dialog.waitFor();
+    for (const slot of ['A','B','C']) assert.ok(await dialog.getByRole('region',{name:`${slot}채널`,exact:true}).isVisible());
+    assert.ok(await dialog.getByRole('spinbutton',{name:'저온 경보',exact:true}).isVisible());
+    assert.ok(await dialog.getByRole('spinbutton',{name:'고온 경보',exact:true}).isVisible());
+    if (trigger.source === '^A채널') {
+      await dialog.getByRole('spinbutton',{name:'저온 경보',exact:true}).fill('12');
+      await dialog.getByRole('region',{name:'B채널',exact:true}).getByRole('button',{name:'설정 ℃ 올리기',exact:true}).click();
+    }
+    assert.equal(await dialog.getByRole('spinbutton',{name:'저온 경보',exact:true}).inputValue(),'12');
+    await dialog.getByRole('button',{name:'닫기',exact:true}).click();
+  }
   await page.screenshot({path:join(output,'controller-states-desktop.png')});
   await page.setViewportSize({width:390,height:844});
   await delay(300);
+  await unified.getByRole('button',{name:/^장비 경보/}).click();
+  const mobileDialog = page.getByRole('dialog',{name:'채널 · 알람 설정',exact:true});
+  assert.ok(await mobileDialog.getByRole('spinbutton',{name:'고온 경보',exact:true}).isVisible());
+  assert.ok(await mobileDialog.getByRole('region',{name:'C채널',exact:true}).isVisible());
+  await page.screenshot({path:join(output,'unified-settings-mobile.png')});
+  await mobileDialog.getByRole('button',{name:'닫기',exact:true}).click();
   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));
   for(const node of await page.locator('[data-cover-communication-status]').all()) assert.ok(await node.isVisible());
   await page.screenshot({path:join(output,'controller-states-mobile.png'),fullPage:true});

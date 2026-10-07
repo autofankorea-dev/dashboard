@@ -10,6 +10,8 @@ import { ControllerEnvCover } from "@/components/farm/controller-env-cover";
 import { ControllerPanelFeedback } from "@/components/farm/controller-panel-feedback";
 import { SettingsAllChannelGrid } from "@/components/farm/settings-all-channel-grid";
 import { SettingsGlanceStrip } from "@/components/farm/settings-glance-strip";
+import { BarnListAccordionPanel } from "@/components/farm/barn-list-accordion-panel";
+import { CoverChannelApplyStrip } from "@/components/farm/cover-channel-apply-strip";
 import { controllerEnvCoverLevel } from "@/lib/farm/controller-env-cover";
 import type { BarnReading } from "@/lib/data/iot";
 import type { ThermoCommand } from "@/lib/data/commands";
@@ -26,6 +28,9 @@ const base: BarnReading = {
 };
 const old = { setpointTemp: 24, tempDeviation: 2, minVentPct: 20, maxVentPct: 80 };
 const submitted = { ...old, setpointTemp: 26 };
+const unifiedReading: BarnReading = { ...base, key: "unified-fixture", channels: (["A", "B", "C"] as const).map((channel, index) => ({
+  channel, eqpmnCode: `EC0${index + 1}`, tempC: 25, humidityPct: 55, fanPct: 40, fanSeries: [], thermo: old,
+})) };
 type Stage = "idle" | "pending" | "failed" | "applied";
 
 function PanelProbe({ stage, slot }: { stage: Stage; slot: "A" | "B" }) {
@@ -107,6 +112,10 @@ export default function ControllerStateFixture() {
       <button onClick={() => setMount((value) => value + 1)}>패널 재진입</button>
     </div>
     <AlarmProbe />
+    <div data-unified-probe className="max-w-md">
+      <BarnListAccordionPanel reading={unifiedReading} readings={[unifiedReading]} thermoSettings={{}} canCommand />
+      <span data-alarm-strip-probe><CoverChannelApplyStrip items={[{id:"alarm-label",slot:null,stage:"접수",filled:1}]} /></span>
+    </div>
     <PanelProbe key={mount} stage={stage} slot={slot} />
     <div className="flex flex-wrap gap-4">
       {covers.map(([id, reading]) => <div key={id} data-fixture-cover={id}
