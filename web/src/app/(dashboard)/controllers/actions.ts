@@ -1,7 +1,7 @@
 "use server";
 
 import { parseDeviceAlarms, DEVICE_SETTINGS_ACTION, type DeviceAlarmValues } from "@/lib/controllers/device-alarm-command";
-import { COMBINED_CHANNEL_ACTION, parseCommandChannels } from "@/lib/controllers/combined-channel-command";
+import { parseCommandChannels } from "@/lib/controllers/combined-channel-command";
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
@@ -364,7 +364,7 @@ export async function sendCombinedChannelCommandAction(commands: BulkThermoComma
   const { data, error } = await supabase.from("ctrl_thermo_command").insert({
     created_by: user.id, lsind_regist_no: lsindRegistNo, item_code: itemCode, module_uid: moduleUid,
     ctrl_idx: Number(eqpmnNo) - 1, stall_ty_code: stallTyCode, stall_no: stallNo, eqpmn_no: eqpmnNo,
-    channel: null, eqpmn_code: null, action: COMBINED_CHANNEL_ACTION, status: "pending",
+    channel: null, eqpmn_code: null, action: DEVICE_SETTINGS_ACTION, status: "pending",
     setpoint_temp: values.setpointTemp, temp_deviation: values.tempDeviation,
     min_vent_pct: values.minVentPct, max_vent_pct: values.maxVentPct,
     payload_json: { command_channels: channels }, note: null,
@@ -428,7 +428,7 @@ export async function saveControllerDisplayNameAction(
 export type DeviceSettingsTarget = {
   key: string; lsindRegistNo: string; itemCode: string; moduleUid: number;
   stallTyCode: string; stallNo: string; eqpmnNo: string;
-  alarmSettings: DeviceAlarmValues;
+  alarmSettings?: DeviceAlarmValues;
   channels?: import("@/lib/controllers/combined-channel-command").CommandChannelValues[];
 };
 /** RLS-scoped command, never a profile write. One controller → one packet. */
@@ -441,9 +441,9 @@ export async function sendDeviceSettingsCommandsAction(targets: DeviceSettingsTa
   const supabase = await createClient();
   const failed: SendBulkThermoCommandResult["failed"] = [], sentItems: BulkSentCommandItem[] = [];
   for (const t of targets) {
-    const alarmSettings = parseDeviceAlarms(t?.alarmSettings);
-    const channels = t?.channels?.length ? parseCommandChannels(t.channels) : [];
-    if (!t || !alarmSettings || !channels || !t.key || !t.lsindRegistNo || !t.itemCode ||
+    const alarmSettings = t?.alarmSettings === undefined ? null : parseDeviceAlarms(t.alarmSettings);
+    const channels = t?.channels === undefined || (Array.isArray(t.channels) && !t.channels.length) ? [] : parseCommandChannels(t.channels);
+    if (!t || (t.alarmSettings !== undefined && !alarmSettings) || !channels || (!alarmSettings && !channels.length) || !t.key || !t.lsindRegistNo || !t.itemCode ||
         !Number.isInteger(t.moduleUid) || t.moduleUid < 1 ||
         !/^SP(0[1-9]|10)$/.test(t.stallTyCode) || !/^(0[1-9]|[12][0-9]|3[0-2])$/.test(t.stallNo) ||
         !/^(0[1-9]|10)$/.test(t.eqpmnNo)) { failed.push({ key: t?.key ?? "", error: "invalid_values" }); continue; }
@@ -455,7 +455,7 @@ export async function sendDeviceSettingsCommandsAction(targets: DeviceSettingsTa
       ctrl_idx: Number(t.eqpmnNo) - 1, stall_ty_code: t.stallTyCode, stall_no: t.stallNo, eqpmn_no: t.eqpmnNo,
       channel: null, eqpmn_code: null, action: DEVICE_SETTINGS_ACTION, status: "pending",
       setpoint_temp: values.setpointTemp, temp_deviation: values.tempDeviation, min_vent_pct: values.minVentPct, max_vent_pct: values.maxVentPct,
-      payload_json: { command_channels: channels, alarm_settings: alarmSettings }, note: null,
+      payload_json: { command_channels: channels, ...(alarmSettings ? { alarm_settings: alarmSettings } : {}) }, note: null,
     }).select(THERMO_COMMAND_SELECT).single();
     if (error || !data) { failed.push({ key: t.key, error: error?.message ?? "insert_failed" }); continue; }
     const command = mapThermoCommandRow(data as ThermoCommandRow);

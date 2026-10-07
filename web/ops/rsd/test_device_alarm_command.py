@@ -1,5 +1,7 @@
 import copy,struct,unittest
 from unittest.mock import patch
+from types import SimpleNamespace
+import C
 from test_combined_command import ROW,CHANNELS
 from wire_command import build_mqtt_message,CommandError
 from wire_decode import crc16_ccitt_false
@@ -16,6 +18,54 @@ def live(channels=True):
     return r
 
 class DeviceAlarmTests(unittest.TestCase):
+    def test_single_mqtt_publication_and_ack_gate(self):
+        for flags in (0, 1):
+            r=command(CHANNELS)
+            if not flags: del r['payload_json']['alarm_settings']
+            published=[]
+            def publish(topic,body,**kwargs):
+                published.append((topic,body))
+                return SimpleNamespace(rc=0,wait_for_publish=lambda timeout:None)
+            with patch.object(C,'mark_sent') as sent,patch.object(C,'wait_for_applied',return_value='applied') as wait:
+                self.assertEqual(C.gate_send_one(SimpleNamespace(publish=publish),r),'applied')
+                self.assertEqual(len(published),1)
+                self.assertEqual(len(published[0][1]),33)
+                self.assertEqual(published[0][1][:2],bytes([14,flags]))
+                sent.assert_called_once();wait.assert_called_once()
+    def test_fixed_packet_flags_and_masks(self):
+        for flags in (0, 1):
+            for mask in range(8):
+                selected = [c for i,c in enumerate(CHANNELS) if mask & (1 << i)]
+                r = command(selected)
+                if not flags: del r['payload_json']['alarm_settings']
+                if not flags and not mask:
+                    with self.assertRaises(CommandError): build_mqtt_message(r)
+                    self.assertIsNone(ack.find_thermo_for_command(r, {}))
+                    continue
+                _, w, p = build_mqtt_message(r)
+                self.assertEqual(len(w), 33)
+                self.assertEqual(w[:6], bytes([14,flags,1,1,3,mask]))
+                self.assertEqual(p['flags'],flags)
+                for slot in range(3):
+                    if not mask & (1 << slot): self.assertEqual(w[6+slot*7:13+slot*7],b'\xff'*7)
+                if not flags:
+                    self.assertEqual(w[27:31], b'\xff'*4)
+                    self.assertNotIn('alarm_settings', p)
+                    # The audit JSON must re-encode to the same packet after C.py stores it.
+                    self.assertEqual(build_mqtt_message(dict(r,payload_json=p))[1], w)
+                self.assertEqual(struct.unpack('<H',w[31:])[0],crc16_ccitt_false(w[:31]))
+    def test_ack_channel_only_ignores_unselected_values(self):
+        r=command([CHANNELS[1]]); del r['payload_json']['alarm_settings']
+        c=live();c['alarmLowTempC']='bad';c['alarmHighTempC']='99'
+        c['channels'][0]['thermo']['setpointTemp']=0
+        c['channels'][2]['thermo']['setpointTemp']=0
+        self.assertIsNotNone(ack.find_thermo_for_command(r,ack.collect_thermo_from_controllers([c])))
+        c['channels'][1]['thermo']['setpointTemp']=0
+        self.assertIsNone(ack.find_thermo_for_command(r,ack.collect_thermo_from_controllers([c])))
+    def test_invalid_optional_fields(self):
+        for payload in ({}, {'command_channels':[]}, {'alarm_settings':None}, {'alarm_settings':None,'command_channels':CHANNELS}, {'command_channels':{}}, {'command_channels':[CHANNELS[0],CHANNELS[0]]}):
+            r=command();r['payload_json']=payload
+            with self.assertRaises(CommandError): build_mqtt_message(r)
     def test_alarm_only(self):
         topic,w,p=build_mqtt_message(command())
         self.assertEqual(w.hex(),'0e0101010300ffffffffffffffffffffffffffffffffffffffffff6400b4016d54')

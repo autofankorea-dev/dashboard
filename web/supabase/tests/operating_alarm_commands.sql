@@ -14,6 +14,11 @@ begin
   assert not public.valid_command_channels(jsonb_set(ch,'{command_channels,1}',ch->'command_channels'->0)), 'duplicate channel accepted';
   assert public.valid_device_settings(alarm), 'alarm-only rejected';
   assert public.valid_device_settings(alarm || ch), 'combined alarm/channel rejected';
+  assert public.valid_device_settings(ch), 'channel-only 0x0E rejected';
+  assert not public.valid_device_settings('{}'), 'no-op accepted';
+  assert not public.valid_device_settings('{"command_channels":[]}'), 'empty channel no-op accepted';
+  assert not public.valid_device_settings(ch || '{"alarm_settings":null}'), 'explicit null alarm accepted';
+  assert not public.valid_device_settings('{"command_channels":{}}'), 'non-array channels accepted';
   assert not public.valid_device_settings(null), 'missing payload accepted';
   assert not public.valid_device_settings(jsonb_set(alarm,'{alarm_settings,lowTempC}','43.6')), 'equal alarm limits accepted';
   assert not public.valid_device_settings(jsonb_set(alarm,'{alarm_settings,highTempC}','100.1')), 'out-of-range alarm accepted';
@@ -34,6 +39,7 @@ begin
     cmd.stall_ty_code,cmd.stall_no,cmd.eqpmn_no,cmd.payload_json);
   update public.ctrl_thermo_command set action='SET_CONTROLLER_SETTINGS',payload_json=alarm where id=test_id;
   update public.ctrl_thermo_command set payload_json=alarm || ch where id=test_id;
+  update public.ctrl_thermo_command set payload_json=ch where id=test_id;
   begin
     update public.ctrl_thermo_command set payload_json='{}' where id=test_id;
     raise exception 'invalid device settings passed table constraint';

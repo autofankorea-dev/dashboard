@@ -12,7 +12,9 @@ export function encodeDeviceSettingsBody(input: {
   channels?: CommandChannelValues[]; alarmSettings?: DeviceAlarmValues;
 }): Uint8Array | null {
   const alarm = input.alarmSettings === undefined ? null : parseDeviceAlarms(input.alarmSettings);
-  if (!alarm) return null;
+  if (input.alarmSettings !== undefined && !alarm) return null;
+  if (input.channels !== undefined && !Array.isArray(input.channels)) return null;
+  if (!alarm && !input.channels?.length) return null;
   let base = encodeCombinedCommandBody(input);
   if (!base && !input.channels?.length && alarm) {
     base = encodeCombinedCommandBody({ ...input, channels: [{ channel: "A", eqpmnCode: "EC01", setpointTemp: 25, tempDeviation: 2, minVentPct: 0, maxVentPct: 100 }] });

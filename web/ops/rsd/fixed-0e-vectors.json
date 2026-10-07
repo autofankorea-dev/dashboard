@@ -1,0 +1,77 @@
+[
+  {
+    "flags": 0,
+    "mask": 1,
+    "hex": "0e000101030101fa0014000a64ffffffffffffffffffffffffffffffffffffe2b2"
+  },
+  {
+    "flags": 0,
+    "mask": 2,
+    "hex": "0e0001010302ffffffffffffff02f0000f001450ffffffffffffffffffffff3b9a"
+  },
+  {
+    "flags": 0,
+    "mask": 3,
+    "hex": "0e000101030301fa0014000a6402f0000f001450ffffffffffffffffffffffafbd"
+  },
+  {
+    "flags": 0,
+    "mask": 4,
+    "hex": "0e0001010304ffffffffffffffffffffffffffff03eb001e001e5affffffffef25"
+  },
+  {
+    "flags": 0,
+    "mask": 5,
+    "hex": "0e000101030501fa0014000a64ffffffffffffff03eb001e001e5affffffff7b02"
+  },
+  {
+    "flags": 0,
+    "mask": 6,
+    "hex": "0e0001010306ffffffffffffff02f0000f00145003eb001e001e5affffffffa22a"
+  },
+  {
+    "flags": 0,
+    "mask": 7,
+    "hex": "0e000101030701fa0014000a6402f0000f00145003eb001e001e5affffffff360d"
+  },
+  {
+    "flags": 1,
+    "mask": 0,
+    "hex": "0e0101010300ffffffffffffffffffffffffffffffffffffffffff6400b4016d54"
+  },
+  {
+    "flags": 1,
+    "mask": 1,
+    "hex": "0e010101030101fa0014000a64ffffffffffffffffffffffffffff6400b401f973"
+  },
+  {
+    "flags": 1,
+    "mask": 2,
+    "hex": "0e0101010302ffffffffffffff02f0000f001450ffffffffffffff6400b401205b"
+  },
+  {
+    "flags": 1,
+    "mask": 3,
+    "hex": "0e010101030301fa0014000a6402f0000f001450ffffffffffffff6400b401b47c"
+  },
+  {
+    "flags": 1,
+    "mask": 4,
+    "hex": "0e0101010304ffffffffffffffffffffffffffff03eb001e001e5a6400b401f4e4"
+  },
+  {
+    "flags": 1,
+    "mask": 5,
+    "hex": "0e010101030501fa0014000a64ffffffffffffff03eb001e001e5a6400b40160c3"
+  },
+  {
+    "flags": 1,
+    "mask": 6,
+    "hex": "0e0101010306ffffffffffffff02f0000f00145003eb001e001e5a6400b401b9eb"
+  },
+  {
+    "flags": 1,
+    "mask": 7,
+    "hex": "0e010101030701fa0014000a6402f0000f00145003eb001e001e5a6400b4012dcc"
+  }
+]

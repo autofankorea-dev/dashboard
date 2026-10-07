@@ -1,0 +1,85 @@
+--- a/wire_command.py
++++ b/wire_command.py
+@@ -160,8 +160,11 @@
+     _normalize_stall_no(stall_no)
+     _normalize_eqpmn_no(eqpmn_no)
+     if action == "SET_CONTROLLER_SETTINGS":
+-        command_alarms(row)
+-        if (row.get("payload_json") or {}).get("command_channels"):
++        alarm = command_alarms(row)
++        channels = (row.get("payload_json") or {}).get("command_channels", [])
++        if not isinstance(channels, list) or (not channels and alarm is None):
++            raise CommandError("controller settings must select channels or alarms")
++        if channels:
+             command_channels(row)
+     elif action == ACTION_SET_CHANNELS_THERMO:
+         command_channels(row)
+@@ -232,8 +235,11 @@
+     return sorted(out, key=lambda c: c["channel"])
+ 
+ 
+-def command_alarms(row: dict) -> dict:
+-    raw = (row.get("payload_json") or {}).get("alarm_settings")
++def command_alarms(row: dict) -> dict | None:
++    payload = row.get("payload_json") or {}
++    if "alarm_settings" not in payload:
++        return None
++    raw = payload["alarm_settings"]
+     if not isinstance(raw, dict):
+         raise CommandError("alarm_settings required")
+     values = []
+@@ -255,6 +261,8 @@
+     raw_channels = (row.get("payload_json") or {}).get("command_channels", [])
+     if not isinstance(raw_channels, list):
+         raise CommandError("invalid command_channels")
++    if not raw_channels and alarm is None:
++        raise CommandError("controller settings must select channels or alarms")
+     if raw_channels:
+         body = bytearray(build_combined_command_wire_bytes(row)[:27])
+     else:
+@@ -262,8 +270,11 @@
+         body[:6] = bytes([14, 1, _stall_ty_to_wire(_normalize_stall_ty(row["stall_ty_code"])),
+             int(_normalize_stall_no(row["stall_no"])), int(_normalize_eqpmn_no(row["eqpmn_no"])), 0])
+     body[0] = 14
+-    body[1] = 1
+-    body.extend(struct.pack("<HH", _temp_to_x10(_to_decimal(alarm["lowTempC"], "lowTempC")), _temp_to_x10(_to_decimal(alarm["highTempC"], "highTempC"))))
++    body[1] = 1 if alarm is not None else 0
++    if alarm is not None:
++        body.extend(struct.pack("<HH", _temp_to_x10(_to_decimal(alarm["lowTempC"], "lowTempC")), _temp_to_x10(_to_decimal(alarm["highTempC"], "highTempC"))))
++    else:
++        body.extend(b"\xff" * 4)
+     return bytes(body) + struct.pack("<H", crc16_ccitt_false(body))
+ 
+ 
+@@ -382,10 +393,12 @@
+         payload["wire_ver"] = 0x0D
+         payload["channel_mask"] = packet[5]
+     if action == "SET_CONTROLLER_SETTINGS":
+-        payload["alarm_settings"] = command_alarms(row)
++        alarms = command_alarms(row)
++        if alarms is not None:
++            payload["alarm_settings"] = alarms
+         payload["command_channels"] = command_channels(row) if (row.get("payload_json") or {}).get("command_channels") else []
+         payload["wire_ver"] = 14
+-        payload["flags"] = 1
++        payload["flags"] = packet[1]
+         payload["channel_mask"] = packet[5]
+     return payload
+ 
+--- a/command_ack.py
++++ b/command_ack.py
+@@ -124,12 +124,12 @@
+         except (CommandError, ValueError):
+             return None
+         actual = thermo_by_key.get(cmd_key, {})
+-        for field, expected in (("alarmLowTempC", alarms["lowTempC"]), ("alarmHighTempC", alarms["highTempC"])):
++        for field, expected in (() if alarms is None else (("alarmLowTempC", alarms["lowTempC"]), ("alarmHighTempC", alarms["highTempC"]))):
+             value = _to_decimal(actual.get(field))
+             if value is None or not value.is_finite() or abs(value - Decimal(str(expected))) > Decimal("0.05"):
+                 return None
+         if not (cmd.get("payload_json") or {}).get("command_channels"):
+-            return cmd_key, actual
++            return (cmd_key, actual) if alarms is not None else None
+     if cmd.get("action") in ("SET_CHANNELS_THERMO", "SET_CONTROLLER_SETTINGS"):
+         from wire_command import command_channels, CommandError
+         try:
