@@ -40,6 +40,7 @@ import { BusyButtonLabel } from "@/components/common/busy-button-label";
 import { useFarmLiveRefreshOptional } from "@/lib/navigation/farm-live-refresh";
 import type { BarnReading } from "@/lib/data/iot";
 import type { ThermoCommand } from "@/lib/data/commands";
+import { latestFailedCommand, commandFailureExplanation } from "@/lib/controllers/command-failure-recovery";
 import {
   type ControllerThermoSettings,
   resolveThermoSettings,
@@ -295,6 +296,9 @@ export function BarnListAccordionPanel({
   const panelChannelContexts = useMemo(() => channelContexts?.map((ctx) => ({
     ...ctx, command: latestPanelCommand(panelCommands, ctx.slot),
   })), [channelContexts, panelCommands]);
+  const failedCommand = useMemo(() => latestFailedCommand(panelCommands), [panelCommands]);
+  const [dismissedFailureId, setDismissedFailureId] = useState<string | null>(null);
+  const failureExplanation = failedCommand ? commandFailureExplanation(failedCommand.errorMsg) : null;
 
   const panel = useControllerPanel(
     panelTarget,
@@ -522,6 +526,27 @@ export function BarnListAccordionPanel({
 
   const alarmSummary =
     thresholdHeader?.collapsedSummary ?? "장비 저온 · 고온 경보";
+  const openFailureSettings = () => handleFocus(failedCommand?.channels?.[0]?.channel ?? failedCommand?.channel ?? (failedCommand?.alarmSettings ? "alarm" : hasChannels ? activeChannel : "ctrl"));
+  const restorePreviousRequest = () => {
+    if (!failedCommand || isSaving || !canCommand) return;
+    const channels = failedCommand.channels ?? (failedCommand.channel ? [{ ...failedCommand, channel: failedCommand.channel }] : []);
+    for (const channel of channels) {
+      panel.setChannelField(channel.channel, "setpoint", channel.setpointTemp);
+      panel.setChannelField(channel.channel, "deviation", channel.tempDeviation);
+      panel.setChannelField(channel.channel, "minVent", channel.minVentPct);
+      panel.setChannelField(channel.channel, "maxVent", channel.maxVentPct);
+    }
+    if (!hasChannels && !failedCommand.alarmSettings) {
+      panel.setField("setpoint", failedCommand.setpointTemp);
+      panel.setField("deviation", failedCommand.tempDeviation);
+      panel.setField("minVent", failedCommand.minVentPct);
+      panel.setField("maxVent", failedCommand.maxVentPct);
+    }
+    if (failedCommand.alarmSettings) {
+      thresholdHeader?.onChange("lowTempC", failedCommand.alarmSettings.lowTempC);
+      thresholdHeader?.onChange("highTempC", failedCommand.alarmSettings.highTempC);
+    }
+  };
   const alarmCells =
     thresholdHeader?.glanceCells ??
     { temp: String(reading.alarmLowTempC ?? "—"), tempDev: String(reading.alarmHighTempC ?? "—"), humidity: "—" };
@@ -591,9 +616,21 @@ export function BarnListAccordionPanel({
         }
       />
       {panelError ? <p role="alert" className="text-xs text-destructive">{panelError}</p> : null}
+      {failedCommand && failureExplanation && dismissedFailureId !== failedCommand.id ? (
+        <div role="status" className="space-y-1.5 rounded-lg border border-border bg-background p-2 text-xs" data-command-failure-recovery>
+          <p className="font-semibold text-destructive">{failureExplanation.title}</p>
+          <p>{failureExplanation.detail}</p>
+          <p className="text-muted-foreground">마지막 수신값 기준 · 수신 {Number.isFinite(Date.parse(panelTarget.receivedAt)) ? new Date(panelTarget.receivedAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", hour12: false }) : "시각 미확인"}</p>
+          {!online ? <p className="text-muted-foreground">통신이 지연되고 있습니다. 설정 확인·편집은 가능하며 전송은 연결 회복 후 가능합니다.</p> : null}
+          <div className="flex gap-2">
+            <button type="button" className={cn("min-h-11 rounded-md px-3", dashboardAffordance.tool)} disabled={isSaving} onClick={openFailureSettings}>다시 설정</button>
+            <button type="button" className="min-h-11 rounded-md px-3 text-muted-foreground" onClick={() => setDismissedFailureId(failedCommand.id)}>안내 닫기</button>
+          </div>
+        </div>
+      ) : null}
       <ControllerPanelFeedback
         {...overlay}
-        visible={overlay.visible && confirmModel == null && !editorOpen && !panelError}
+        visible={overlay.visible && confirmModel == null && !editorOpen && !panelError && !failedCommand}
       />
     </div>
   );
@@ -603,6 +640,10 @@ export function BarnListAccordionPanel({
       <UnifiedSettingsTable rows={tableRows} current={currentBySlot} selected={selectedCell} onSelect={setSelectedCell}
         alarm={{lowTempC:thresholdHeader?.values.lowTempC ?? "",highTempC:thresholdHeader?.values.highTempC ?? "",currentLow:panelTarget.alarmLowTempC,currentHigh:panelTarget.alarmHighTempC}} disabled={!canCommand || isSaving} />
       {alarmForm}
+      {failedCommand && canCommand ? <div className="flex items-center justify-between gap-2 text-xs">
+        <span className="text-muted-foreground">이전 요청값을 불러와 확인 후 다시 적용할 수 있습니다.</span>
+        <button type="button" disabled={isSaving} className={cn("min-h-11 shrink-0 rounded-md px-3", dashboardAffordance.tool)} onClick={restorePreviousRequest}>이전 요청값 불러오기</button>
+      </div> : null}
       {alarmChanged && thresholdHeader?.validationError ? <p role="alert" className="text-xs text-destructive">{thresholdHeader.validationError}</p> : null}
       <p className="text-xs text-muted-foreground">채널 {panel.dirtyChannelSlots.length}개 변경 · 알람 {alarmChanged ? "변경됨" : "변경 없음"}</p>
     </div>

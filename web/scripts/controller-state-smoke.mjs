@@ -110,6 +110,19 @@ try {
   await check(value,'26');
   await page.getByRole('button',{name:'failed',exact:true}).click();
   await check(value,'24'); await check(dirty,'true'); // B has an unrelated unsent edit.
+  assert.equal(await page.getByRole('button',{name:/^A채널 .*실패/}).isEnabled(),true,'Failed rows remain clickable');
+  const recovery = page.locator('[data-unified-probe] [data-command-failure-recovery]');
+  await recovery.getByText('반영 확인 시간 초과',{exact:true}).waitFor();
+  await recovery.getByRole('button',{name:'다시 설정',exact:true}).click();
+  const recoveryEditor = page.getByRole('dialog',{name:'채널 · 알람 설정',exact:true});
+  await recoveryEditor.waitFor();
+  assert.ok((await recoveryEditor.getByRole('button',{name:'A채널 설정온도 선택',exact:true}).innerText()).includes('24.0℃'),'Failure shows raw instead of request');
+  await recoveryEditor.getByRole('button',{name:'이전 요청값 불러오기',exact:true}).click();
+  assert.ok((await recoveryEditor.getByRole('button',{name:'A채널 설정온도 선택',exact:true}).innerText()).includes('26.0℃'));
+  assert.ok((await recoveryEditor.getByRole('button',{name:'고온 경보 선택',exact:true}).innerText()).includes('40.0℃'));
+  await recoveryEditor.getByRole('button',{name:'닫기',exact:true}).click();
+  await recovery.getByRole('button',{name:'안내 닫기',exact:true}).click();
+  assert.equal(await recovery.count(),0);
   assert.equal(await page.locator('[data-controller-panel-feedback][role="alert"]').count(),1, 'Failure is shown inside the panel');
   assert.equal(await page.locator('[data-panel-channel-b]').textContent(),'28');
   await page.getByRole('button',{name:'최신 raw 수신 테스트',exact:true}).click();

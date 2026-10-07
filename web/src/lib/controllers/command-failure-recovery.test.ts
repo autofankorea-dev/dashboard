@@ -1,0 +1,10 @@
+import assert from "node:assert/strict";
+import type { ThermoCommand } from "@/lib/data/commands";
+import { latestFailedCommand, commandFailureExplanation } from "./command-failure-recovery";
+const failed = { id: "old", createdAt: "2026-10-08T00:00:00Z", status: "failed" } as ThermoCommand;
+assert.equal(latestFailedCommand([failed]), failed);
+assert.equal(latestFailedCommand([{ ...failed, status: "pending" }, failed]), null, "authoritative queue state wins over history");
+assert.equal(latestFailedCommand([failed, { ...failed, id: "new", createdAt: "2026-10-08T01:00:00Z", status: "pending" }]), null, "new commands supersede old failures");
+assert.equal(commandFailureExplanation("ack timeout after 2 attempt(s)").title, "반영 확인 시간 초과");
+assert.equal(commandFailureExplanation("mqtt publish failed").title, "명령 전송 실패");
+assert.equal(commandFailureExplanation(null).title, "명령 처리 실패");

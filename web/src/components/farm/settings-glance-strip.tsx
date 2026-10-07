@@ -1,6 +1,6 @@
 "use client";
 
-import { Check } from "lucide-react";
+import { Check, CircleAlert } from "lucide-react";
 import type { ReactNode } from "react";
 import {
   formatChannelGlanceCells,
@@ -178,7 +178,7 @@ function ChannelRow({
 }) {
   const cells = row.values ? formatChannelGlanceCells(row.values) : null;
   const busy = apply != null && apply.stage !== "실패";
-  const locked = disabled || Boolean(apply);
+  const locked = disabled || busy;
   const stageText = applyStageLabel(apply);
   const baseLabel = row.present
     ? `${row.slot}채널 ${cells ? `${cells.setpoint}℃ ${cells.deviation}℃ 환기 ${cells.vent}` : ""}`
@@ -211,7 +211,7 @@ function ChannelRow({
         >
           {row.slot}
         </span>
-        {row.dirty && !apply ? <DirtyDot label={`${row.slot} 변경됨`} /> : null}
+        {row.dirty && !busy ? <DirtyDot label={`${row.slot} 변경됨`} /> : null}
       </span>
       {row.present && cells ? (
         <>
@@ -248,7 +248,7 @@ function CtrlRow({
 }) {
   const cells = values ? formatChannelGlanceCells(values) : null;
   const busy = apply != null && apply.stage !== "실패";
-  const locked = disabled || Boolean(apply);
+  const locked = disabled || busy;
   const stageText = applyStageLabel(apply);
   return (
     <button
@@ -272,7 +272,7 @@ function CtrlRow({
         <span className="text-[0.65rem] font-semibold text-muted-foreground">
           설정
         </span>
-        {dirty && !apply ? <DirtyDot label="명령 변경됨" /> : null}
+        {dirty && !busy ? <DirtyDot label="명령 변경됨" /> : null}
       </span>
       <span
         className={cn(
@@ -289,9 +289,8 @@ function CtrlRow({
 }
 
 function GlanceApplyFill({ apply }: { apply: GlanceApply | null }) {
-  if (!apply) return null;
+  if (!apply || apply.stage === "실패") return null;
   const t = applyQueueFillRatio(apply.filled);
-  const fail = apply.stage === "실패";
   return (
     <span
       aria-hidden
@@ -299,9 +298,7 @@ function GlanceApplyFill({ apply }: { apply: GlanceApply | null }) {
         "pointer-events-none absolute inset-0 origin-left",
         "transition-transform duration-motion-moderate ease-[var(--motion-ease-standard)]",
         "motion-reduce:transition-none",
-        fail
-          ? "bg-[color-mix(in_oklch,var(--status-danger)_28%,transparent)]"
-          : apply.stage === "확인"
+        apply.stage === "확인"
             ? "bg-primary/30"
             : "bg-primary/20",
         apply.leaving && motionClass.exitFade,
@@ -312,6 +309,7 @@ function GlanceApplyFill({ apply }: { apply: GlanceApply | null }) {
 }
 
 function GlanceApplyCheck({ apply }: { apply: GlanceApply | null }) {
+  if (apply?.stage === "실패") return <CircleAlert className="pointer-events-none absolute right-1 top-1/2 size-3 -translate-y-1/2 text-destructive" aria-hidden />;
   if (!apply || apply.stage !== "확인") return null;
   return (
     <Check

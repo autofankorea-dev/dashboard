@@ -122,7 +122,11 @@ export default function ControllerStateFixture() {
     </div>
     <AlarmProbe />
     <div data-unified-probe className="max-w-md">
-      <BarnListAccordionPanel reading={unifiedReading} readings={[unifiedReading]} thermoSettings={{}} canCommand />
+      <BarnListAccordionPanel key={stage} reading={unifiedReading} readings={[unifiedReading]} thermoSettings={{}} canCommand
+        commands={stage === "failed" ? [{ ...submitted, id:"unified-failed", createdAt:"2026-10-08T00:00:00Z", sentAt:null, appliedAt:null,
+          status:"failed", farmKey:base.farmKey, moduleUid:1, controllerKey:base.controllerKey, stallTyCode:"SP07",stallNo:"01",eqpmnNo:"01",
+          note:null,errorMsg:"ack timeout after 2 attempt(s)",action:"SET_CONTROLLER_SETTINGS",
+          channels:[{...submitted,channel:"A",eqpmnCode:"EC01"}],alarmSettings:{lowTempC:12,highTempC:40} }] : []} />
       <span data-alarm-strip-probe><CoverChannelApplyStrip items={[{id:"alarm-label",slot:null,stage:"접수",filled:1}]} /></span>
     </div>
     <PanelProbe key={mount} stage={stage} slot={slot} />
