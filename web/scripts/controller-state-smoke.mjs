@@ -88,6 +88,13 @@ try {
       {selector: await locator.getAttribute('data-panel-value') != null ? '[data-panel-value]' : '[data-panel-dirty]',expected});
   };
   await check(value, '24');
+  assert.equal(await page.locator('[data-all-channel-settings] section').count(),3);
+  const channelB = page.getByRole('region',{name:'B채널',exact:true});
+  await channelB.getByRole('button',{name:'설정 ℃ 올리기',exact:true}).click();
+  await page.waitForFunction(() => document.querySelector('[data-panel-channel-b]')?.textContent === '24.1');
+  await check(value,'24');
+  await page.getByRole('button',{name:'패널 재진입',exact:true}).click();
+
   await page.getByRole('button',{name:'pending',exact:true}).click();
   await check(value,'26'); await check(dirty,'false');
   assert.equal(await page.locator('[data-controller-panel-feedback]').count(),0, 'Only the channel stages show progress');

@@ -1,3 +1,4 @@
+import { commandChannelViews, type CommandChannelValues } from "@/lib/controllers/combined-channel-command";
 import type { ThermoCommandStatus } from "@/lib/data/commands";
 import { formatOrdinalNo } from "@/lib/farm/command-confirm";
 import { formatStallTypeLabel } from "@/lib/data/stall-type";
@@ -160,6 +161,7 @@ export function applyQueueChannelStripForReading<
       moduleUid: number;
       controllerKey: string;
       channel?: ChannelSlot | null;
+      channels?: CommandChannelValues[];
       status: ThermoCommandStatus;
     };
   },
@@ -179,7 +181,7 @@ export function applyQueueChannelStripForReading<
   );
   const seen = new Set<string>();
   const items: ApplyQueueChannelStripItem[] = [];
-  for (const row of matched) {
+  for (const row of matched.flatMap((r) => commandChannelViews(r.command).map((command) => ({ ...r, command, id: r.command.channels?.length ? `${r.id}:${command.channel}` : r.id })))) {
     const slot = row.command.channel ?? null;
     const dedupe = slot ?? "_";
     if (seen.has(dedupe)) continue;

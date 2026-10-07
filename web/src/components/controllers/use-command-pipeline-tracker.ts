@@ -1,5 +1,7 @@
 "use client";
 
+import { commandChannelViews } from "@/lib/controllers/combined-channel-command";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { fetchThermoCommandAction } from "@/app/(dashboard)/controllers/actions";
 import {
@@ -22,7 +24,7 @@ const PENDING_POLL_MS = 2000;
 const SENT_POLL_MS = 4000;
 /** applied 후 LIVE 설정값 일치 확인 */
 const LIVE_POLL_MS = 5000;
-const MAX_POLL_MS = 90_000;
+const MAX_POLL_MS = 150_000;
 
 const STATUS_RANK: Record<ThermoCommandStatus, number> = {
   pending: 1,
@@ -74,7 +76,7 @@ function findLatestForTarget(
         farmKeyId(c.farmKey) === farmKeyId(farmKey) &&
         c.moduleUid === moduleUid &&
         c.controllerKey === controllerKey &&
-        (hasChannels ? c.channel === activeChannel : !c.channel)
+        (hasChannels ? commandChannelViews(c).some((v) => v.channel === activeChannel) : !c.channel)
     ) ?? null
   );
 }
@@ -217,10 +219,12 @@ export function useCommandPipelineTracker(opts: TrackerOpts) {
 
   const commandId = command?.id;
   const commandStatus = command?.status;
-  const commandSetpoint = command?.setpointTemp;
-  const commandDeviation = command?.tempDeviation;
-  const commandMinVent = command?.minVentPct;
-  const commandMaxVent = command?.maxVentPct;
+  const channelView = command ? commandChannelViews(command).find((c) => c.channel === activeChannel) ?? command : null;
+  const isCombined = Boolean(command?.channels?.length);
+  const commandSetpoint = channelView?.setpointTemp;
+  const commandDeviation = channelView?.tempDeviation;
+  const commandMinVent = channelView?.minVentPct;
+  const commandMaxVent = channelView?.maxVentPct;
   const commandError = command?.errorMsg;
   const liveSource = knownSettings?.source;
   const liveSp =
@@ -277,7 +281,7 @@ export function useCommandPipelineTracker(opts: TrackerOpts) {
       return;
     }
     if (!hasTimedId(userInitiatedCommandIds, commandId)) return;
-    if (commandStatus === "pending") return;
+    if (commandStatus === "pending" || (isCombined && commandStatus !== "applied")) return;
     if (
       commandSetpoint == null ||
       commandDeviation == null ||
@@ -320,6 +324,7 @@ export function useCommandPipelineTracker(opts: TrackerOpts) {
   }, [
     commandId,
     commandStatus,
+    isCombined,
     commandSetpoint,
     commandDeviation,
     commandMinVent,

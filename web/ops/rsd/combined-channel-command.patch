@@ -1,0 +1,155 @@
+--- a/C.py
++++ b/C.py
+@@ -82,7 +82,7 @@
+             "id,created_at,lsind_regist_no,item_code,module_uid,"
+             "stall_ty_code,stall_no,eqpmn_no,ctrl_idx,channel,eqpmn_code,"
+             "setpoint_temp,temp_deviation,min_vent_pct,max_vent_pct,"
+-            "action,status,ttl_sec,note"
++            "action,status,ttl_sec,note,payload_json"
+         ),
+         "status": "eq.pending",
+         "order": "created_at.asc",
+@@ -162,9 +162,9 @@
+     if not DEDUPE_PENDING:
+         return rows, []
+ 
+-    latest_by_target: dict[tuple[str, str, int, str, str, str, str, str], dict] = {}
++    latest_by_target: dict[tuple, dict] = {}
+     for row in rows:
+-        latest_by_target[_command_dedupe_key(row)] = row
++        latest_by_target[(_command_dedupe_key(row), str(row["id"]) if row.get("action") == "SET_CHANNELS_THERMO" else "")] = row
+ 
+     send_rows = list(latest_by_target.values())
+     send_ids = {str(row["id"]) for row in send_rows}
+--- a/wire_command.py
++++ b/wire_command.py
+@@ -17,6 +17,7 @@
+ 
+ ACTION_SET_CTRL_THERMO = "SET_CTRL_THERMO"
+ ACTION_SET_CHANNEL_THERMO = "SET_CHANNEL_THERMO"
++ACTION_SET_CHANNELS_THERMO = "SET_CHANNELS_THERMO"
+ 
+ CMD_TOPIC_TEMPLATE = "sungil/{lsind_regist_no}/{item_code}/cmd"
+ 
+@@ -134,7 +135,7 @@
+ 
+ def validate_thermo_command(row: dict[str, Any]) -> None:
+     action = row.get("action", ACTION_SET_CTRL_THERMO)
+-    if action not in (ACTION_SET_CTRL_THERMO, ACTION_SET_CHANNEL_THERMO):
++    if action not in (ACTION_SET_CTRL_THERMO, ACTION_SET_CHANNEL_THERMO, ACTION_SET_CHANNELS_THERMO):
+         raise CommandError(f"unsupported action: {action}")
+ 
+     lsind = row.get("lsind_regist_no")
+@@ -158,7 +159,10 @@
+     _normalize_stall_ty(stall_ty)
+     _normalize_stall_no(stall_no)
+     _normalize_eqpmn_no(eqpmn_no)
+-    _validate_thermo_values(row)
++    if action == ACTION_SET_CHANNELS_THERMO:
++        command_channels(row)
++    else:
++        _validate_thermo_values(row)
+ 
+     if action == ACTION_SET_CHANNEL_THERMO:
+         _normalize_channel(row.get("channel"))
+@@ -197,9 +201,54 @@
+     )
+ 
+ 
++def command_channels(row: dict) -> list[dict]:
++    raw = (row.get("payload_json") or {}).get("command_channels")
++    if not isinstance(raw, list) or not 1 <= len(raw) <= 3:
++        raise CommandError("command_channels must contain 1..3 channels")
++    out = []
++    seen = set()
++    for channel in raw:
++        if not isinstance(channel, dict):
++            raise CommandError("invalid command channel")
++        slot = _normalize_channel(channel.get("channel"))
++        code = _normalize_eqpmn_code(channel.get("eqpmnCode"))
++        if slot in seen:
++            raise CommandError("duplicate command channel")
++        seen.add(slot)
++        values = {"setpoint_temp": channel.get("setpointTemp"), "temp_deviation": channel.get("tempDeviation"),
++                  "min_vent_pct": channel.get("minVentPct"), "max_vent_pct": channel.get("maxVentPct")}
++        for field, value in values.items():
++            if isinstance(value, bool) or not isinstance(value, (int, float)):
++                raise CommandError("invalid numeric channel value")
++            number = _to_decimal(value, field)
++            if not number.is_finite() or (number * (10 if field in ("setpoint_temp", "temp_deviation") else 1)) % 1:
++                raise CommandError("invalid channel precision")
++        _validate_thermo_values(values)
++        out.append({**channel, "channel": slot, "eqpmnCode": code})
++    return sorted(out, key=lambda c: c["channel"])
++
++
++def build_combined_command_wire_bytes(row: dict) -> bytes:
++    channels = command_channels(row)
++    body = bytearray([0xFF] * 27)
++    body[:6] = bytes([0x0D, 0, _stall_ty_to_wire(_normalize_stall_ty(row["stall_ty_code"])),
++                      int(_normalize_stall_no(row["stall_no"])), int(_normalize_eqpmn_no(row["eqpmn_no"])), 0])
++    for channel in channels:
++        slot = CHANNEL_TO_WIRE[channel["channel"]]
++        body[5] |= 1 << slot
++        off = 6 + slot * 7
++        body[off:off + 7] = struct.pack("<BHHBB", _eqpmn_code_to_wire(channel["eqpmnCode"]),
++            _temp_to_x10(_to_decimal(channel["setpointTemp"], "setpointTemp")),
++            _temp_to_x10(_to_decimal(channel["tempDeviation"], "tempDeviation")),
++            channel["minVentPct"], channel["maxVentPct"])
++    return bytes(body) + struct.pack("<H", crc16_ccitt_false(body))
++
++
+ def build_command_wire_bytes(row: dict[str, Any]) -> bytes:
+     """Encode 15 B 0x0C cmd packet (docs/wire-v00c-cmd-binary.md)."""
+     validate_thermo_command(row)
++    if row.get("action") == ACTION_SET_CHANNELS_THERMO:
++        return build_combined_command_wire_bytes(row)
+ 
+     action = row.get("action", ACTION_SET_CTRL_THERMO)
+     stall_ty_code = _normalize_stall_ty(row["stall_ty_code"])
+@@ -287,6 +336,10 @@
+         payload["channel"] = _normalize_channel(row.get("channel"))
+         payload["eqpmnCode"] = _normalize_eqpmn_code(row.get("eqpmn_code"))
+ 
++    if action == ACTION_SET_CHANNELS_THERMO:
++        payload["command_channels"] = command_channels(row)
++        payload["wire_ver"] = 0x0D
++        payload["channel_mask"] = packet[5]
+     return payload
+ 
+ 
+--- a/command_ack.py
++++ b/command_ack.py
+@@ -116,6 +116,23 @@
+     cmd_key = command_target_key(cmd)
+     if not cmd_key:
+         return None
++
++    if cmd.get("action") == "SET_CHANNELS_THERMO":
++        from wire_command import command_channels, CommandError
++        try:
++            channels = command_channels(cmd)
++        except (CommandError, ValueError):
++            return None
++        first = None
++        for channel in channels:
++            key = f"{cmd_key}|{channel['channel']}|{channel['eqpmnCode']}"
++            thermo = thermo_by_key.get(key)
++            expected = {"setpoint_temp": channel["setpointTemp"], "temp_deviation": channel["tempDeviation"],
++                        "min_vent_pct": channel["minVentPct"], "max_vent_pct": channel["maxVentPct"]}
++            if not isinstance(thermo, dict) or not thermo_matches_command(thermo, expected):
++                return None
++            first = first or (cmd_key, thermo)
++        return first
+ 
+     thermo = thermo_by_key.get(cmd_key)
+     if isinstance(thermo, dict) and thermo_matches_command(thermo, cmd):
+@@ -202,7 +219,7 @@
+     params: dict[str, str] = {
+         "select": (
+             "id,ctrl_idx,stall_ty_code,stall_no,eqpmn_no,channel,eqpmn_code,"
+-            "setpoint_temp,temp_deviation,min_vent_pct,max_vent_pct,status,created_at,sent_at"
++            "setpoint_temp,temp_deviation,min_vent_pct,max_vent_pct,status,created_at,sent_at,action,payload_json"
+         ),
+         "lsind_regist_no": f"eq.{lsind_regist_no}",
+         "item_code": f"eq.{item_code}",

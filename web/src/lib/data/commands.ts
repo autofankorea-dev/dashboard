@@ -1,4 +1,5 @@
 import "server-only";
+import { parseCommandChannels, type CommandChannelValues } from "@/lib/controllers/combined-channel-command";
 import { createClient } from "@/lib/supabase/server";
 import {
   controllerKeyFromParts,
@@ -43,6 +44,7 @@ export type ThermoCommand = {
   action?: string;
   /** 전송된 0x0C 15바이트. 없으면 필드에서 재구성 */
   wireHex?: string | null;
+  channels?: CommandChannelValues[];
 };
 
 type Row = {
@@ -136,6 +138,7 @@ export function mapThermoCommandRow(row: Row): ThermoCommand {
     channelKey,
     action: row.action?.trim() || undefined,
     wireHex: wireHexFromPayload(row.payload_json),
+    channels: row.action === "SET_CHANNELS_THERMO" ? parseCommandChannels((row.payload_json as { command_channels?: unknown } | null)?.command_channels) ?? undefined : undefined,
   };
 }
 

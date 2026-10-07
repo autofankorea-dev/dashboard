@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useControllerPanel } from "@/components/controllers/use-controller-panel";
 import { ControllerEnvCover } from "@/components/farm/controller-env-cover";
 import { ControllerPanelFeedback } from "@/components/farm/controller-panel-feedback";
+import { SettingsAllChannelGrid } from "@/components/farm/settings-all-channel-grid";
 import { SettingsGlanceStrip } from "@/components/farm/settings-glance-strip";
 import { controllerEnvCoverLevel } from "@/lib/farm/controller-env-cover";
 import type { BarnReading } from "@/lib/data/iot";
@@ -47,6 +48,7 @@ function PanelProbe({ stage, slot }: { stage: Stage; slot: "A" | "B" }) {
     <button onClick={() => panel.setField("setpoint", 28)}>입력 28</button>
     <p data-panel-channel-a="">{panel.channelGlanceRows[0].values?.setpointTemp}</p>
     <p data-panel-channel-b="">{panel.channelGlanceRows[1].values?.setpointTemp}</p>
+    <SettingsAllChannelGrid rows={panel.channelGlanceRows} onChange={panel.setChannelField} />
     <SettingsGlanceStrip hasChannels rows={panel.channelGlanceRows}
       ctrlValues={null} ctrlDirty={false} alarmCells={{ temp: "25", tempDev: "+2", humidity: "55" }}
       alarmSummary="테스트" alarmDirty={false} focus={null} onFocus={() => {}}

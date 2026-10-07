@@ -1,5 +1,7 @@
 "use server";
 
+import { COMBINED_CHANNEL_ACTION, parseCommandChannels } from "@/lib/controllers/combined-channel-command";
+
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { canCommand, getCurrentUser } from "@/lib/auth/get-current-user";
@@ -103,6 +105,14 @@ export async function sendThermoCommandAction(
     return { ok: false, error: "invalid_eqpmn_code" };
   }
 
+  if (channel) {
+    const result = await sendCombinedChannelCommandAction([{ key: `${lsindRegistNo}:${itemCode}:${moduleUid}:${stallTyCode}:${stallNo}:${eqpmnNo}`,
+      lsindRegistNo, itemCode, moduleUid, stallTyCode, stallNo, eqpmnNo, channel, eqpmnCode,
+      setpointTemp, tempDeviation, minVentPct, maxVentPct }]);
+    const item = result.sentItems[0];
+    return result.ok && item ? { ok: true, id: item.id, command: item.command } : { ok: false, error: result.error ?? "insert_failed" };
+  }
+
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -199,7 +209,7 @@ export type SendBulkThermoCommandResult = {
 };
 
 /** 일괄 온도·환기 명령 — 컨트롤러·채널별 값을 담아 N건 insert. */
-export async function sendBulkThermoCommandAction(
+async function sendLegacyBulkThermoCommandAction(
   commands: BulkThermoCommand[]
 ): Promise<SendBulkThermoCommandResult> {
   const user = await getCurrentUser();
@@ -326,6 +336,60 @@ export async function sendBulkThermoCommandAction(
     failed,
     sentItems,
   };
+}
+
+
+/** One controller, one row, one MQTT packet. Individual values live in payload_json. */
+export async function sendCombinedChannelCommandAction(commands: BulkThermoCommand[]): Promise<SendBulkThermoCommandResult> {
+  const user = await getCurrentUser();
+  const reject = (error: string): SendBulkThermoCommandResult => ({ ok: false, sent: 0, failed: (Array.isArray(commands) ? commands : []).map((c) => ({ key: c?.key ?? "", error })), sentItems: [], error });
+  if (!user) return reject("unauthorized");
+  if (!canCommand(user)) return reject("forbidden");
+  if (!Array.isArray(commands) || !commands.length || commands.length > 3) return reject("invalid_values");
+  const first = commands[0]!;
+  const address = (c: BulkThermoCommand) => JSON.stringify([c.lsindRegistNo, c.itemCode, c.moduleUid, c.stallTyCode, c.stallNo, c.eqpmnNo, c.key]);
+  if (commands.some((c) => address(c) !== address(first))) return reject("invalid_target");
+  const channels = parseCommandChannels(commands.map((c) => ({ channel: c.channel, eqpmnCode: c.eqpmnCode,
+    setpointTemp: c.setpointTemp, tempDeviation: c.tempDeviation, minVentPct: c.minVentPct, maxVentPct: c.maxVentPct })));
+  if (!channels) return reject("invalid_values");
+  const { lsindRegistNo, itemCode, moduleUid, stallTyCode, stallNo } = first;
+  const eqpmnNo = normalizeEqpmnNo(first.eqpmnNo);
+  if (!lsindRegistNo || !itemCode || !Number.isInteger(moduleUid) || moduleUid < 1 ||
+      !/^SP(0[1-9]|10)$/.test(stallTyCode) || !/^(0[1-9]|[12][0-9]|3[0-2])$/.test(stallNo) ||
+      !/^(0[1-9]|10)$/.test(eqpmnNo)) return reject("invalid_target");
+  if (!canEditFarmScope(user, { lsindRegistNo, itemCode })) return reject("forbidden");
+  const values = channels[0]!;
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("ctrl_thermo_command").insert({
+    created_by: user.id, lsind_regist_no: lsindRegistNo, item_code: itemCode, module_uid: moduleUid,
+    ctrl_idx: Number(eqpmnNo) - 1, stall_ty_code: stallTyCode, stall_no: stallNo, eqpmn_no: eqpmnNo,
+    channel: null, eqpmn_code: null, action: COMBINED_CHANNEL_ACTION, status: "pending",
+    setpoint_temp: values.setpointTemp, temp_deviation: values.tempDeviation,
+    min_vent_pct: values.minVentPct, max_vent_pct: values.maxVentPct,
+    payload_json: { command_channels: channels }, note: null,
+  }).select(THERMO_COMMAND_SELECT).single();
+  if (error || !data) return reject(error?.message ?? "insert_failed");
+  const command = mapThermoCommandRow(data as ThermoCommandRow);
+  revalidateLiveCache(farmScopeCacheKey(lsindRegistNo, itemCode));
+  return { ok: true, sent: 1, failed: [], sentItems: [{ key: first.key, id: command.id, command }] };
+}
+
+/** Group channel commands per controller. Never split a group into separate MQTT publications. */
+export async function sendBulkThermoCommandAction(commands: BulkThermoCommand[]): Promise<SendBulkThermoCommandResult> {
+  if (!Array.isArray(commands) || !commands.length || commands.length > 300) return { ok: false, sent: 0, failed: [], sentItems: [], error: "no_targets" };
+  const groups = new Map<string, BulkThermoCommand[]>();
+  const legacy: BulkThermoCommand[] = [];
+  for (const c of commands) {
+    if (!c || typeof c !== "object") return { ok: false, sent: 0, failed: [], sentItems: [], error: "invalid_values" };
+    if (!c.channel) { legacy.push(c); continue; }
+    const key = JSON.stringify([c.lsindRegistNo, c.itemCode, c.moduleUid, c.stallTyCode, c.stallNo, c.eqpmnNo, c.key]);
+    groups.set(key, [...(groups.get(key) ?? []), c]);
+  }
+  const results: SendBulkThermoCommandResult[] = [];
+  for (const group of groups.values()) results.push(await sendCombinedChannelCommandAction(group));
+  if (legacy.length) results.push(await sendLegacyBulkThermoCommandAction(legacy));
+  return { ok: results.every((r) => r.ok), sent: results.reduce((n, r) => n + r.sent, 0),
+    failed: results.flatMap((r) => r.failed), sentItems: results.flatMap((r) => r.sentItems) };
 }
 
 export async function saveControllerDisplayNameAction(

@@ -42,7 +42,7 @@ function fmtTime(iso: string) {
 }
 
 function fmtCommand(c: ThermoCommand) {
-  return `환기 ${c.minVentPct}~${c.maxVentPct}% · ${c.setpointTemp}℃ +${c.tempDeviation}`;
+  return c.channels?.length ? c.channels.map((ch) => `${ch.channel}: ${ch.setpointTemp}℃ +${ch.tempDeviation} · 환기 ${ch.minVentPct}~${ch.maxVentPct}%`).join(" / ") : `환기 ${c.minVentPct}~${c.maxVentPct}% · ${c.setpointTemp}℃ +${c.tempDeviation}`;
 }
 
 type Props = {

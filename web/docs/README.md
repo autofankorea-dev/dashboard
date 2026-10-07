@@ -94,3 +94,4 @@
 cd dashboard/web
 npm test && npm run verify:design && npm run build
 ```
+- [A/B/C 통합 명령 프로토콜 — v0x0D](./COMBINED_CHANNEL_COMMAND.md)

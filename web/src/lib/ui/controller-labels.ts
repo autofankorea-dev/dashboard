@@ -206,6 +206,7 @@ export function formatCommandTarget(cmd: ThermoCommand): string {
     stallNo: cmd.stallNo,
     eqpmnNo: cmd.eqpmnNo,
   });
+  if (cmd.channels?.length) return `${base} · ${cmd.channels.map((ch) => ch.channel).join("/")}`;
   if (cmd.channel) {
     return `${base} · ${cmd.channel}`;
   }

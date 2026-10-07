@@ -26,6 +26,7 @@ import { CommandConfirmOverlay } from "@/components/farm/command-confirm-overlay
 import { SettingsEditOverlay } from "@/components/farm/settings-edit-overlay";
 import { SettingsCommandPresetStrip } from "@/components/farm/settings-command-preset-strip";
 import { useCommandPresets } from "@/components/farm/use-command-presets";
+import { SettingsAllChannelGrid } from "@/components/farm/settings-all-channel-grid";
 import { useSettingsApplyOverlay } from "@/components/farm/use-settings-apply-overlay";
 import { useApplyQueueOptional } from "@/components/farm/apply-queue-context";
 import { useApplyQueueStripPresence } from "@/components/farm/use-apply-queue-strip-presence";
@@ -529,21 +530,18 @@ export function BarnListAccordionPanel({
     );
   const focusedSlot =
     focus === "A" || focus === "B" || focus === "C" ? focus : null;
-  const focusedChannelPresent = Boolean(
-    focusedSlot && channelSlots.includes(focusedSlot),
-  );
   const showControlEditor =
-    editorOpen && !alarmLayer && (!hasChannels || focusedChannelPresent);
+    editorOpen && !alarmLayer && (!hasChannels || channelSlots.length > 0);
   const showMissingChannel =
     editorOpen &&
     hasChannels &&
     Boolean(focusedSlot) &&
-    !focusedChannelPresent;
+    channelSlots.length === 0;
 
   const editorTitle = alarmLayer
     ? "알림 기준"
     : hasChannels && focusedSlot
-      ? `${focusedSlot}채널 설정온도 · 편차`
+      ? "A/B/C 채널 설정"
       : "설정온도 · 편차";
   const editorPrimaryLabel = alarmLayer
     ? "알림 저장"
@@ -600,14 +598,10 @@ export function BarnListAccordionPanel({
           {panel.currentValues.deviation.toFixed(1)}℃
         </p>
       ) : null}
-      <SettingsChannelWell key={focusedSlot ?? activeChannel}>
-        <SettingsChannelStepperGrid
-          draft={fieldsToDraft(panel.sliderValues)}
-          disabled={controlsDisabled}
-          ventStep={MENU_STEPS.minVent.step}
-          onChange={handleControlField}
-        />
-      </SettingsChannelWell>
+      {hasChannels ? <SettingsAllChannelGrid rows={panel.channelGlanceRows} currentBySlot={Object.fromEntries((panelChannelContexts ?? []).map((ctx) => [ctx.slot, ctx.liveBaseline]))} disabled={controlsDisabled} onChange={panel.setChannelField} /> : <SettingsChannelWell><SettingsChannelStepperGrid
+        draft={fieldsToDraft(panel.sliderValues)} disabled={controlsDisabled}
+        ventStep={MENU_STEPS.minVent.step} onChange={handleControlField}
+      /></SettingsChannelWell>}
       <p className="text-[11px] text-muted-foreground">
         설정·편차 0.1℃, 환기 1%. −/+를 꾹 누르면 연속입니다.
       </p>

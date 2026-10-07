@@ -17,7 +17,7 @@ export const PANEL_MENU_ITEMS: { id: PanelMenuId; label: string }[] = [
 
 export const MENU_STEPS: Record<PanelMenuId, PanelMenuStep> = {
   setpoint: { step: 0.1, min: 0, max: 30, unit: "℃", decimals: 1 },
-  deviation: { step: 0.1, min: 0.5, max: 20, unit: "℃", decimals: 1 },
+  deviation: { step: 0.1, min: 0.5, max: 10, unit: "℃", decimals: 1 },
   minVent: { step: 1, min: 0, max: 100, unit: "%", decimals: 0 },
   maxVent: { step: 1, min: 0, max: 100, unit: "%", decimals: 0 },
 };

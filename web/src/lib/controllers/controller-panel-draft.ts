@@ -1,3 +1,4 @@
+import { commandChannelViews } from "@/lib/controllers/combined-channel-command";
 import type { ChannelSlot } from "@/lib/data/iot-channel";
 import type { ThermoCommand } from "@/lib/data/commands";
 import {
@@ -27,7 +28,7 @@ export type PanelChannelContext = {
 
 export function latestPanelCommand(commands: readonly ThermoCommand[], slot?: ChannelSlot): ThermoCommand | null {
   const rank = { pending: 1, sent: 2, applied: 3, failed: 4, cancelled: 4 };
-  return [...commands].filter((cmd) => (cmd.channel ?? undefined) === slot)
+  return commands.flatMap(commandChannelViews).filter((cmd) => (cmd.channel ?? undefined) === slot)
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt) || rank[b.status] - rank[a.status])[0] ?? null;
 }
 

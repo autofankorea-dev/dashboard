@@ -1,5 +1,7 @@
 "use client";
 
+import { commandChannelViews } from "@/lib/controllers/combined-channel-command";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   fetchThermoCommandsBatchAction,
@@ -32,7 +34,7 @@ import type { FarmKey } from "@/lib/data/farm-key";
 const PENDING_POLL_MS = 2000;
 const SENT_POLL_MS = 4000;
 const LIVE_POLL_MS = 5000;
-const MAX_POLL_MS = 90_000;
+const MAX_POLL_MS = 150_000;
 const COMPLETE_AUTO_DISMISS_MS = 6500;
 const QUEUE_AGE_TICK_MS = 30_000;
 
@@ -174,11 +176,9 @@ function commandAlreadyLive(
   if (!isAckDone(command.status)) return false;
   const reading = readingByKey.get(key);
   if (!reading) return false;
-  return liveCandidatesForReading(
-    reading,
-    thermoSettings,
-    command.channel,
-  ).some((values) => thermoValuesMatch(values, command));
+  return commandChannelViews(command).every((view) => liveCandidatesForReading(
+    reading, thermoSettings, view.channel,
+  ).some((values) => thermoValuesMatch(values, view)));
 }
 
 export function useBulkCommandPipelineTracker({
@@ -338,11 +338,7 @@ export function useBulkCommandPipelineTracker({
       if (row.command.status === "pending") return row;
       const reading = readingByKey.get(row.key);
       if (!reading) return row;
-      const matched = liveCandidatesForReading(
-        reading,
-        thermoSettings,
-        row.command.channel,
-      ).some((values) => thermoValuesMatch(values, row.command));
+      const matched = commandAlreadyLive(row.command, row.key, readingByKey, thermoSettings);
       if (!matched) return row;
       changed = true;
       return { ...row, liveConfirmed: true };

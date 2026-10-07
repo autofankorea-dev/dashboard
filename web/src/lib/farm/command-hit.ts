@@ -1,3 +1,4 @@
+import { commandChannelViews, type CommandChannelValues } from "@/lib/controllers/combined-channel-command";
 import {
   resolveThermoSettings,
   thermoFromDecoded,
@@ -36,6 +37,8 @@ export type CommandHitSource = {
   stallNo: string;
   eqpmnNo: string;
   channel?: ChannelSlot | null;
+  channels?: CommandChannelValues[];
+  action?: string;
   setpointTemp: number;
   tempDeviation: number;
   minVentPct: number;
@@ -299,6 +302,7 @@ export function commandLiveConfirmed(
   thermoSettings: Record<string, ControllerThermoSettings> = {},
   confirmedIds?: ReadonlySet<string>,
 ): boolean {
+  if (command.channels?.length) return commandChannelViews(command).every((view) => commandLiveConfirmed(view, readings, thermoSettings));
   if (confirmedIds?.has(command.id)) return true;
   if (command.status !== "sent" && command.status !== "applied") return false;
   const farmId = farmKeyId(command.farmKey);
@@ -474,7 +478,7 @@ export function selectCommandHitResult(opts: {
   const farmId = farmKeyId(farmKey);
   const limit = opts.limit ?? COMMAND_HIT_MAX_MARKS;
 
-  const applied = opts.commands
+  const applied = opts.commands.flatMap(commandChannelViews)
     .filter((command) => farmKeyId(command.farmKey) === farmId)
     .filter((command) => command.status === "applied")
     .filter((command) => commandInChartScope(command, opts.scope));
@@ -498,7 +502,7 @@ export function selectCommandHitResult(opts: {
       );
       const abs = commandAbsTempWindow(command, aBase);
       const mark: CommandHitMark = {
-        id: command.id,
+        id: command.action === "SET_CHANNELS_THERMO" ? `${command.id}:${command.channel}` : command.id,
         at: command.createdAt,
         x,
         stage: "확인",

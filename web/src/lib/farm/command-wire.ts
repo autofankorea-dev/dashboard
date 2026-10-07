@@ -1,5 +1,7 @@
 /** 다운링크 0x0C 명령 15바이트. C.py `wire_command.build_command_wire_bytes` 와 동일. */
 
+import { encodeCombinedCommandBody, type CommandChannelValues } from "@/lib/controllers/combined-channel-command";
+
 const CMD_WIRE_VER = 0x0c;
 const FLAG_CHANNEL_CMD = 0x01;
 const CHANNEL_CTRL_SENTINEL = 0xff;
@@ -19,6 +21,7 @@ export type CommandWireInput = {
   minVentPct: number;
   maxVentPct: number;
   wireHex?: string | null;
+  channels?: CommandChannelValues[];
 };
 
 function crc16CcittFalse(data: Uint8Array): number {
@@ -72,6 +75,12 @@ export function formatCommandWireBytes(hex: string): string {
 }
 
 export function encodeCommandWireHex(input: CommandWireInput): string | null {
+  if (input.action === "SET_CHANNELS_THERMO") {
+    const body = encodeCombinedCommandBody(input);
+    if (!body) return null;
+    const crc = crc16CcittFalse(body);
+    return bytesToHex(Uint8Array.from([...body, crc & 255, crc >> 8]));
+  }
   const stallTy = stallTyToWire(input.stallTyCode ?? "");
   const stallNo = Number.parseInt(String(input.stallNo ?? "").trim(), 10);
   const eqpmnNo = Number.parseInt(String(input.eqpmnNo ?? "").trim(), 10);

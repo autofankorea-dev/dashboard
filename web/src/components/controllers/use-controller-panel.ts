@@ -1,5 +1,7 @@
 "use client";
 
+import { commandChannelViews } from "@/lib/controllers/combined-channel-command";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   sendBulkThermoCommandAction,
@@ -543,7 +545,7 @@ export function useControllerPanel(
           }
           const valuesByKey: Record<string, PanelDraft> = {};
           const keys: string[] = [];
-          for (const item of result.sentItems) {
+          for (const item of result.sentItems.flatMap((item) => commandChannelViews(item.command).map((command) => ({ ...item, command })))) {
             const slot = item.command.channel;
             if (!slot) continue;
             const row = dirtySaves.find((d) => d.slot === slot);
@@ -560,7 +562,7 @@ export function useControllerPanel(
           });
         } else if (!result.ok) {
           const failedSlots = dirtySaves.filter((row) =>
-            !result.sentItems.some((item) => item.command.channel === row.slot))
+            !result.sentItems.some((item) => commandChannelViews(item.command).some((c) => c.channel === row.slot)))
             .map((row) => row.slot).join("·");
           setMessage({ tone: "error", text: `${failedSlots}채널 전송 실패. 입력값을 유지했습니다. 다시 적용하세요.` });
         }
@@ -731,6 +733,17 @@ export function useControllerPanel(
     sliderValues,
   ]);
 
+  const setChannelField = useCallback((slot: ChannelSlot, menu: PanelMenuId, value: number) => {
+    const ctx = channelContextsRef.current?.find((c) => c.slot === slot);
+    if (!ctx) return;
+    const clamped = clampMenuValue(menu, value);
+    setEditedByKey((prev) => patchKeyMap(prev, slot, true));
+    setDraftByKey((prev) => {
+      const base = prev[slot] ?? displayThermoForChannel(ctx.knownSettings, ctx.liveBaseline, saveBaselineByKeyRef.current[slot], ctx.command) ?? EDIT_START_DRAFT;
+      return patchKeyMap(prev, slot, setDraftField(base, menu, clamped));
+    });
+  }, []);
+
   return {
     activeMenu,
     setActiveMenu,
@@ -746,6 +759,7 @@ export function useControllerPanel(
     channelGlanceRows,
     peekDirtySaves,
     setField,
+    setChannelField,
     setTempControl,
     setVentRange,
     adjust,

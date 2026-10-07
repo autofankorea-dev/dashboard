@@ -34,7 +34,7 @@ export function CommandHistoryDetail({ command: c }: Props) {
     { label: "대상", value: formatCommandTarget(c) },
     {
       label: "설정",
-      value: `환기 ${c.minVentPct}~${c.maxVentPct}% · ${c.setpointTemp}℃ +${c.tempDeviation}`,
+      value: c.channels?.length ? c.channels.map((ch) => `${ch.channel}: ${ch.setpointTemp}℃ +${ch.tempDeviation} · 환기 ${ch.minVentPct}~${ch.maxVentPct}%`).join(" / ") : `환기 ${c.minVentPct}~${c.maxVentPct}% · ${c.setpointTemp}℃ +${c.tempDeviation}`,
     },
   ];
   if (c.note?.trim()) rows.push({ label: "메모", value: c.note.trim() });

@@ -1,3 +1,4 @@
+import { commandChannelViews } from "@/lib/controllers/combined-channel-command";
 import type { ThermoCommand } from "@/lib/data/commands";
 import { farmKeyId, type FarmKey } from "@/lib/data/farm-key";
 
@@ -80,7 +81,7 @@ export function buildThermoSettingsMap(
   const sent = new Map<string, ThermoCommand>();
   const pending = new Map<string, ThermoCommand>();
 
-  for (const cmd of commands) {
+  for (const cmd of commands.flatMap(commandChannelViews)) {
     if (cmd.status === "failed" || cmd.status === "cancelled") continue;
     const key = thermoSettingsKey(
       cmd.farmKey,

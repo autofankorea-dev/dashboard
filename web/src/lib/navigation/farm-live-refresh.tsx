@@ -1,5 +1,7 @@
 "use client";
 
+import { commandChannelViews } from "@/lib/controllers/combined-channel-command";
+
 import {
   createContext,
   useCallback,
@@ -459,19 +461,16 @@ export function FarmLiveRefreshProvider({
 
   const patchThermoFromCommand = useCallback(
     (cmd: ThermoCommand) => {
-      const key = thermoSettingsKey(
-        cmd.farmKey,
-        cmd.moduleUid,
-        cmd.controllerKey,
-        cmd.channel,
-      );
-      const settings = settingsFromCommand(cmd);
-      setThermoPatch((prev) => ({ ...prev, [key]: settings }));
+      const updates = Object.fromEntries(commandChannelViews(cmd).map((view) => [
+        thermoSettingsKey(view.farmKey, view.moduleUid, view.controllerKey, view.channel),
+        settingsFromCommand(view),
+      ]));
+      setThermoPatch((prev) => ({ ...prev, ...updates }));
       setSlice((prev) => {
         if (!prev.controller) return prev;
         const thermoSettings = {
           ...prev.controller.thermoSettings,
-          [key]: settings,
+          ...updates,
         };
         const commands = [
           cmd,
