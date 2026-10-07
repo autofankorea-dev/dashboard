@@ -1,5 +1,6 @@
-# Remote project: iot-cloud (ompufmezugftzoergdbn)
-project_id = "ompufmezugftzoergdbn"
+# Operating remote project: autofankorea-dev (fkkrjljeqxpbmazfnync).
+# project_id identifies the local stack; verify the remote ref before applying migrations.
+project_id = "fkkrjljeqxpbmazfnync"
 
 [db]
 port = 54322

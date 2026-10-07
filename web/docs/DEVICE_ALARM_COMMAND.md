@@ -74,7 +74,10 @@ A/B/C+경보 (mask=7, CRC=`0xCC2D`):
 
 ## 적용 / 검증
 
-- DB migration: `20261007045437_device_temperature_alarms.sql` (적용 완료)
+- 운영 DB: `fkkrjljeqxpbmazfnync`. 이전 명령 마이그레이션은 다른 프로젝트에 적용됐으므로 운영 적용 기록으로 사용하지 않습니다.
+- 운영 DB migration: `20261007054030_reconcile_operating_alarm_commands.sql`. 누락된 0x0D/0x0E 검증과 목록 경보 컬럼을 함께 설치하며, 소수 경보값의 정규식도 수정합니다. 기존 마이그레이션 뒤에도 적용 가능합니다.
+- 2026-10-07 운영 검증: 목록 15건의 경보값과 같은 decoded 행의 값 불일치 0건, authenticated 역할 조회 15건 모두 경보값 포함, AWS REST 조회 HTTP 200(10.0/43.6 소수값 포함).
+- `supabase/tests/operating_alarm_commands.sql`: 0x0D/0x0E 정상·범위·정밀도·중복채널 검증과 실제 테이블 제약조건 검증 통과. 테스트 트랜잭션은 롤백하며 MQTT 명령을 남기지 않습니다.
 - AWS: rescue-ubuntu-root의 `/home/ubuntu/SI1/ec2_v2/rs` C.py / wire_command.py / command_ack.py 적용
 - 운영 백업: `/home/ubuntu/SI1/ec2_v2/rs/backups/device-alarm-20261007050143`
 - 운영 서비스 rsd-c / rsd-rs active, NRestarts=0
