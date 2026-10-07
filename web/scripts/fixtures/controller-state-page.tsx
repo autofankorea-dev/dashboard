@@ -4,6 +4,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useControllerPanel } from "@/components/controllers/use-controller-panel";
 import { ControllerEnvCover } from "@/components/farm/controller-env-cover";
+import { ControllerPanelFeedback } from "@/components/farm/controller-panel-feedback";
+import { SettingsGlanceStrip } from "@/components/farm/settings-glance-strip";
 import { controllerEnvCoverLevel } from "@/lib/farm/controller-env-cover";
 import type { BarnReading } from "@/lib/data/iot";
 import type { ThermoCommand } from "@/lib/data/commands";
@@ -45,6 +47,14 @@ function PanelProbe({ stage, slot }: { stage: Stage; slot: "A" | "B" }) {
     <button onClick={() => panel.setField("setpoint", 28)}>입력 28</button>
     <p data-panel-channel-a="">{panel.channelGlanceRows[0].values?.setpointTemp}</p>
     <p data-panel-channel-b="">{panel.channelGlanceRows[1].values?.setpointTemp}</p>
+    <SettingsGlanceStrip hasChannels rows={panel.channelGlanceRows}
+      ctrlValues={null} ctrlDirty={false} alarmCells={{ temp: "25", tempDev: "+2", humidity: "55" }}
+      alarmSummary="테스트" alarmDirty={false} focus={null} onFocus={() => {}}
+      applyItems={stage === "idle" ? [] : [{ id: "mock", slot: "A",
+        stage: stage === "pending" ? "접수" : stage === "failed" ? "실패" : "확인", filled: 1 }]} />
+    <ControllerPanelFeedback visible={stage !== "idle"}
+      phase={stage === "pending" ? "loading" : stage === "failed" ? "error" : "success"}
+      title={stage === "failed" ? "전송 실패" : "확인 완료"} detail="패널 안의 안내" />
   </section>;
 }
 

@@ -90,6 +90,9 @@ try {
   await check(value, '24');
   await page.getByRole('button',{name:'pending',exact:true}).click();
   await check(value,'26'); await check(dirty,'false');
+  assert.equal(await page.locator('[data-controller-panel-feedback]').count(),0, 'Only the channel stages show progress');
+  assert.equal(await page.locator('[data-feedback-layer="overlay"]').count(),0, 'Command progress never covers the screen');
+  await page.getByRole('button',{name:/A채널.*접수/}).waitFor();
   assert.equal(await page.locator('[data-panel-current]').textContent(),'24');
   await page.getByRole('button',{name:'채널 전환',exact:true}).click();
   await check(value,'24');
@@ -99,6 +102,7 @@ try {
   await check(value,'26');
   await page.getByRole('button',{name:'failed',exact:true}).click();
   await check(value,'26'); await check(dirty,'true');
+  assert.equal(await page.locator('[data-controller-panel-feedback][role="alert"]').count(),1, 'Failure is shown inside the panel');
   assert.equal(await page.locator('[data-panel-channel-b]').textContent(),'28');
   await page.getByRole('button',{name:'pending',exact:true}).click();
   await page.getByRole('button',{name:'패널 재진입',exact:true}).click();
@@ -106,6 +110,8 @@ try {
   await page.getByRole('button',{name:'applied',exact:true}).click();
   await check(value,'26'); await check(dirty,'false');
   await page.waitForFunction(() => document.querySelector('[data-panel-current]')?.textContent === '26');
+  assert.equal(await page.locator('[data-controller-panel-feedback][role="status"]').count(),1);
+  assert.equal(await page.locator('[data-feedback-layer="overlay"]').count(),0);
   for (const [id,env,comm] of [['normal','환경 정상','통신 정상'],['alarm','환경 경고','통신 정상'],['env-caution','환경 주의','통신 정상'],['stale-alarm','환경 확인 필요','통신 주의'],['caution','환경 확인 필요','통신 주의'],['offline','환경 확인 필요','통신 경고'],['empty','환경 확인 필요','통신 정상']]) {
     const cover=page.locator(`[data-fixture-cover="${id}"]`);
     assert.equal(await cover.locator('[data-cover-environment-status]').textContent(),env);

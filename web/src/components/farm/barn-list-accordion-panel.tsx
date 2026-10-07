@@ -21,7 +21,7 @@ import {
 } from "@/lib/controllers/controller-panel-draft";
 import type { BulkSentCommandItem } from "@/app/(dashboard)/controllers/actions";
 import { useCommandPipelineTracker } from "@/components/controllers/use-command-pipeline-tracker";
-import { CommandPipelineOverlay } from "@/components/farm/command-pipeline-overlay";
+import { ControllerPanelFeedback } from "@/components/farm/controller-panel-feedback";
 import { CommandConfirmOverlay } from "@/components/farm/command-confirm-overlay";
 import { SettingsEditOverlay } from "@/components/farm/settings-edit-overlay";
 import { SettingsCommandPresetStrip } from "@/components/farm/settings-command-preset-strip";
@@ -647,6 +647,10 @@ export function BarnListAccordionPanel({
         }
       />
       {panelError ? <p role="alert" className="text-xs text-destructive">{panelError}</p> : null}
+      <ControllerPanelFeedback
+        {...overlay}
+        visible={overlay.visible && confirmModel == null && !editorOpen && !panelError}
+      />
     </div>
   );
 
@@ -749,11 +753,6 @@ export function BarnListAccordionPanel({
         busy={panel.pending}
         onCancel={dismissConfirm}
         onConfirm={commitConfirmedApply}
-      />
-      <CommandPipelineOverlay
-        {...overlay}
-        visible={overlay.visible && confirmModel == null && !editorOpen}
-        onDismiss={handleOverlayDismiss}
       />
     </>
   );
