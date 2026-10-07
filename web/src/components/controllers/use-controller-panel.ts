@@ -161,7 +161,7 @@ function thermoToFields(t: ThermoValues): Record<PanelMenuId, number> {
 
 export function useControllerPanel(
   target: ControllerReading | undefined,
-  knownSettings: ControllerThermoSettings | null,
+  providedSettings: ControllerThermoSettings | null,
   canCommand: boolean,
   activeChannel?: ChannelSlot,
   channelEqpmnCode?: string,
@@ -172,6 +172,10 @@ export function useControllerPanel(
   onBulkCommandsRegistered?: (items: BulkSentCommandItem[]) => void,
   latestCommand?: import("@/lib/data/commands").ThermoCommand | null,
 ) {
+  const knownSettings = useMemo(() => panelCommandFailed(latestCommand)
+    ? liveBaseline ? { ...liveBaseline, source: "live" as const, updatedAt: target?.receivedAt ?? "" } : null
+    : providedSettings, [latestCommand, liveBaseline, target?.receivedAt, providedSettings]);
+  const [resetFailures, setResetFailures] = useState<string[]>([]);
   const [pending, setPending] = useState(false);
   const [activeMenu, setActiveMenu] = useState<PanelMenuId>("setpoint");
   const [draftByKey, setDraftByKey] = useState<Record<string, PanelDraft | null>>(
@@ -247,7 +251,22 @@ export function useControllerPanel(
     setDraftByKey({});
     setEditedByKey({});
     setSaveBaselineByKey({});
+    setResetFailures([]);
     setMessage(null);
+  }
+
+  // Reset each failed command once. Later user edits remain editable for a new command.
+  const failures = channelContexts?.length
+    ? channelContexts.filter(ctx => panelCommandFailed(ctx.command)).map(ctx => ({
+      key: ctx.slot, id: `${controllerIdentity}:${ctx.slot}:${ctx.command!.id}`, live: ctx.liveBaseline,
+    }))
+    : panelCommandFailed(latestCommand) ? [{ key: channelKey, id: `${controllerIdentity}:${channelKey}:${latestCommand!.id}`, live: liveBaseline ?? null }] : [];
+  const newFailures = failures.filter(row => !resetFailures.includes(row.id));
+  if (newFailures.length) {
+    setResetFailures(prev => [...prev, ...newFailures.map(row => row.id)]);
+    setDraftByKey(prev => ({ ...prev, ...Object.fromEntries(newFailures.map(row => [row.key, row.live])) }));
+    setEditedByKey(prev => ({ ...prev, ...Object.fromEntries(newFailures.map(row => [row.key, false])) }));
+    setSaveBaselineByKey(prev => ({ ...prev, ...Object.fromEntries(newFailures.map(row => [row.key, null])) }));
   }
 
   // Release every channel's snapshot, including inactive tabs and failed commands.

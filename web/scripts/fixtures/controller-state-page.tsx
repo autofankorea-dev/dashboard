@@ -34,6 +34,7 @@ const unifiedReading: BarnReading = { ...base, key: "unified-fixture", channels:
 type Stage = "idle" | "pending" | "failed" | "applied";
 
 function PanelProbe({ stage, slot }: { stage: Stage; slot: "A" | "B" }) {
+  const [rawSetpoint, setRawSetpoint] = useState(24);
   const command = useMemo((): ThermoCommand | null => stage === "idle" ? null : ({
     ...submitted, id: "mock", channel: "A", status: stage,
     createdAt: "2026-10-06T01:00:00Z", sentAt: null, appliedAt: null,
@@ -41,12 +42,12 @@ function PanelProbe({ stage, slot }: { stage: Stage; slot: "A" | "B" }) {
     stallTyCode: "SP07", stallNo: "1", eqpmnNo: "1", note: null, errorMsg: null,
   }), [stage]);
   const contexts = useMemo((): PanelChannelContext[] => ["A", "B"].map((channel) => {
-    const live = stage === "applied" && channel === "A" ? submitted : old;
+    const live = stage === "applied" && channel === "A" ? submitted : channel === "A" ? { ...old, setpointTemp: rawSetpoint } : old;
     return { slot: channel as "A" | "B", eqpmnCode: "EC02", liveBaseline: live,
       knownSettings: { ...(stage !== "idle" && channel === "A" ? submitted : live),
         source: stage === "pending" && channel === "A" ? "pending" : "live", updatedAt: base.receivedAt },
       command: channel === "A" ? command : null };
-  }), [stage, command]);
+  }), [stage, command, rawSetpoint]);
   const active = contexts.find((ctx) => ctx.slot === slot)!;
   const panel = useControllerPanel(base, active.knownSettings, true, slot, "EC02",
     undefined, active.liveBaseline, contexts, undefined, active.command);
@@ -55,6 +56,7 @@ function PanelProbe({ stage, slot }: { stage: Stage; slot: "A" | "B" }) {
     <p data-panel-current="">{panel.currentValues?.setpoint}</p>
     <p data-panel-dirty="">{String(panel.hasChanges)}</p>
     <button onClick={() => panel.setField("setpoint", 28)}>입력 28</button>
+    <button onClick={() => setRawSetpoint(27)}>최신 raw 수신 테스트</button>
     <p data-panel-channel-a="">{panel.channelGlanceRows[0].values?.setpointTemp}</p>
     <p data-panel-channel-b="">{panel.channelGlanceRows[1].values?.setpointTemp}</p>
     <SettingsAllChannelGrid rows={panel.channelGlanceRows} onChange={panel.setChannelField} />
@@ -70,6 +72,8 @@ function PanelProbe({ stage, slot }: { stage: Stage; slot: "A" | "B" }) {
 }
 
 function AlarmProbe() {
+  const [rawHigh, setRawHigh] = useState(35);
+  const reading = useMemo(() => ({...base, alarmHighTempC: rawHigh}), [rawHigh]);
   const [header, setHeader] = useState<AlarmThresholdHeaderState | null>(null);
   const [command, setCommand] = useState<ThermoCommand | null>(null);
   const [mount, setMount] = useState(0);
@@ -81,12 +85,13 @@ function AlarmProbe() {
     return { ok: true, sent: 1, failed: [], sentItems: [{ key: base.key, id: c.id, command: c }] };
   }, []);
   return <section data-alarm-probe className="max-w-md rounded-lg border p-3">
-    <AlarmThresholdForm key={mount} initialSettings={DEFAULT_ALARM_SETTINGS} readings={[base]} fixedScope={{ farmId: "TEST", spCode: "SP07", stallKey: "1", readingKey: base.key }}
+    <AlarmThresholdForm key={mount} initialSettings={DEFAULT_ALARM_SETTINGS} readings={[reading]} fixedScope={{ farmId: "TEST", spCode: "SP07", stallKey: "1", readingKey: base.key }}
       commands={command ? [command] : []} onHeaderState={setHeader} submitCommands={submit} onCommandQueued={setCommand} />
     <button disabled={!header?.hasChanges || header.pending || Boolean(header.validationError)} onClick={() => header?.onSave()}>경보 적용 테스트</button>
     <button onClick={() => setMount(n => n+1)}>경보 재진입 테스트</button>
     <button onClick={() => setCommand(c => c ? {...c,status:"sent"} : c)}>경보 전송 테스트</button>
     <button onClick={() => setCommand(c => c ? {...c,status:"failed"} : c)}>경보 실패 테스트</button>
+    <button onClick={() => setRawHigh(36)}>경보 raw 수신 테스트</button>
   </section>;
 }
 

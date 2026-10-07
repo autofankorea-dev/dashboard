@@ -109,9 +109,13 @@ try {
   await page.getByRole('button',{name:'채널 전환',exact:true}).click();
   await check(value,'26');
   await page.getByRole('button',{name:'failed',exact:true}).click();
-  await check(value,'26'); await check(dirty,'true');
+  await check(value,'24'); await check(dirty,'true'); // B has an unrelated unsent edit.
   assert.equal(await page.locator('[data-controller-panel-feedback][role="alert"]').count(),1, 'Failure is shown inside the panel');
   assert.equal(await page.locator('[data-panel-channel-b]').textContent(),'28');
+  await page.getByRole('button',{name:'최신 raw 수신 테스트',exact:true}).click();
+  await check(value,'27'); await check(dirty,'true');
+  await page.getByRole('button',{name:'입력 28',exact:true}).click();
+  await check(value,'28'); await check(dirty,'true');
   await page.getByRole('button',{name:'pending',exact:true}).click();
   await page.getByRole('button',{name:'패널 재진입',exact:true}).click();
   await check(value,'26'); await check(dirty,'false');
@@ -141,8 +145,16 @@ try {
   await alarm.getByRole('button',{name:'경보 전송 테스트',exact:true}).click();
   await alarm.getByText('전송 · 2/3 · 장비 응답 대기',{exact:true}).waitFor();
   await alarm.getByRole('button',{name:'경보 실패 테스트',exact:true}).click();
-  await alarm.getByText('전송 실패 · 입력값을 확인 후 다시 적용하세요.',{exact:true}).waitFor();
-  assert.equal(await alarm.getByRole('spinbutton',{name:'저온 경보',exact:true}).inputValue(),'12');
+  await alarm.getByText('명령 적용 실패 · 최신 장비 수신값을 표시합니다.',{exact:true}).waitFor();
+  assert.equal(await alarm.getByRole('spinbutton',{name:'저온 경보',exact:true}).inputValue(),'10');
+  assert.equal(await alarm.getByRole('spinbutton',{name:'고온 경보',exact:true}).inputValue(),'35');
+  assert.ok(await alarm.getByRole('button',{name:'경보 적용 테스트',exact:true}).isDisabled());
+  await alarm.getByRole('button',{name:'경보 raw 수신 테스트',exact:true}).click();
+  await page.waitForFunction(() => document.querySelector('[data-alarm-probe] input[aria-label="고온 경보"]')?.value === '36');
+  await alarm.getByRole('button',{name:'경보 재진입 테스트',exact:true}).click();
+  assert.equal(await alarm.getByRole('spinbutton',{name:'고온 경보',exact:true}).inputValue(),'36');
+  await alarm.getByRole('spinbutton',{name:'저온 경보',exact:true}).fill('12');
+  assert.ok(await alarm.getByRole('button',{name:'경보 적용 테스트',exact:true}).isEnabled());
   const unified = page.locator('[data-unified-probe]');
   assert.equal(await unified.locator('[data-alarm-strip-probe]').innerText(), '알람');
   for (const trigger of [/^A채널/, /^B채널/, /^C채널/, /^장비 경보/]) {

@@ -36,13 +36,14 @@ export function panelCommandFailed(command?: ThermoCommand | null): boolean {
   return command?.status === "failed" || command?.status === "cancelled";
 }
 
-/** Display a submitted command throughout ACK/LIVE latency, including on remount. */
+/** Keep submitted values while waiting; failed/cancelled commands display received values. */
 export function displayThermoForChannel(
   known: ControllerThermoSettings | null,
   live: PanelThermoValues | null,
   submitted?: PanelDraft | null,
   command?: ThermoCommand | null,
 ): PanelThermoValues | null {
+  if (panelCommandFailed(command)) return live;
   if (command) return {
     setpointTemp: command.setpointTemp, tempDeviation: command.tempDeviation,
     minVentPct: command.minVentPct, maxVentPct: command.maxVentPct,

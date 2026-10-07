@@ -226,6 +226,11 @@ export function useCommandPipelineTracker(opts: TrackerOpts) {
   const commandMinVent = channelView?.minVentPct;
   const commandMaxVent = channelView?.maxVentPct;
   const commandError = command?.errorMsg;
+  useEffect(() => {
+    if (commandId && (commandStatus === "failed" || commandStatus === "cancelled")) {
+      onRefreshLiveRef.current?.();
+    }
+  }, [commandId, commandStatus]);
   const liveSource = knownSettings?.source;
   const liveSp =
     liveThermo?.setpointTemp ??
