@@ -4,7 +4,10 @@ import { useCallback, useMemo, useState } from "react";
 import { TrendChart } from "@/components/trends/trend-chart";
 import type { TrendControllerPeriodData, TrendPeriodId } from "@/lib/data/farm-trend-types";
 import type { BarnReading } from "@/lib/data/iot";
-import type { ChannelSlot } from "@/lib/data/iot-channel";
+import {
+  CHANNEL_SLOT_LABELS,
+  type ChannelSlot,
+} from "@/lib/data/iot-channel";
 import type { ControllerThermoSettings } from "@/lib/controllers/controller-settings";
 import {
   activeChannelSlotsFromReading,
@@ -88,7 +91,7 @@ function ChannelSlotTrendChart({
           compact && "py-1.5"
         )}
       >
-        <p className="text-xs font-semibold">채널 {slot}</p>
+        <p className="text-xs font-semibold">{CHANNEL_SLOT_LABELS[slot]}</p>
         <p className="mt-0.5 text-xs text-muted-foreground">
           추이 없음 · 현재 {pct}
           {pct !== "—" ? "%" : ""}
@@ -106,7 +109,7 @@ function ChannelSlotTrendChart({
     >
       <div className="mb-1 flex items-center justify-between gap-2">
         <p className={cn("font-semibold", compact ? "text-[0.65rem]" : "text-xs")}>
-          채널 {slot}
+          {CHANNEL_SLOT_LABELS[slot]}
         </p>
         <span className="shrink-0 rounded-full border border-channel-info/30 bg-background px-2 py-0.5 text-[0.65rem] font-semibold tabular-nums sm:text-xs">
           {pct}

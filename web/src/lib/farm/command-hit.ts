@@ -561,7 +561,7 @@ export function commandHitToEventMark(mark: CommandHitMark): TrendEventMark {
     ariaLabel: channelLabel
       ? `${formatKst(mark.at, "short")} ${mark.stage} ${channelLabel}`
       : `${formatKst(mark.at, "short")} ${mark.stage} ${mark.setpoint}`,
-    markerLabel: mark.channel ?? undefined,
+    markerLabel: channelLabel,
     hold,
     card: {
       badge: "명령",
@@ -594,7 +594,11 @@ export function commandHitEventLane(opts: {
   const stats = commandHitStats(opts.marks, opts.hiddenCount ?? 0);
   return {
     label: "명령",
-    rowLabels: ["A", "B", "C"],
+    rowLabels: [
+      CHANNEL_SLOT_LABELS.A,
+      CHANNEL_SLOT_LABELS.B,
+      CHANNEL_SLOT_LABELS.C,
+    ],
     statsLine: commandHitStatsLine(opts.windowLabel, stats),
     emptyLabel: "이 구간에 적용된 명령이 없습니다.",
     marks: opts.marks.map((mark) => commandHitToEventMark(mark)),

@@ -2,7 +2,10 @@
 
 import { useEffect, useRef } from "react";
 import type { PanelDraft } from "@/lib/controllers/controller-panel-draft";
-import type { ChannelSlot } from "@/lib/data/iot-channel";
+import {
+  CHANNEL_SLOT_LABELS,
+  type ChannelSlot,
+} from "@/lib/data/iot-channel";
 import {
   applyPresetCreateField,
   COMMAND_PRESET_NAME_MAX,
@@ -73,7 +76,7 @@ export function SettingsPresetCreateForm({
       {slots.map((slot) => {
         const draft = channels[slot] as PanelDraft;
         return (
-          <SettingsChannelWell key={slot} title={`채널 ${slot}`}>
+          <SettingsChannelWell key={slot} title={CHANNEL_SLOT_LABELS[slot]}>
             <SettingsChannelStepperGrid
               draft={draft}
               disabled={disabled}

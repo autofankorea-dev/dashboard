@@ -13,7 +13,10 @@ import {
   type ApplyQueueStage,
 } from "@/lib/farm/apply-queue";
 import { useApplyQueueStripPresence } from "@/components/farm/use-apply-queue-strip-presence";
-import type { ChannelSlot } from "@/lib/data/iot-channel";
+import {
+  CHANNEL_SLOT_LABELS,
+  type ChannelSlot,
+} from "@/lib/data/iot-channel";
 import { dashboardReadout } from "@/lib/ui/dashboard-page-ui";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { cn } from "@/lib/utils";
@@ -181,8 +184,8 @@ function ChannelRow({
   const locked = disabled || busy;
   const stageText = applyStageLabel(apply);
   const baseLabel = row.present
-    ? `${row.slot}채널 ${cells ? `${cells.setpoint}℃ ${cells.deviation}℃ 환기 ${cells.vent}` : ""}`
-    : `${row.slot}채널 없음`;
+    ? `${CHANNEL_SLOT_LABELS[row.slot]} ${cells ? `${cells.setpoint}℃ ${cells.deviation}℃ 환기 ${cells.vent}` : ""}`
+    : `${CHANNEL_SLOT_LABELS[row.slot]} 없음`;
   return (
     <button
       type="button"
@@ -209,9 +212,11 @@ function ChannelRow({
             selected || apply ? "text-primary" : "text-muted-foreground",
           )}
         >
-          {row.slot}
+          {CHANNEL_SLOT_LABELS[row.slot]}
         </span>
-        {row.dirty && !busy ? <DirtyDot label={`${row.slot} 변경됨`} /> : null}
+        {row.dirty && !busy ? (
+          <DirtyDot label={`${CHANNEL_SLOT_LABELS[row.slot]} 변경됨`} />
+        ) : null}
       </span>
       {row.present && cells ? (
         <>

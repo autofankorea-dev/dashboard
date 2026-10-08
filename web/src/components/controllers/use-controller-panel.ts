@@ -34,7 +34,10 @@ import {
   thermoValuesMatch,
   type ControllerThermoSettings,
 } from "@/lib/controllers/controller-settings";
-import type { ChannelSlot } from "@/lib/data/iot-channel";
+import {
+  CHANNEL_SLOT_LABELS,
+  type ChannelSlot,
+} from "@/lib/data/iot-channel";
 import { formatUserError } from "@/lib/ui/controller-labels";
 import {
   clampCommandPresetDraft,
@@ -589,8 +592,8 @@ export function useControllerPanel(
         } else if (!result.ok) {
           const failedSlots = dirtySaves.filter((row) =>
             !result.sentItems.some((item) => commandChannelViews(item.command).some((c) => c.channel === row.slot)))
-            .map((row) => row.slot).join("·");
-          setMessage({ tone: "error", text: `${failedSlots}채널 전송 실패. 입력값을 유지했습니다. 다시 적용하세요.` });
+            .map((row) => CHANNEL_SLOT_LABELS[row.slot]).join("·");
+          setMessage({ tone: "error", text: `${failedSlots} 전송 실패. 입력값을 유지했습니다. 다시 적용하세요.` });
         }
       });
       return;

@@ -56,7 +56,10 @@ import {
   bulkModalSection,
   readingNeedsChannelsHydration,
 } from "@/components/farm/farm-map-bulk-apply-parts";
-import type { ChannelSlot } from "@/lib/data/iot-channel";
+import {
+  CHANNEL_SLOT_LABELS,
+  type ChannelSlot,
+} from "@/lib/data/iot-channel";
 import { useFarmLiveRefreshOptional } from "@/lib/navigation/farm-live-refresh";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { useMobileLayout } from "@/lib/ui/use-mobile-layout";
@@ -476,7 +479,7 @@ export function FarmMapBulkApply({
       allChannelTargets &&
       !applyAlarm
     ) {
-      setError("적용할 채널(A/B/C)을 1개 이상 선택하세요.");
+      setError("적용할 채널(1차/2차/3차)을 1개 이상 선택하세요.");
       return;
     }
     if (applyAlarm) {
@@ -1055,13 +1058,14 @@ export function FarmMapBulkApply({
                         {BULK_CHANNEL_OPTIONS.map((slot) => {
                           const selected = slot === activeChannel;
                           const dirty = dirtyChannelSlots.includes(slot);
+                          const slotLabel = CHANNEL_SLOT_LABELS[slot];
                           return (
                             <button
                               key={slot}
                               type="button"
                               role="tab"
                               aria-selected={selected}
-                              aria-label={dirty ? `${slot} 변경됨` : slot}
+                              aria-label={dirty ? `${slotLabel} 변경됨` : slotLabel}
                               className={cn(
                                 "relative z-[1] inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg px-3 py-1.5 text-xs font-medium md:min-h-10 md:min-w-10 md:px-4 md:text-sm lg:min-h-12 lg:text-[1.75rem]",
                                 motionClass.microHover,
@@ -1076,7 +1080,7 @@ export function FarmMapBulkApply({
                               }}
                             >
                               <span className="inline-flex items-center gap-1">
-                                {slot}
+                                {slotLabel}
                                 {dirty ? (
                                   <span
                                     className="size-1.5 rounded-full bg-primary md:size-2"
@@ -1091,7 +1095,10 @@ export function FarmMapBulkApply({
                     </div>
                     {dirtyChannelSlots.length > 0 ? (
                       <p className={cn("mt-2 text-xs leading-snug", bulkModalMeta)}>
-                        {dirtyChannelSlots.join("·")} 변경 — 바꾼 채널만 나갑니다.
+                        {dirtyChannelSlots
+                          .map((slot) => CHANNEL_SLOT_LABELS[slot])
+                          .join("·")}{" "}
+                        변경 — 바꾼 채널만 나갑니다.
                       </p>
                     ) : previewCommands.length === 0 && onlineTargets.length > 0 ? (
                       <p className={cn("mt-2 text-xs leading-snug", bulkModalMeta)}>
@@ -1099,7 +1106,8 @@ export function FarmMapBulkApply({
                       </p>
                     ) : (
                       <p className={cn("mt-2 text-xs leading-snug", bulkModalMeta)}>
-                        채널별로 값을 맞춥니다. 바꾸지 않으면 A·B·C 모두 현재 값으로 나갑니다.
+                        채널별로 값을 맞춥니다. 바꾸지 않으면 1차·2차·3차 모두 현재 값으로
+                        나갑니다.
                       </p>
                     )}
                   </section>
