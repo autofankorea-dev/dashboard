@@ -14,6 +14,72 @@ export type Database = {
   }
   public: {
     Tables: {
+      command_defaults: {
+        Row: {
+          id: number
+          max_vent_pct: number
+          min_vent_pct: number
+          setpoint_temp: number
+          temp_deviation: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: number
+          max_vent_pct: number
+          min_vent_pct: number
+          setpoint_temp: number
+          temp_deviation: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: number
+          max_vent_pct?: number
+          min_vent_pct?: number
+          setpoint_temp?: number
+          temp_deviation?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      command_presets: {
+        Row: {
+          channels: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          sort_order: number
+          stall_ty_code: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          channels: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          sort_order?: number
+          stall_ty_code: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          channels?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          sort_order?: number
+          stall_ty_code?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       ctrl_thermo_command: {
         Row: {
           action: string
@@ -1159,6 +1225,114 @@ export type Database = {
         }
         Relationships: []
       }
+      iot_room_state_decoded_p_2026_12: {
+        Row: {
+          controller_key: string
+          decode_error: string | null
+          decode_source: string
+          decode_status: string
+          decoded_json: Json
+          eqpmn_no: string
+          fan_a_pct: number | null
+          fan_b_pct: number | null
+          fan_c_pct: number | null
+          fan_exhaust_pct: number | null
+          fan_intake_pct: number | null
+          fan_supply_pct: number | null
+          history: boolean
+          humidity_pct: number | null
+          id: number
+          item_code: string
+          lsind_regist_no: string
+          max_vent_pct: number | null
+          mesure_at: string
+          mesure_dt: string
+          min_vent_pct: number | null
+          module_uid: number
+          packet_mode: string
+          raw_id: number
+          received_at: string
+          run_mode: number | null
+          setpoint_temp: number | null
+          stall_no: string
+          stall_ty_code: string
+          temp_c: number | null
+          temp_deviation: number | null
+          topic: string | null
+          wire_ver: number
+        }
+        Insert: {
+          controller_key: string
+          decode_error?: string | null
+          decode_source?: string
+          decode_status?: string
+          decoded_json: Json
+          eqpmn_no?: string
+          fan_a_pct?: number | null
+          fan_b_pct?: number | null
+          fan_c_pct?: number | null
+          fan_exhaust_pct?: number | null
+          fan_intake_pct?: number | null
+          fan_supply_pct?: number | null
+          history?: boolean
+          humidity_pct?: number | null
+          id?: number
+          item_code?: string
+          lsind_regist_no?: string
+          max_vent_pct?: number | null
+          mesure_at: string
+          mesure_dt: string
+          min_vent_pct?: number | null
+          module_uid: number
+          packet_mode?: string
+          raw_id: number
+          received_at: string
+          run_mode?: number | null
+          setpoint_temp?: number | null
+          stall_no?: string
+          stall_ty_code?: string
+          temp_c?: number | null
+          temp_deviation?: number | null
+          topic?: string | null
+          wire_ver: number
+        }
+        Update: {
+          controller_key?: string
+          decode_error?: string | null
+          decode_source?: string
+          decode_status?: string
+          decoded_json?: Json
+          eqpmn_no?: string
+          fan_a_pct?: number | null
+          fan_b_pct?: number | null
+          fan_c_pct?: number | null
+          fan_exhaust_pct?: number | null
+          fan_intake_pct?: number | null
+          fan_supply_pct?: number | null
+          history?: boolean
+          humidity_pct?: number | null
+          id?: number
+          item_code?: string
+          lsind_regist_no?: string
+          max_vent_pct?: number | null
+          mesure_at?: string
+          mesure_dt?: string
+          min_vent_pct?: number | null
+          module_uid?: number
+          packet_mode?: string
+          raw_id?: number
+          received_at?: string
+          run_mode?: number | null
+          setpoint_temp?: number | null
+          stall_no?: string
+          stall_ty_code?: string
+          temp_c?: number | null
+          temp_deviation?: number | null
+          topic?: string | null
+          wire_ver?: number
+        }
+        Relationships: []
+      }
       iot_room_state_decoded_p_default: {
         Row: {
           controller_key: string
@@ -1512,6 +1686,8 @@ export type Database = {
       }
       v_iot_dashboard_list: {
         Row: {
+          alarm_high_temp_c: number | null
+          alarm_low_temp_c: number | null
           controller_key: string | null
           eqpmn_no: string | null
           fan_exhaust_pct: number | null
@@ -1629,6 +1805,10 @@ export type Database = {
         Args: { channels: Json; eqpmn_code: string }
         Returns: number
       }
+      extract_channel_thermo: {
+        Args: { channels: Json; p_channel: string }
+        Returns: Json
+      }
       farm_trend_history: {
         Args: {
           p_bucket: string
@@ -1658,6 +1838,10 @@ export type Database = {
           p_to: string
         }
         Returns: {
+          a_max_vent_pct: number
+          a_min_vent_pct: number
+          a_setpoint_temp: number
+          a_temp_deviation: number
           avg_fan_a: number
           avg_fan_b: number
           avg_fan_c: number
@@ -1666,7 +1850,15 @@ export type Database = {
           avg_fan_supply: number
           avg_humidity_pct: number
           avg_temp_c: number
+          b_max_vent_pct: number
+          b_min_vent_pct: number
+          b_setpoint_temp: number
+          b_temp_deviation: number
           bucket_at: string
+          c_max_vent_pct: number
+          c_min_vent_pct: number
+          c_setpoint_temp: number
+          c_temp_deviation: number
           controller_key: string
           eqpmn_no: string
           sample_count: number
@@ -1747,6 +1939,8 @@ export type Database = {
         }
         Returns: boolean
       }
+      valid_command_channels: { Args: { payload: Json }; Returns: boolean }
+      valid_device_settings: { Args: { payload: Json }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
