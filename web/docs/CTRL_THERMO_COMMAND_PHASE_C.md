@@ -1,7 +1,7 @@
 # ctrl_thermo_command — Phase C (C1+C2 적용)
 
 > **전제:** Phase B **P1 확정** (2026-08-06)  
-> **C1·C2 적용일:** 2026-08-06 (iot-cloud)
+> **C1·C2 적용일:** 2026-08-06 (구 `iot-cloud`) · **현재 운영 DB:** `fkkrjljeqxpbmazfnync` (구 프로젝트 폐기)
 
 ---
 

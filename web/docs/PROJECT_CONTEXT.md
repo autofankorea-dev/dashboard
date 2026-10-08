@@ -84,7 +84,7 @@ flowchart TB
 - 통신상태 ≈ **수신 시각(`received_at`) + 측정 시각(`mesure_dt`)** 신선도 (`lib/data/live-status.ts`). 수신 ≤15분=정상 · ≤60분=주의 · 그 외=통신두절. 수신이 정상이어도 측정이 60분 넘게 정체하면(버퍼 replay·장비 시계정지) **주의로 강등**.
 - 추이 차트·리포트 시계열 ≈ **측정 시각(`mesure_at`)** — 재연결 시 컨트롤러 버퍼를 짧은 주기로 올려도 샘플 자체는 기존 5분 측정 간격. 패킷 unix가 서울 벽시계를 UTC처럼 넣은 경우 Edge가 9시간을 빼 실제 UTC로 맞춤. LIVE/REPLAY 플래그 구분 없이 `farm_trend_history*`에 포함 (`live`/`history`/`replay`)
   - **clock 보정 모드** (`decode-batch`, `iot_decode_config.clock_kst_farm_keys`): 목록에 오른 소스(`FARM02`·`FARM03`)는 **live/replay 무관하게 항상 -9h**. 지연 재전송(패킷 epoch가 수신보다 과거) burst도 실제 측정 시각에 정확히 안착. 목록 밖(파일럿 `FARM01` 시뮬레이터=정직한 UTC)은 기존 **future-only 휴리스틱**(수신보다 미래인 epoch만 -9h) 유지. 분류 근거=14일 raw `epoch−received` 분포(허용목록 소스는 +9h에 집중, 파일럿은 ≈0). HEALTH 등 신규 실장비 재가동 시 허용목록 추가 검토.
-- **추이 차트 커버리지** (차트 탭만): 측정 시각 버킷 RPC `farm_trend_uplink_coverage_json` (migration `20260901003000`, **iot-cloud 적용됨**). 희소=유효 업링크·디코드 생략 → 직전 값 유지. 통신두절=해당 슬롯에 raw 없음 → 선 단절. 없음=잘못된 축사유형·폐기 패킷 → 유지 금지. `clock_kst_farm_keys`와 동일하게 epoch를 보정한다. **색면·구간 라벨·범례는 그리지 않음.** 목록 카드·LIVE·PDF는 기존 null 갭.
+- **추이 차트 커버리지** (차트 탭만): 측정 시각 버킷 RPC `farm_trend_uplink_coverage_json` (migration `20260901003000`, 구 `iot-cloud` 적용 · 운영 `fkkrjljeqxpbmazfnync`). 희소=유효 업링크·디코드 생략 → 직전 값 유지. 통신두절=해당 슬롯에 raw 없음 → 선 단절. 없음=잘못된 축사유형·폐기 패킷 → 유지 금지. `clock_kst_farm_keys`와 동일하게 epoch를 보정한다. **색면·구간 라벨·범례는 그리지 않음.** 목록 카드·LIVE·PDF는 기존 null 갭.
 - **헤더 도구:** TopBar 오른쪽 상시 아이콘(이상상황 · 운영 · 리포트 · 테마 · md+ 뷰포트). 플로팅 Hub FAB 레일은 사용하지 않음.
 - 구 **REPLAY 전용 UI** (`/replay`, `/logs`) = 미구현·비목표 (정책상 모드 분리 없음). `v_iot_replay_*` view는 레거시
 - 구 테이블 `iot_room_state_decoded` 는 RLS·이력 참고용일 수 있음. **출고 LIVE 읽기 정본은 위 view** (카드 최신값은 여전히 live 스냅샷 + `received_at`)

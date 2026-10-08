@@ -222,7 +222,7 @@ npm run measure:hub-ttfb
 # TTFB_PHASE=strict-only npm run measure:hub-ttfb
 ```
 
-## Storage capacity (iot-cloud · 2026-08-05)
+## Storage capacity (구 iot-cloud · 2026-08-05 · 역사 기록 · 운영은 `fkkrjljeqxpbmazfnync`)
 
 | Table | total | heap | indexes | note |
 | --- | --- | --- | --- | --- |

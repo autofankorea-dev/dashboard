@@ -3,7 +3,8 @@
 > **상태 (2026-09-01):** **`sparse_enabled=false` — PoC OFF** (LIVE·델린 caution side effect 기각)  
 > **migration:** `20260901153000_iot_decode_sparse_off.sql`  
 > **롤백:** `UPDATE iot_decode_config SET sparse_enabled = true WHERE id = 1;` (승인 후)  
-> **대상:** iot-cloud · allowlist `FARM01/P00`, `FARM02/P00` (OFF 시 gate 미적용)  
+> **대상 (당시):** 구 `iot-cloud` · allowlist `FARM01/P00`, `FARM02/P00` (OFF 시 gate 미적용)  
+> **운영 DB (현재):** `fkkrjljeqxpbmazfnync` · 구 `iot-cloud` **폐기**  
 > **관련:** [`DECODED_ROWCOUNT_PLAN.md`](./DECODED_ROWCOUNT_PLAN.md)
 
 ---
@@ -181,4 +182,4 @@ SELECT
 
 ## 추이 차트 표시 (2026-08-28)
 
-희소 스킵은 decoded 행을 만들지 않는다. 차트 탭은 `farm_trend_uplink_coverage_json`(측정 시각 버킷, `clock_kst` 보정)으로 희소 칸의 **직전 값 유지**와 raw 없음의 **선 단절**만 적용한다. 색면·구간 라벨·범례는 그리지 않는다. LIVE 카드 신선도는 `received_at`+`mesure_dt`(`live-status.ts`). RPC는 migration `20260901003000` — **iot-cloud 적용됨**(2026-09-01).
+희소 스킵은 decoded 행을 만들지 않는다. 차트 탭은 `farm_trend_uplink_coverage_json`(측정 시각 버킷, `clock_kst` 보정)으로 희소 칸의 **직전 값 유지**와 raw 없음의 **선 단절**만 적용한다. 색면·구간 라벨·범례는 그리지 않는다. LIVE 카드 신선도는 `received_at`+`mesure_dt`(`live-status.ts`). RPC는 migration `20260901003000` — 구 `iot-cloud` 적용(2026-09-01) · 운영 `fkkrjljeqxpbmazfnync`.

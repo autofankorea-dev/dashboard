@@ -1,6 +1,7 @@
 # decoded 용량 트랙 (iot_room_state_decoded)
 
-> **실측:** iot-cloud · **2026-08-06** · raw/decoded 용량 트랙 **완료로 종결**  
+> **실측:** 구 `iot-cloud` · **2026-08-06** · raw/decoded 용량 트랙 **완료로 종결**  
+> **운영 DB (현재):** `fkkrjljeqxpbmazfnync` · 구 프로젝트 **폐기** — 아래 수치는 역사 기록.  
 > **원칙:** 인덱스 DROP은 별도 승인. 본 문서는 실측·판단·이력.  
 > **잔여:** 희소 PoC **OFF** 2026-09-01 ([`SPARSE_OBSERVATION.md`](./SPARSE_OBSERVATION.md)). retention cron 적용 완료.
 
@@ -76,7 +77,7 @@
 
 ### D-slim A 적용
 
-- migration: `20260805140000_iot_decoded_drop_unused_slim_a.sql` · iot-cloud 적용됨
+- migration: `20260805140000_iot_decoded_drop_unused_slim_a.sql` · 구 `iot-cloud` 적용됨 (운영 `fkkrjljeqxpbmazfnync`)
 - `fan_supply_pct`는 RPC/list가 컬럼을 노출하므로 **미포함**(별도)
 
 ### D-slim B+C 적용

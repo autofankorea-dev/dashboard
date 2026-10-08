@@ -70,7 +70,7 @@ KAKAO_NATIVE_APP_KEY=<네이티브앱키>
 1. [앱] → [플랫폼 키] → **REST API 키** 선택
 2. **카카오 로그인 Redirect URI**에 등록 (한 줄, 끝 슬래시 없이):
    ```
-   https://ompufmezugftzoergdbn.supabase.co/auth/v1/callback
+   https://fkkrjljeqxpbmazfnync.supabase.co/auth/v1/callback
    ```
 3. **카카오 로그인 Client Secret** 발급 후 상태 **ON**  
    → 이 값이 Supabase **Client Secret**이다. (네이티브 앱 키가 아님)
@@ -101,7 +101,7 @@ KAKAO_NATIVE_APP_KEY=<네이티브앱키>
 - Client ID에 REST만 넣음 → 앱 `Unacceptable audience in id_token`
 
 Callback URL(복사만, 카카오에 이미 등록):  
-`https://ompufmezugftzoergdbn.supabase.co/auth/v1/callback`
+`https://fkkrjljeqxpbmazfnync.supabase.co/auth/v1/callback`
 
 #### 3) 검증 체크리스트
 

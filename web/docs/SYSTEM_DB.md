@@ -1,7 +1,16 @@
-# DB — Supabase · iot-cloud
+# DB — Supabase · 운영 프로젝트
 
 > **상위:** [`SYSTEM.md`](./SYSTEM.md) §2.2 · **Migration:** `web/supabase/migrations/` (**적용은 사용자 승인 후**)  
 > **작성 원칙:** 설계 이유 → 경로 → 운영.
+
+### 프로젝트 (정본)
+
+| 구분 | Project ref | 상태 |
+|------|-------------|------|
+| **운영** | `fkkrjljeqxpbmazfnync` | Vercel Production · EC2 RS/C · Edge cron **현재 정본** |
+| **폐기** | `ompufmezugftzoergdbn` (`iot-cloud`) | **더 이상 사용하지 않음.** 과거 실측·마이그레이션 기록용 이름만 문서에 남을 수 있음 |
+
+문서·스크립트·에이전트 작업은 **운영 ref만** 기준으로 한다.
 
 ---
 
@@ -9,7 +18,7 @@
 
 | 결정 | 설계 이유 | 하지 않은 것 | 근거 |
 |------|-----------|--------------|------|
-| **iot-cloud 단일 Postgres** | Auth·RLS·JOIN view·Edge cron·명령 ACK **한 스키마** | 농장별 DB · read replica만 분리 · **multi-DB COLD(E)** | [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) |
+| **운영 단일 Postgres** | Auth·RLS·JOIN view·Edge cron·명령 ACK **한 스키마** | 농장별 DB · read replica만 분리 · **multi-DB COLD(E)** | [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) |
 | **raw/decoded 논리 분리·물리 단일** | 월 파티션·retention·sparse·hot view로 계층 분리. Free tier 현실 | raw 전용 클러스터 · decoded만 S3 | [`DECODED_CAPACITY.md`](./DECODED_CAPACITY.md) |
 | **decode-batch on Edge** | raw 옆 **pg_cron ~10s** · cursor·`last_value`·config **DB co-location** | RS decode · Next API batch · per-farm worker | [`decode-batch`](../supabase/functions/decode-batch/) |
 | **ctrl_thermo_command in DB** | 감사·RLS·pending queue · uplink ACK diff · C.py 단일 소비 | MQTT cmd 직접 · Redis 큐 | [`CTRL_THERMO_COMMAND_PHASE_A.md`](./CTRL_THERMO_COMMAND_PHASE_A.md) |
@@ -58,8 +67,10 @@
 
 | 항목 | 값 |
 |------|-----|
-| Supabase project | `iot-cloud` |
+| Supabase project (운영) | `fkkrjljeqxpbmazfnync` |
+| Dashboard | https://supabase.com/dashboard/project/fkkrjljeqxpbmazfnync |
 | Region | `ap-northeast-2` |
+| 폐기 (사용 금지) | `ompufmezugftzoergdbn` / `iot-cloud` |
 | Migration 정본 | `web/supabase/migrations/` |
 | Edge Functions | `web/supabase/functions/` |
 
@@ -121,7 +132,7 @@ PR 체크: `LIVE_LIST_FORBIDDEN_TOKENS` · `npm run measure:live` p95<300ms ([`L
 같은 eqpmnCode를 공유하는 다중 슬롯을 구분하지 못한다(하위호환 병행). 모터 그래프는
 슬롯 컬럼(`avg_fan_a/b/c`)만 참조한다. Edge `decode-batch`가 두 계열을 함께 기록한다.
 
-차트 컨트롤러 범위는 같은 RPC의 버킷 마지막 thermo를 읽어 **설정이 바뀐 시점만** 점으로 표시한다. A는 평탄 컬럼(`setpoint_temp` 등), B·C는 `decoded_json.channels[].thermo`이며 B·C 설정온도는 A에 더하는 오프셋이다. migration `20260915104500` — **iot-cloud 적용됨**(2026-09-15).
+차트 컨트롤러 범위는 같은 RPC의 버킷 마지막 thermo를 읽어 **설정이 바뀐 시점만** 점으로 표시한다. A는 평탄 컬럼(`setpoint_temp` 등), B·C는 `decoded_json.channels[].thermo`이며 B·C 설정온도는 A에 더하는 오프셋이다. migration `20260915104500` — 구 `iot-cloud`에 적용(2026-09-15) · 운영은 `fkkrjljeqxpbmazfnync`.
 
 **Sparse (Edge only):** ε_temp=0.2°C · ε_fan=2%p · heartbeat=1800s · RS 필터 **금지** ([`DECODED_ROWCOUNT_PLAN.md`](./DECODED_ROWCOUNT_PLAN.md)).
 

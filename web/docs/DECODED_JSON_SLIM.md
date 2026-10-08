@@ -2,7 +2,7 @@
 
 > **합의:** 채널급(모터 outputs 포함) 유지 · flat과 중복인 키만 제거  
 > **비목표:** HOT에서 JSON 제거(C), channels 삭제  
-> **대상:** `dashboard/web` · Edge `decode-batch` · iot-cloud  
+> **대상:** `dashboard/web` · Edge `decode-batch` · 운영 Supabase `fkkrjljeqxpbmazfnync` (구 `iot-cloud` 폐기)  
 > **일자:** 2026-08-05
 
 ---
