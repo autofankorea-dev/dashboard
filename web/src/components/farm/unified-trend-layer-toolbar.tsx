@@ -607,7 +607,7 @@ export function UnifiedTrendLayerToolbar({
   );
 }
 
-/** 명령 이력 채널 A·B·C 켜기/끄기. 명령 토글이 켜진 뒤 그래프 아래에 둔다. */
+/** 명령 이력 1차·2차·3차 켜기/끄기. 명령 토글이 켜진 뒤 그래프 아래에 둔다. */
 export function CommandChannelLayerToolbar({
   channels,
   onToggle,

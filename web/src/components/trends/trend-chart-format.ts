@@ -18,7 +18,7 @@ export function inferHoverMetricGroup(label: string): HoverMetricGroup {
   if (/습도/.test(label)) return "hum";
   if (/환기/.test(label)) return "motor";
   if (/설정/.test(label)) return "temp";
-  if (/모터|채널|입기|배기|송풍|^[ABC]$/.test(label)) return "motor";
+  if (/모터|채널|입기|배기|송풍|^[ABC]$|^[123]차$/.test(label)) return "motor";
   return "temp";
 }
 
@@ -138,6 +138,7 @@ export function formatTrendHoverValue(
       seriesName === "A" ||
       seriesName === "B" ||
       seriesName === "C" ||
+      /^[123]차$/.test(seriesName) ||
       /입기|배기|송풍|모터/.test(seriesName));
   if (motorLike) return `${Math.round(value)}${unit}`;
   if (unit === "n") {

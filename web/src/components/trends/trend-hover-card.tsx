@@ -206,7 +206,7 @@ function MotorChannelMatrix({
           raw != null && Number.isFinite(raw)
             ? Math.max(0, Math.min(100, raw))
             : null;
-        /** 데이터 카드 — 「채널 A」→「A」 (범례·정식명은 유지) */
+        /** 데이터 카드 — 짧은 슬롯명 (1차/2차/3차 또는 레거시 A/B/C) */
         const tipLabel = ch.label.replace(/^채널\s*/, "") || ch.label;
         return (
           <div
@@ -307,6 +307,9 @@ export function TrendPointCardBody({
           lab === "A" ||
           lab === "B" ||
           lab === "C" ||
+          lab === "1차" ||
+          lab === "2차" ||
+          lab === "3차" ||
           /입기|배기|송풍/.test(lab)
         );
       })

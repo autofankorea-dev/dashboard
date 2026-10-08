@@ -159,7 +159,7 @@ import {
   });
   assert.equal(parts.stall, "비육사 1번 축사");
   assert.equal(parts.unit, "1번 컨트롤러");
-  assert.equal(parts.channel, "채널 A");
+  assert.equal(parts.channel, "1차");
   assert.equal(/SP\d{2}/.test(parts.stall), false);
   assert.equal(
     formatApplyQueueTargetLine({
@@ -168,7 +168,7 @@ import {
       eqpmnNo: "01",
       channel: "A",
     }),
-    "비육사 1번 축사 · 1번 컨트롤러 · 채널 A",
+    "비육사 1번 축사 · 1번 컨트롤러 · 1차",
   );
   assert.equal(
     applyQueueCaption({ status: "sent", liveConfirmed: false }),
@@ -356,7 +356,7 @@ import {
     strip.map((item) => `${item.slot}:${item.stage}:${item.filled}`),
     ["A:확인:3", "B:전송:2"],
   );
-  assert.equal(applyQueueChannelStripAria(strip), "채널 A 확인, 채널 B 전송");
+  assert.equal(applyQueueChannelStripAria(strip), "1차 확인, 2차 전송");
   assert.equal(applyQueueChannelStripForReading([other], reading).length, 0);
 }
 

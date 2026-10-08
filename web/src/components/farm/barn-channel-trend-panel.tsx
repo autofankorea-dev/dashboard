@@ -267,7 +267,7 @@ export function BarnChannelTrendPanel({
     );
   }
 
-  const slotLabel = overlaySeries.map((s) => s.name.replace("채널 ", "")).join("·");
+  const slotLabel = overlaySeries.map((s) => s.name).join("·");
 
   return (
     <div
@@ -283,7 +283,7 @@ export function BarnChannelTrendPanel({
           compact ? "text-[0.65rem]" : "text-xs",
         )}
       >
-        모터 · 채널 {slotLabel} · {trendPeriodLabel(period)}
+        모터 · {slotLabel} · {trendPeriodLabel(period)}
       </p>
       <TrendChart
         mode="line"

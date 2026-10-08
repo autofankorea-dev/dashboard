@@ -2,7 +2,10 @@ import { commandChannelViews, type CommandChannelValues } from "@/lib/controller
 import type { ThermoCommandStatus } from "@/lib/data/commands";
 import { formatOrdinalNo } from "@/lib/farm/command-confirm";
 import { formatStallTypeLabel } from "@/lib/data/stall-type";
-import type { ChannelSlot } from "@/lib/data/iot-channel";
+import {
+  CHANNEL_SLOT_LABELS,
+  type ChannelSlot,
+} from "@/lib/data/iot-channel";
 import { farmKeyId, type FarmKey } from "@/lib/data/farm-key";
 
 /** 적용 큐가 보여주는 최근 창. 통합 추이는 최근 ~1시간을 점으로 읽기 어렵다. */
@@ -105,7 +108,7 @@ export function formatApplyQueueTargetParts(opts: {
   return {
     stall: stallNo ? `${typeLabel} ${stallNo}번 축사` : typeLabel,
     unit: ctrlNo ? `${ctrlNo}번 컨트롤러` : "컨트롤러",
-    channel: opts.channel ? `채널 ${opts.channel}` : null,
+    channel: opts.channel ? CHANNEL_SLOT_LABELS[opts.channel] : null,
   };
 }
 
@@ -211,7 +214,9 @@ export function applyQueueChannelStripAria(
   if (items.length === 0) return "";
   return items
     .map((item) =>
-      item.slot ? `채널 ${item.slot} ${item.stage}` : item.stage,
+      item.slot
+        ? `${CHANNEL_SLOT_LABELS[item.slot]} ${item.stage}`
+        : item.stage,
     )
     .join(", ");
 }

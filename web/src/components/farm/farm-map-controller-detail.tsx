@@ -42,9 +42,9 @@ import { cn } from "@/lib/utils";
 const METRIC_TABS: { id: string; label: string }[] = [
   { id: "T", label: "온도" },
   { id: "H", label: "습도" },
-  { id: "A", label: "A" },
-  { id: "B", label: "B" },
-  { id: "C", label: "C" },
+  { id: "A", label: "1차" },
+  { id: "B", label: "2차" },
+  { id: "C", label: "3차" },
 ];
 
 /** 컨트롤러 오버레이 선 색 — 대수 구분 (채널·status 토큰과 분리, plan-cover). */

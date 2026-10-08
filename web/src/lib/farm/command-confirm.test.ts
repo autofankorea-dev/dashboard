@@ -36,7 +36,7 @@ import {
     channel: "B",
     onlineCount: 1,
   });
-  assert.equal(withChannel, "임신사 1번 축사, 1번 컨트롤러 채널 B");
+  assert.equal(withChannel, "임신사 1번 축사, 1번 컨트롤러 2차");
 }
 
 {
@@ -113,7 +113,7 @@ import {
     channels: ["A", "B"],
     onlineCount: 1,
   });
-  assert.equal(multiTarget, "임신사 1번 축사, 1번 컨트롤러 채널 A, B");
+  assert.equal(multiTarget, "임신사 1번 축사, 1번 컨트롤러 1차, 2차");
 }
 
 {
@@ -133,7 +133,7 @@ import {
 
 {
   const multi = buildMultiChannelCommandConfirmModel({
-    target: "임신사 1번 축사, 1번 컨트롤러 채널 A, B",
+    target: "임신사 1번 축사, 1번 컨트롤러 1차, 2차",
     channels: [
       {
         channel: "A",
