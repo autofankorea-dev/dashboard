@@ -1,11 +1,14 @@
 import { Suspense } from "react";
 import { OpsScanClient } from "@/components/admin/ops-scan-client";
 import { AdminDirectoryPanel } from "@/components/admin/admin-directory-panel";
+import { AdminCommandPresetsPanel } from "@/components/admin/admin-command-presets-panel";
 import { CommandHistorySlim } from "@/components/controllers/command-history-slim";
 import { AdminOpsTabContentSkeleton } from "@/components/admin/admin-ops-loading-skeleton";
 import { listManagedUsers } from "@/lib/admin/list-users";
 import { getEditableFarmLocationOptions } from "@/lib/data/farm-location";
 import { getThermoCommandHistory } from "@/lib/data/commands";
+import { getCommandDefaults } from "@/lib/data/command-defaults";
+import { listAllSharedCommandPresets } from "@/lib/data/command-presets";
 import { compareFarmKey, farmKeyId, type FarmKey } from "@/lib/data/farm-key";
 import { fetchFarmOverviewRows } from "@/lib/data/iot-live-fetch";
 import { farmShortLabel } from "@/lib/data/farm-summaries";
@@ -80,7 +83,20 @@ async function CommandsSection() {
   );
 }
 
-/** 운영 홈 — 스캔(client defer) + 디렉터리(B) + 슬림 명령. */
+async function PresetsSection() {
+  const [initialDefaults, initialPresets] = await Promise.all([
+    getCommandDefaults(),
+    listAllSharedCommandPresets(),
+  ]);
+  return (
+    <AdminCommandPresetsPanel
+      initialDefaults={initialDefaults}
+      initialPresets={initialPresets}
+    />
+  );
+}
+
+/** 운영 홈 — 스캔(client defer) + 디렉터리(B) + 슬림 명령 + 프리셋. */
 export async function AdminOpsHome() {
   return (
     <OpsInspectorFrame>
@@ -90,6 +106,9 @@ export async function AdminOpsHome() {
       </Suspense>
       <Suspense fallback={<AdminOpsTabContentSkeleton label="명령" />}>
         <CommandsSection />
+      </Suspense>
+      <Suspense fallback={<AdminOpsTabContentSkeleton label="프리셋" />}>
+        <PresetsSection />
       </Suspense>
     </OpsInspectorFrame>
   );

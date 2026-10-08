@@ -15,8 +15,13 @@ import { dashboardAffordance } from "@/lib/ui/dashboard-page-ui";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { cn } from "@/lib/utils";
 
+type StripItem = CommandPreset & {
+  source?: "shared" | "personal";
+  removable?: boolean;
+};
+
 type Props = {
-  items: CommandPreset[];
+  items: StripItem[];
   activeId: string | null;
   disabled?: boolean;
   canStore: boolean;
@@ -48,7 +53,10 @@ export function SettingsCommandPresetStrip({
   const [error, setError] = useState<string | null>(null);
   const [pendingDelete, setPendingDelete] = useState<CommandPreset | null>(null);
   const locked = disabled || !canStore;
-  const atCap = items.length >= COMMAND_PRESET_MAX;
+  const personalCount = items.filter(
+    (item) => item.source !== "shared",
+  ).length;
+  const atCap = personalCount >= COMMAND_PRESET_MAX;
   const canOpenCreate =
     !locked && !atCap && hasPresetChannels(seedChannels);
 
@@ -79,7 +87,7 @@ export function SettingsCommandPresetStrip({
         title={atCap ? "카드당 8개까지" : "이름과 채널 값으로 칩 만들기"}
         onClick={() => {
           setDrafts(seedPresetCreateChannels(seedChannels));
-          setName(`${items.length + 1}번`);
+          setName(`${personalCount + 1}번`);
           setError(null);
           setCreating(true);
         }}
@@ -102,6 +110,8 @@ export function SettingsCommandPresetStrip({
         >
           {items.map((item) => {
             const on = activeId === item.id;
+            const removable = item.removable !== false;
+            const shared = item.source === "shared";
             return (
               <span
                 key={item.id}
@@ -117,32 +127,42 @@ export function SettingsCommandPresetStrip({
                   type="button"
                   disabled={locked}
                   aria-pressed={on}
+                  title={shared ? "축사유형 공용 프리셋" : "이 기기 프리셋"}
                   onClick={() => onPick(item.id)}
                   className={cn(
                     "h-full min-w-0 pl-2 pr-1 text-[11px] font-medium outline-none",
                     motionClass.microHover,
                   )}
                 >
+                  {shared ? (
+                    <span className="mr-1 opacity-70" aria-hidden>
+                      공용
+                    </span>
+                  ) : null}
                   {item.name}
                 </button>
-                <button
-                  type="button"
-                  disabled={locked}
-                  aria-label={`${item.name} 삭제`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setPendingDelete(item);
-                  }}
-                  className={cn(
-                    "mr-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-sm text-[11px] leading-none",
-                    motionClass.microHover,
-                    on
-                      ? "text-primary-foreground/80 hover:text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground",
-                  )}
-                >
-                  <span aria-hidden>×</span>
-                </button>
+                {removable ? (
+                  <button
+                    type="button"
+                    disabled={locked}
+                    aria-label={`${item.name} 삭제`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPendingDelete(item);
+                    }}
+                    className={cn(
+                      "mr-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-sm text-[11px] leading-none",
+                      motionClass.microHover,
+                      on
+                        ? "text-primary-foreground/80 hover:text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground",
+                    )}
+                  >
+                    <span aria-hidden>×</span>
+                  </button>
+                ) : (
+                  <span className="w-1" aria-hidden />
+                )}
               </span>
             );
           })}

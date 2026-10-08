@@ -126,8 +126,9 @@ function panelDraftOrNull(
 function panelDraftOrDefault(
   draft: PanelDraft | null,
   knownSettings: ControllerThermoSettings | null,
+  editStart: PanelDraft = EDIT_START_DRAFT,
 ): PanelDraft {
-  return panelDraftOrNull(draft, knownSettings) ?? EDIT_START_DRAFT;
+  return panelDraftOrNull(draft, knownSettings) ?? editStart;
 }
 
 function panelDraftToFields(d: PanelDraft): Record<PanelMenuId, number> {
@@ -171,7 +172,12 @@ export function useControllerPanel(
   channelContexts?: PanelChannelContext[],
   onBulkCommandsRegistered?: (items: BulkSentCommandItem[]) => void,
   latestCommand?: import("@/lib/data/commands").ThermoCommand | null,
+  /** 운영 공용 기본값 — 없으면 EDIT_START_DRAFT */
+  editStartDraft?: PanelDraft | null,
 ) {
+  const editStart = editStartDraft ?? EDIT_START_DRAFT;
+  const editStartRef = useRef(editStart);
+  editStartRef.current = editStart;
   const knownSettings = useMemo(() => panelCommandFailed(latestCommand)
     ? liveBaseline ? { ...liveBaseline, source: "live" as const, updatedAt: target?.receivedAt ?? "" } : null
     : providedSettings, [latestCommand, liveBaseline, target?.receivedAt, providedSettings]);
@@ -315,14 +321,15 @@ export function useControllerPanel(
 
   const ensureDraft = useCallback((): PanelDraft => {
     if (draft) return draft;
-    const start = panelDraftOrDefault(draft, knownSettings);
+    const start = panelDraftOrDefault(draft, knownSettings, editStartRef.current);
     setDraftByKey((prev) => patchKeyMap(prev, channelKey, start));
     markActiveEdited();
     return start;
   }, [channelKey, draft, knownSettings, markActiveEdited]);
 
   const resolveDraftBase = useCallback(
-    (): PanelDraft => panelDraftOrDefault(draft, knownSettings),
+    (): PanelDraft =>
+      panelDraftOrDefault(draft, knownSettings, editStartRef.current),
     [draft, knownSettings],
   );
 
@@ -395,7 +402,7 @@ export function useControllerPanel(
 
   const applyDefaults = useCallback(() => {
     setDraftByKey((prev) =>
-      patchKeyMap(prev, channelKey, { ...EDIT_START_DRAFT }),
+      patchKeyMap(prev, channelKey, { ...editStartRef.current }),
     );
     markActiveEdited();
     setMessage(null);
@@ -660,8 +667,8 @@ export function useControllerPanel(
   /** 슬라이더·스와이프 UI용 수치 (미확인 시 편집 시작값) */
   const sliderValues = useMemo(
     (): Record<PanelMenuId, number> =>
-      panelDraftToFields(panelDraftOrDefault(draft, knownSettings)),
-    [draft, knownSettings],
+      panelDraftToFields(panelDraftOrDefault(draft, knownSettings, editStart)),
+    [draft, knownSettings, editStart],
   );
 
   /**
@@ -758,7 +765,7 @@ export function useControllerPanel(
     const clamped = clampMenuValue(menu, value);
     setEditedByKey((prev) => patchKeyMap(prev, slot, true));
     setDraftByKey((prev) => {
-      const base = prev[slot] ?? displayThermoForChannel(ctx.knownSettings, ctx.liveBaseline, saveBaselineByKeyRef.current[slot], ctx.command) ?? EDIT_START_DRAFT;
+      const base = prev[slot] ?? displayThermoForChannel(ctx.knownSettings, ctx.liveBaseline, saveBaselineByKeyRef.current[slot], ctx.command) ?? editStartRef.current;
       return patchKeyMap(prev, slot, setDraftField(base, menu, clamped));
     });
   }, []);

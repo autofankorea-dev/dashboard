@@ -21,6 +21,8 @@ import { CommandConfirmOverlay } from "@/components/farm/command-confirm-overlay
 import { SettingsEditOverlay } from "@/components/farm/settings-edit-overlay";
 import { SettingsCommandPresetStrip } from "@/components/farm/settings-command-preset-strip";
 import { useCommandPresets } from "@/components/farm/use-command-presets";
+import { useCommandDefaults } from "@/components/farm/use-command-defaults";
+import { useSharedCommandPresets } from "@/components/farm/use-shared-command-presets";
 import { useSettingsApplyOverlay } from "@/components/farm/use-settings-apply-overlay";
 import { useApplyQueueOptional } from "@/components/farm/apply-queue-context";
 import { useApplyQueueStripPresence } from "@/components/farm/use-apply-queue-strip-presence";
@@ -57,6 +59,7 @@ import {
   type CommandPresetChannels,
   type CommandPresetScope,
 } from "@/lib/farm/command-presets";
+import { mergePresetStripItems } from "@/lib/farm/shared-command-presets";
 import { normalizeStallTyCode } from "@/lib/data/stall-type";
 import { stallKeyFromReading } from "@/lib/data/reading-hierarchy";
 import { isReadingOnline } from "@/lib/data/reading-display";
@@ -300,6 +303,7 @@ export function BarnListAccordionPanel({
   const [dismissedFailureId, setDismissedFailureId] = useState<string | null>(null);
   const failureExplanation = failedCommand ? commandFailureExplanation(failedCommand.errorMsg) : null;
 
+  const editStartDraft = useCommandDefaults();
   const panel = useControllerPanel(
     panelTarget,
     knownSettings,
@@ -311,6 +315,7 @@ export function BarnListAccordionPanel({
     panelChannelContexts,
     registerBulkCommands,
     latestPanelCommand(panelCommands, hasChannels ? activeChannel : undefined),
+    editStartDraft,
   );
 
   const presetScope = useMemo((): CommandPresetScope | null => {
@@ -321,7 +326,16 @@ export function BarnListAccordionPanel({
       controllerKey: reading.controllerKey,
     };
   }, [reading.farmKey, reading.moduleUid, reading.controllerKey]);
-  const presets = useCommandPresets(presetScope);
+  const personalPresets = useCommandPresets(presetScope);
+  const sharedPresets = useSharedCommandPresets(reading.stallTyCode);
+  const presetStripItems = useMemo(
+    () =>
+      mergePresetStripItems({
+        shared: sharedPresets,
+        personal: personalPresets.items,
+      }),
+    [sharedPresets, personalPresets.items],
+  );
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
 
   /** 카드 LIVE 상태 우선 — detail API가 늦거나 offline이면 적용이 잠기지 않게 */
@@ -466,14 +480,14 @@ export function BarnListAccordionPanel({
   };
 
   const handlePickPreset = (id: string) => {
-    const preset = presets.items.find((item) => item.id === id);
+    const preset = presetStripItems.find((item) => item.id === id);
     if (!preset) return;
     panel.applyChannelDrafts(preset.channels);
     setActivePresetId(id);
   };
 
   const handleDeletePreset = (id: string) => {
-    presets.remove(id);
+    personalPresets.remove(id);
     if (activePresetId === id) setActivePresetId(null);
   };
 
@@ -481,7 +495,7 @@ export function BarnListAccordionPanel({
     name: string,
     channels: CommandPresetChannels,
   ) => {
-    const result = presets.save({ name, channels });
+    const result = personalPresets.save({ name, channels });
     if (!result.ok) return result.reason;
     panel.applyChannelDrafts(channels);
     setActivePresetId(result.id);
@@ -600,10 +614,10 @@ export function BarnListAccordionPanel({
         presetStrip={
           canCommand ? (
             <SettingsCommandPresetStrip
-              items={presets.items}
+              items={presetStripItems}
               activeId={activePresetId}
               disabled={isSaving}
-              canStore={presets.canStore}
+              canStore={personalPresets.canStore}
               seedChannels={snapshotCommandPresetChannels(
                 panel.channelGlanceRows,
                 fieldsToDraft(panel.sliderValues),
