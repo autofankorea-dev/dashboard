@@ -122,12 +122,26 @@ export function legacyFieldsFromChannels(channels: ChannelReading[]): {
   };
 }
 
-/** UI 정식명 — 슬롯 A/B/C (입기/배기/송풍 장비명은 비노출) */
+/** UI 정식명 — 슬롯 A/B/C → 1차/2차/3차 (입기/배기/송풍 장비명은 비노출). wire·DB 키는 A/B/C 유지. */
 export const CHANNEL_SLOT_LABELS: Record<ChannelSlot, string> = {
-  A: "채널 A",
-  B: "채널 B",
-  C: "채널 C",
+  A: "1차",
+  B: "2차",
+  C: "3차",
 };
+
+export function formatChannelSlotLabel(
+  slot: ChannelSlot | null | undefined,
+): string | null {
+  if (slot == null) return null;
+  return CHANNEL_SLOT_LABELS[slot];
+}
+
+/** 확인문·ARIA 등 — `1차, 2차` */
+export function formatChannelSlotList(
+  slots: readonly ChannelSlot[],
+): string {
+  return slots.map((slot) => CHANNEL_SLOT_LABELS[slot]).join(", ");
+}
 
 export {
   formatChannelEquipmentLabel,

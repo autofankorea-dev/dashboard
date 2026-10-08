@@ -239,7 +239,7 @@ function cmd(
   assert.equal(marks.find((mark) => mark.id === "hit")?.vent, "10–70%");
   assert.match(
     marks[0]?.target ?? "",
-    /비육사 1번 축사 · 1번 컨트롤러 · 채널 A/,
+    /비육사 1번 축사 · 1번 컨트롤러 · 1차/,
   );
   assert.equal(/TEST01|SP07:/.test(marks[0]?.target ?? ""), false);
   assert.equal(marks.some((mark) => mark.id === "sent"), false);
@@ -486,7 +486,7 @@ function cmd(
   assert.equal(event.tone, "ok");
   assert.equal(event.row, 0);
   assert.equal(event.markerLabel, "A");
-  assert.equal(event.card.hero, "채널 A");
+  assert.equal(event.card.hero, "1차");
   assert.equal(
     event.card.rows.find((row) => row.label === "설정온도")?.value,
     "24.0℃",

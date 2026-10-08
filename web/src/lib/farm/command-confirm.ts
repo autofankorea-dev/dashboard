@@ -1,5 +1,8 @@
 import { formatStallTypeLabel, normalizeStallTyCode } from "@/lib/data/stall-type";
-import type { ChannelSlot } from "@/lib/data/iot-channel";
+import {
+  formatChannelSlotList,
+  type ChannelSlot,
+} from "@/lib/data/iot-channel";
 
 export type CommandThermoValues = {
   setpointTemp: number;
@@ -95,7 +98,7 @@ export function formatCommandConfirmTarget(opts: {
         ? [opts.channel]
         : [];
   const channelSuffix =
-    channelList.length > 0 ? ` 채널 ${channelList.join(", ")}` : "";
+    channelList.length > 0 ? ` ${formatChannelSlotList(channelList)}` : "";
   const typeLabel = formatStallTypeLabel(opts.stallTyCode);
   const stall = formatOrdinalNo(opts.stallNo);
   const ctrl = formatOrdinalNo(opts.eqpmnNo);

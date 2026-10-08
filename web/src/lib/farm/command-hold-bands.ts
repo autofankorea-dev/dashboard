@@ -23,7 +23,7 @@ export const COMMAND_HOLD_TEMP_DOMAIN: readonly [number, number] = [0, 30];
 /** 명령 레인 환기구간 축 */
 export const COMMAND_HOLD_VENT_DOMAIN: readonly [number, number] = [0, 100];
 
-/** 채널 A 진함 → C 옅음 */
+/** 1차(A) 진함 → 3차(C) 옅음 */
 export const COMMAND_HOLD_FILL_OPACITY: Record<ChannelSlot, number> = {
   A: 0.34,
   B: 0.2,

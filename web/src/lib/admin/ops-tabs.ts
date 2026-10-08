@@ -1,4 +1,9 @@
-export type AdminOpsTabId = "system" | "users" | "farms" | "commands";
+export type AdminOpsTabId =
+  | "system"
+  | "users"
+  | "farms"
+  | "commands"
+  | "presets";
 
 export const ADMIN_OPS_TABS: ReadonlyArray<{
   id: AdminOpsTabId;
@@ -8,6 +13,7 @@ export const ADMIN_OPS_TABS: ReadonlyArray<{
   { id: "users", label: "사용자" },
   { id: "farms", label: "농장 위치" },
   { id: "commands", label: "명령 이력" },
+  { id: "presets", label: "명령 프리셋" },
 ];
 
 export const ADMIN_OPS_BASE_PATH = "/admin/ops";
@@ -16,6 +22,7 @@ const TAB_SEGMENT: Record<Exclude<AdminOpsTabId, "system">, string> = {
   users: "users",
   farms: "farms",
   commands: "commands",
+  presets: "presets",
 };
 
 /** pathname → 탭 (nested route) */
@@ -24,6 +31,7 @@ export function parseAdminOpsTabFromPathname(pathname: string): AdminOpsTabId {
   if (normalized.endsWith("/users")) return "users";
   if (normalized.endsWith("/farms")) return "farms";
   if (normalized.endsWith("/commands")) return "commands";
+  if (normalized.endsWith("/presets")) return "presets";
   return "system";
 }
 

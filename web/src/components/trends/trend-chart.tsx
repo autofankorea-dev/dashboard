@@ -2353,9 +2353,9 @@ export function TrendChart({
           const LABEL_RANK: Record<HoverMetricGroup, string[]> = {
             temp: [
               "온도",
-              "채널 A",
-              "채널 B",
-              "채널 C",
+              CHANNEL_SLOT_LABELS.A,
+              CHANNEL_SLOT_LABELS.B,
+              CHANNEL_SLOT_LABELS.C,
               "온도 추세",
               "온도 산포",
               "온도 편차",
@@ -2368,7 +2368,12 @@ export function TrendChart({
               "습도 상한 접촉",
               "습도 하한 접촉",
             ],
-            motor: ["모터", "채널 A", "채널 B", "채널 C"],
+            motor: [
+              "모터",
+              CHANNEL_SLOT_LABELS.A,
+              CHANNEL_SLOT_LABELS.B,
+              CHANNEL_SLOT_LABELS.C,
+            ],
           };
           const rank = (group: HoverMetricGroup, label: string) => {
             const i = LABEL_RANK[group].indexOf(label);

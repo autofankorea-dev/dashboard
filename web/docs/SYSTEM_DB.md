@@ -84,6 +84,8 @@ erDiagram
 | Cursor | `iot_decode_cursor` | Edge batch `last_raw_id` |
 | 설정 | `iot_decode_config` | sparse · clock · batch_limit · cron_secret |
 | 명령 | `ctrl_thermo_command` | pending→sent→applied |
+| 명령 기본값 | `command_defaults` | 전역 1행 · 설정 「기본값」 |
+| 명령 프리셋 | `command_presets` | 축사유형(`stall_ty_code`)별 공용 |
 | Auth | `profiles` · `user_access` | role · farm scope |
 | 헬스 | `instance_health_current` | EC2 snapshot |
 | Archive | `archive.*_archived` | detach soak 60d DROP |
@@ -154,6 +156,7 @@ PR 체크: `LIVE_LIST_FORBIDDEN_TOKENS` · `npm run measure:live` p95<300ms ([`L
 | `20260805170000_iot_retention_30d_cron.sql` | retention cron |
 | `20260901003000_farm_trend_uplink_coverage_mesure_align.sql` | coverage RPC |
 | `20260915104500_farm_trend_history_channel_thermo.sql` | 컨트롤러 추이 A/B/C 설정(thermo) |
+| `20261008040000_command_defaults_presets_by_stall_ty.sql` | 전역 기본값 + 축사유형별 공용 프리셋 |
 
 ---
 
