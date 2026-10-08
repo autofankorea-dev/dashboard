@@ -73,7 +73,7 @@ SELECT count(*) FROM public.v_iot_raw_live;
 |------|-----|
 | Repo | `github.com/autofankorea-dev/dashboard` |
 | Vercel team / project | `autofankorea-dev` / `dashboard` |
-| Operating Supabase | `fkkrjljeqxpbmazfnync` |
+| Operating Supabase | `fkkrjljeqxpbmazfnync` (구 `iot-cloud`/`ompufmezugftzoergdbn` **폐기**) |
 | Branch (Production) | `main` |
 | Root Directory | `web` |
 | Functions | `icn1` (서울). 브이월드·카카오 서버 조회. 기본 `iad1`이면 지적 구획이 비어 보임 |

@@ -185,15 +185,15 @@ ALTER TABLE public.iot_room_state_raw DROP COLUMN IF EXISTS payload_json;
 - [x] Phase 3 EC2: INSERT 3필드만 · `rsd-rs` 재기동 · saved failed=0
 - [x] LIVE 데이터 경로: `v_iot_decoded_latest` fresh (FARM01)
 - [x] ACK DB 스모크: 최근 `applied`, sent→applied ≈3.5s (장비 명령 신규 미발행)
-- [x] Phase 4: 미사용 7컬럼 DROP (iot-cloud 2026-08-05)
+- [x] Phase 4: 미사용 7컬럼 DROP (구 iot-cloud 2026-08-05 · 운영은 `fkkrjljeqxpbmazfnync`)
 - [x] Dashboard UI LIVE — 사용자 확인 완료 (2026-08-05)
 
 ### 적용 기록
 
 | 대상 | 내용 |
 |------|------|
-| iot-cloud Phase 2 | `iot_raw_fill_from_topic` 트리거 · DROP `regist_no`/`payload_json` |
-| iot-cloud Phase 4 | DROP `wire_ver`,`lut_ver`,`row_count`,`batch_seq`,`crc_ok`,`farm_uid`,`session_id` (+ `idx_iot_raw_session`) |
+| 구 iot-cloud Phase 2 | `iot_raw_fill_from_topic` 트리거 · DROP `regist_no`/`payload_json` |
+| 구 iot-cloud Phase 4 | DROP `wire_ver`,`lut_ver`,`row_count`,`batch_seq`,`crc_ok`,`farm_uid`,`session_id` (+ `idx_iot_raw_session`) |
 | 로컬 migration | `20260805100000_*`, `20260805101000_*`, `20260805120000_iot_raw_drop_unused_passthrough_columns.sql` |
 | EC2 Phase 3 | `/home/ubuntu/SI1/ec2_v2/rs/wire_decode.py` · bak=`wire_decode.py.bak.phase3` |
 | 로컬 RSD | `Operation/RSD/wire_decode.py` · `tests/test_rs.py` (6 passed) |
@@ -236,7 +236,7 @@ ALTER TABLE public.iot_room_state_raw DROP COLUMN IF EXISTS payload_json;
 
 ---
 
-## 10. 용량 재실측 (iot-cloud · 2026-08-05 Phase 4 후)
+## 10. 용량 재실측 (구 iot-cloud · 2026-08-05 Phase 4 후 · 역사)
 
 | 항목 | 값 |
 |------|-----|

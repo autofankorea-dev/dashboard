@@ -1,6 +1,7 @@
 # UI 스모크 — Health C / 명령 이력 (2026-08-06)
 
-> **환경:** `localhost:3000` (로그인된 관리자 세션) · DB는 iot-cloud  
+> **환경:** `localhost:3000` (로그인된 관리자 세션) · DB는 당시 구 `iot-cloud`  
+> **현재 운영 DB:** `fkkrjljeqxpbmazfnync` · 구 `iot-cloud` **폐기**  
 > **Prod URL:** 별도 로그인 미실시 · Vercel이 `main`(`8eb322a`) 배포 후 동일 기대
 
 ## 체크 결과

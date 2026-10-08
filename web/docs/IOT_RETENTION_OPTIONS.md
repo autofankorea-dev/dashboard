@@ -1,6 +1,7 @@
 # IoT 보존(Retention) — 채택·적용 현황
 
-> **정합:** 2026-08-28 · iot-cloud 실측 cron (ops 로그 7일 추가)  
+> **정합:** 2026-08-28 · 구 `iot-cloud` 실측 cron (ops 로그 7일 추가)  
+> **운영 DB (현재):** `fkkrjljeqxpbmazfnync` · 구 `iot-cloud`(`ompufmezugftzoergdbn`) **폐기**  
 > **역할:** 보존 정책의 옵션 이력 · **실행 상태는 본 문서 §현재 상태**가 정본  
 > 상세 설계·파티션: [`DECODED_ROWCOUNT_PLAN.md`](./DECODED_ROWCOUNT_PLAN.md) · archive DROP: [`IOT_ARCHIVE_AND_THERMO_FLAT.md`](./IOT_ARCHIVE_AND_THERMO_FLAT.md) · 용량: [`DECODED_CAPACITY.md`](./DECODED_CAPACITY.md)
 
@@ -10,7 +11,7 @@
 
 ## 전제 (합의 · 유지)
 
-- IoT는 **iot-cloud** 단일 프로젝트 (Free tier)
+- IoT는 **운영 단일 Supabase 프로젝트** (`fkkrjljeqxpbmazfnync`). 구 `iot-cloud`는 폐기.
 - 타 Supabase 프로젝트로 COLD 분리 **금지** (현 단계)
 - 물리 테이블을 View로 바꿔 “저장 절약” **금지**
 - 대시보드: LIVE=최신 투영 · 차트 최대 **30일** · raw는 앱 읽기 경로 비포함
@@ -30,7 +31,7 @@
 | **Archive soak DROP** | archive 월 종료 ≤ now−**60d** (retention 30d + soak 30d) → DROP |
 | **월 파티션 예비** | 익월 등 자동 생성 |
 
-### pg_cron (iot-cloud · active)
+### pg_cron (당시 구 iot-cloud · active · 역사)
 
 | jobname | schedule (UTC) | KST 대략 | command |
 |---------|----------------|----------|---------|
@@ -41,7 +42,7 @@
 
 `net._http_response` · `cron.job_run_details`는 제품 데이터가 아니라 pg_net/pg_cron 실행 로그. **7일** 초과분 배치 DELETE. 스케줄(`cron.job`)은 유지. `VACUUM FULL`은 용량 회수용 **1회 작업**이며 일일 잡에 넣지 않음.
 
-iot-cloud 적용 (2026-08-28): HTTP **481 MB → 3.4 MB**, cron 기록 **340 MB → 37 MB**, DB **1,171 MB → 391 MB**. 일일 잡 `cleanup-ops-logs-7d-daily` (03:50 KST).
+구 `iot-cloud` 적용 (2026-08-28): HTTP **481 MB → 3.4 MB**, cron 기록 **340 MB → 37 MB**, DB **1,171 MB → 391 MB**. 일일 잡 `cleanup-ops-logs-7d-daily` (03:50 KST). 현재 운영은 `fkkrjljeqxpbmazfnync`.
 
 함수·마이그레이션: dashboard `supabase/migrations` · 운영 메모 [`IOT_ARCHIVE_AND_THERMO_FLAT.md`](./IOT_ARCHIVE_AND_THERMO_FLAT.md).
 

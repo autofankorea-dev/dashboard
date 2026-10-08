@@ -93,7 +93,7 @@ flowchart LR
 | **RS-DB-C 3계층** | 수집(EC2)·저장(DB)·소비(Vercel)의 배포 주기·장애 반경·스케일 요구가 다름 | 올인원 EC2(구 D.py decode+UI) · 브라우저 직접 MQTT | [`CLOUD_DEPLOY.md`](./CLOUD_DEPLOY.md) · [`protocol/데이터폼_최종안.md`](./protocol/데이터폼_최종안.md) §8 |
 | **해석(decode)을 DB Edge** | raw 옆 **~10초 cron** · batch cursor · sparse/clock이 `iot_decoded_last_value`·`iot_decode_config`와 같은 트랜잭션·스키마 필요 | RS에서 wire decode(Phase3+ 폐기) · Next API batch decode · 농장별 decode 서버 | [`DECODED_ROWCOUNT_PLAN.md`](./DECODED_ROWCOUNT_PLAN.md) · `supabase/functions/decode-batch/` |
 | **명령·uplink 동일 DB** | INSERT 감사·RLS·pending queue · uplink thermo와 command payload **ACK diff** · C.py **단일 downlink 소비자** | 대시보드→MQTT 직접 publish · 명령 전용 DB/Redis 분리 | [`CTRL_THERMO_COMMAND_PHASE_A.md`](./CTRL_THERMO_COMMAND_PHASE_A.md) · [`protocol/데이터폼_정책문서.md`](./protocol/데이터폼_정책문서.md) §4.3 |
-| **iot-cloud 단일 프로젝트** | Auth·RLS·JOIN view·Edge cron·명령 ACK를 **한 Postgres**에서. Free tier 운영 현실 | multi-DB COLD(E) · read/write 물리 샤딩 · 농장별 Supabase | [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) |
+| **운영 단일 Supabase 프로젝트** (`fkkrjljeqxpbmazfnync`) | Auth·RLS·JOIN view·Edge cron·명령 ACK를 **한 Postgres**에서 | multi-DB COLD(E) · 농장별 Supabase · **폐기된 `iot-cloud`(`ompufme…`) 재사용** | [`SYSTEM_DB.md`](./SYSTEM_DB.md) · [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) |
 | **LIVE vs 추이 시간축 분리** | `received_at`=신선도(2h hot) · `mesure_at`=차트/PDF. **버퍼 replay**와 live stream 구분 | REPLAY 전용 UI/DB 모드 · received만 LIVE 표시 | [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md) · [`live-status.ts`](../src/lib/data/live-status.ts) |
 
 **Instance를 농장별로 쪼개지 않은 이유 (요약):** MQTT 브릿지·키·systemd 운영을 **1벌**로 유지. 다농장 topic multiplex. blast radius는 RS=raw-only·decode=DB로 이미 분리.
@@ -138,13 +138,15 @@ flowchart LR
 
 ---
 
-### 2.2 DB (Supabase · iot-cloud)
+### 2.2 DB (Supabase · 운영 `fkkrjljeqxpbmazfnync`)
+
+> **폐기:** 구 프로젝트 `iot-cloud` (`ompufmezugftzoergdbn`) — 사용 금지. 정본은 [`SYSTEM_DB.md`](./SYSTEM_DB.md) §프로젝트.
 
 #### 2.2.0 설계 이유
 
 | 결정 | 설계 이유 | 하지 않은 것 | 근거 |
 |------|-----------|--------------|------|
-| **iot-cloud 단일 Postgres** | Auth·RLS·JOIN view·Edge cron·명령 ACK **한 스키마** | 농장별 DB · read replica만 분리 · COLD multi-DB(E) | [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) |
+| **운영 단일 Postgres** | Auth·RLS·JOIN view·Edge cron·명령 ACK **한 스키마** | 농장별 DB · read replica만 분리 · COLD multi-DB(E) · 구 `iot-cloud` | [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) · [`SYSTEM_DB.md`](./SYSTEM_DB.md) |
 | **raw/decoded 논리 분리·물리 단일** | 월 파티션·retention cron·sparse·hot view로 계층 분리. Free tier에서 물리 샤딩 불필요 | raw 전용 클러스터 · decoded만 S3 아카이브 | [`DECODED_CAPACITY.md`](./DECODED_CAPACITY.md) |
 | **decode-batch on Edge** | raw INSERT 직후 **pg_cron ~10s** · cursor·`last_value`·config **DB co-location** | RS decode · Next API batch · per-farm worker | `supabase/functions/decode-batch/` |
 | **ctrl_thermo_command in DB** | 감사·RLS·pending queue · uplink thermo↔command **ACK 비교** · C.py 단일 소비 | MQTT cmd topic 직접 · Redis 명령 큐 | [`CTRL_THERMO_COMMAND_PHASE_A.md`](./CTRL_THERMO_COMMAND_PHASE_A.md) |

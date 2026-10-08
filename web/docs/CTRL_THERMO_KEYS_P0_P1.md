@@ -1,6 +1,6 @@
 # ctrl_thermo_command — P0/P1 키·인덱스 (적용)
 
-> **적용일:** 2026-08-06 · iot-cloud  
+> **적용일:** 2026-08-06 · 구 `iot-cloud` (현재 운영은 `fkkrjljeqxpbmazfnync` · 구 프로젝트 폐기)  
 > **판단:** J1=A, J2=A, J3=A, J4=A, J5=DROP `idx_ctrl_thermo_command_target`, J6=A(앱 select 미변경), J7=B  
 > **migration:** `supabase/migrations/20260806120000_ctrl_thermo_keys_and_indexes.sql`
 
