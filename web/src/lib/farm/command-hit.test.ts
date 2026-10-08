@@ -485,7 +485,7 @@ function cmd(
   assert.equal(event.card.badge, "명령");
   assert.equal(event.tone, "ok");
   assert.equal(event.row, 0);
-  assert.equal(event.markerLabel, "A");
+  assert.equal(event.markerLabel, "1차");
   assert.equal(event.card.hero, "1차");
   assert.equal(
     event.card.rows.find((row) => row.label === "설정온도")?.value,
@@ -536,9 +536,9 @@ function cmd(
     marks,
     windowLabel: "약 10분",
   });
-  assert.deepEqual(lane.rowLabels, ["A", "B", "C"]);
+  assert.deepEqual(lane.rowLabels, ["1차", "2차", "3차"]);
   assert.match(lane.statsLine ?? "", /적용 1건/);
-  assert.equal(lane.marks[0]?.markerLabel, "A");
+  assert.equal(lane.marks[0]?.markerLabel, "1차");
   assert.equal(lane.marks[0]?.row, 0);
   assert.equal(lane.marks[0]?.hold?.tempLo, 24);
   assert.equal(lane.marks[0]?.hold?.tempHi, 28);

@@ -54,14 +54,14 @@ export function GridMetricLabel({
     return (
       <span
         className={cn(
-          "inline-flex shrink-0 items-center justify-center rounded-full border border-channel-info/40 bg-channel-info/10 font-bold leading-none text-channel-info",
-          "size-3 text-[8px] sm:size-3.5 sm:text-[9px]",
+          "inline-flex h-3.5 min-w-3.5 shrink-0 items-center justify-center rounded-full border border-channel-info/40 bg-channel-info/10 px-0.5 font-bold leading-none text-channel-info",
+          "text-[7px] sm:h-4 sm:min-w-4 sm:text-[8px]",
           iconClassName,
           className,
         )}
         aria-hidden
       >
-        {id}
+        {CHANNEL_SLOT_LABELS[id]}
       </span>
     );
   }

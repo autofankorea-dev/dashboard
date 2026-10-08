@@ -3,7 +3,10 @@
 import type { ControllerThermoSettings } from "@/lib/controllers/controller-settings";
 import type { BarnReading } from "@/lib/data/iot";
 import type { AlarmSettings } from "@/lib/data/alarms";
-import type { ChannelSlot } from "@/lib/data/iot-channel";
+import {
+  CHANNEL_SLOT_LABELS,
+  type ChannelSlot,
+} from "@/lib/data/iot-channel";
 import type {
   TrendControllerPeriodData,
   TrendPeriodId,
@@ -409,7 +412,8 @@ function ChannelCell({
   interactive?: boolean;
   onToggle?: (slot: ChannelSlot) => void;
 }) {
-  const label = `채널 ${slot} ${value}${value !== "—" ? "%" : ""}`;
+  const slotLabel = CHANNEL_SLOT_LABELS[slot];
+  const label = `${slotLabel} ${value}${value !== "—" ? "%" : ""}`;
   const cellClass = cn(
     "relative min-h-[3rem] rounded-md border bg-background/80 sm:min-h-[3.25rem]",
     compact ? "p-1.5 sm:p-2" : "p-2 sm:p-2.5",
@@ -433,7 +437,7 @@ function ChannelCell({
           "text-channel-info",
         )}
       >
-        {slot}
+        {slotLabel}
       </span>
       <div className="flex h-full min-h-[2.25rem] items-center justify-center pt-2 sm:min-h-[2.5rem]">
         <span
