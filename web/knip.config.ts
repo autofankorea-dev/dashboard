@@ -21,8 +21,6 @@ const config: KnipConfig = {
     "src/components/farm/apply-queue-dock.tsx",
     // 알람 폼은 alarm-threshold-form 사용. 숫자 필드 그룹은 보관만.
     "src/components/settings/alarm-threshold-fields.tsx",
-    // 레거시 필터 바 — 참조 0건. 삭제 승인 전까지 보관 (P0 클린코드 분석 2026-10)
-    "src/components/common/filter-bar.tsx",
   ],
   ignoreExportsUsedInFile: true,
   ignoreDependencies: [

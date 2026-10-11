@@ -17,7 +17,7 @@
 
 ## Knip
 
-- 설정: `knip.config.ts` — `src/app`·`src/**/*.test.ts`·`scripts/*`·`scripts/fixtures/*.tsx`(스모크가 앱으로 복사하는 페이지)를 entry로 둔다. ignore: 미연결 디자인 헬퍼 · 삭제 승인 대기 레거시(`filter-bar.tsx`). `buffer`는 webpack 폴리필이라 `ignoreDependencies`. `scripts/archive/**`는 entry에 넣지 않는다.
+- 설정: `knip.config.ts` — `src/app`·`src/**/*.test.ts`·`scripts/*`·`scripts/fixtures/*.tsx`(스모크가 앱으로 복사하는 페이지)를 entry로 둔다. ignore: 미연결 디자인 헬퍼. `buffer`는 webpack 폴리필이라 `ignoreDependencies`. `scripts/archive/**`는 entry에 넣지 않는다.
 - CI: `npm run knip` — files/dependencies/duplicates만 게이트
 - 로컬 점진 정리: `npm run knip:exports` — unused export 전체 목록
 
