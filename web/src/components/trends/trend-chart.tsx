@@ -15,7 +15,6 @@ import {
 import { Check, RotateCcw } from "lucide-react";
 import { AlarmDomainIcon } from "@/components/settings/alarm-domain-icon";
 import { cn } from "@/lib/utils";
-import type { TrendPeriodId } from "@/lib/domain/farm-trend-types";
 import {
   buildTrendAxisMarks,
   formatTrendAxisTickParts,
@@ -26,7 +25,6 @@ import {
   type Band,
   SEV_COLOR,
 } from "@/lib/farm/severity-score";
-import type { UplinkCoverageBand } from "@/lib/farm/trend-uplink-coverage";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { isPrimaryPress } from "@/lib/ui/pointer-press";
 import { useClipPresence, usePresenceValue } from "@/lib/ui/use-clip-presence";
