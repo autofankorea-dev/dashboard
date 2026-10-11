@@ -32,7 +32,7 @@ import type {
   TrendEventLane,
   TrendEventMark,
 } from "@/lib/domain/trend-chart-types";
-import { X_SCOPE_DRAG_PX } from "./trend-chart-geometry";
+import { X_SCOPE_DRAG_PX } from "@/lib/farm/trend-chart-geometry";
 
 export type PositionedEventMark = {
   mark: TrendEventMark;

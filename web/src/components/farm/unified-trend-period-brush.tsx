@@ -7,7 +7,7 @@ import {
   comfortScoreToColor,
 } from "@/lib/farm/env-comfort-score";
 import { downsampleTrendValues } from "@/lib/farm/trend-display-buckets";
-import { trendPlotPadRatios } from "@/components/trends/trend-chart-geometry";
+import { trendPlotPadRatios } from "@/lib/farm/trend-chart-geometry";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { isPrimaryPress } from "@/lib/ui/pointer-press";
 import { cn } from "@/lib/utils";

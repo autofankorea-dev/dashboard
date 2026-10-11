@@ -6,7 +6,7 @@ import type {
   PointerEvent as ReactPointerEvent,
 } from "react";
 import { isPrimaryPress } from "@/lib/ui/pointer-press";
-import { X_SCOPE_DRAG_PX, X_SCOPE_MIN_SPAN } from "./trend-chart-geometry";
+import { X_SCOPE_DRAG_PX, X_SCOPE_MIN_SPAN } from "@/lib/farm/trend-chart-geometry";
 
 /** 드래프트 직사각형 view 좌표 — a/b=x, y0/y=y */
 export type XDraftRect = { a: number; b: number; y0: number; y: number };
