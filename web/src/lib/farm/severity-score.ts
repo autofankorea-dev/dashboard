@@ -20,7 +20,7 @@
  * 설정온도·편차는 환기 제어용, 알람 점선 시각화와 분리.
  */
 
-import type { AlarmThresholds } from "@/lib/data/alarms";
+import type { AlarmThresholds } from "@/lib/domain/alarms";
 import type { ControllerThermoSettings } from "@/lib/controllers/controller-settings";
 
 /** neutral = 히트맵 과거 구간 미채점(현재 알람으로 소급하지 않음) */

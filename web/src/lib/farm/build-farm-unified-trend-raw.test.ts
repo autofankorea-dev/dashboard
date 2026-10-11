@@ -6,8 +6,8 @@
  * 집계는 fanA/fanB/fanC 를 그대로 소비한다(역할 재배치 없음).
  */
 import assert from "node:assert/strict";
-import type { TrendControllerSeries } from "@/lib/data/farm-trend-types";
-import { DEFAULT_ALARM_THRESHOLDS } from "@/lib/data/alarms";
+import type { TrendControllerSeries } from "@/lib/domain/farm-trend-types";
+import { DEFAULT_ALARM_THRESHOLDS } from "@/lib/domain/alarms";
 import { aggregateUnifiedBarnTrendRaw } from "./unified-barn-trend-series";
 
 function ctrl(

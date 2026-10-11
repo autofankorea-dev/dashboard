@@ -4,7 +4,7 @@ import type { ChannelGlanceRow, PanelDraft, PanelThermoValues } from "@/lib/cont
 import {
   CHANNEL_SLOT_LABELS,
   type ChannelSlot,
-} from "@/lib/data/iot-channel";
+} from "@/lib/domain/iot-channel";
 import { MENU_STEPS, type PanelMenuId } from "@/lib/controllers/controller-panel-map";
 import { SettingsStepperField } from "./settings-stepper-field";
 import { cn } from "@/lib/utils";

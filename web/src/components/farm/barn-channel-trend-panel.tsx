@@ -2,12 +2,12 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { TrendChart } from "@/components/trends/trend-chart";
-import type { TrendControllerPeriodData, TrendPeriodId } from "@/lib/data/farm-trend-types";
+import type { TrendControllerPeriodData, TrendPeriodId } from "@/lib/domain/farm-trend-types";
 import type { BarnReading } from "@/lib/data/iot";
 import {
   CHANNEL_SLOT_LABELS,
   type ChannelSlot,
-} from "@/lib/data/iot-channel";
+} from "@/lib/domain/iot-channel";
 import type { ControllerThermoSettings } from "@/lib/controllers/controller-settings";
 import {
   activeChannelSlotsFromReading,

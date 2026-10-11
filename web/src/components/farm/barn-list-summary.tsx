@@ -6,11 +6,11 @@ import {
   ControllerSummaryGaugeRow,
 } from "@/components/farm/controller-summary-gauge-row";
 import type { ControllerThermoSettings } from "@/lib/controllers/controller-settings";
-import type { AlarmSettings } from "@/lib/data/alarms";
+import type { AlarmSettings } from "@/lib/domain/alarms";
 import type { BarnReading } from "@/lib/data/iot";
-import type { TrendControllerPeriodData, TrendPeriodId } from "@/lib/data/farm-trend-types";
-import { groupReadingsByHierarchy } from "@/lib/data/reading-hierarchy";
-import { summarizeReadings } from "@/lib/data/hierarchy-summary";
+import type { TrendControllerPeriodData, TrendPeriodId } from "@/lib/domain/farm-trend-types";
+import { groupReadingsByHierarchy } from "@/lib/domain/reading-hierarchy";
+import { summarizeReadings } from "@/lib/domain/hierarchy-summary";
 import {
   isBarnListMobileSheetOpen,
   isBarnListSettingsExpanded,
@@ -19,10 +19,10 @@ import {
 import { BarnListToolbarMobileSheet } from "@/components/farm/barn-list-toolbar-mobile-sheet";
 import type { BarnListViewMode, ListLayout } from "@/lib/farm/farm-view-url";
 import { useHydrationSafeDashboardCompact } from "@/components/layout/dashboard-viewport-context";
-import { normalizeStallTyCode } from "@/lib/data/stall-type";
+import { normalizeStallTyCode } from "@/lib/domain/stall-type";
 import { StatusBadge } from "@/components/common/status-badge";
 import { EnvChip } from "@/components/common/env-chip";
-import { formatSensorNumberForDisplay } from "@/lib/data/reading-display";
+import { formatSensorNumberForDisplay } from "@/lib/domain/reading-display";
 import { StallUnitNoMark } from "@/components/farm/controller-summary-parts";
 import { dashboardChroma, dashboardUi, dashboardTypography } from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";

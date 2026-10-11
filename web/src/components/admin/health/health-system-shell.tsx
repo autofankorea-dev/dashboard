@@ -9,7 +9,7 @@ import {
   worstHealthStatus,
 } from "@/lib/admin/health/health-ui-labels";
 import { parseHealthNodeId } from "@/lib/admin/health/health-routes";
-import { farmKeyUrlSlug } from "@/lib/data/farm-key";
+import { farmKeyUrlSlug } from "@/lib/domain/farm-key";
 import type { HealthDagNodeSelectPayload } from "@/lib/admin/health/health-node-peek-content";
 import { fetchHealthSnapshotAction } from "@/app/(dashboard)/admin/ops/health-actions";
 import { HealthDagGraph } from "@/components/admin/health/health-dag-graph";

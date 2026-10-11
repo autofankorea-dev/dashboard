@@ -5,7 +5,7 @@ import {
   geocodeFarmAddressAction,
   saveFarmAddressAction,
 } from "@/lib/actions/app-settings-actions";
-import type { FarmKey } from "@/lib/data/farm-key";
+import type { FarmKey } from "@/lib/domain/farm-key";
 import { PageActionButton } from "@/components/common/page-action-button";
 import type { FarmLocationRow } from "@/lib/data/farm-location";
 import { dashboardUi } from "@/lib/ui/dashboard-page-ui";

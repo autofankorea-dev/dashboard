@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { ModuleHealthRow } from "@/lib/admin/health/types";
-import { parseFarmKeyId } from "@/lib/data/farm-key";
+import { parseFarmKeyId } from "@/lib/domain/farm-key";
 
 export type CollectorGroupDef = {
   id: string;

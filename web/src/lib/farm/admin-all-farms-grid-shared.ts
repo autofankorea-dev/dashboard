@@ -1,4 +1,4 @@
-import type { FarmKey } from "@/lib/data/farm-key";
+import type { FarmKey } from "@/lib/domain/farm-key";
 import type { BarnMapSnapshot, BarnReading } from "@/lib/data/iot";
 
 /** Admin hub 첫 paint용 배치 크기 — 나머지는 클라이언트 tail hydrate */

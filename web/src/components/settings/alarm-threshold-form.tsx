@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { BarnReading } from "@/lib/data/iot";
-import type { AlarmSettings } from "@/lib/data/alarms";
+import type { AlarmSettings } from "@/lib/domain/alarms";
 import type { ThermoCommand } from "@/lib/data/commands";
 import { parseDeviceAlarms } from "@/lib/controllers/device-alarm-command";
 import { sendDeviceSettingsCommandsAction } from "@/app/(dashboard)/controllers/actions";

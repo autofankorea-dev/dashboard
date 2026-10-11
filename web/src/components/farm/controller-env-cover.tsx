@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { AlarmSettings } from "@/lib/data/alarms";
+import type { AlarmSettings } from "@/lib/domain/alarms";
 import type { BarnReading } from "@/lib/data/iot";
 import {
   formatControllerHeaderStallType,

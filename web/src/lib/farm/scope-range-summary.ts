@@ -1,4 +1,4 @@
-import type { AlarmThresholds } from "@/lib/data/alarms";
+import type { AlarmThresholds } from "@/lib/domain/alarms";
 import type {
   SplitYVisibility,
   UnifiedBarnTrendRaw,

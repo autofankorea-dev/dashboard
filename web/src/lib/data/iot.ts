@@ -1,30 +1,30 @@
 import "server-only";
 
 import { cache } from "react";
-import { isValidFarmKey } from "@/lib/data/barn-catalog";
+import { isValidFarmKey } from "@/lib/domain/barn-catalog";
 import {
   summarizeControllers,
   toBarnSummary,
   toFarmOverview,
-} from "@/lib/data/dashboard-summary";
+} from "@/lib/domain/dashboard-summary";
 import type { BarnMeta } from "@/lib/data/barn-meta";
-import { compareReadings } from "@/lib/data/reading-hierarchy";
+import { compareReadings } from "@/lib/domain/reading-hierarchy";
 import {
   farmKeyEq,
   stallCatalogKey,
   type FarmKey,
-} from "@/lib/data/farm-key";
+} from "@/lib/domain/farm-key";
 import {
   type ChannelReading,
-} from "@/lib/data/iot-channel";
+} from "@/lib/domain/iot-channel";
 import {
   fetchLiveReadings,
   type LiveReadingsScope,
 } from "@/lib/data/iot-live-fetch";
 
-export type { StallCatalogEntry } from "@/lib/data/stall-catalog";
+export type { StallCatalogEntry } from "@/lib/domain/stall-catalog";
 export type { LiveReadingsScope };
-export { buildStallCatalog } from "@/lib/data/stall-catalog";
+export { buildStallCatalog } from "@/lib/domain/stall-catalog";
 
 export type ControllerStatus = "normal" | "caution" | "offline";
 
@@ -145,7 +145,7 @@ type DecodedController = {
 
   mesureDt?: string;
 
-  channels?: import("@/lib/data/iot-channel").DecodedChannel[];
+  channels?: import("@/lib/domain/iot-channel").DecodedChannel[];
 
   thermo?: {
     setpointTemp?: string | number;
@@ -217,7 +217,7 @@ export {
 
   type ChartSlotItem,
 
-} from "@/lib/data/iot-chart";
+} from "@/lib/domain/iot-chart";
 
 
 

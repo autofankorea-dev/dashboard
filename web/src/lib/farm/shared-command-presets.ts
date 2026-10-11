@@ -8,7 +8,7 @@ import {
   type CommandPreset,
   type CommandPresetChannels,
 } from "@/lib/farm/command-presets";
-import { normalizeStallTyCode } from "@/lib/data/stall-type";
+import { normalizeStallTyCode } from "@/lib/domain/stall-type";
 
 export type SharedCommandPreset = CommandPreset & {
   stallTyCode: string;

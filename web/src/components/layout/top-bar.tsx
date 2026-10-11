@@ -2,11 +2,11 @@ import { AppHeaderAccount } from "@/components/layout/app-header-account";
 import { AppHeaderBrand } from "@/components/layout/app-header-brand";
 import { FeatureTourHelpButton } from "@/components/layout/feature-tour-help-button";
 import { HeaderToolsMenu } from "@/components/layout/header-tools-menu";
-import type { AlarmRow } from "@/lib/data/alarms";
+import type { AlarmRow } from "@/lib/domain/alarms";
 import type { FarmOverview } from "@/lib/data/iot";
 import type { EditableFarmOption } from "@/lib/data/farm-location";
-import type { FarmKey } from "@/lib/data/farm-key";
-import type { FarmSummaryRow } from "@/lib/data/farm-summaries";
+import type { FarmKey } from "@/lib/domain/farm-key";
+import type { FarmSummaryRow } from "@/lib/domain/farm-summaries";
 import { dashboardUi } from "@/lib/ui/dashboard-page-ui";
 
 type Role = "admin" | "operator" | "viewer";

@@ -15,7 +15,7 @@ import {
 import {
   alarmBaselineFromRange,
   alarmRangeFromBaseline,
-} from "@/lib/data/alarm-baseline";
+} from "@/lib/domain/alarm-baseline";
 import { dashboardTypography, dashboardUi } from "@/lib/ui/dashboard-page-ui";
 import { useMobileLayout } from "@/lib/ui/use-mobile-layout";
 import { useSliderDragThumb } from "@/lib/ui/use-slider-drag-thumb";

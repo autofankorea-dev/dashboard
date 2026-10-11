@@ -9,13 +9,13 @@ import {
 } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { ControllerThermoSettings } from "@/lib/controllers/controller-settings";
-import type { AlarmSettings } from "@/lib/data/alarms";
+import type { AlarmSettings } from "@/lib/domain/alarms";
 import type { ThermoCommand } from "@/lib/data/commands";
 import type { BarnReading } from "@/lib/data/iot";
 import type {
   TrendControllerPeriodData,
   TrendPeriodId,
-} from "@/lib/data/farm-trend-types";
+} from "@/lib/domain/farm-trend-types";
 import type { ControllerMobileSheetPage } from "@/lib/farm/barn-list-panel-state";
 import { SEV_COLOR, type Band } from "@/lib/farm/severity-score";
 import {

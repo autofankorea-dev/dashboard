@@ -29,9 +29,9 @@ import {
   DEFAULT_ALARM_THRESHOLDS,
   type AlarmSettings,
   type AlarmThresholds,
-} from "@/lib/data/alarms";
-import { normalizeStallTyCode } from "@/lib/data/stall-type";
-import { isReadingOnline } from "@/lib/data/reading-display";
+} from "@/lib/domain/alarms";
+import { normalizeStallTyCode } from "@/lib/domain/stall-type";
+import { isReadingOnline } from "@/lib/domain/reading-display";
 import type { InlineStatusTone } from "@/components/common/inline-status-toast";
 import { applyQueueStageCounts } from "@/lib/farm/apply-queue";
 import {
@@ -59,7 +59,7 @@ import {
 import {
   CHANNEL_SLOT_LABELS,
   type ChannelSlot,
-} from "@/lib/data/iot-channel";
+} from "@/lib/domain/iot-channel";
 import { useFarmLiveRefreshOptional } from "@/lib/navigation/farm-live-refresh";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { useMobileLayout } from "@/lib/ui/use-mobile-layout";

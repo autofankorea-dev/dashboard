@@ -14,8 +14,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { AlarmRow } from "@/lib/data/alarms";
-import type { FarmKey } from "@/lib/data/farm-key";
+import type { AlarmRow } from "@/lib/domain/alarms";
+import type { FarmKey } from "@/lib/domain/farm-key";
 import type { FarmOverview } from "@/lib/data/iot";
 import { useShellAlarms } from "@/lib/navigation/shell-live-alarms-store";
 import {

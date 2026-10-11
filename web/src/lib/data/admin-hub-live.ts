@@ -1,15 +1,15 @@
 import "server-only";
 
 import { cache } from "react";
-import type { AlarmRow } from "@/lib/data/alarms";
+import type { AlarmRow } from "@/lib/domain/alarms";
 import {
   compareFarmKey,
   farmKeyId,
   parseFarmKeyId,
   type FarmKey,
-} from "@/lib/data/farm-key";
+} from "@/lib/domain/farm-key";
 import type { FarmLocationRow } from "@/lib/data/farm-location";
-import { buildFarmSummaries, type FarmSummaryRow } from "@/lib/data/farm-summaries";
+import { buildFarmSummaries, type FarmSummaryRow } from "@/lib/domain/farm-summaries";
 import { buildFarmSummariesFromOverview } from "@/lib/data/farm-overview";
 import type { BarnReading } from "@/lib/data/iot";
 import {

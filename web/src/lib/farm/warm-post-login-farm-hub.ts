@@ -1,6 +1,6 @@
 "use client";
 
-import { farmKeyId, type FarmKey } from "@/lib/data/farm-key";
+import { farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
 import { fetchFarmPanelEnrichShared } from "@/lib/farm/fetch-farm-panel-enrich";
 import { setFarmPanelCache } from "@/lib/farm/farm-panel-cache";
 import { prefetchFarmControllerTrend } from "@/lib/farm/use-farm-controller-trend";

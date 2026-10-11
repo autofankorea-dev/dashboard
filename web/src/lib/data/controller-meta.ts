@@ -1,15 +1,15 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
-import { omitRetiredProfileUiConfigKeys } from "@/lib/data/profile-ui-retired";
-import type { ControllerMetaEntry } from "@/lib/data/controller-meta-shared";
+import { omitRetiredProfileUiConfigKeys } from "@/lib/domain/profile-ui-retired";
+import type { ControllerMetaEntry } from "@/lib/domain/controller-meta-shared";
 
 export type {
   ControllerMetaConfig,
   ControllerMetaEntry,
-} from "@/lib/data/controller-meta-shared";
+} from "@/lib/domain/controller-meta-shared";
 
-export { controllerDisplayName } from "@/lib/data/controller-meta-shared";
+export { controllerDisplayName } from "@/lib/domain/controller-meta-shared";
 
 /** profiles.ui_config — getCurrentUser와 동일 요청 내 캐시 공유 */
 export async function getControllerMetas(): Promise<ControllerMetaEntry[]> {

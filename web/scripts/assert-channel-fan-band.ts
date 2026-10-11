@@ -7,7 +7,7 @@ import { resolveReadingChannelThermo } from "../src/lib/farm/controller-summary-
 import { channelFanTrendSeries } from "../src/lib/farm/trend-chart-series";
 import type { BarnReading } from "../src/lib/data/iot";
 import type { ControllerThermoSettings } from "../src/lib/controllers/controller-settings";
-import type { FarmKey } from "../src/lib/data/farm-key";
+import type { FarmKey } from "../src/lib/domain/farm-key";
 
 const farmKey: FarmKey = { lsindRegistNo: "FARM01", itemCode: "P00" };
 

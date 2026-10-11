@@ -10,9 +10,9 @@ import type {
   HealthStatus,
   ModuleHealthRow,
 } from "@/lib/admin/health/types";
-import { farmKeyId, moduleKey, type FarmKey } from "@/lib/data/farm-key";
-import { farmShortLabel } from "@/lib/data/farm-summaries";
-import { isLivePacketMode } from "@/lib/data/iot-raw-live";
+import { farmKeyId, moduleKey, type FarmKey } from "@/lib/domain/farm-key";
+import { farmShortLabel } from "@/lib/domain/farm-summaries";
+import { isLivePacketMode } from "@/lib/domain/iot-raw-live";
 
 export type LiveHealthRow = {
   lsind_regist_no: string;

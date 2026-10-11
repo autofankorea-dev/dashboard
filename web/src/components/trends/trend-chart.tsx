@@ -15,7 +15,7 @@ import {
 import { Check, RotateCcw } from "lucide-react";
 import { AlarmDomainIcon } from "@/components/settings/alarm-domain-icon";
 import { cn } from "@/lib/utils";
-import type { TrendPeriodId } from "@/lib/data/farm-trend-types";
+import type { TrendPeriodId } from "@/lib/domain/farm-trend-types";
 import {
   buildTrendAxisMarks,
   formatTrendAxisTickParts,
@@ -31,7 +31,7 @@ import { motionClass } from "@/lib/ui/motion-classes";
 import { isPrimaryPress } from "@/lib/ui/pointer-press";
 import { useClipPresence, usePresenceValue } from "@/lib/ui/use-clip-presence";
 import { motionDuration } from "@/lib/ui/motion-tokens";
-import { CHANNEL_SLOT_LABELS } from "@/lib/data/iot-channel";
+import { CHANNEL_SLOT_LABELS } from "@/lib/domain/iot-channel";
 import {
   COMMAND_SETTING_COLOR,
   COMMAND_SETTING_DASH,
@@ -55,7 +55,7 @@ import type {
   TrendEventLane,
   TrendEventMark,
   TrendCommandSettingSeg,
-} from "@/lib/data/trend-chart-types";
+} from "@/lib/domain/trend-chart-types";
 import {
   type HoverMetricGroup,
   formatTrendBandEdge,

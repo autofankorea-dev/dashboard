@@ -4,7 +4,7 @@ import type {
   TrendHistogram,
   TrendSeries,
   TrendSpreadContributor,
-} from "@/lib/data/trend-chart-types";
+} from "@/lib/domain/trend-chart-types";
 
 /**
  * 추이 차트 호버/라벨 포맷·분류 순수 헬퍼. 렌더링(`trend-chart.tsx`)과

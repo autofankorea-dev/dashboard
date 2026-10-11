@@ -11,7 +11,7 @@ Sprint C · 대시보드 읽기 규율. Free tier · Micro에서는 **HOT list �
 | `v_iot_farm_overview` | Admin hub 집계 | list 위 집계만. LIVE 전체 DISTINCT ON 금지 |
 | `farm_trend_history*` | 차트 WARM | RPC · View에 이력 스캔 넣지 않음 |
 
-코드 정본: [`src/lib/data/live-read-select.ts`](../src/lib/data/live-read-select.ts) · 호출 계약: [`live-config.ts`](../src/lib/data/live-config.ts) · 성능: [`PERF_BASELINE.md`](./PERF_BASELINE.md).
+코드 정본: [`src/lib/domain/live-read-select.ts`](../src/lib/domain/live-read-select.ts) · 호출 계약: [`live-config.ts`](../src/lib/domain/live-config.ts) · 성능: [`PERF_BASELINE.md`](./PERF_BASELINE.md).
 
 ## 금지 (list)
 

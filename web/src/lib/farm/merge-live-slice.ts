@@ -1,6 +1,6 @@
-import { farmKeyId } from "@/lib/data/farm-key";
+import { farmKeyId } from "@/lib/domain/farm-key";
 import type { BarnMapSnapshot, BarnReading } from "@/lib/data/iot";
-import type { ChannelReading } from "@/lib/data/iot-channel";
+import type { ChannelReading } from "@/lib/domain/iot-channel";
 
 function sameNum(
   a: number | null | undefined,

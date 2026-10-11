@@ -1,4 +1,4 @@
-import type { ChannelSlot } from "@/lib/data/iot-channel";
+import type { ChannelSlot } from "@/lib/domain/iot-channel";
 
 export const COMMAND_HOLD_CHANNELS: readonly ChannelSlot[] = ["A", "B", "C"];
 

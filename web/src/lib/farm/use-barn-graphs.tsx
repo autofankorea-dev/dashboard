@@ -2,16 +2,16 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import type { BarnMapSnapshot, BarnReading } from "@/lib/data/iot";
-import { parseBarnCatalogKey } from "@/lib/data/barn-catalog";
-import { getStallTypeName, normalizeStallTyCode } from "@/lib/data/stall-type";
+import { parseBarnCatalogKey } from "@/lib/domain/barn-catalog";
+import { getStallTypeName, normalizeStallTyCode } from "@/lib/domain/stall-type";
 import type {
   TrendControllerPeriodData,
   TrendPeriodData,
   TrendPeriodId,
-} from "@/lib/data/farm-trend-types";
-import { hasStallTrendByPeriod } from "@/lib/data/farm-trend-types";
-import { DEFAULT_ALARM_THRESHOLDS } from "@/lib/data/alarms";
-import { CHANNEL_SLOT_LABELS } from "@/lib/data/iot-channel";
+} from "@/lib/domain/farm-trend-types";
+import { hasStallTrendByPeriod } from "@/lib/domain/farm-trend-types";
+import { DEFAULT_ALARM_THRESHOLDS } from "@/lib/domain/alarms";
+import { CHANNEL_SLOT_LABELS } from "@/lib/domain/iot-channel";
 import {
   findStallTrendSeries,
   formatControllerHeaderSecondary,

@@ -14,11 +14,11 @@ import {
   appendFarmKeyParams,
   farmKeyId,
   type FarmKey,
-} from "@/lib/data/farm-key";
+} from "@/lib/domain/farm-key";
 import {
   farmShortLabel,
   type FarmSummaryRow,
-} from "@/lib/data/farm-summaries";
+} from "@/lib/domain/farm-summaries";
 import {
   clearHubFarmDrillParams,
   currentFarmSearchParams,

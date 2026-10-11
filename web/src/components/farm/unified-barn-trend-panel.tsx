@@ -27,13 +27,13 @@ import {
 
 import {
   resolveThresholdsForChartScope,
-} from "@/lib/data/alarm-scope";
-import type { AlarmSettings, AlarmThresholds } from "@/lib/data/alarms";
+} from "@/lib/domain/alarm-scope";
+import type { AlarmSettings, AlarmThresholds } from "@/lib/domain/alarms";
 import {
   DEFAULT_ALARM_SETTINGS,
-} from "@/lib/data/alarms";
+} from "@/lib/domain/alarms";
 import type { BarnReading } from "@/lib/data/iot";
-import { normalizeStallTyCode } from "@/lib/data/stall-type";
+import { normalizeStallTyCode } from "@/lib/domain/stall-type";
 import {
   emptyTrendControllerPeriodData,
   isContextControllerTrend30d,
@@ -46,7 +46,7 @@ import {
   type TrendControllerSeries,
   type TrendPeriodId,
   type TrendWindow15m,
-} from "@/lib/data/farm-trend-types";
+} from "@/lib/domain/farm-trend-types";
 import {
   type UplinkCoverageIndex,
 } from "@/lib/farm/trend-uplink-coverage";
@@ -86,7 +86,7 @@ import {
   scopesEqual,
 } from "@/lib/farm/farm-chart-scope";
 import type { ControllerThermoSettings } from "@/lib/controllers/controller-settings";
-import { sliceControllerTrendByTime } from "@/lib/data/trend-period-slice";
+import { sliceControllerTrendByTime } from "@/lib/domain/trend-period-slice";
 import { buildDecodedSettingHoldSegments, sliceFanControlWindows } from "@/lib/farm/channel-thermo";
 import {
   clipCommandSettingY,

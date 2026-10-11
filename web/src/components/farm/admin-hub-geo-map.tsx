@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import dynamic from "next/dynamic";
 import { getKakaoJsKeyAction } from "@/lib/actions/kakao-maps-actions";
-import { type FarmKey } from "@/lib/data/farm-key";
+import { type FarmKey } from "@/lib/domain/farm-key";
 import { type AdminHubFarmRow } from "@/lib/farm/admin-hub-farm-status";
 
 const mapSkeleton = (

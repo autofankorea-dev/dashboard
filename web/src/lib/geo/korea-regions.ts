@@ -1,5 +1,5 @@
 import regionsJson from "@/lib/geo/korea-regions.json";
-import { farmKeyId, type FarmKey } from "@/lib/data/farm-key";
+import { farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
 
 export type KoreaRegion = {
   sido: string;

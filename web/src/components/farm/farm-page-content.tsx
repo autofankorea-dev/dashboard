@@ -14,9 +14,9 @@ import { Map, List, LineChart } from "lucide-react";
 import { StallUnitIcon } from "@/components/icons/stall-unit-icon";
 import type { BarnMapSnapshot } from "@/lib/data/iot";
 import type { BarnReading } from "@/lib/data/iot";
-import { normalizeStallTyCode } from "@/lib/data/stall-type";
-import { stallKeyFromReading } from "@/lib/data/reading-hierarchy";
-import type { TrendPeriodData, TrendPeriodId } from "@/lib/data/farm-trend-types";
+import { normalizeStallTyCode } from "@/lib/domain/stall-type";
+import { stallKeyFromReading } from "@/lib/domain/reading-hierarchy";
+import type { TrendPeriodData, TrendPeriodId } from "@/lib/domain/farm-trend-types";
 import { FarmMapView } from "@/components/farm/farm-map-view";
 import { FarmChartLabView } from "@/components/farm/farm-chart-lab-view";
 import { BarnTable } from "@/components/farm/barn-table";
@@ -58,7 +58,7 @@ import {
   farmKeyId,
   parseFarmKeyId,
   type FarmKey,
-} from "@/lib/data/farm-key";
+} from "@/lib/domain/farm-key";
 import {
   invalidateFarmControllerTrendCache,
   prefetchFarmControllerTrend,

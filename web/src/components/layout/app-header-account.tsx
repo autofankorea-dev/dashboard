@@ -6,13 +6,13 @@ import { AccountMenu } from "@/components/account/account-menu";
 
 import type { EditableFarmOption } from "@/lib/data/farm-location";
 
-import type { FarmKey } from "@/lib/data/farm-key";
+import type { FarmKey } from "@/lib/domain/farm-key";
 
-import type { FarmSummaryRow } from "@/lib/data/farm-summaries";
+import type { FarmSummaryRow } from "@/lib/domain/farm-summaries";
 
 import type { ModuleReceipt, FarmOverview } from "@/lib/data/iot";
 
-import type { AlarmRow } from "@/lib/data/alarms";
+import type { AlarmRow } from "@/lib/domain/alarms";
 
 
 

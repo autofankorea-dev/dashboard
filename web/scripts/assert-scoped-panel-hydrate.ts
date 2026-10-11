@@ -2,8 +2,8 @@
  * P1-2 — shouldSkipScopedPanelHydrate / freshness 스모크
  * 실행: npx tsx scripts/assert-scoped-panel-hydrate.ts
  */
-import { DEFAULT_ALARM_SETTINGS } from "@/lib/data/alarms";
-import type { FarmKey } from "@/lib/data/farm-key";
+import { DEFAULT_ALARM_SETTINGS } from "@/lib/domain/alarms";
+import type { FarmKey } from "@/lib/domain/farm-key";
 import type { BarnReading } from "@/lib/data/iot";
 import type { ControllerGridData } from "@/lib/farm/controller-grid-data";
 import type { FarmScopedPanelData } from "@/lib/farm/load-farm-scoped-panel-data";

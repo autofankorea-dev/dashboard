@@ -5,7 +5,7 @@ import type { PanelDraft } from "@/lib/controllers/controller-panel-draft";
 import {
   CHANNEL_SLOT_LABELS,
   type ChannelSlot,
-} from "@/lib/data/iot-channel";
+} from "@/lib/domain/iot-channel";
 import {
   applyPresetCreateField,
   COMMAND_PRESET_NAME_MAX,

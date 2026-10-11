@@ -1,7 +1,7 @@
 "use client";
 
 import { jsPDF } from "jspdf";
-import { CHANNEL_SLOT_LABELS } from "@/lib/data/iot-channel";
+import { CHANNEL_SLOT_LABELS } from "@/lib/domain/iot-channel";
 import {
   buildDailyReportBriefing,
   farmBriefingFacts,

@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { type FarmKey } from "@/lib/data/farm-key";
-import { farmDisplayLabel } from "@/lib/data/farm-summaries";
+import { type FarmKey } from "@/lib/domain/farm-key";
+import { farmDisplayLabel } from "@/lib/domain/farm-summaries";
 import { type AdminHubFarmRow } from "@/lib/farm/admin-hub-farm-status";
 import {
   HUB_MAP_TONE_LABEL,

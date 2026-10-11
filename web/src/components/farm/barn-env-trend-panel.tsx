@@ -2,12 +2,12 @@
 
 import { useCallback, useMemo, useState } from "react";
 import { TrendChart } from "@/components/trends/trend-chart";
-import type { AlarmSettings } from "@/lib/data/alarms";
+import type { AlarmSettings } from "@/lib/domain/alarms";
 import type { BarnReading } from "@/lib/data/iot";
 import type {
   TrendControllerPeriodData,
   TrendPeriodId,
-} from "@/lib/data/farm-trend-types";
+} from "@/lib/domain/farm-trend-types";
 import {
   findControllerTrendSeries,
   resolveReadingAlarmThresholds,

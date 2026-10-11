@@ -1,8 +1,8 @@
 "use client";
 
-import { farmKeyId, type FarmKey } from "@/lib/data/farm-key";
-import type { TrendPeriodData, TrendPeriodId } from "@/lib/data/farm-trend-types";
-import { stallTrendBundleFromController } from "@/lib/data/trend-period-slice";
+import { farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
+import type { TrendPeriodData, TrendPeriodId } from "@/lib/domain/farm-trend-types";
+import { stallTrendBundleFromController } from "@/lib/domain/trend-period-slice";
 import {
   invalidateTimedCache,
   readTimedCache,

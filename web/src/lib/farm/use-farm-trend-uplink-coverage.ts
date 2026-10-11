@@ -2,12 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fetchFarmTrendUplinkCoverageAction } from "@/app/(dashboard)/farm/actions";
-import { farmKeyId, type FarmKey } from "@/lib/data/farm-key";
+import { farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
 import type {
   TrendControllerPeriodData,
   TrendWindow15m,
-} from "@/lib/data/farm-trend-types";
-import { TREND_PERIODS } from "@/lib/data/farm-trend-types";
+} from "@/lib/domain/farm-trend-types";
+import { TREND_PERIODS } from "@/lib/domain/farm-trend-types";
 import {
   readTimedCache,
   writeTimedCache,

@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import {
   mergeSituationAlarms,
   type AlarmRow,
-} from "@/lib/data/alarms";
+} from "@/lib/domain/alarms";
 import type { BarnReading } from "@/lib/data/iot";
 import {
   barnJudgeFromControllerStatuses,

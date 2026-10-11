@@ -5,7 +5,7 @@ import {
   ackModuleAlarmAction,
   fetchActiveModuleAlarmsAction,
 } from "@/app/(dashboard)/farm/actions";
-import type { AlarmRow } from "@/lib/data/alarms";
+import type { AlarmRow } from "@/lib/domain/alarms";
 import {
   publishShellAlarms,
   removeShellAlarm,

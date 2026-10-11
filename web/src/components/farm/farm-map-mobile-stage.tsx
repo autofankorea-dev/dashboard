@@ -4,14 +4,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import type { BarnMapSnapshot, BarnReading } from "@/lib/data/iot";
-import { parseBarnCatalogKey } from "@/lib/data/barn-catalog";
+import { parseBarnCatalogKey } from "@/lib/domain/barn-catalog";
 import {
   DEFAULT_TREND_PERIOD,
   hasStallTrendByPeriod,
   type TrendControllerPeriodData,
   type TrendPeriodData,
   type TrendPeriodId,
-} from "@/lib/data/farm-trend-types";
+} from "@/lib/domain/farm-trend-types";
 import type { ControllerMobileSheetPage } from "@/lib/farm/barn-list-panel-state";
 import { GRAPH_BARS, barnIdForReading, useBarnGraphs } from "@/lib/farm/use-barn-graphs";
 import { cn } from "@/lib/utils";

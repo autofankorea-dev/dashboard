@@ -1,5 +1,5 @@
 import { jsPDF } from "jspdf";
-import { CHANNEL_SLOT_LABELS } from "@/lib/data/iot-channel";
+import { CHANNEL_SLOT_LABELS } from "@/lib/domain/iot-channel";
 import { TREND_CHART_COLORS_PRINT } from "@/lib/farm/trend-chart-series";
 import { downsampleDailyReportSeriesForPrint } from "@/lib/report/daily-report-chart";
 import type { DailyReportSeries } from "@/lib/report/daily-report-payload";

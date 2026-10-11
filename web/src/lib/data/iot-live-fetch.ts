@@ -12,19 +12,19 @@ import { GLOBAL_LIVE_ROW_LIMIT } from "@/lib/admin/health/constants";
 import {
   normalizeEqpmnNo,
   resolveControllerKey,
-} from "@/lib/data/controller-key";
+} from "@/lib/domain/controller-key";
 import { formatControllerSlotLabel } from "@/lib/ui/controller-labels";
 import {
   compareFarmKey,
   farmKeyId,
   readingKey,
   type FarmKey,
-} from "@/lib/data/farm-key";
+} from "@/lib/domain/farm-key";
 import { cachedLiveQuery } from "@/lib/data/live-cache";
 import {
   liveReadTier,
   LIVE_FARM_ROW_LIMIT,
-} from "@/lib/data/live-config";
+} from "@/lib/domain/live-config";
 import {
   LIVE_LEGACY_COLS,
   LIVE_LEGACY_SOURCE,
@@ -32,16 +32,16 @@ import {
   LIVE_LIST_COLS_CORE,
   LIVE_LIST_SOURCE,
   assertLiveListSelectIsThin,
-} from "@/lib/data/live-read-select";
-import { isLivePacketMode } from "@/lib/data/iot-live-merge";
+} from "@/lib/domain/live-read-select";
+import { isLivePacketMode } from "@/lib/domain/iot-live-merge";
 import {
   legacyFieldsFromChannels,
   mapDecodedChannels,
-} from "@/lib/data/iot-channel";
-import type { RawLiveControllerRow } from "@/lib/data/iot-raw-live";
+} from "@/lib/domain/iot-channel";
+import type { RawLiveControllerRow } from "@/lib/domain/iot-raw-live";
 import type { BarnReading } from "@/lib/data/iot";
-import { statusFromAge } from "@/lib/data/live-status";
-import { sortReadings } from "@/lib/data/reading-hierarchy";
+import { statusFromAge } from "@/lib/domain/live-status";
+import { sortReadings } from "@/lib/domain/reading-hierarchy";
 
 export type LiveReadingsScope = {
   farmKey?: FarmKey | null;

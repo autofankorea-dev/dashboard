@@ -4,8 +4,8 @@
  * M1 — 집계는 layout 무관 1회, 매핑만 layout에 의존.
  */
 import assert from "node:assert/strict";
-import type { TrendControllerSeries } from "@/lib/data/farm-trend-types";
-import { DEFAULT_ALARM_THRESHOLDS } from "@/lib/data/alarms";
+import type { TrendControllerSeries } from "@/lib/domain/farm-trend-types";
+import { DEFAULT_ALARM_THRESHOLDS } from "@/lib/domain/alarms";
 import {
   aggregateUnifiedBarnTrendRaw,
   buildThresholdBreachCorridor,

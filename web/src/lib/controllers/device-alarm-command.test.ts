@@ -4,7 +4,7 @@ import { applyQueueChannelStripForReading } from "@/lib/farm/apply-queue";
 import { encodeCommandWireHex } from "@/lib/farm/command-wire";
 import { parseDeviceAlarms } from "./device-alarm-command";
 import { commandChannelViews } from "./combined-channel-command";
-import { deviceAlarmThresholds, commonDeviceAlarmThresholds } from "@/lib/data/device-alarm-thresholds";
+import { deviceAlarmThresholds, commonDeviceAlarmThresholds } from "@/lib/domain/device-alarm-thresholds";
 import { controllerEnvCoverStatus } from "@/lib/farm/controller-env-cover";
 import { liveReadingUnchanged } from "@/lib/farm/merge-live-slice";
 import { envTrendReferenceLines, tempTrendLeftDomain } from "@/lib/farm/trend-chart-series";

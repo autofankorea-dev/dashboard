@@ -2,7 +2,7 @@ import "server-only";
 
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { cachedLiveQuery } from "@/lib/data/live-cache";
-import { farmKeyId, type FarmKey } from "@/lib/data/farm-key";
+import { farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
 import {
   createRlsClient,
   getAccessTokenOrNull,
@@ -12,7 +12,7 @@ import {
   getStallTypeName,
   normalizeStallTyCode,
   stallTyCodeSortKey,
-} from "@/lib/data/stall-type";
+} from "@/lib/domain/stall-type";
 import {
   TREND_OVERVIEW_30D,
   TREND_PERIODS,
@@ -23,20 +23,20 @@ import {
   type TrendPeriodId,
   type TrendSpSeries,
   type TrendStallSeries,
-} from "@/lib/data/farm-trend-types";
+} from "@/lib/domain/farm-trend-types";
 import {
   expandCompactControllerPeriod,
   emptyCompactControllerPeriod,
   type CompactControllerPeriod,
   type CompactControllerSeries,
   type CompactThermoPoint,
-} from "@/lib/data/farm-trend-compact";
-import { normalizeEqpmnNo } from "@/lib/data/controller-key";
+} from "@/lib/domain/farm-trend-compact";
+import { normalizeEqpmnNo } from "@/lib/domain/controller-key";
 import {
   sliceControllerTrendFromLonger,
   stallTrendBundleFromController,
-} from "@/lib/data/trend-period-slice";
-import { coerceTrendRpcJson } from "@/lib/data/farm-trend-rpc-json";
+} from "@/lib/domain/trend-period-slice";
+import { coerceTrendRpcJson } from "@/lib/domain/farm-trend-rpc-json";
 
 export type {
   TrendPeriodId,
@@ -45,8 +45,8 @@ export type {
   TrendStallSeries,
   TrendControllerPeriodData,
   TrendControllerSeries,
-} from "@/lib/data/farm-trend-types";
-export { TREND_PERIODS, DEFAULT_TREND_PERIOD } from "@/lib/data/farm-trend-types";
+} from "@/lib/domain/farm-trend-types";
+export { TREND_PERIODS, DEFAULT_TREND_PERIOD } from "@/lib/domain/farm-trend-types";
 
 /** Cache/query alignment slot — keeps `now` stable for 5 minutes. */
 const CACHE_SLOT_MS = 5 * 60 * 1000;

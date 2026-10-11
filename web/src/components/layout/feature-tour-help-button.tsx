@@ -15,7 +15,7 @@ import {
   DEFAULT_FARM,
   parseFarmKeyFromQuery,
   type FarmKey,
-} from "@/lib/data/farm-key";
+} from "@/lib/domain/farm-key";
 import { resolveFarmHubView } from "@/lib/farm/farm-view-url";
 import { dashboardUi } from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";

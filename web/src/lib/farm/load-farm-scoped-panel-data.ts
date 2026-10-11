@@ -13,7 +13,7 @@ import {
   buildAutoBarnMap,
   filterBarnLayoutPrefsForFarm,
   gridDimensionsForBarnMap,
-} from "@/lib/data/barn-map";
+} from "@/lib/domain/barn-map";
 import {
   FARM_CHART_COMMAND_HISTORY_LIMIT,
   farmChartCommandHistoryOptions,
@@ -22,10 +22,10 @@ import {
   type ThermoCommand,
 } from "@/lib/data/commands";
 import { getAlarmSettings } from "@/lib/data/alarm-settings";
-import type { AlarmRow, AlarmSettings } from "@/lib/data/alarms";
+import type { AlarmRow, AlarmSettings } from "@/lib/domain/alarms";
 import { fetchActiveModuleAlarms } from "@/lib/data/module-alarms";
-import type { TrendPeriodData, TrendPeriodId } from "@/lib/data/farm-trend-types";
-import type { FarmKey } from "@/lib/data/farm-key";
+import type { TrendPeriodData, TrendPeriodId } from "@/lib/domain/farm-trend-types";
+import type { FarmKey } from "@/lib/domain/farm-key";
 import type { BarnMapSnapshot, BarnReading } from "@/lib/data/iot";
 import { getLiveReadings } from "@/lib/data/iot";
 

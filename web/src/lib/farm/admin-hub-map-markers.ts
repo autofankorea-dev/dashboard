@@ -1,9 +1,9 @@
-import { farmKeyId, type FarmKey } from "@/lib/data/farm-key";
+import { farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
 import {
   farmDisplayLabel,
   formatHumidityPct,
   formatTempC,
-} from "@/lib/data/farm-summaries";
+} from "@/lib/domain/farm-summaries";
 import {
   hubFarmMonitorMetrics,
   type AdminHubFarmRow,

@@ -7,7 +7,7 @@ import {
 import { formatHealthTime } from "@/lib/admin/health/format-health-time";
 import type { InsertBucket, HealthStatus } from "@/lib/admin/health/types";
 import type { CollectorGroupDef } from "@/lib/admin/health/collector-groups";
-import { parseFarmKeyId } from "@/lib/data/farm-key";
+import { parseFarmKeyId } from "@/lib/domain/farm-key";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 function formatBucketLabel(iso: string): string {

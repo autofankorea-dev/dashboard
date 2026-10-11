@@ -2,8 +2,8 @@ import {
   DEFAULT_TREND_PERIOD,
   TREND_PERIODS,
   type TrendPeriodId,
-} from "@/lib/data/farm-trend-types";
-import { normalizeStallTyCode } from "@/lib/data/stall-type";
+} from "@/lib/domain/farm-trend-types";
+import { normalizeStallTyCode } from "@/lib/domain/stall-type";
 import {
   clearFarmChartScopeParams,
   clearFarmChartZoomParams,

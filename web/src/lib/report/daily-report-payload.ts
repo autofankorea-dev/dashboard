@@ -2,8 +2,8 @@
  * 일보 PDF용 직렬화 페이로드 — 서버/클라이언트 공유 (server-only 금지).
  */
 
-import type { FarmKey } from "@/lib/data/farm-key";
-import type { TrendPeriodId } from "@/lib/data/farm-trend-types";
+import type { FarmKey } from "@/lib/domain/farm-key";
+import type { TrendPeriodId } from "@/lib/domain/farm-trend-types";
 
 export type DailyReportControllerRow = {
   controllerKey: string;

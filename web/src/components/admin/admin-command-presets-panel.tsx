@@ -25,7 +25,7 @@ import {
   formatStallTypeLabel,
   normalizeStallTyCode,
   stallTyCodeSortKey,
-} from "@/lib/data/stall-type";
+} from "@/lib/domain/stall-type";
 import {
   SettingsChannelStepperGrid,
   SettingsChannelWell,

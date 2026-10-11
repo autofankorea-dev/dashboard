@@ -1,8 +1,8 @@
 import "server-only";
 
-import type { FarmKey } from "@/lib/data/farm-key";
-import { compareFarmKey } from "@/lib/data/farm-key";
-import type { FarmSummaryRow } from "@/lib/data/farm-summaries";
+import type { FarmKey } from "@/lib/domain/farm-key";
+import { compareFarmKey } from "@/lib/domain/farm-key";
+import type { FarmSummaryRow } from "@/lib/domain/farm-summaries";
 import {
   fetchFarmOverviewRows,
   type FarmOverviewDbRow,

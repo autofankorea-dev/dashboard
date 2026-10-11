@@ -6,7 +6,7 @@ import { signInWithEmail } from "@/app/auth/actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LoginSubmitButton } from "@/components/login/login-submit-button";
-import type { FarmKey } from "@/lib/data/farm-key";
+import type { FarmKey } from "@/lib/domain/farm-key";
 
 const ERROR_MESSAGES: Record<string, string> = {
   credentials: "이메일 또는 비밀번호가 올바르지 않습니다.",

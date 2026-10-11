@@ -16,8 +16,8 @@ import type {
 import { ageSecFromIso, worstStatus } from "@/lib/admin/health/staleness";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-import { type FarmKey } from "@/lib/data/farm-key";
-import { farmShortLabel } from "@/lib/data/farm-summaries";
+import { type FarmKey } from "@/lib/domain/farm-key";
+import { farmShortLabel } from "@/lib/domain/farm-summaries";
 
 export type CommandHealthSummary = {
   status: HealthStatus;

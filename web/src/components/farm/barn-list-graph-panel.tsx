@@ -8,8 +8,8 @@ import { TrendPeriodToggle } from "@/components/farm/trend-period-toggle";
 import {
   type TrendControllerPeriodData,
   type TrendPeriodId,
-} from "@/lib/data/farm-trend-types";
-import type { AlarmSettings } from "@/lib/data/alarms";
+} from "@/lib/domain/farm-trend-types";
+import type { AlarmSettings } from "@/lib/domain/alarms";
 import type { BarnReading } from "@/lib/data/iot";
 import {
   envTrendReferenceLines,

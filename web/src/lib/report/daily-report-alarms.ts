@@ -6,8 +6,8 @@ import {
   isDailyReportSituationRow,
   isModuleAlarmRow,
   type AlarmRow,
-} from "@/lib/data/alarms";
-import { getStallTypeName } from "@/lib/data/stall-type";
+} from "@/lib/domain/alarms";
+import { getStallTypeName } from "@/lib/domain/stall-type";
 import type { DailyReportAlarmRow } from "@/lib/report/daily-report-payload";
 
 /** 이상상황 AlarmRow → 일보 PDF 행 (모듈 + 통신두절만) */

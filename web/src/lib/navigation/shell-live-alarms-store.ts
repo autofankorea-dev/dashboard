@@ -1,8 +1,8 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
-import type { AlarmRow } from "@/lib/data/alarms";
-import { isModuleAlarmRow } from "@/lib/data/alarms";
+import type { AlarmRow } from "@/lib/domain/alarms";
+import { isModuleAlarmRow } from "@/lib/domain/alarms";
 
 /**
  * FarmLiveRefreshProvider(페이지 children) → TopBar/FAB(PageShell 밖) 알람 브리지.

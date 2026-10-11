@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import type { CommandPreset } from "@/lib/farm/command-presets";
 import { sharedPresetFromRow } from "@/lib/farm/shared-command-presets";
-import { normalizeStallTyCode } from "@/lib/data/stall-type";
+import { normalizeStallTyCode } from "@/lib/domain/stall-type";
 import { createClient } from "@/lib/supabase/browser";
 
 /** 참조 안정 빈 배열 — 소비자 useMemo/useEffect deps가 매 렌더 변하지 않도록 */

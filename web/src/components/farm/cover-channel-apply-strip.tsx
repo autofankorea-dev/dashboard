@@ -6,7 +6,7 @@ import {
   applyQueueFillRatio,
   type ApplyQueueChannelStripItem,
 } from "@/lib/farm/apply-queue";
-import { CHANNEL_SLOT_LABELS } from "@/lib/data/iot-channel";
+import { CHANNEL_SLOT_LABELS } from "@/lib/domain/iot-channel";
 import { useApplyQueueStripPresence } from "@/components/farm/use-apply-queue-strip-presence";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { dashboardTypography } from "@/lib/ui/dashboard-page-ui";

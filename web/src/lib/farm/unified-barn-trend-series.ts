@@ -5,11 +5,11 @@ import type {
   TrendSeries,
   TrendSpreadContributor,
   TrendSpreadExtremes,
-} from "@/lib/data/trend-chart-types";
-import type { AlarmThresholds } from "@/lib/data/alarms";
-import type { TrendControllerSeries } from "@/lib/data/farm-trend-types";
-import { normalizeEqpmnNo } from "@/lib/data/controller-key";
-import { CHANNEL_SLOT_LABELS } from "@/lib/data/iot-channel";
+} from "@/lib/domain/trend-chart-types";
+import type { AlarmThresholds } from "@/lib/domain/alarms";
+import type { TrendControllerSeries } from "@/lib/domain/farm-trend-types";
+import { normalizeEqpmnNo } from "@/lib/domain/controller-key";
+import { CHANNEL_SLOT_LABELS } from "@/lib/domain/iot-channel";
 import { TREND_CHART_COLORS } from "@/lib/farm/trend-chart-series";
 import {
   formatControllerNoLabel,

@@ -3,7 +3,7 @@
 // Synthetic UI states only; never invokes a device command action.
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AlarmThresholdForm, type AlarmThresholdHeaderState } from "@/components/settings/alarm-threshold-form";
-import { DEFAULT_ALARM_SETTINGS } from "@/lib/data/alarms";
+import { DEFAULT_ALARM_SETTINGS } from "@/lib/domain/alarms";
 import type { DeviceSettingsTarget, SendBulkThermoCommandResult } from "@/app/(dashboard)/controllers/actions";
 import { useControllerPanel } from "@/components/controllers/use-controller-panel";
 import { ControllerEnvCover } from "@/components/farm/controller-env-cover";

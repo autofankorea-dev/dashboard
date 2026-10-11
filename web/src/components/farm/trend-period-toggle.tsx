@@ -6,12 +6,12 @@ import {
   TREND_PERIODS,
   nextTrendPeriod,
   type TrendPeriodId,
-} from "@/lib/data/farm-trend-types";
+} from "@/lib/domain/farm-trend-types";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { cn } from "@/lib/utils";
 
-/** @deprecated import from `@/lib/data/farm-trend-types` */
-export { TREND_PERIOD_ORDER } from "@/lib/data/farm-trend-types";
+/** @deprecated import from `@/lib/domain/farm-trend-types` */
+export { TREND_PERIOD_ORDER } from "@/lib/domain/farm-trend-types";
 
 type Props = {
   value: TrendPeriodId;

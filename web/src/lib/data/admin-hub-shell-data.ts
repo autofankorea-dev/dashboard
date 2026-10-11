@@ -12,10 +12,10 @@ import {
   resolveAdminHubFarmSummaries,
 } from "@/lib/data/admin-hub-live";
 import type { FarmOverviewDbRow } from "@/lib/data/iot-live-fetch";
-import type { FarmKey } from "@/lib/data/farm-key";
+import type { FarmKey } from "@/lib/domain/farm-key";
 import { getFarmLocations } from "@/lib/data/farm-location";
-import type { FarmLocationRow } from "@/lib/data/farm-location-shared";
-import type { FarmSummaryRow } from "@/lib/data/farm-summaries";
+import type { FarmLocationRow } from "@/lib/domain/farm-location-shared";
+import type { FarmSummaryRow } from "@/lib/domain/farm-summaries";
 import type { FarmOverview } from "@/lib/data/iot";
 
 export type AdminHubOverviewContext = {

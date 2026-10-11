@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { resolvePostLoginPath } from "@/lib/auth/resolve-post-login-path";
 import { resolveFixedFarmKey } from "@/lib/auth/farm-access";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
-import type { FarmKey } from "@/lib/data/farm-key";
+import type { FarmKey } from "@/lib/domain/farm-key";
 import { createClient } from "@/lib/supabase/server";
 
 export type SignInErrorCode = "missing" | "credentials" | "auth";

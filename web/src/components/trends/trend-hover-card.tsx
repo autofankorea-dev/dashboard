@@ -14,7 +14,7 @@ import type {
   TrendEventMark,
   TrendHistogram,
   TrendSeries,
-} from "@/lib/data/trend-chart-types";
+} from "@/lib/domain/trend-chart-types";
 import {
   HOVER_GROUP_LABEL,
   formatHistHoverDisplay,

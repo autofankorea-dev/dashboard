@@ -30,7 +30,7 @@ const FarmMapBulkApply = dynamic(
 );
 import type { ControllerGridData } from "@/lib/farm/controller-grid-data";
 import type { ControllerThermoSettings } from "@/lib/controllers/controller-settings";
-import type { AlarmSettings } from "@/lib/data/alarms";
+import type { AlarmSettings } from "@/lib/domain/alarms";
 import type { BarnReading } from "@/lib/data/iot";
 import {
   applyHubScopedViewParams,
@@ -54,11 +54,11 @@ import { useHydrationSafeDashboardCompact } from "@/components/layout/dashboard-
 import { useFarmControllerTrend } from "@/lib/farm/use-farm-controller-trend";
 import {
   type TrendPeriodId,
-} from "@/lib/data/farm-trend-types";
+} from "@/lib/domain/farm-trend-types";
 import { useFarmLiveRefreshOptional } from "@/lib/navigation/farm-live-refresh";
 import { scheduleSafeRouterRefresh } from "@/lib/navigation/safe-router-refresh";
 import { useSoftRefresh } from "@/lib/ui/use-soft-refresh";
-import { normalizeStallTyCode } from "@/lib/data/stall-type";
+import { normalizeStallTyCode } from "@/lib/domain/stall-type";
 import { dashboardUi } from "@/lib/ui/dashboard-page-ui";
 import { isFilterAll } from "@/lib/ui/filter-all";
 import { cn } from "@/lib/utils";

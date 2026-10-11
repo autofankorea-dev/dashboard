@@ -1,8 +1,8 @@
-import { formatStallTypeLabel, normalizeStallTyCode } from "@/lib/data/stall-type";
+import { formatStallTypeLabel, normalizeStallTyCode } from "@/lib/domain/stall-type";
 import {
   formatChannelSlotList,
   type ChannelSlot,
-} from "@/lib/data/iot-channel";
+} from "@/lib/domain/iot-channel";
 
 export type CommandThermoValues = {
   setpointTemp: number;

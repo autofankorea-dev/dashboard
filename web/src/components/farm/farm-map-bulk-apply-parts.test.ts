@@ -8,7 +8,7 @@ import {
 } from "@/components/farm/farm-map-bulk-apply-parts";
 import { thermoSettingsKey } from "@/lib/controllers/controller-settings";
 import type { BarnReading } from "@/lib/data/iot";
-import type { ChannelSlot } from "@/lib/data/iot-channel";
+import type { ChannelSlot } from "@/lib/domain/iot-channel";
 
 const farmKey = { lsindRegistNo: "FARM01", itemCode: "P00" };
 const controllerKey = "SP01:01:EC01";

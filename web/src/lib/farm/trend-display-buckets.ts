@@ -1,4 +1,4 @@
-import type { TrendPeriodId } from "@/lib/data/farm-trend-types";
+import type { TrendPeriodId } from "@/lib/domain/farm-trend-types";
 import { computeBinnedMetricValues } from "@/lib/farm/stack-metric";
 
 /**

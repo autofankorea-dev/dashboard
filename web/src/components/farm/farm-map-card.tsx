@@ -3,11 +3,11 @@
 import { Building2, GripVertical, Check, ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
 import type { BarnMapSnapshot } from "@/lib/data/iot";
-import { parseBarnCatalogKey } from "@/lib/data/barn-catalog";
+import { parseBarnCatalogKey } from "@/lib/domain/barn-catalog";
 import { EnvChip } from "@/components/common/env-chip";
 import type { StatusTone } from "@/components/common/status-badge";
-import { getStallTypeName, formatStallTypeLabelCompact } from "@/lib/data/stall-type";
-import { formatSensorNumberForDisplay } from "@/lib/data/reading-display";
+import { getStallTypeName, formatStallTypeLabelCompact } from "@/lib/domain/stall-type";
+import { formatSensorNumberForDisplay } from "@/lib/domain/reading-display";
 import { StallUnitNoMark } from "@/components/farm/controller-summary-parts";
 import {
   controllerEnvCoverLabel,

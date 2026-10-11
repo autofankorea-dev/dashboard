@@ -1,6 +1,6 @@
 import { commandChannelViews } from "@/lib/controllers/combined-channel-command";
 import type { ThermoCommand } from "@/lib/data/commands";
-import { farmKeyId, type FarmKey } from "@/lib/data/farm-key";
+import { farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
 
 export type ControllerThermoSettings = {
   setpointTemp: number;
@@ -16,7 +16,7 @@ export function thermoSettingsKey(
   farmKey: FarmKey,
   moduleUid: number,
   controllerKey: string,
-  channel?: import("@/lib/data/iot-channel").ChannelSlot
+  channel?: import("@/lib/domain/iot-channel").ChannelSlot
 ): string {
   const base = `${farmKeyId(farmKey)}:${moduleUid}:${controllerKey}`;
   return channel ? `${base}:${channel}` : base;
@@ -27,7 +27,7 @@ export function resolveThermoSettings(
   farmKey: FarmKey | undefined,
   moduleUid: number | undefined,
   controllerKey: string | undefined,
-  channel?: import("@/lib/data/iot-channel").ChannelSlot
+  channel?: import("@/lib/domain/iot-channel").ChannelSlot
 ): ControllerThermoSettings | null {
   if (!farmKey || moduleUid == null || !controllerKey) return null;
   if (channel) {
@@ -163,7 +163,7 @@ function assignLiveThermo(
 
 export function buildThermoSettingsFromReadings(
   readings: Array<{
-    farmKey: import("@/lib/data/farm-key").FarmKey;
+    farmKey: import("@/lib/domain/farm-key").FarmKey;
     moduleUid: number;
     controllerKey: string;
     receivedAt: string;
@@ -173,7 +173,7 @@ export function buildThermoSettingsFromReadings(
       minVentPct?: number;
       maxVentPct?: number;
     } | null;
-    channels?: import("@/lib/data/iot-channel").ChannelReading[];
+    channels?: import("@/lib/domain/iot-channel").ChannelReading[];
   }>
 ): Record<string, ControllerThermoSettings> {
   const out: Record<string, ControllerThermoSettings> = {};

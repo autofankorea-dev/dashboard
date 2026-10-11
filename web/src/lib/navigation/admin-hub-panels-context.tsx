@@ -9,7 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { farmKeyId, type FarmKey } from "@/lib/data/farm-key";
+import { farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
 import type { AdminFarmGridPanel } from "@/lib/farm/admin-all-farms-grid-shared";
 
 type AdminHubPanelsContextValue = {

@@ -1,5 +1,5 @@
 import { type BrushWindow } from "@/components/farm/unified-trend-period-brush";
-import type { AlarmSettings, AlarmThresholds } from "@/lib/data/alarms";
+import type { AlarmSettings, AlarmThresholds } from "@/lib/domain/alarms";
 import type { BarnReading } from "@/lib/data/iot";
 import { snapToStep } from "@/lib/controllers/controller-panel-map";
 import {
@@ -9,7 +9,7 @@ import {
   type TrendControllerPeriodData,
   type TrendControllerSeries,
   type TrendPeriodId,
-} from "@/lib/data/farm-trend-types";
+} from "@/lib/domain/farm-trend-types";
 import { envComfortScore } from "@/lib/farm/env-comfort-score";
 import {
   findControllerTrendSeries,

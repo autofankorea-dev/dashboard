@@ -1,19 +1,19 @@
 import type { BarnReading } from "@/lib/data/iot";
-import { buildAlarmScopeKey } from "@/lib/data/alarm-scope";
-import { farmKeyId } from "@/lib/data/farm-key";
+import { buildAlarmScopeKey } from "@/lib/domain/alarm-scope";
+import { farmKeyId } from "@/lib/domain/farm-key";
 import {
   compareStallNo,
   stallKeyFromReading,
-} from "@/lib/data/reading-hierarchy";
+} from "@/lib/domain/reading-hierarchy";
 import {
   formatStallTypeLabel,
   normalizeStallTyCode,
   stallTyCodeSortKey,
-} from "@/lib/data/stall-type";
+} from "@/lib/domain/stall-type";
 import {
   formatControllerNoLabel,
 } from "@/lib/farm/controller-summary-display";
-import { normalizeEqpmnNo } from "@/lib/data/controller-key";
+import { normalizeEqpmnNo } from "@/lib/domain/controller-key";
 
 /** 차트 탭 집계 범위 — 기본은 선택 농장 전체 */
 export type FarmChartScope =

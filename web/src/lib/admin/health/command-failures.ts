@@ -1,8 +1,8 @@
 import { UPLINK_ROUND_SEC } from "@/lib/admin/health/constants";
 import { ageSecFromIso } from "@/lib/admin/health/staleness";
 import type { CommandFailureItem, HealthStatus } from "@/lib/admin/health/types";
-import { farmKeyId, type FarmKey } from "@/lib/data/farm-key";
-import { farmShortLabel } from "@/lib/data/farm-summaries";
+import { farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
+import { farmShortLabel } from "@/lib/domain/farm-summaries";
 
 export type CommandRowForHealth = {
   id: string;

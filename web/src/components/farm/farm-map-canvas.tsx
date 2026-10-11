@@ -6,15 +6,15 @@ import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import type { BarnMapSnapshot, BarnReading } from "@/lib/data/iot";
 import { patchBarnGridsAction } from "@/app/(dashboard)/farm/actions";
-import { parseBarnCatalogKey } from "@/lib/data/barn-catalog";
-import { type FarmKey } from "@/lib/data/farm-key";
+import { parseBarnCatalogKey } from "@/lib/domain/barn-catalog";
+import { type FarmKey } from "@/lib/domain/farm-key";
 import {
   DEFAULT_TREND_PERIOD,
   hasStallTrendByPeriod,
   type TrendControllerPeriodData,
   type TrendPeriodData,
   type TrendPeriodId,
-} from "@/lib/data/farm-trend-types";
+} from "@/lib/domain/farm-trend-types";
 import {
   clearMapDrillParams,
   currentFarmSearchParams,

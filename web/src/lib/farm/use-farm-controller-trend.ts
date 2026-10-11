@@ -6,13 +6,13 @@ import {
   fetchFarmControllerTrendPeriodAction,
   fetchFarmControllerTrendWindowAction,
 } from "@/app/(dashboard)/farm/actions";
-import { farmKeyId, type FarmKey } from "@/lib/data/farm-key";
+import { farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
 import {
   expandCompactControllerPeriod,
   overlayCompactControllerPeriod,
   seedCompact30dFrom24h,
   type CompactControllerPeriod,
-} from "@/lib/data/farm-trend-compact";
+} from "@/lib/domain/farm-trend-compact";
 import {
   emptyTrendControllerPeriodData,
   isCompleteControllerTrendBundle,
@@ -24,11 +24,11 @@ import {
   type TrendControllerPeriodData,
   type TrendPeriodId,
   type TrendWindow15m,
-} from "@/lib/data/farm-trend-types";
+} from "@/lib/domain/farm-trend-types";
 import {
   sliceControllerTrendByTime,
   sliceControllerTrendFromLonger,
-} from "@/lib/data/trend-period-slice";
+} from "@/lib/domain/trend-period-slice";
 import {
   alignTrendWindow15m,
   window15mCovers,

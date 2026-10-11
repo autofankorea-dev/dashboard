@@ -1,9 +1,9 @@
 import "server-only";
 
 import { cachedLiveQuery } from "@/lib/data/live-cache";
-import { farmKeyId, type FarmKey } from "@/lib/data/farm-key";
-import { TREND_PERIODS } from "@/lib/data/farm-trend-types";
-import { coerceTrendRpcJson } from "@/lib/data/farm-trend-rpc-json";
+import { farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
+import { TREND_PERIODS } from "@/lib/domain/farm-trend-types";
+import { coerceTrendRpcJson } from "@/lib/domain/farm-trend-rpc-json";
 import {
   createRlsClient,
   getAccessTokenOrNull,

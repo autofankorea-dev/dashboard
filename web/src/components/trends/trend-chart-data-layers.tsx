@@ -14,7 +14,7 @@ import type {
   TrendReferenceLine,
   TrendScaleEdgeLabel,
   TrendSeries,
-} from "@/lib/data/trend-chart-types";
+} from "@/lib/domain/trend-chart-types";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { motionStaggerStepMs } from "@/lib/ui/motion-tokens";
 import type { ClipPresenceEntry } from "@/lib/ui/use-clip-presence";

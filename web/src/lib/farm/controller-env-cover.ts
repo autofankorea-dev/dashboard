@@ -2,10 +2,10 @@ import {
   DEFAULT_ALARM_SETTINGS,
   type AlarmSettings,
   type AlarmThresholds,
-} from "@/lib/data/alarms";
-import { resolveThresholdsForReading } from "@/lib/data/alarm-scope";
+} from "@/lib/domain/alarms";
+import { resolveThresholdsForReading } from "@/lib/domain/alarm-scope";
 import type { BarnReading } from "@/lib/data/iot";
-import { formatHumidityPct, formatTempC } from "@/lib/data/farm-summaries";
+import { formatHumidityPct, formatTempC } from "@/lib/domain/farm-summaries";
 import { sevOfScore, severityScore } from "@/lib/farm/severity-score";
 
 export type ControllerEnvCoverLevel = "ok" | "warn" | "danger" | "offline";

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import type { FarmKey } from "@/lib/data/farm-key";
+import type { FarmKey } from "@/lib/domain/farm-key";
 import {
   commandAbsTempWindow,
   commandHitAxis,

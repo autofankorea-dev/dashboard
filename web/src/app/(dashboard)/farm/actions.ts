@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { canEditFarmScope } from "@/lib/auth/farm-access";
-import type { FarmKey } from "@/lib/data/farm-key";
+import type { FarmKey } from "@/lib/domain/farm-key";
 import {
   getFarmControllerTrend30dDayCompact,
   getFarmControllerTrendAllPeriods,
@@ -11,18 +11,18 @@ import {
   getFarmControllerTrendWindowCompact,
   getFarmTrendAllPeriods,
 } from "@/lib/data/farm-trend-history";
-import type { CompactControllerPeriod } from "@/lib/data/farm-trend-compact";
+import type { CompactControllerPeriod } from "@/lib/domain/farm-trend-compact";
 import {
   TREND_PERIODS,
   type TrendControllerPeriodData,
   type TrendPeriodData,
   type TrendPeriodId,
-} from "@/lib/data/farm-trend-types";
+} from "@/lib/domain/farm-trend-types";
 import { getFarmTrendUplinkCoverage } from "@/lib/data/farm-trend-uplink-coverage";
 import type { UplinkCoverageWire } from "@/lib/farm/trend-uplink-coverage";
 import { buildDailyReportPayload } from "@/lib/report/build-daily-report-payload";
 import type { DailyReportPayload } from "@/lib/report/daily-report-payload";
-import { farmScopeCacheKey } from "@/lib/data/live-config";
+import { farmScopeCacheKey } from "@/lib/domain/live-config";
 import { revalidateLiveCache } from "@/lib/data/live-cache";
 import {
   clearBarnLayouts,
@@ -40,7 +40,7 @@ import {
 import { loadAdminFarmGridPanelsForKeys } from "@/lib/farm/load-admin-all-farms-grid";
 import type { AdminFarmGridPanel } from "@/lib/farm/admin-all-farms-grid-shared";
 import { fetchActiveModuleAlarms, ackModuleAlarm, ackModuleAlarmsBulk } from "@/lib/data/module-alarms";
-import type { AlarmRow } from "@/lib/data/alarms";
+import type { AlarmRow } from "@/lib/domain/alarms";
 
 async function assertFarmReadAccess(farmKey: FarmKey) {
   const user = await getCurrentUser();

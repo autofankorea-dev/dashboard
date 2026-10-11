@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
-import type { TrendPeriodId } from "@/lib/data/farm-trend-types";
+import type { TrendPeriodId } from "@/lib/domain/farm-trend-types";
 import {
   comfortScoreBandLabel,
   comfortScoreToColor,

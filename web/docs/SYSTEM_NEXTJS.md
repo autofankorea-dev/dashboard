@@ -48,9 +48,9 @@
 | **fallback** | `iot_room_state_decoded` last-known | 2h hot 0건 · farm-scoped만 |
 | **overview** | `v_iot_farm_overview` | admin hub batch |
 
-설정: [`live-config.ts`](../src/lib/data/live-config.ts) · env `NEXT_PUBLIC_LIVE_READ_TIER`  
-SELECT 계약: [`live-read-select.ts`](../src/lib/data/live-read-select.ts)  
-신선도: [`live-status.ts`](../src/lib/data/live-status.ts) — received+mesure → caution
+설정: [`live-config.ts`](../src/lib/domain/live-config.ts) · env `NEXT_PUBLIC_LIVE_READ_TIER`  
+SELECT 계약: [`live-read-select.ts`](../src/lib/domain/live-read-select.ts)  
+신선도: [`live-status.ts`](../src/lib/domain/live-status.ts) — received+mesure → caution
 
 | limit / cache | 값 |
 |---------------|-----|

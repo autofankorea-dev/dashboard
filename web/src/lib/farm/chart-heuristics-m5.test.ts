@@ -3,8 +3,8 @@
  * 실행: npx tsx src/lib/farm/chart-heuristics-m5.test.ts
  */
 import assert from "node:assert/strict";
-import { DEFAULT_ALARM_THRESHOLDS } from "@/lib/data/alarms";
-import type { TrendEnvelope, TrendHistogram, TrendSeries } from "@/lib/data/trend-chart-types";
+import { DEFAULT_ALARM_THRESHOLDS } from "@/lib/domain/alarms";
+import type { TrendEnvelope, TrendHistogram, TrendSeries } from "@/lib/domain/trend-chart-types";
 import {
   dimensionComfortScore,
   envComfortScore,

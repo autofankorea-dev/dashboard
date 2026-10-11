@@ -1,5 +1,5 @@
 import { fetchFarmScopedPanelDataAction } from "@/app/(dashboard)/farm/actions";
-import { farmKeyId, type FarmKey } from "@/lib/data/farm-key";
+import { farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
 import type { FarmScopedPanelData } from "@/lib/farm/load-farm-scoped-panel-data";
 
 /** 농장당 1개 inflight — 연속 enrich/bootstrap이 동일 Promise를 공유 */

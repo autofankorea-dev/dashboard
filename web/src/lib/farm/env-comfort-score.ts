@@ -1,4 +1,4 @@
-import type { AlarmThresholds } from "@/lib/data/alarms";
+import type { AlarmThresholds } from "@/lib/domain/alarms";
 
 /**
  * 구간 내 연속 양호도 (B안).

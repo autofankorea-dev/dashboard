@@ -1,4 +1,4 @@
-import { deviceAlarmThresholds } from "@/lib/data/device-alarm-thresholds";
+import { deviceAlarmThresholds } from "@/lib/domain/device-alarm-thresholds";
 import type { BulkThermoCommand } from "@/app/(dashboard)/controllers/actions";
 import type { ControllerGridData } from "@/lib/farm/controller-grid-data";
 import {
@@ -9,11 +9,11 @@ import { EDIT_START_DRAFT } from "@/lib/controllers/controller-panel-map";
 import {
   type AlarmSettings,
   type AlarmThresholds,
-} from "@/lib/data/alarms";
+} from "@/lib/domain/alarms";
 import type { BarnReading } from "@/lib/data/iot";
-import { type ChannelSlot } from "@/lib/data/iot-channel";
-import { isReadingOnline } from "@/lib/data/reading-display";
-import { normalizeStallTyCode } from "@/lib/data/stall-type";
+import { type ChannelSlot } from "@/lib/domain/iot-channel";
+import { isReadingOnline } from "@/lib/domain/reading-display";
+import { normalizeStallTyCode } from "@/lib/domain/stall-type";
 import { resolveReadingChannelThermo } from "@/lib/farm/controller-summary-display";
 import { cn } from "@/lib/utils";
 

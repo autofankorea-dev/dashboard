@@ -2,7 +2,7 @@
  * 실행: npx tsx src/lib/farm/scope-range-summary.test.ts
  */
 import assert from "node:assert/strict";
-import { DEFAULT_ALARM_THRESHOLDS } from "@/lib/data/alarms";
+import { DEFAULT_ALARM_THRESHOLDS } from "@/lib/domain/alarms";
 import {
   alarmBreachRate,
   buildScopeSummaryFromColumns,
