@@ -250,5 +250,12 @@ try {
     await Promise.race([new Promise((r) => server.once("exit", r)), delay(5000)]);
     if (server.exitCode == null) server.kill("SIGKILL");
   }
-  if (ownedFixture) rmSync(fixtureDir, { recursive: true, force: true });
+  if (ownedFixture) {
+    rmSync(fixtureDir, { recursive: true, force: true });
+    // dev 서버가 fixture 라우트용으로 생성한 타입 스텁 — 남으면 `tsc --noEmit`이 깨진다
+    rmSync(join(root, ".next/dev/types/app/auth/chart-markup-snapshot"), {
+      recursive: true,
+      force: true,
+    });
+  }
 }
