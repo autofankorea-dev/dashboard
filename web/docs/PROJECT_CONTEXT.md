@@ -54,7 +54,7 @@ RS-DB-C: EC2는 raw INSERT, **decode·LIVE UI는 이 앱**. 배포 요약: [`CLO
 | Overview | `v_iot_farm_overview` (list 집계 · 최근 2시간 최신 1행) |
 | 레거시 롤백 | `NEXT_PUBLIC_LIVE_READ_TIER=legacy` → decoded_latest + decoded_json 중심 |
 
-구현: `web/src/lib/data/iot-live-fetch.ts`, `live-config.ts`, `iot-raw-live.ts`.
+구현: `web/src/lib/data/iot-live-fetch.ts`, `lib/domain/live-config.ts`, `lib/domain/iot-raw-live.ts`.
 
 ### 도메인 계층 (현장)
 
@@ -90,6 +90,8 @@ flowchart TB
 - 구 테이블 `iot_room_state_decoded` 는 RLS·이력 참고용일 수 있음. **출고 LIVE 읽기 정본은 위 view** (카드 최신값은 여전히 live 스냅샷 + `received_at`)
 
 ### 데이터 모듈
+
+`lib/data` = 서버 전용 데이터 접근 · `lib/domain` = 순수 규칙·타입 (경계 규칙: [`CODE_CONVENTIONS.md`](./CODE_CONVENTIONS.md)).
 
 | 파일 | 용도 |
 | --- | --- |
