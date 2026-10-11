@@ -20,8 +20,8 @@ import {
   currentFarmSearchParams,
   replaceFarmUrlShallow,
 } from "@/lib/farm/farm-view-url";
-import { GRAPH_BARS, barnIdForReading, useBarnGraphs } from "@/lib/farm/use-barn-graphs";
-import { useFarmTourGridAction } from "@/lib/onboarding/use-farm-tour-grid-action";
+import { GRAPH_BARS, barnIdForReading, useBarnGraphs } from "@/components/farm/use-barn-graphs";
+import { useFarmTourGridAction } from "@/components/onboarding/use-farm-tour-grid-action";
 import type { ControllerGridData } from "@/lib/farm/controller-grid-data";
 import { FarmMapControllerDetail } from "./farm-map-controller-detail";
 import { FarmMapCard } from "./farm-map-card";

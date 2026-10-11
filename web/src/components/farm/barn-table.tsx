@@ -51,7 +51,7 @@ import {
   type BarnListPanelSets,
 } from "@/lib/farm/barn-list-panel-state";
 import { useHydrationSafeDashboardCompact } from "@/components/layout/dashboard-viewport-context";
-import { useFarmControllerTrend } from "@/lib/farm/use-farm-controller-trend";
+import { useFarmControllerTrend } from "@/components/farm/use-farm-controller-trend";
 import {
   type TrendPeriodId,
 } from "@/lib/domain/farm-trend-types";

@@ -12,7 +12,7 @@ import {
 import {
   prefetchFarmControllerTrend,
   subscribeFarmControllerTrend,
-} from "@/lib/farm/use-farm-controller-trend";
+} from "@/components/farm/use-farm-controller-trend";
 
 type StallTrendBundle = Record<TrendPeriodId, TrendPeriodData>;
 

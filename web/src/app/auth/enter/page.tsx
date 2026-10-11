@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useAppNavigate } from "@/components/layout/use-app-navigate";
 import { getPostLoginFarmWarmKeyAction } from "@/app/auth/actions";
 import { safePostLoginPath } from "@/lib/auth/resolve-post-login-path";
-import { warmPostLoginFarmHub } from "@/lib/farm/warm-post-login-farm-hub";
+import { warmPostLoginFarmHub } from "@/components/farm/warm-post-login-farm-hub";
 
 function AuthEnterContent() {
   const searchParams = useSearchParams();

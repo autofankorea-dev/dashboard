@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import type { BarnMapSnapshot } from "@/lib/data/iot";
-import type { BarnGraphExpanded } from "@/lib/farm/use-barn-graphs";
+import type { BarnGraphExpanded } from "@/components/farm/use-barn-graphs";
 import { FARM_TOUR_ACTION_EVENT } from "@/lib/onboarding/tour-steps";
 import {
   afterFrames,

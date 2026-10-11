@@ -134,7 +134,7 @@ import {
   type UnifiedYBandId,
 } from "@/lib/farm/unified-barn-trend-series";
 import { invertSplitYCrosshairValues } from "@/lib/farm/farm-crosshair-readout";
-import { useUnifiedChartBandTransition } from "@/lib/farm/use-split-y-layout-transition";
+import { useUnifiedChartBandTransition } from "@/components/farm/use-split-y-layout-transition";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { motionDuration } from "@/lib/ui/motion-tokens";
 import {

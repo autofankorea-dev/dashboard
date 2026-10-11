@@ -50,7 +50,7 @@ import {
   type FarmChartScope,
 } from "@/lib/farm/farm-chart-scope";
 import { isFarmHubPanelLiveActive } from "@/lib/farm/farm-hub-keepalive";
-import { useFarmHubViewShell } from "@/lib/farm/use-farm-hub-view-shell";
+import { useFarmHubViewShell } from "@/components/farm/use-farm-hub-view-shell";
 import { farmFieldMergeEnabled } from "@/lib/farm/farm-field-merge-enabled";
 import { isScopedControllerEnriched } from "@/lib/farm/farm-scoped-panel-utils";
 import type { ControllerGridData } from "@/lib/farm/controller-grid-data";
@@ -63,11 +63,11 @@ import {
   invalidateFarmControllerTrendCache,
   prefetchFarmControllerTrend,
   useFarmControllerTrend,
-} from "@/lib/farm/use-farm-controller-trend";
+} from "@/components/farm/use-farm-controller-trend";
 import {
   invalidateFarmStallTrendCache,
   prefetchFarmStallTrend,
-} from "@/lib/farm/use-farm-stall-trend";
+} from "@/components/farm/use-farm-stall-trend";
 import { fetchFarmPanelEnrichShared } from "@/lib/farm/fetch-farm-panel-enrich";
 import {
   readFarmPanelCache,

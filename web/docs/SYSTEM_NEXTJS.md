@@ -188,7 +188,7 @@ SELECT 계약: [`live-read-select.ts`](../src/lib/domain/live-read-select.ts)
 
 | 훅 | 역할 |
 |----|------|
-| [`warm-post-login-farm-hub.ts`](../src/lib/farm/warm-post-login-farm-hub.ts) | 로그인 후 panel + 24h 추이 |
+| [`warm-post-login-farm-hub.ts`](../src/components/farm/warm-post-login-farm-hub.ts) | 로그인 후 panel + 24h 추이 |
 | admin warm | `warmAdminHubOverviewCache` (`SKIP_ADMIN_HUB_WARM=1`로 off) |
 | 스플래시 | 필드 LIVE bootstrap + 1프레임 paint (`NavContentReadyMarker`) |
 

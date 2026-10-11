@@ -13,7 +13,7 @@ import {
   type TrendPeriodId,
 } from "@/lib/domain/farm-trend-types";
 import type { ControllerMobileSheetPage } from "@/lib/farm/barn-list-panel-state";
-import { GRAPH_BARS, barnIdForReading, useBarnGraphs } from "@/lib/farm/use-barn-graphs";
+import { GRAPH_BARS, barnIdForReading, useBarnGraphs } from "@/components/farm/use-barn-graphs";
 import { cn } from "@/lib/utils";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { motionDuration } from "@/lib/ui/motion-tokens";
@@ -27,7 +27,7 @@ import {
   InlineStatusToast,
   type InlineStatusTone,
 } from "@/components/common/inline-status-toast";
-import { useFarmTourGridAction } from "@/lib/onboarding/use-farm-tour-grid-action";
+import { useFarmTourGridAction } from "@/components/onboarding/use-farm-tour-grid-action";
 import { useFarmLiveRefreshOptional } from "@/lib/navigation/farm-live-refresh";
 import { scheduleSafeRouterRefresh } from "@/lib/navigation/safe-router-refresh";
 import { FARM_TOUR_ACTION_EVENT } from "@/lib/onboarding/tour-steps";

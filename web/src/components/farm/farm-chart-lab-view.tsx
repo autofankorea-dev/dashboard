@@ -55,7 +55,7 @@ import {
   type FarmChartLabSelection,
   type FarmChartScope,
 } from "@/lib/farm/farm-chart-scope";
-import { useFarmTrendUplinkCoverage } from "@/lib/farm/use-farm-trend-uplink-coverage";
+import { useFarmTrendUplinkCoverage } from "@/components/farm/use-farm-trend-uplink-coverage";
 import type { UplinkCoverageIndex } from "@/lib/farm/trend-uplink-coverage";
 import {
   DEFAULT_UNIFIED_LAYERS,

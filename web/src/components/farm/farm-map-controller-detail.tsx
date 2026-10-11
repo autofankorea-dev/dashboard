@@ -31,7 +31,7 @@ import { BarnListGraphPanel } from "./barn-list-graph-panel";
 import { PanelCloseButton } from "./panel-close-button";
 import { GridMetricLabel, gridMetricAriaLabel } from "@/lib/farm/grid-metric-label";
 import { trendPeriodLabel } from "@/lib/farm/farm-view-url";
-import { controllerKeyForReadingKey } from "@/lib/farm/use-barn-graphs";
+import { controllerKeyForReadingKey } from "@/components/farm/use-barn-graphs";
 import { downsampleColumnsForChart } from "@/lib/farm/trend-display-buckets";
 import { BarnPanelBottomSheet } from "@/components/farm/barn-panel-bottom-sheet";
 import { useHydrationSafeDashboardCompact } from "@/components/layout/dashboard-viewport-context";
