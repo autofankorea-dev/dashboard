@@ -29,7 +29,7 @@ import {
   crosshairChipFlipsRight,
   type EdgeBandLabel,
 } from "./trend-chart-geometry";
-import { inferHoverMetricGroup } from "./trend-chart-format";
+import { inferHoverMetricGroup } from "@/lib/farm/trend-chart-format";
 import type {
   TrendEnvelope,
   TrendSeries,

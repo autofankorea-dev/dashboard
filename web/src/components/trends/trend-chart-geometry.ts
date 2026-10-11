@@ -11,7 +11,7 @@ import type {
   TrendScaleEdgeLabel,
   TrendSeries,
 } from "@/lib/domain/trend-chart-types";
-import { inferHoverMetricGroup } from "./trend-chart-format";
+import { inferHoverMetricGroup } from "@/lib/farm/trend-chart-format";
 
 /** view 좌표 매퍼 — 렌더 시점 도메인·크기에 닫힌 클로저를 주입받는다. */
 type XForFn = (i: number) => number;

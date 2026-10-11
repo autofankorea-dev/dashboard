@@ -63,7 +63,7 @@ import {
   isOverlayMergedHoverGroup,
   resolveBreachNavTarget,
   TREND_Y_LABEL_CHIP_SAMPLE,
-} from "./trend-chart-format";
+} from "@/lib/farm/trend-chart-format";
 import {
   OverlayMergedPointCards,
   TrendPointCardBody,

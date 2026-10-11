@@ -18,7 +18,7 @@ import type {
 import { motionClass } from "@/lib/ui/motion-classes";
 import { motionStaggerStepMs } from "@/lib/ui/motion-tokens";
 import type { ClipPresenceEntry } from "@/lib/ui/use-clip-presence";
-import { inferHoverMetricGroup } from "./trend-chart-format";
+import { inferHoverMetricGroup } from "@/lib/farm/trend-chart-format";
 import { PAD_TOP } from "./trend-chart-geometry";
 import { clipWipeClass, type PinnedTip } from "./trend-chart-interaction";
 import {

@@ -24,7 +24,7 @@ import {
   inferHoverMetricGroup,
   splitSpreadZoneLabel,
   spreadControllerNo,
-} from "./trend-chart-format";
+} from "@/lib/farm/trend-chart-format";
 
 function MiniSpark({
   values,

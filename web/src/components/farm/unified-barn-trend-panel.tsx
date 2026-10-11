@@ -8,7 +8,7 @@ import {
   type TrendRangeBand,
   type TrendScaleEdgeLabel,
 } from "@/components/trends/trend-chart";
-import { formatTrendBandEdge } from "@/components/trends/trend-chart-format";
+import { formatTrendBandEdge } from "@/lib/farm/trend-chart-format";
 import {
   BRUSH_PERIOD_WINDOW,
   UnifiedTrendPeriodBrush,
