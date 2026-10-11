@@ -1,5 +1,5 @@
-import type { BarnMeta } from "@/lib/data/barn-meta";
-import type { BarnLayoutPrefs } from "@/lib/data/barn-meta";
+import type { BarnMeta } from "@/lib/domain/barn-meta-types";
+import type { BarnLayoutPrefs } from "@/lib/domain/barn-meta-types";
 import {
   compareCatalogEntries,
   defaultBarnLabel,
@@ -17,7 +17,7 @@ import {
 } from "@/lib/domain/barn-grid";
 import { farmKeyEq, type FarmKey } from "@/lib/domain/farm-key";
 import { normalizeStallTyCode } from "@/lib/domain/stall-type";
-import type { BarnMapSnapshot, BarnReading, ControllerStatus } from "@/lib/data/iot";
+import type { BarnMapSnapshot, BarnReading, ControllerStatus } from "@/lib/domain/iot-types";
 
 function avg(nums: (number | null)[]): number | null {
   const v = nums.filter((n): n is number => n !== null);

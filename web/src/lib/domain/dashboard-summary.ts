@@ -6,7 +6,7 @@ import type {
   BarnSummary,
   FarmOverview,
   ModuleReceipt,
-} from "@/lib/data/iot";
+} from "@/lib/domain/iot-types";
 
 function avg(nums: (number | null)[]): number | null {
   const v = nums.filter((n): n is number => n !== null);

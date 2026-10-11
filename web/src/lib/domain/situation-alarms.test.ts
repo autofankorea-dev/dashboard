@@ -12,7 +12,7 @@ import {
   type AlarmRow,
   type AlarmSettings,
 } from "./alarms";
-import type { BarnReading } from "@/lib/data/iot";
+import type { BarnReading } from "@/lib/domain/iot-types";
 
 function reading(
   partial: Pick<BarnReading, "controllerKey" | "status"> &

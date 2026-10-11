@@ -6,7 +6,7 @@ import {
   parseFarmKeyId,
   type FarmKey,
 } from "@/lib/domain/farm-key";
-import type { BarnReading } from "@/lib/data/iot";
+import type { BarnReading } from "@/lib/domain/iot-types";
 import { getItemCodeName } from "@/lib/domain/item-code";
 import { sensorValueForDisplay } from "@/lib/domain/reading-display";
 

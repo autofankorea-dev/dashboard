@@ -1,5 +1,5 @@
 import { deviceAlarmThresholds, commonDeviceAlarmThresholds } from "./device-alarm-thresholds";
-import type { BarnReading } from "@/lib/data/iot";
+import type { BarnReading } from "@/lib/domain/iot-types";
 import { farmKeyId } from "@/lib/domain/farm-key";
 import { farmShortLabelFromId } from "@/lib/domain/farm-summaries";
 import {

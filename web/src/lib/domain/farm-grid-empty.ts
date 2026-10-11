@@ -1,4 +1,4 @@
-import type { BarnReading } from "@/lib/data/iot";
+import type { BarnReading } from "@/lib/domain/iot-types";
 
 export type FarmGridEmptyReason = "no-readings" | "no-sp-code";
 

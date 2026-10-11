@@ -88,9 +88,8 @@ const layerBoundaries = [
             },
             {
               group: ["@/lib/data/*"],
-              allowTypeImports: true,
               message:
-                "lib/domain → lib/data 값 import 금지 (타입만 허용 — iot.ts 타입 분리는 P2)",
+                "lib/domain → lib/data 금지 (타입 포함). 공유 타입은 lib/domain/*-types.ts 에 둔다",
             },
             { group: ["@/components/*", "@/app/*"], message: "lib/domain은 UI·라우팅을 모른다" },
           ],

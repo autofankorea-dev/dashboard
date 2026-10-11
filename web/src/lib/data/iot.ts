@@ -7,16 +7,17 @@ import {
   toBarnSummary,
   toFarmOverview,
 } from "@/lib/domain/dashboard-summary";
-import type { BarnMeta } from "@/lib/data/barn-meta";
+import type { BarnMeta } from "@/lib/domain/barn-meta-types";
 import { compareReadings } from "@/lib/domain/reading-hierarchy";
-import {
-  farmKeyEq,
-  stallCatalogKey,
-  type FarmKey,
-} from "@/lib/domain/farm-key";
-import {
-  type ChannelReading,
-} from "@/lib/domain/iot-channel";
+import { farmKeyEq, stallCatalogKey } from "@/lib/domain/farm-key";
+import type {
+  BarnCompareRow,
+  BarnMapSnapshot,
+  BarnReading,
+  BarnSummary,
+  ControllerStatus,
+  FarmOverview,
+} from "@/lib/domain/iot-types";
 import {
   fetchLiveReadings,
   type LiveReadingsScope,
@@ -25,138 +26,19 @@ import {
 export type { StallCatalogEntry } from "@/lib/domain/stall-catalog";
 export type { LiveReadingsScope };
 export { buildStallCatalog } from "@/lib/domain/stall-catalog";
-
-export type ControllerStatus = "normal" | "caution" | "offline";
-
-
-
-export type PacketMode = "live" | "replay";
-
-
-
-export type BarnReading = {
-
-  key: string;
-
-  farmKey: FarmKey;
-
-  moduleUid: number;
-
-  /** v0x0A business key SPxx:stallNo:eqpmnNo (legacy: legacy:idx:N) */
-  controllerKey: string;
-
-  /** @deprecated v0x09 legacy; v0x0A decoded rows omit idx */
-  idx?: number;
-
-  eqpmnNo: string;
-
-  stallNo: string | null;
-
-  stallTyCode: string | null;
-
-  label: string;
-
-  alarmLowTempC?: number | null;
-  alarmHighTempC?: number | null;
-  tempC: number | null;
-
-  humidityPct: number | null;
-
-  fanSupply: number | null; // EC01 송풍팬
-
-  fanExhaust: number | null; // EC02 배기팬
-
-  fanIntake: number | null; // EC03 입기팬
-
-  fanSupplySeries: number[]; // EC01 추이
-
-  fanExhaustSeries: number[]; // EC02 추이
-
-  fanIntakeSeries: number[]; // EC03 추이
-
-  mesureDt: string | null;
-
-  receivedAt: string;
-
-  status: ControllerStatus;
-
-  packetMode: PacketMode;
-
-  wireVer: number | null;
-
-  decodedId?: number;
-
-  thermo?: DecodedController["thermo"];
-
-  /** v0x0B schema 2.0 — A/B/C channel readings */
-  channels?: ChannelReading[];
-
-  /** v0x0C — controller run mode */
-  runMode?: number | null;
-
-  /** v0x0C — row-level temperature probes (up to 4) */
-  tempsC?: (number | null)[];
-
-};
-
-
-
-/** BarnReading 과 동일 구조 (컨트롤러 페이지에서 의미상 사용) */
-
-export type ControllerReading = BarnReading;
-
-
-
-export type BarnSummary = {
-
-  total: number;
-
-  normal: number;
-
-  caution: number;
-
-  offline: number;
-
-};
-
-
-
-type DecodedController = {
-
-  controllerKey?: string;
-
-  idx?: number;
-
-  eqpmnNo?: string;
-
-  stallNo?: unknown;
-
-  stallTyCode?: unknown;
-
-  ES01?: unknown;
-
-  ES02?: unknown;
-
-  EC01?: unknown;
-
-  EC02?: unknown;
-
-  EC03?: unknown;
-
-  mesureDt?: string;
-
-  channels?: import("@/lib/domain/iot-channel").DecodedChannel[];
-
-  thermo?: {
-    setpointTemp?: string | number;
-    tempDeviation?: string | number;
-    minVentPct?: number;
-    maxVentPct?: number;
-  } | null;
-
-};
-
-
+/** 타입 정본은 `@/lib/domain/iot-types` — 기존 import 경로 호환용 재export */
+export type {
+  BarnCompareRow,
+  BarnMapSnapshot,
+  BarnReading,
+  BarnSummary,
+  ControllerReading,
+  ControllerStatus,
+  DecodedController,
+  FarmOverview,
+  ModuleReceipt,
+  PacketMode,
+} from "@/lib/domain/iot-types";
 
 /**
  * 모듈별 최신 LIVE snapshot(chunk 병합)을 펼쳐 컨트롤러(idx) 단위 반환.
@@ -175,32 +57,6 @@ export function summarizeBarns(readings: BarnReading[]): BarnSummary {
   return toBarnSummary(summarizeControllers(readings));
 }
 
-
-
-/** 축사 페이지 차트·비교용. stallNo 있으면 축사별 평균, 없으면 컨트롤러 단위. */
-
-export type BarnCompareRow = {
-
-  key: string;
-
-  label: string;
-
-  tempC: number | null;
-
-  humidityPct: number | null;
-
-  fanSupply: number | null;
-
-  fanExhaust: number | null;
-
-  fanIntake: number | null;
-
-  status: ControllerStatus;
-
-};
-
-
-
 export {
 
   buildControllerSlotSeries,
@@ -218,8 +74,6 @@ export {
   type ChartSlotItem,
 
 } from "@/lib/domain/iot-chart";
-
-
 
 export function buildBarnCompareRows(readings: BarnReading[]): BarnCompareRow[] {
 
@@ -241,8 +95,6 @@ export function buildBarnCompareRows(readings: BarnReading[]): BarnCompareRow[] 
 
   }
 
-
-
   const entries = [...groups.entries()].sort(([, a], [, b]) =>
     compareReadings(a[0], b[0])
   );
@@ -263,50 +115,6 @@ export function buildBarnCompareRows(readings: BarnReading[]): BarnCompareRow[] 
 
 }
 
-export type ModuleReceipt = {
-
-  farmKey: FarmKey;
-
-  moduleUid: number;
-
-  receivedAt: string;
-
-  status: ControllerStatus;
-
-};
-
-
-
-export type FarmOverview = {
-
-  farmCount: number;
-
-  moduleCount: number;
-
-  controllerCount: number;
-
-  connectedCount: number;
-
-  expectedControllerCount: number;
-
-  offlineCount: number;
-
-  avgTempC: number | null;
-
-  avgHumidityPct: number | null;
-
-  avgFanSupply: number | null;
-
-  avgFanExhaust: number | null;
-
-  avgFanIntake: number | null;
-
-  receipts: ModuleReceipt[];
-
-};
-
-
-
 function avg(nums: (number | null)[]): number | null {
 
   const v = nums.filter((n): n is number => n !== null);
@@ -314,8 +122,6 @@ function avg(nums: (number | null)[]): number | null {
   return v.length ? v.reduce((a, b) => a + b, 0) / v.length : null;
 
 }
-
-
 
 const STATUS_RANK: Record<ControllerStatus, number> = {
 
@@ -326,8 +132,6 @@ const STATUS_RANK: Record<ControllerStatus, number> = {
   offline: 2,
 
 };
-
-
 
 function worstStatus(statuses: ControllerStatus[]): ControllerStatus {
 
@@ -340,35 +144,6 @@ function worstStatus(statuses: ControllerStatus[]): ControllerStatus {
   );
 
 }
-
-
-
-export type BarnMapSnapshot = {
-
-  meta: BarnMeta;
-
-  controllerCount: number;
-
-  /** SP 그룹 내 고유 축사번호(stallNo) 수 */
-  stallCount?: number;
-
-  tempC: number | null;
-
-  humidityPct: number | null;
-
-  fanSupply: number | null;
-
-  fanExhaust: number | null;
-
-  fanIntake: number | null;
-
-  status: ControllerStatus;
-
-  receivedAt: string | null;
-
-};
-
-
 
 /** stallNo 기준 집계. 축사 1개에 컨트롤러 여러 대 (통신박스 idx별 동일 stall_no). */
 
@@ -394,8 +169,6 @@ export function aggregateByBarn(
 
     );
 
-
-
     const latestReceived = matched.reduce<string | null>((latest, r) => {
 
       if (!latest) return r.receivedAt;
@@ -403,8 +176,6 @@ export function aggregateByBarn(
       return new Date(r.receivedAt) > new Date(latest) ? r.receivedAt : latest;
 
     }, null);
-
-
 
     return {
 
@@ -432,8 +203,6 @@ export function aggregateByBarn(
 
 }
 
-
-
 export function summarizeFarm(
   readings: BarnReading[],
   expectedControllerCount = 48
@@ -442,5 +211,4 @@ export function summarizeFarm(
     summarizeControllers(readings, expectedControllerCount)
   );
 }
-
 

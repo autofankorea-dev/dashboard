@@ -10,25 +10,14 @@ import {
 } from "@/lib/data/profile-ui-meta-cache";
 import { omitRetiredProfileUiConfigKeys } from "@/lib/domain/profile-ui-retired";
 
-import { type FarmKey } from "@/lib/domain/farm-key";
+import type {
+  BarnLayoutPrefs,
+  BarnMeta,
+  BarnMetaType,
+} from "@/lib/domain/barn-meta-types";
 
-export type BarnMetaType = "barn" | "office";
-
-export type BarnMeta = {
-  id: string;
-  farmKey: FarmKey;
-  moduleUid: number;
-  /** 통신박스 전송 축사(칸) 식별자 (decoded_json.stallNo) */
-  stallNo: string;
-  name: string;
-  grid: { col: number; row: number };
-  type?: BarnMetaType;
-};
-
-export type BarnLayoutPrefs = {
-  layouts: Record<string, { col: number; row: number }>;
-  aliases: Record<string, string>;
-};
+/** 타입 정본은 `@/lib/domain/barn-meta-types` — 기존 import 경로 호환용 재export */
+export type { BarnLayoutPrefs, BarnMeta, BarnMetaType };
 
 type UiConfig = {
   barnLayouts?: Record<string, { col: number; row: number }>;
