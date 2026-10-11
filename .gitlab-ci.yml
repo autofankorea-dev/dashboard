@@ -23,6 +23,12 @@ web:lint:
   script:
     - cd web && npm run lint
 
+web:typecheck:
+  stage: verify
+  needs: [web:install]
+  script:
+    - cd web && npm run typecheck
+
 web:test:
   stage: verify
   needs: [web:install]

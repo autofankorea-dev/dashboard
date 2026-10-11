@@ -11,6 +11,8 @@
     "test": "node scripts/run-unit-tests.mjs",
     "test:unit": "node scripts/run-unit-tests.mjs",
     "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run lint && npm run typecheck && npm test && npm run knip",
     "knip": "knip --include files,dependencies,unlisted,duplicates,unresolved",
     "knip:exports": "knip --exports",
     "measure:live": "tsx scripts/measure-live-read.ts",
