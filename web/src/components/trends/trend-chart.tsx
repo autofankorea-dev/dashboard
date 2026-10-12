@@ -6,7 +6,6 @@ import {
   useState,
   useRef,
   useLayoutEffect,
-  useEffect,
   useId,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
@@ -113,11 +112,11 @@ import {
   pickDraggableScaleEdgeHit,
   chartTipPresenceClass,
   chartBandGuideClass,
-  shouldPreferLookbackPinch,
   type PinnedTip,
 } from "./trend-chart-interaction";
 import { useTrendPinnedTips } from "./use-trend-pinned-tips";
 import { useTrendPlotSize } from "./use-trend-plot-size";
+import { useTrendLookbackGesture } from "./use-trend-lookback-gesture";
 import { useTrendScopeGesture } from "./use-trend-scope-gesture";
 import {
   BandGuidesLayer,
@@ -296,8 +295,6 @@ export function TrendChart({
     y: number;
     pointerId: number;
   } | null>(null);
-  /** 2손가락 룩백 핀치 중 — X스코프 draft 재진입·커밋 방지 */
-  const lookbackPinchActiveRef = useRef(false);
   const { plotRef, plotPx } = useTrendPlotSize({
     fillParent,
     height,
@@ -1006,93 +1003,17 @@ export function TrendChart({
     yViewFromClient,
     clearHover,
   });
-  const cancelXScopeRef = useRef(onXScopePointerCancel);
-  useEffect(() => {
-    cancelXScopeRef.current = onXScopePointerCancel;
-  }, [onXScopePointerCancel]);
-
-  useEffect(() => {
-    const el = plotRef.current;
-    if (!el || !onLookbackWheel) return;
-    const pinchFactor = 1.18;
-    /** 휠: X스코프·편집 중에는 막음. 핀치: draft는 진입 시 취소하므로 편집만 막음. */
-    const wheelBlocked = () =>
-      edgeEdit != null ||
-      edgeDragRef.current != null ||
-      labelDragArmRef.current != null ||
-      Boolean(xScopeDraggingRef.current) ||
-      xDraftRef.current != null;
-    const pinchBlocked = () =>
-      edgeEdit != null ||
-      edgeDragRef.current != null ||
-      labelDragArmRef.current != null;
-
-    const yieldToLookbackPinch = () => {
-      lookbackPinchActiveRef.current = true;
-      pinClickArmRef.current = null;
-      cancelXScopeRef.current();
-    };
-
-    const onWheel = (e: WheelEvent) => {
-      if (e.ctrlKey || e.metaKey) return;
-      if (wheelBlocked()) return;
-      e.preventDefault();
-      onLookbackWheel(e.deltaY > 0 ? 1 : -1);
-    };
-
-    let pinchDist = 0;
-    const dist = (touches: TouchList) => {
-      if (touches.length < 2) return 0;
-      const a = touches.item(0);
-      const b = touches.item(1);
-      if (!a || !b) return 0;
-      return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
-    };
-    const onTouchStart = (e: TouchEvent) => {
-      if (!shouldPreferLookbackPinch(e.touches.length)) return;
-      yieldToLookbackPinch();
-      pinchDist = dist(e.touches);
-    };
-    const onTouchMove = (e: TouchEvent) => {
-      if (!shouldPreferLookbackPinch(e.touches.length) || pinchBlocked()) return;
-      if (xDraftRef.current != null || xScopeDraggingRef.current) {
-        yieldToLookbackPinch();
-      }
-      const d = dist(e.touches);
-      if (!(pinchDist > 0) || !(d > 0)) {
-        pinchDist = d;
-        return;
-      }
-      const ratio = d / pinchDist;
-      if (ratio >= pinchFactor) {
-        e.preventDefault();
-        pinchDist = d;
-        onLookbackWheel(-1);
-      } else if (ratio <= 1 / pinchFactor) {
-        e.preventDefault();
-        pinchDist = d;
-        onLookbackWheel(1);
-      }
-    };
-    const onTouchEnd = (e: TouchEvent) => {
-      if (shouldPreferLookbackPinch(e.touches.length)) return;
-      lookbackPinchActiveRef.current = false;
-      pinchDist = 0;
-    };
-
-    el.addEventListener("wheel", onWheel, { passive: false });
-    el.addEventListener("touchstart", onTouchStart, { passive: true });
-    el.addEventListener("touchmove", onTouchMove, { passive: false });
-    el.addEventListener("touchend", onTouchEnd);
-    el.addEventListener("touchcancel", onTouchEnd);
-    return () => {
-      el.removeEventListener("wheel", onWheel);
-      el.removeEventListener("touchstart", onTouchStart);
-      el.removeEventListener("touchmove", onTouchMove);
-      el.removeEventListener("touchend", onTouchEnd);
-      el.removeEventListener("touchcancel", onTouchEnd);
-    };
-  }, [onLookbackWheel, edgeEdit, xDraftRef, xScopeDraggingRef]);
+  const { lookbackPinchActiveRef } = useTrendLookbackGesture({
+    plotRef,
+    onLookbackWheel,
+    edgeEdit,
+    edgeDragRef,
+    labelDragArmRef,
+    xDraftRef,
+    xScopeDraggingRef,
+    pinClickArmRef,
+    onXScopePointerCancel,
+  });
 
   const domainValueFromYView = (yView: number, axis: TrendAxis): number => {
     const [mn, mx] = axis === "right" ? [rMin, rMax] : [lMin, lMax];
