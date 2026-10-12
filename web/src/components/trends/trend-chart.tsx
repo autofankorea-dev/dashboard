@@ -5,7 +5,6 @@ import {
   useMemo,
   useState,
   useRef,
-  useLayoutEffect,
   useId,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
@@ -46,11 +45,6 @@ import {
   TREND_Y_LABEL_CHIP_SAMPLE,
 } from "@/lib/farm/trend-chart-format";
 import {
-  OverlayMergedPointCards,
-  TrendPointCardBody,
-  TrendEventCardBody,
-} from "./trend-hover-card";
-import {
   PAD_TOP,
   PAD_BOTTOM,
   VIEW_W_NORM,
@@ -58,7 +52,6 @@ import {
   SCALE_EDGE_LABEL_DRAG_PX,
   buildEnvelopePaths,
   buildLineSegments,
-  computeTipPlacement,
   domainFor,
   finiteValues,
   markerRadiusInViewUnits,
@@ -97,6 +90,8 @@ import { useTrendPinWindowRemap } from "./use-trend-pin-window-remap";
 import { useTrendCrosshair } from "./use-trend-crosshair";
 import { useTrendScaleEdgeEdit } from "./use-trend-scale-edge-edit";
 import { useTrendEdgeBandLabels } from "./use-trend-edge-band-labels";
+import { useTrendHover } from "./use-trend-hover";
+import { TrendChartHoverCard } from "./trend-chart-hover-card";
 import { useTrendScopeGesture } from "./use-trend-scope-gesture";
 import {
   BandGuidesLayer,
@@ -206,12 +201,22 @@ export function TrendChart({
   void tickEvery;
   const clipWipeEnabled = layerClipWipe ?? animate;
   /** 호버 — 인덱스 변경 시에만 setState (mousemove 전량 리렌더 방지) */
-  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
-  const [hoverSeries, setHoverSeries] = useState<string | null>(null);
-  const [hoverEventMark, setHoverEventMark] = useState<TrendEventMark | null>(
-    null,
-  );
-  const [plotHovering, setPlotHovering] = useState(false);
+  const {
+    hoverIdx,
+    setHoverIdx,
+    hoverSeries,
+    setHoverSeries,
+    hoverEventMark,
+    setHoverEventMark,
+    plotHovering,
+    setPlotHovering,
+    hoverIdxRef,
+    hoverSeriesRef,
+    hoverEventMarkRef,
+    tipRef,
+    lastAnchorRef,
+    placeTipNear,
+  } = useTrendHover();
   /** 고정 카드 실측 크기(px) — 배치·점선 앵커 정확도용 (id별) */
   const [pinCardSizes, setPinCardSizes] = useState<
     Record<string, { w: number; h: number }>
@@ -223,11 +228,6 @@ export function TrendChart({
     });
   /** 스케일 값 칩 hover → 해당 기준선 강조 + 나머지 dim */
   const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null);
-  const hoverIdxRef = useRef<number | null>(null);
-  const hoverSeriesRef = useRef<string | null>(null);
-  const hoverEventMarkRef = useRef<TrendEventMark | null>(null);
-  const tipRef = useRef<HTMLDivElement | null>(null);
-  const lastAnchorRef = useRef({ x: 0, y: 0, w: 1, h: 1 });
   const pinClickArmRef = useRef<{
     x: number;
     y: number;
@@ -421,29 +421,6 @@ export function TrendChart({
     crosshairValues,
     hoverActive: hoverIdx != null || Boolean(hoverEventMark),
   });
-
-  /** 데이터 점 근처 · 플롯 안 · 포인터/점을 가리지 않게 카드 배치 */
-  const placeTipNear = (
-    anchorX: number,
-    anchorY: number,
-    plotW: number,
-    plotH: number,
-  ) => {
-    const el = tipRef.current;
-    if (!el) return;
-    const tipW = el.offsetWidth || 168;
-    const tipH = el.offsetHeight || 72;
-    const { left, top } = computeTipPlacement(
-      anchorX,
-      anchorY,
-      plotW,
-      plotH,
-      tipW,
-      tipH,
-    );
-    el.style.transform = `translate(${left}px, ${top}px)`;
-    el.style.opacity = "1";
-  };
 
   /**
    * 표시 데이터 지점(시리즈 샘플 · 막대 · 히스토그램 끝)에만 히트.
@@ -1168,12 +1145,6 @@ export function TrendChart({
     setHoverSeries(hit.seriesKey);
     setHoverEventMark(hit.eventMark ?? null);
   };
-
-  useLayoutEffect(() => {
-    if (hoverIdx == null && !hoverEventMark) return;
-    const a = lastAnchorRef.current;
-    placeTipNear(a.x, a.y, a.w, a.h);
-  }, [hoverIdx, hoverEventMark]);
 
   const markerStride =
     markerDensity === "sparse" ? Math.max(1, Math.ceil(n / 8)) : 1;
@@ -1974,72 +1945,19 @@ export function TrendChart({
         onBreachEquipmentNavigate={onBreachEquipmentNavigate}
       />
 
-      {hoverCardPresence.mounted && hoverCardPresence.value ? (
-        <div
-          ref={tipRef}
-          className="pointer-events-none absolute left-0 top-0 z-10 w-max max-w-[16rem]"
-          style={{ opacity: 0, willChange: "transform" }}
-          aria-live="polite"
-          data-tour-id="trend-chart-hover-card"
-        >
-          <div
-            className={cn(
-              "rounded-md border border-border/80 bg-popover/95 px-2.5 py-1.5 text-popover-foreground shadow-lg backdrop-blur-sm",
-              chartTipPresenceClass(hoverCardPresence.phase),
-            )}
-          >
-            {hoverCardPresence.value.kind === "event" ? (
-              <TrendEventCardBody mark={hoverCardPresence.value.mark} />
-            ) : (
-              <>
-                {(() => {
-                  const idx = hoverCardPresence.value.idx;
-                  const band = coverageBands.find(
-                    (b) => idx >= b.i0 && idx <= b.i1,
-                  );
-                  return band ? (
-                    <p className="mb-1 farm-chart-fs-legend text-muted-foreground">
-                      {band.label}
-                    </p>
-                  ) : null;
-                })()}
-                {(() => {
-                  const card = hoverCardPresence.value;
-                  if (card.kind !== "point") return null;
-                  const hg = inferHoverMetricGroup(card.seriesKey);
-                  if (overlayHoverMerge && isOverlayMergedHoverGroup(hg)) {
-                    return (
-                      <OverlayMergedPointCards
-                        idx={card.idx}
-                        categories={categories}
-                        series={series}
-                        envelopes={envelopes}
-                        histograms={histograms}
-                        leftUnit={leftUnit}
-                        rightUnit={rightUnit}
-                        onBreachEquipmentNavigate={onBreachEquipmentNavigate}
-                      />
-                    );
-                  }
-                  return (
-                    <TrendPointCardBody
-                      idx={card.idx}
-                      seriesKey={card.seriesKey}
-                      categories={categories}
-                      series={series}
-                      envelopes={envelopes}
-                      histograms={histograms}
-                      leftUnit={leftUnit}
-                      rightUnit={rightUnit}
-                      onBreachEquipmentNavigate={onBreachEquipmentNavigate}
-                    />
-                  );
-                })()}
-              </>
-            )}
-          </div>
-        </div>
-      ) : null}
+      <TrendChartHoverCard
+        presence={hoverCardPresence}
+        tipRef={tipRef}
+        coverageBands={coverageBands}
+        overlayHoverMerge={overlayHoverMerge}
+        categories={categories}
+        series={series}
+        envelopes={envelopes}
+        histograms={histograms}
+        leftUnit={leftUnit}
+        rightUnit={rightUnit}
+        onBreachEquipmentNavigate={onBreachEquipmentNavigate}
+      />
       </div>
       </div>
 
