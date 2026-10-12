@@ -1,9 +1,9 @@
 /**
  * 일보 PDF 인쇄 다운샘플
- * 실행: npx tsx src/lib/report/daily-report-chart.test.ts
+ * 실행: npx vitest run src/lib/report/daily-report-chart.test.ts
  */
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { describe, it } from "vitest";
 import {
   downsampleDailyReportSeriesForPrint,
   PDF_PRINT_MAX_POINTS,

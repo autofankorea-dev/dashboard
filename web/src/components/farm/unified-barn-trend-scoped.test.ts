@@ -1,5 +1,6 @@
+import { test } from "vitest";
 /**
- * 실행: node node_modules/tsx/dist/cli.mjs src/components/farm/unified-barn-trend-scoped.test.ts
+ * 실행: npx vitest run src/components/farm/unified-barn-trend-scoped.test.ts
  */
 import assert from "node:assert/strict";
 import { DEFAULT_ALARM_THRESHOLDS } from "@/lib/domain/alarms";
@@ -54,3 +55,7 @@ assert.deepEqual(sliced?.categories, ["b", "c", "d"]);
 assert.deepEqual(sliced?.tempDomain, [10, 30]);
 
 console.log("unified-barn-trend-scoped.test.ts ok");
+
+test("module asserts", () => {
+  // node:assert 호출은 이 파일을 불러올 때 이미 실행된다.
+});

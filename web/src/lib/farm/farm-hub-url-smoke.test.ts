@@ -1,6 +1,7 @@
+import { test } from "vitest";
 /**
  * `/farm` 셸 스모크 — 딥링크 · soft home · 기간+탭 유지
- * 실행: npx tsx src/lib/farm/farm-hub-url-smoke.test.ts
+ * 실행: npx vitest run src/lib/farm/farm-hub-url-smoke.test.ts
  */
 import assert from "node:assert/strict";
 import {
@@ -229,3 +230,7 @@ function clone(q: string) {
 }
 
 console.log("farm-hub-url-smoke.test.ts: all ok");
+
+test("module asserts", () => {
+  // node:assert 호출은 이 파일을 불러올 때 이미 실행된다.
+});

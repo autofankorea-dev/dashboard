@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import assert from "node:assert/strict";
 import {
   applyQueueCommandBinary,
@@ -60,3 +61,7 @@ import {
     "0C 01 01 01 03 01 02 F0 00 69 00 0A 64 06 60",
   );
 }
+
+test("module asserts", () => {
+  // node:assert 호출은 이 파일을 불러올 때 이미 실행된다.
+});

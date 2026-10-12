@@ -1,5 +1,5 @@
 /**
- * 필드 덮개 → 상세 FLIP. 실행: npx tsx src/lib/farm/cover-reveal-morph.test.ts
+ * 필드 덮개 → 상세 FLIP. 실행: npx vitest run src/lib/farm/cover-reveal-morph.test.ts
  */
 export type CoverMorphRect = {
   left: number;

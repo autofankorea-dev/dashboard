@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import assert from "node:assert/strict";
 import {
   computeStackMetricRows,
@@ -43,3 +44,7 @@ assert.ok(binned[0]!.sevs.slice(0, -1).every((s) => s === "neutral"));
 assert.equal(binned[0]!.sevs.at(-1), "normal");
 
 console.log("stack-metric latest-only severity: ok");
+
+test("module asserts", () => {
+  // node:assert 호출은 이 파일을 불러올 때 이미 실행된다.
+});

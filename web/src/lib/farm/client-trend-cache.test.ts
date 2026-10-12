@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import assert from "node:assert/strict";
 import {
   CLIENT_TREND_CACHE_TTL_MS,
@@ -22,3 +23,7 @@ invalidateTimedCache(map, "b");
 assert.equal(readTimedCache(map, "b", 5_000), null);
 
 console.log("client-trend-cache.test.ts: ok");
+
+test("module asserts", () => {
+  // node:assert 호출은 이 파일을 불러올 때 이미 실행된다.
+});

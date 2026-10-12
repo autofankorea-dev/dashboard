@@ -1,5 +1,6 @@
+import { test } from "vitest";
 /**
- * 실행: node node_modules/tsx/dist/cli.mjs src/lib/farm/unified-trend-split-y.test.ts
+ * 실행: npx vitest run src/lib/farm/unified-trend-split-y.test.ts
  *
  * 알람 구간 안 왕복과 모터 선형, 평탄 이탈 도메인 여유.
  */
@@ -74,3 +75,7 @@ assert.ok(lo < flat && hi > flat);
 assert.ok(Math.abs(flat - lo - (hi - flat)) < 1e-9);
 
 console.log("unified-trend-split-y.test.ts: ok");
+
+test("module asserts", () => {
+  // node:assert 호출은 이 파일을 불러올 때 이미 실행된다.
+});

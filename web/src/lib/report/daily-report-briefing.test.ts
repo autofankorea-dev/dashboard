@@ -1,9 +1,9 @@
 /**
  * 일보 브리핑 집계
- * 실행: npx tsx src/lib/report/daily-report-briefing.test.ts
+ * 실행: npx vitest run src/lib/report/daily-report-briefing.test.ts
  */
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { describe, it } from "vitest";
 import type {
   DailyReportBarn,
   DailyReportPayload,

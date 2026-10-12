@@ -70,11 +70,12 @@ flowchart LR
 | 서버 fetch | 동사형 `get*` / `fetch*` / `list*` | `lib/data/commands.ts: listThermoCommands` |
 | 브라우저 fetch | `fetch*Browser` | `lib/data/browser/command-presets.ts` |
 | 서버 액션 | `*Action` | `saveCommandDefaultsAction` |
-| 테스트 | 대상 옆 `*.test.ts` (`node:assert`, `npm test`) | `lib/domain/live-status.test.ts` |
+| 테스트 | 대상 옆 `*.test.ts` (`node:assert` 또는 vitest `describe`/`it`, `npm test`) | `lib/domain/live-status.test.ts` |
 | 동명 서버/순수 쌍 | 허용하되 서버는 `lib/data`, 순수는 `lib/<feature>` | `data/command-presets.ts` ↔ `farm/command-presets.ts` |
 
 - barrel(`index.ts`) 쓰지 않는다. import는 항상 파일 직접 경로 (`@/lib/domain/farm-key`).
 - import 경로는 `@/` 절대 경로. 같은 폴더 안에서만 `./` 허용.
+- `node:assert`만 있는 파일은 단언이 모듈 평가에서 실행된다. 파일 끝의 `test("module asserts")`가 vitest 스위트로 등록한다. `describe`/`it`는 `vitest`에서 가져온다.
 
 ---
 
@@ -102,6 +103,9 @@ flowchart LR
 ```bash
 cd web
 npm run check          # lint → typecheck → test → knip
+npm test               # vitest run (CI와 동일)
+npm run test:watch     # 파일 저장 시 관련 테스트만
+npm run test:coverage  # v8 줄 커버리지. src/** . 임계값은 두지 않는다
 npm run verify:design  # 모션·밀도·어포던스 토큰
 npm run build          # 더미 Supabase env로도 통과해야 함
 ```
@@ -118,7 +122,7 @@ GitHub Actions(`.github/workflows/web-verify.yml`)와 GitLab CI가 동일 단계
 | ~~`lib/**` → `@/app/**`~~ | 완료 (P2-14). 런타임 3곳 주입 · `OAuthProvider`는 `lib/auth` · provider는 `components/farm`. ESLint가 `lib` → `@/app`를 막는다 | — |
 | ~~`unified-barn-trend-series.ts` 구현 분리~~ | 완료 (P2-2). 배럴 2387→310줄. 구현은 `unified-trend-split-y` · `raw` · `build` · `layers` · `colors` | — |
 | 500 LOC+ 핫스팟 분해 | §4 | `trend-chart.tsx` · `unified-barn-trend-panel.tsx` · `farm-page-content.tsx` |
-| vitest 도입 | coverage · watch | 패키지 추가 승인 필요 |
+| ~~vitest 도입~~ | 완료 (P2-15). `npm test`는 `vitest run`. `test:watch` · `test:coverage` | — |
 
 ---
 
@@ -141,3 +145,4 @@ GitHub Actions(`.github/workflows/web-verify.yml`)와 GitLab CI가 동일 단계
 | 2026-10-12 | P2-12: 호버 카드 값과 결측·세그먼트 빌더를 분리. `trend-chart.tsx` 1574→1528줄. 포인터 핸들러는 플롯 루트에 유지 |
 | 2026-10-12 | P2-13: 통합 추세 패널의 TrendChart 값 조립을 `unified-barn-trend-chart.tsx`로 분리. `unified-barn-trend-panel.tsx` 1376→1276줄. 줌 setState는 패널에 유지 |
 | 2026-10-12 | P2-14: `lib`가 서버 액션을 직접 부르지 않게 한다. 패널 enrich·푸시 등록은 호출측이 액션을 주입하고, 라이브 리프레시 provider는 `components/farm/farm-live-refresh.tsx`로 옮겼다. `OAuthProvider`는 `lib/auth/oauth-provider.ts`로 옮기고 액션이 재export한다 |
+| 2026-10-12 | P2-15: 유닛 러너를 vitest로 교체. `describe`/`it` 20파일은 vitest import. 나머지 `node:assert` 파일은 그대로 실행. `test:watch` · `test:coverage` |

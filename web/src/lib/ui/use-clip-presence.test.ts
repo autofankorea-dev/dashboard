@@ -1,8 +1,8 @@
 /**
- * 실행: npx tsx src/lib/ui/use-clip-presence.test.ts
+ * 실행: npx vitest run src/lib/ui/use-clip-presence.test.ts
  */
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { describe, it } from "vitest";
 import {
   clipPresenceLiveKey,
   clipPresencePhaseKey,

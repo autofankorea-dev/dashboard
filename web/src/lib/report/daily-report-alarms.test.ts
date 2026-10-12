@@ -1,6 +1,7 @@
+import { test } from "vitest";
 /**
  * 일보 PDF 이상상황 매핑 — 모듈+통신두절만 (임계 파생 제외)
- * 실행: npx tsx src/lib/report/daily-report-alarms.test.ts
+ * 실행: npx vitest run src/lib/report/daily-report-alarms.test.ts
  */
 import assert from "node:assert/strict";
 import {
@@ -92,3 +93,7 @@ const moduleRow: AlarmRow = {
 }
 
 console.log("daily-report-alarms.test.ts: all ok");
+
+test("module asserts", () => {
+  // node:assert 호출은 이 파일을 불러올 때 이미 실행된다.
+});

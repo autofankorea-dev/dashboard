@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import assert from "node:assert/strict";
 import wireVectors from "../../../ops/rsd/fixed-0e-vectors.json";
 import { applyQueueChannelStripForReading } from "@/lib/farm/apply-queue";
@@ -50,3 +51,7 @@ assert.equal(liveReadingUnchanged(reading,{...reading,alarmHighTempC:30}),false)
 const strip = applyQueueChannelStripForReading([{key:"test",id:"alarm",liveConfirmed:false,command:{farmKey:{lsindRegistNo:"X",itemCode:"P00"},moduleUid:1,controllerKey:"SP01:01:03",action:"SET_CONTROLLER_SETTINGS",status:"sent",channels:[]}}],{key:"test",farmKey:{lsindRegistNo:"X",itemCode:"P00"},moduleUid:1,controllerKey:"SP01:01:03"});
 assert.equal(strip.length,1); assert.equal(strip[0]?.slot,null); assert.equal(strip[0]?.filled,2);
 console.log("device-alarm-command: wire parity, invalid values, missing data, humidity retirement, common bands, refresh PASS");
+
+test("module asserts", () => {
+  // node:assert 호출은 이 파일을 불러올 때 이미 실행된다.
+});

@@ -1,5 +1,6 @@
+import { test } from "vitest";
 /**
- * 실행: npx tsx src/lib/farm/merge-live-slice.test.ts
+ * 실행: npx vitest run src/lib/farm/merge-live-slice.test.ts
  */
 import assert from "node:assert/strict";
 import type { BarnMapSnapshot, BarnReading } from "@/lib/data/iot";
@@ -77,3 +78,7 @@ assert.equal(replaced.length, 1);
 assert.equal(replaced[0]?.key, "SP07:01:12");
 
 console.log("merge-live-slice.test.ts: ok");
+
+test("module asserts", () => {
+  // node:assert 호출은 이 파일을 불러올 때 이미 실행된다.
+});

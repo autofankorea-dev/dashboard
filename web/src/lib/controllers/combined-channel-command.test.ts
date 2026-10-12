@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import assert from "node:assert/strict";
 import { commandChannelViews, parseCommandChannels, type CommandChannelValues } from "./combined-channel-command";
 import { encodeCommandWireHex } from "@/lib/farm/command-wire";
@@ -33,3 +34,7 @@ assert.equal(commandLiveConfirmed(cmd, [reading]), true);
 assert.equal(commandLiveConfirmed(cmd, [{ ...reading, channels: reading.channels.slice(0, 2) }]), false);
 assert.equal(commandLiveConfirmed(cmd, [{ ...reading, channels: reading.channels.map((c) =>
   c.channel === "C" ? { ...c, thermo: { ...c.thermo, setpointTemp: 20 } } : c) }]), false);
+
+test("module asserts", () => {
+  // node:assert 호출은 이 파일을 불러올 때 이미 실행된다.
+});

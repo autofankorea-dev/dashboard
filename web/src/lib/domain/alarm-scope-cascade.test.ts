@@ -1,5 +1,6 @@
+import { test } from "vitest";
 /**
- * 실행: npx tsx src/lib/data/alarm-scope-cascade.test.ts
+ * 실행: npx vitest run src/lib/data/alarm-scope-cascade.test.ts
  *
  * 차트·일괄 — scope 저장 시 하위 override cascade.
  */
@@ -116,3 +117,7 @@ const base: AlarmSettings = {
 }
 
 console.log("alarm-scope-cascade: ok");
+
+test("module asserts", () => {
+  // node:assert 호출은 이 파일을 불러올 때 이미 실행된다.
+});

@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import assert from "node:assert/strict";
 import type { ThermoCommand } from "@/lib/data/commands";
 import { latestFailedCommand, commandFailureExplanation } from "./command-failure-recovery";
@@ -8,3 +9,7 @@ assert.equal(latestFailedCommand([failed, { ...failed, id: "new", createdAt: "20
 assert.equal(commandFailureExplanation("ack timeout after 2 attempt(s)").title, "반영 확인 시간 초과");
 assert.equal(commandFailureExplanation("mqtt publish failed").title, "명령 전송 실패");
 assert.equal(commandFailureExplanation(null).title, "명령 처리 실패");
+
+test("module asserts", () => {
+  // node:assert 호출은 이 파일을 불러올 때 이미 실행된다.
+});

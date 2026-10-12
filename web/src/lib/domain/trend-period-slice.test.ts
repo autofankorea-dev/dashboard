@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { describe, it } from "vitest";
 import { TREND_15M_PERIODS, TREND_PERIODS } from "@/lib/domain/farm-trend-types";
 import {
   sliceControllerTrendByTime,

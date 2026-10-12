@@ -1,5 +1,6 @@
+import { test } from "vitest";
 /**
- * 실행: node node_modules/tsx/dist/cli.mjs src/components/farm/unified-barn-trend-guided-scope.test.ts
+ * 실행: npx vitest run src/components/farm/unified-barn-trend-guided-scope.test.ts
  */
 import assert from "node:assert/strict";
 import {
@@ -69,3 +70,7 @@ assert.equal(resolved.durationMs, 400);
 assert.equal(resolved.token, 3);
 
 console.log("unified-barn-trend-guided-scope.test.ts ok");
+
+test("module asserts", () => {
+  // node:assert 호출은 이 파일을 불러올 때 이미 실행된다.
+});

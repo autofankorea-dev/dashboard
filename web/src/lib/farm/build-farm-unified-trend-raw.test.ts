@@ -1,5 +1,6 @@
+import { test } from "vitest";
 /**
- * 실행: npx tsx src/lib/farm/build-farm-unified-trend-raw.test.ts
+ * 실행: npx vitest run src/lib/farm/build-farm-unified-trend-raw.test.ts
  *
  * 채널 표시 정본 = 슬롯(A/B/C). eqpmnCode는 내부용.
  * 이제 슬롯별 모터%가 RPC(avg_fan_a/b/c)로 파이프라인에 실려 오므로,
@@ -84,3 +85,7 @@ const thresholds = DEFAULT_ALARM_THRESHOLDS;
 }
 
 console.log("build-farm-unified-trend-raw.test.ts: ok");
+
+test("module asserts", () => {
+  // node:assert 호출은 이 파일을 불러올 때 이미 실행된다.
+});

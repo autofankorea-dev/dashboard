@@ -1,6 +1,7 @@
+import { test } from "vitest";
 /**
  * M5 — 차트 핵심 휴리스틱 단위 테스트
- * 실행: npx tsx src/lib/farm/chart-heuristics-m5.test.ts
+ * 실행: npx vitest run src/lib/farm/chart-heuristics-m5.test.ts
  */
 import assert from "node:assert/strict";
 import { DEFAULT_ALARM_THRESHOLDS } from "@/lib/domain/alarms";
@@ -441,3 +442,7 @@ const layoutAll = resolveSplitYLayout(ALL_VIS);
 }
 
 console.log("chart-heuristics-m5.test.ts: ok");
+
+test("module asserts", () => {
+  // node:assert 호출은 이 파일을 불러올 때 이미 실행된다.
+});

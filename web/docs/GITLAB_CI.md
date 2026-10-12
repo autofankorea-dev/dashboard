@@ -9,7 +9,7 @@
 | `web:install` | `npm ci` | 파이프라인 중단 |
 | `web:lint` | ESLint | 파이프라인 중단 |
 | `web:typecheck` | `tsc --noEmit` | 파이프라인 중단 |
-| `web:test` | `npm test` — `src/**/*.test.ts` (protocol · hub URL 등) | 파이프라인 중단 |
+| `web:test` | `npm test` — vitest, `src/**/*.test.ts` · `supabase/functions/**/*.test.ts` | 파이프라인 중단 |
 | `web:verify-design` | `npm run verify:design` (motion + map density) | 파이프라인 중단 |
 | `web:knip` | dead files · deps · duplicates | 파이프라인 중단 |
 | `web:build` | `next build --webpack` (더미 Supabase env) | 파이프라인 중단 |
