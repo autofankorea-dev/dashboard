@@ -1,10 +1,8 @@
 "use client";
 
 import { useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
-import {
-  TrendChart,
-  type TrendCommandSettingSeg,
-} from "@/components/trends/trend-chart";
+import type { TrendCommandSettingSeg } from "@/components/trends/trend-chart";
+import { UnifiedBarnTrendChart } from "@/components/farm/unified-barn-trend-chart";
 import {
   BRUSH_PERIOD_WINDOW,
   UnifiedTrendPeriodBrush,
@@ -68,7 +66,6 @@ import {
   chartScopeEntryToZoomHint,
   type ChartTrendZoomHint,
   type FarmChartScope,
-  scopesEqual,
 } from "@/lib/farm/farm-chart-scope";
 import type { ControllerThermoSettings } from "@/lib/controllers/controller-settings";
 import {
@@ -77,10 +74,6 @@ import {
   type CommandChannelFlags,
 } from "@/lib/farm/command-hold-bands";
 import { buildFarmTrendScaleEdges } from "@/components/farm/unified-barn-trend-scale-edges";
-import {
-  tickEveryForDisplayBars,
-  formatTrendScopeRangeLabel,
-} from "@/lib/farm/trend-display-buckets";
 import {
   aggregateUnifiedBarnTrendRaw,
   DEFAULT_UNIFIED_LAYERS,
@@ -98,9 +91,7 @@ import {
   domainYFromViewRatio,
   visibilityForYBands,
   maskLayersForYBands,
-  isSingleYBandFocus,
   allocateUnifiedChartBandHeights,
-  unifiedYBandsScopeLabel,
   OVERLAY_ALIGN_ANCHOR,
   type UnifiedLayerFlags,
   type UnifiedMetricAvailability,
@@ -114,7 +105,7 @@ import {
   humanizeGuidedScopeRect,
   type GuidedScopeRect,
 } from "@/lib/ui/guided-scope-jitter";
-import { dashboardChroma, dashboardUi } from "@/lib/ui/dashboard-page-ui";
+import { dashboardChroma } from "@/lib/ui/dashboard-page-ui";
 import {
   chartUiPx,
   farmChartUi,
@@ -1087,19 +1078,6 @@ export function UnifiedBarnTrendPanel({
       </div>
     ) : null;
 
-  const focusBandActive = isSingleYBandFocus(xScope?.yBands)
-    ? xScope.yBands[0]
-    : null;
-  const scopeYLabel = unifiedYBandsScopeLabel(xScope?.yBands ?? null);
-
-  const focusBandTint = (band: UnifiedYBandId | null | undefined) => {
-    if (band === "temp" || band === "overlay") return dashboardUi.channelTintTemp;
-    if (band === "hum") return dashboardUi.channelTintHum;
-    if (band === "motor") return dashboardUi.channelTintMotor;
-    if (band === "command") return dashboardUi.channelTintCommand;
-    return dashboardUi.channelTintInfo;
-  };
-
   return (
     <div
       className={cn(
@@ -1182,120 +1160,42 @@ export function UnifiedBarnTrendPanel({
             plotFill ? "flex h-full min-h-0 flex-1 flex-col" : undefined
           }
         >
-        <TrendChart
-          mode="line"
-          onPlotWidthChange={onChartPlotWidth}
-          fillParent={plotFill}
+        <UnifiedBarnTrendChart
+          plotFill={plotFill}
+          headingMode={headingMode}
+          overview={overview}
+          isMobileStack={isMobileStack}
           categories={chartCategories}
           series={scoped.series}
           envelopes={scoped.envelopes}
           histograms={scoped.histograms}
-          height={plotFill ? 48 : chartPlotHeightForChart}
-          eventLane={null}
-          eventLaneHeight={0}
+          chartPlotHeight={chartPlotHeightForChart}
           commandSettingSegs={commandSettingSegs}
-          leftUnit={chartLeftUnit}
-          yAxisTicks={chartLeftUnit ? "thirds" : "full"}
+          chartLeftUnit={chartLeftUnit}
           leftDomain={built.leftDomain}
-          period={displayPeriod}
-          pinResetKey={`${alarmScopeKey ?? ""}|${period ?? ""}`}
-          tickEvery={tickEveryForDisplayBars(chartCategories.length, {
-            compact: isMobileStack || overview,
-          })}
-          showLegend={headingMode !== "widget" && headingMode !== "overview"}
-          legendTrailing={
-            xScope != null && picked ? (
-              <div
-                key={`scope-chip-${scopeMotionKey}`}
-                className={cn(
-                  "inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-md border px-2 py-1 font-medium",
-                  farmChartUi.fsMeta,
-                  focusBandTint(focusBandActive),
-                  motionClass.farmChartScopeChipIn,
-                )}
-              >
-                {xScopeStack.length > 1 ? (
-                  <span className="shrink-0 tabular-nums opacity-80">
-                    ×{xScopeStack.length}
-                  </span>
-                ) : null}
-                {scopeYLabel ? (
-                  <span className="shrink-0 opacity-90">{scopeYLabel}</span>
-                ) : null}
-                <span className="min-w-0 truncate tabular-nums">
-                  {formatTrendScopeRangeLabel(
-                    picked.categories[xScope.start] ?? "",
-                    picked.categories[xScope.end] ?? "",
-                  )}
-                </span>
-                <button
-                  type="button"
-                  aria-label="스코프 해제"
-                  onClick={clearXScope}
-                  className={cn(
-                    "inline-flex size-5 shrink-0 items-center justify-center rounded border border-current/30",
-                    "hover:bg-black/5 dark:hover:bg-white/10",
-                    motionClass.microHover,
-                  )}
-                >
-                  ×
-                </button>
-              </div>
-            ) : null
-          }
-          legendDensity={
-            isMobileStack ||
-            !(
-              layers.ema ||
-              layers.humEma ||
-              layers.dev ||
-              layers.humDev ||
-              layers.band ||
-              layers.humBand ||
-              layers.motorCh
-            )
-              ? "core"
-              : "full"
-          }
-          scaleEdgeHitPx={isMobileStack ? chartUiPx(22) : chartUiPx(10)}
-          labelGutter={isMobileStack && !plotFill && !overview}
-          hideAxisChrome={overview}
-          showMarkers={!overview}
-          markerDensity={
-            (scoped?.categories.length ?? 0) <= 48 ? "all" : "sparse"
-          }
-          // Data dots have their own pixel size, independent of toolbar/text scale.
-          markerRadiusPx={isMobileStack ? 1.4 : 1.6}
-          animate={!overview}
-          layerClipWipe={!overview}
-          splitBandGuides={splitBandGuides}
-          scaleEdgeLabels={overview ? [] : scaleEdgeLabels}
-          rangeBands={overview ? [] : alarmRangeBands}
-          xScopeSelect={!overview}
-          onLookbackWheel={overview ? undefined : onLookbackWheel}
-          onXScopeCommit={(range) =>
-            commitXScope(range, activeGuidedXScope ? "replace" : "push", { timeOnly: comparisonActive })
-          }
-          guidedXScopeGesture={activeGuidedXScope}
-          onGuidedXScopeComplete={onGuidedXScopeComplete}
-          onXScopeBack={popXScope}
+          displayPeriod={displayPeriod}
+          alarmScopeKey={alarmScopeKey}
+          period={period}
+          layers={layers}
+          xScope={xScope}
+          scopeCategories={picked.categories}
+          xScopeStackLength={xScopeStack.length}
           scopeMotionKey={scopeMotionKey}
+          clearXScope={clearXScope}
+          onPlotWidthChange={onChartPlotWidth}
+          splitBandGuides={splitBandGuides}
+          scaleEdgeLabels={scaleEdgeLabels}
+          alarmRangeBands={alarmRangeBands}
+          onLookbackWheel={onLookbackWheel}
+          commitXScope={commitXScope}
+          activeGuidedXScope={activeGuidedXScope}
+          comparisonActive={comparisonActive}
+          onGuidedXScopeComplete={onGuidedXScopeComplete}
+          popXScope={popXScope}
           scopeMotionDir={scopeMotionDir}
-          onBreachEquipmentNavigate={
-            onScopeChange
-              ? (target) => {
-                  const next: FarmChartScope = {
-                    level: "controller",
-                    stallTyCode: target.stallTyCode,
-                    stallNo: target.stallNo,
-                    controllerKey: target.controllerKey,
-                  };
-                  if (scopesEqual(chartScope, next)) return;
-                  onScopeChange(next);
-                }
-              : undefined
-          }
-          overlayHoverMerge={overlayActive}
+          chartScope={chartScope}
+          onScopeChange={onScopeChange}
+          overlayActive={overlayActive}
           crosshairValues={crosshairValues}
         />
         </div>
