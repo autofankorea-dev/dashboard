@@ -6,7 +6,6 @@ import {
   useState,
   useRef,
   useLayoutEffect,
-  useEffect,
   useId,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
@@ -20,7 +19,6 @@ import {
   parseCategoryTimelineMs,
   trendChartTickTargetForWidth,
 } from "@/lib/farm/trend-display-buckets";
-import { SEV_COLOR } from "@/lib/farm/severity-score";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { isPrimaryPress } from "@/lib/ui/pointer-press";
 import { useClipPresence, usePresenceValue } from "@/lib/ui/use-clip-presence";
@@ -52,7 +50,6 @@ import type {
 } from "@/lib/domain/trend-chart-types";
 import {
   type HoverMetricGroup,
-  formatTrendBandEdge,
   inferHoverMetricGroup,
   isOverlayMergedHoverGroup,
   resolveBreachNavTarget,
@@ -75,25 +72,15 @@ import {
   domainFor,
   finiteValues,
   markerRadiusInViewUnits,
-  mergeOverlappingTempHumEdgeLabels,
-  nudgeEdgeLabelTops,
-  stackLeftAlarmBaselineLabels,
-  parseScaleEdgeEditSeed,
   parseScaleEdgeValueUnit,
   tipPinId,
   trendChartHasRenderableContent,
   trendPlotPadPx,
-  interpolateTimelineMsFromXView,
-  formatCrosshairClock,
-  chartDomainYFromViewY,
-  type EdgeBandLabel,
 } from "@/lib/farm/trend-chart-geometry";
 import {
   buildAxisTickViews,
   buildLeftAxisTicks,
-  collectUniqueAlarmBands,
   computeBarLayout,
-  dedupeReferenceLines,
   plotXForBar,
   plotXForIndex,
   plotXForMs,
@@ -110,13 +97,17 @@ import {
   handleScaleEdgeDoubleTap,
   hoverPairSlotDx,
   nearestByXView,
-  pickDraggableScaleEdgeHit,
   chartTipPresenceClass,
   chartBandGuideClass,
-  shouldPreferLookbackPinch,
   type PinnedTip,
 } from "./trend-chart-interaction";
 import { useTrendPinnedTips } from "./use-trend-pinned-tips";
+import { useTrendPlotSize } from "./use-trend-plot-size";
+import { useTrendLookbackGesture } from "./use-trend-lookback-gesture";
+import { useTrendPinWindowRemap } from "./use-trend-pin-window-remap";
+import { useTrendCrosshair } from "./use-trend-crosshair";
+import { useTrendScaleEdgeEdit } from "./use-trend-scale-edge-edit";
+import { useTrendEdgeBandLabels } from "./use-trend-edge-band-labels";
 import { useTrendScopeGesture } from "./use-trend-scope-gesture";
 import {
   BandGuidesLayer,
@@ -269,60 +260,29 @@ export function TrendChart({
     useTrendPinnedTips({
       resetKey: pinResetKey ?? `${period ?? ""}|${categories.length}`,
     });
-  const [edgeDragId, setEdgeDragId] = useState<string | null>(null);
-  const [edgeEdit, setEdgeEdit] = useState<{
-    id: string;
-    text: string;
-  } | null>(null);
   /** 스케일 값 칩 hover → 해당 기준선 강조 + 나머지 dim */
   const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null);
   const hoverIdxRef = useRef<number | null>(null);
   const hoverSeriesRef = useRef<string | null>(null);
   const hoverEventMarkRef = useRef<TrendEventMark | null>(null);
-  const crossVRef = useRef<SVGLineElement | null>(null);
-  const crossHRef = useRef<SVGLineElement | null>(null);
-  const crossChipRef = useRef<HTMLDivElement | null>(null);
-  const crossChipTimeRef = useRef<HTMLSpanElement | null>(null);
-  const crossChipTempRef = useRef<HTMLSpanElement | null>(null);
-  const crossChipHumRef = useRef<HTMLSpanElement | null>(null);
-  const crossChipMotorRef = useRef<HTMLSpanElement | null>(null);
-  const crossChipOtherRef = useRef<HTMLSpanElement | null>(null);
-  const lastCrosshairRef = useRef({ x: 0, y: 0, on: false });
   const tipRef = useRef<HTMLDivElement | null>(null);
   const lastAnchorRef = useRef({ x: 0, y: 0, w: 1, h: 1 });
-  const plotRef = useRef<HTMLDivElement | null>(null);
   const pinClickArmRef = useRef<{
     x: number;
     y: number;
     pointerId: number;
   } | null>(null);
-  /** 2손가락 룩백 핀치 중 — X스코프 draft 재진입·커밋 방지 */
-  const lookbackPinchActiveRef = useRef(false);
-  const [plotPx, setPlotPx] = useState({ w: 1, h: 1 });
-  const plotWidthNotifyRef = useRef(0);
+  const { plotRef, plotPx } = useTrendPlotSize({
+    fillParent,
+    height,
+    categoriesLength: categories.length,
+    seriesLength: series.length,
+    onPlotWidthChange,
+  });
   const glowFilterId = `tc-glow-${useId().replace(/:/g, "")}`;
   /** 기간 변경 시만 plot wipe — 카테고리 trim/X스코프는 remount 금지 */
   const plotEnterKey = animate ? String(period ?? "p") : "static";
 
-  const edgeDragRef = useRef<{
-    id: string;
-    axis: TrendAxis;
-  } | null>(null);
-  const labelDragArmRef = useRef<{
-    id: string;
-    axis: TrendAxis;
-    value: number;
-    x: number;
-    y: number;
-    pointerId: number;
-    pointerType: string;
-  } | null>(null);
-  const scaleEdgeTapRef = useRef<{
-    id: string;
-    t: number;
-    x: number;
-    y: number;
-  } | null>(null);
   const plotEmptyTapRef = useRef<{ t: number; x: number; y: number } | null>(
     null,
   );
@@ -361,47 +321,6 @@ export function TrendChart({
     (g) => String(g.i),
     { enabled: clipWipeEnabled },
   );
-
-  useLayoutEffect(() => {
-    const el = plotRef.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
-    let tid = 0;
-    const apply = (size?: { width: number; height: number }) => {
-      const run = () => {
-        // SVG coordinates use layout pixels. Ancestor expand transforms affect
-        // getBoundingClientRect(), but must not affect the viewBox or dot size.
-        const rect = size ?? { width: el.clientWidth, height: el.clientHeight };
-        if (rect.width > 0 && rect.height > 0) {
-          setPlotPx((prev) =>
-            Math.abs(prev.w - rect.width) < 0.5 &&
-            Math.abs(prev.h - rect.height) < 0.5
-              ? prev
-              : { w: rect.width, h: rect.height },
-          );
-          if (Math.abs(plotWidthNotifyRef.current - rect.width) >= 4) {
-            plotWidthNotifyRef.current = rect.width;
-            onPlotWidthChange?.(rect.width);
-          }
-        }
-      };
-      if (fillParent) {
-        run();
-        return;
-      }
-      window.clearTimeout(tid);
-      tid = window.setTimeout(run, 100);
-    };
-    apply();
-    const ro = new ResizeObserver((entries) => {
-      const entry = entries.find((item) => item.target === el);
-      if (entry) apply(entry.contentRect);
-    });
-    ro.observe(el);
-    return () => {
-      window.clearTimeout(tid);
-      ro.disconnect();
-    };
-  }, [fillParent, height, categories.length, series.length, onPlotWidthChange]);
 
   const hasAny = trendChartHasRenderableContent({
     series,
@@ -494,201 +413,53 @@ export function TrendChart({
   const xAtIndex = (i: number): number =>
     mode === "bar" ? xForBar(i) : xFor(i);
 
-  // 윈도우(줌) 도메인이 바뀌면 고정 카드를 재배치한다 (layout — 렌더 중 setState 금지).
-  // - 새 구간 밖(atMs 범위 밖) → 닫기
-  // - 새 구간 안 → 새 도메인 기준으로 앵커(nx/ny/idx) 재계산 (드래그 오프셋 초기화)
-  const winSig =
-    mode === "bar" || !timeAxisMs || timeAxisMs.length !== n || n < 1
-      ? ""
-      : `${timeAxisMs[0]}|${timeAxisMs[n - 1]}|${n}`;
-  const winSigSeenRef = useRef(winSig);
-  useLayoutEffect(() => {
-    if (winSigSeenRef.current === winSig) return;
-    winSigSeenRef.current = winSig;
-    setPinnedTips((prev) => {
-      if (prev.length === 0) return prev;
-      if (winSig === "" || !timeAxisMs) return prev;
-      const tLo = Math.min(timeAxisMs[0]!, timeAxisMs[n - 1]!);
-      const tHi = Math.max(timeAxisMs[0]!, timeAxisMs[n - 1]!);
-      const remapPinToWindow = (p: PinnedTip): PinnedTip | null => {
-        if (p.atMs == null) return p;
-        if (p.atMs < tLo || p.atMs > tHi) return null;
-        let bestIdx = 0;
-        let bestD = Infinity;
-        for (let i = 0; i < n; i++) {
-          const ti = timeAxisMs[i];
-          if (ti == null) continue;
-          const d = Math.abs(ti - p.atMs);
-          if (d < bestD) {
-            bestD = d;
-            bestIdx = i;
-          }
-        }
-        if (p.eventMark) {
-          const xView = xForMs(p.atMs);
-          if (xView == null) return null;
-          const rows = eventLane ? Math.max(1, eventLane.rowLabels.length) : 1;
-          const row = Math.min(rows - 1, Math.max(0, p.eventMark.row));
-          const yView =
-            eventLaneH > 0
-              ? eventLaneTop + ((row + 0.5) / rows) * eventLaneH
-              : p.ny * chartH;
-          return {
-            ...p,
-            idx: 0,
-            nx: xView / viewW,
-            ny: yView / chartH,
-            ox: 0,
-            oy: 0,
-          };
-        }
-        const s = series.find((x) => x.name === p.seriesKey);
-        if (s) {
-          const v = s.data[bestIdx];
-          if (v == null || !Number.isFinite(v)) return null;
-          return {
-            ...p,
-            idx: bestIdx,
-            nx: xAtIndex(bestIdx) / viewW,
-            ny: yFor(v, s.axis ?? "left") / chartH,
-            ox: 0,
-            oy: 0,
-          };
-        }
-        const hi = histograms.findIndex(
-          (h, i) => (h.legendLabel ?? `hist-${i}`) === p.seriesKey,
-        );
-        if (hi >= 0) {
-          const h = histograms[hi]!;
-          const v = h.values[bestIdx];
-          if (v == null || !Number.isFinite(v)) return null;
-          return {
-            ...p,
-            idx: bestIdx,
-            nx: xAtIndex(bestIdx) / viewW,
-            ny: yFor(v, "left") / chartH,
-            ox: 0,
-            oy: 0,
-          };
-        }
-        return { ...p, idx: bestIdx, nx: xAtIndex(bestIdx) / viewW, ox: 0, oy: 0 };
-      };
-      const out: PinnedTip[] = [];
-      for (const p of prev) {
-        const r = remapPinToWindow(p);
-        if (r) out.push(r);
-      }
-      return out;
-    });
-    // winSig가 바뀐 렌더의 기하를 쓴다. series identity를 dep에 넣으면 재진입 루프가 난다.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- winSig is the window trigger
-  }, [winSig]);
+  useTrendPinWindowRemap({
+    mode,
+    n,
+    timeAxisMs,
+    series,
+    histograms,
+    eventLane,
+    eventLaneH,
+    eventLaneTop,
+    chartH,
+    viewW,
+    xForMs,
+    xAtIndex,
+    yFor,
+    setPinnedTips,
+  });
 
-  const CROSSHAIR_CHIP_GAP_PX = 8;
-
-  const setCrosshairChipVisible = (visible: boolean) => {
-    if (crossChipRef.current) {
-      crossChipRef.current.style.opacity = visible ? "1" : "0";
-    }
-  };
-
-  const setPartText = (node: HTMLSpanElement | null, text: string | null) => {
-    if (!node) return;
-    if (text) {
-      node.textContent = text;
-      node.style.display = "";
-    } else {
-      node.textContent = "";
-      node.style.display = "none";
-    }
-  };
-
-  const fillCrosshairChip = (xView: number, yView: number) => {
-    const el = crossChipRef.current;
-    if (!el) return;
-    lastCrosshairRef.current = { x: xView, y: yView, on: true };
-
-    const ms = interpolateTimelineMsFromXView(
-      xView,
-      padL,
-      innerW,
-      timeAxisMs,
-      n,
-    );
-    let timeLabel = "";
-    if (ms != null) {
-      timeLabel = formatCrosshairClock(ms, { withDate: period !== "24h" });
-    } else if (n > 0) {
-      const u = Math.min(1, Math.max(0, (xView - padL) / Math.max(innerW, 1)));
-      const i = n <= 1 ? 0 : Math.round(u * (n - 1));
-      timeLabel = categories[i] ?? "";
-    }
-    setPartText(crossChipTimeRef.current, timeLabel || null);
-
-    const chartY = chartDomainYFromViewY(yView, PAD_TOP, innerH, [lMin, lMax]);
-    let tempC: number | null = null;
-    let humidityPct: number | null = null;
-    let motorPct: number | null = null;
-    let other: string | null = null;
-    if (chartY != null) {
-      if (crosshairValues) {
-        const v = crosshairValues(chartY);
-        tempC = v?.tempC ?? null;
-        humidityPct = v?.humidityPct ?? null;
-        motorPct = v?.motorPct ?? null;
-      } else if (leftUnit === "℃") {
-        tempC = chartY;
-      } else if (leftUnit) {
-        other = formatTrendBandEdge(chartY, leftUnit);
-      }
-    }
-    setPartText(
-      crossChipTempRef.current,
-      tempC != null ? formatTrendBandEdge(tempC, "℃") : null,
-    );
-    setPartText(
-      crossChipHumRef.current,
-      humidityPct != null ? formatTrendBandEdge(humidityPct, "%") : null,
-    );
-    setPartText(
-      crossChipMotorRef.current,
-      motorPct != null ? formatTrendBandEdge(motorPct, "%") : null,
-    );
-    setPartText(crossChipOtherRef.current, other);
-
-    const plotW = plotRef.current?.getBoundingClientRect().width || plotPx.w || 1;
-    const xPx = (xView / Math.max(viewW, 1)) * plotW;
-    const padLPx = (padL / Math.max(viewW, 1)) * plotW;
-    const chipW = el.offsetWidth || 96;
-    const flip = xPx - padLPx < chipW + CROSSHAIR_CHIP_GAP_PX;
-    el.style.left = `${(xView / Math.max(viewW, 1)) * 100}%`;
-    el.style.top = `${(yView / Math.max(chartH, 1)) * 100}%`;
-    el.style.transform = flip
-      ? `translate(${CROSSHAIR_CHIP_GAP_PX}px, -50%)`
-      : `translate(calc(-100% - ${CROSSHAIR_CHIP_GAP_PX}px), -50%)`;
-  };
-
-  const setCrosshairVisible = (visible: boolean) => {
-    const op = visible ? "1" : "0";
-    if (crossVRef.current) crossVRef.current.style.opacity = op;
-    if (crossHRef.current) crossHRef.current.style.opacity = op;
-    if (!visible) {
-      lastCrosshairRef.current.on = false;
-      setCrosshairChipVisible(false);
-    }
-  };
-
-  const setCrosshairAt = (xView: number, yView: number) => {
-    if (crossVRef.current) {
-      crossVRef.current.setAttribute("x1", String(xView));
-      crossVRef.current.setAttribute("x2", String(xView));
-    }
-    if (crossHRef.current) {
-      crossHRef.current.setAttribute("y1", String(yView));
-      crossHRef.current.setAttribute("y2", String(yView));
-    }
-    setCrosshairVisible(true);
-  };
+  const {
+    crossVRef,
+    crossHRef,
+    crossChipRef,
+    crossChipTimeRef,
+    crossChipTempRef,
+    crossChipHumRef,
+    crossChipMotorRef,
+    crossChipOtherRef,
+    setCrosshairChipVisible,
+    fillCrosshairChip,
+    setCrosshairVisible,
+    setCrosshairAt,
+  } = useTrendCrosshair({
+    plotRef,
+    plotW: plotPx.w,
+    viewW,
+    chartH,
+    padL,
+    innerW,
+    innerH,
+    n,
+    timeAxisMs,
+    categories,
+    period,
+    leftDomain: [lMin, lMax],
+    leftUnit,
+    crosshairValues,
+    hoverActive: hoverIdx != null || Boolean(hoverEventMark),
+  });
 
   /** 데이터 점 근처 · 플롯 안 · 포인터/점을 가리지 않게 카드 배치 */
   const placeTipNear = (
@@ -968,6 +739,34 @@ export function TrendChart({
     setCrosshairVisible(false);
   };
 
+  const {
+    edgeDragId,
+    setEdgeDragId,
+    edgeEdit,
+    setEdgeEdit,
+    edgeDragRef,
+    labelDragArmRef,
+    scaleEdgeTapRef,
+    domainValueFromYView,
+    hitDraggableScaleEdge,
+    emitScaleEdgeDrag,
+    beginScaleEdgeEdit,
+    cancelScaleEdgeEdit,
+    commitScaleEdgeEdit,
+    endScaleEdgeDrag,
+  } = useTrendScaleEdgeEdit({
+    scaleEdgeLabels,
+    scaleEdgeHitPx,
+    chartH,
+    innerH,
+    leftDomain: [lMin, lMax],
+    rightDomain: [rMin, rMax],
+    yFor,
+    onScaleEdgeDrag,
+    onScaleEdgeNumericCommit,
+    clearHover,
+  });
+
   const indexFromXView = (xView: number): number => {
     if (n <= 1) return 0;
     const u = (xView - padL) / innerW;
@@ -1042,167 +841,17 @@ export function TrendChart({
     yViewFromClient,
     clearHover,
   });
-  const cancelXScopeRef = useRef(onXScopePointerCancel);
-  useEffect(() => {
-    cancelXScopeRef.current = onXScopePointerCancel;
-  }, [onXScopePointerCancel]);
-
-  useEffect(() => {
-    const el = plotRef.current;
-    if (!el || !onLookbackWheel) return;
-    const pinchFactor = 1.18;
-    /** 휠: X스코프·편집 중에는 막음. 핀치: draft는 진입 시 취소하므로 편집만 막음. */
-    const wheelBlocked = () =>
-      edgeEdit != null ||
-      edgeDragRef.current != null ||
-      labelDragArmRef.current != null ||
-      Boolean(xScopeDraggingRef.current) ||
-      xDraftRef.current != null;
-    const pinchBlocked = () =>
-      edgeEdit != null ||
-      edgeDragRef.current != null ||
-      labelDragArmRef.current != null;
-
-    const yieldToLookbackPinch = () => {
-      lookbackPinchActiveRef.current = true;
-      pinClickArmRef.current = null;
-      cancelXScopeRef.current();
-    };
-
-    const onWheel = (e: WheelEvent) => {
-      if (e.ctrlKey || e.metaKey) return;
-      if (wheelBlocked()) return;
-      e.preventDefault();
-      onLookbackWheel(e.deltaY > 0 ? 1 : -1);
-    };
-
-    let pinchDist = 0;
-    const dist = (touches: TouchList) => {
-      if (touches.length < 2) return 0;
-      const a = touches.item(0);
-      const b = touches.item(1);
-      if (!a || !b) return 0;
-      return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
-    };
-    const onTouchStart = (e: TouchEvent) => {
-      if (!shouldPreferLookbackPinch(e.touches.length)) return;
-      yieldToLookbackPinch();
-      pinchDist = dist(e.touches);
-    };
-    const onTouchMove = (e: TouchEvent) => {
-      if (!shouldPreferLookbackPinch(e.touches.length) || pinchBlocked()) return;
-      if (xDraftRef.current != null || xScopeDraggingRef.current) {
-        yieldToLookbackPinch();
-      }
-      const d = dist(e.touches);
-      if (!(pinchDist > 0) || !(d > 0)) {
-        pinchDist = d;
-        return;
-      }
-      const ratio = d / pinchDist;
-      if (ratio >= pinchFactor) {
-        e.preventDefault();
-        pinchDist = d;
-        onLookbackWheel(-1);
-      } else if (ratio <= 1 / pinchFactor) {
-        e.preventDefault();
-        pinchDist = d;
-        onLookbackWheel(1);
-      }
-    };
-    const onTouchEnd = (e: TouchEvent) => {
-      if (shouldPreferLookbackPinch(e.touches.length)) return;
-      lookbackPinchActiveRef.current = false;
-      pinchDist = 0;
-    };
-
-    el.addEventListener("wheel", onWheel, { passive: false });
-    el.addEventListener("touchstart", onTouchStart, { passive: true });
-    el.addEventListener("touchmove", onTouchMove, { passive: false });
-    el.addEventListener("touchend", onTouchEnd);
-    el.addEventListener("touchcancel", onTouchEnd);
-    return () => {
-      el.removeEventListener("wheel", onWheel);
-      el.removeEventListener("touchstart", onTouchStart);
-      el.removeEventListener("touchmove", onTouchMove);
-      el.removeEventListener("touchend", onTouchEnd);
-      el.removeEventListener("touchcancel", onTouchEnd);
-    };
-  }, [onLookbackWheel, edgeEdit, xDraftRef, xScopeDraggingRef]);
-
-  const domainValueFromYView = (yView: number, axis: TrendAxis): number => {
-    const [mn, mx] = axis === "right" ? [rMin, rMax] : [lMin, lMax];
-    if (innerH <= 0) return (mn + mx) / 2;
-    const t = 1 - (yView - PAD_TOP) / innerH;
-    return mn + Math.min(1, Math.max(0, t)) * (mx - mn);
-  };
-
-  const hitDraggableScaleEdge = (
-    clientY: number,
-    rect: DOMRect,
-  ): { id: string; axis: TrendAxis; value: number } | null => {
-    if (!onScaleEdgeDrag && !onScaleEdgeNumericCommit) return null;
-    return pickDraggableScaleEdgeHit(
-      scaleEdgeLabels,
-      clientY - rect.top,
-      yFor,
-      chartH,
-      rect.height,
-      scaleEdgeHitPx,
-    );
-  };
-
-  const emitScaleEdgeDrag = (
-    id: string,
-    value: number,
-    phase: ScaleEdgeDragEvent["phase"],
-  ) => {
-    onScaleEdgeDrag?.({ id, value, phase });
-  };
-
-  const beginScaleEdgeEdit = (guideId: string) => {
-    if (!onScaleEdgeNumericCommit) return;
-    const guide = scaleEdgeLabels.find((g) => g.id === guideId);
-    if (!guide?.draggable) return;
-    if (edgeDragRef.current) {
-      endScaleEdgeDrag("cancel");
-    }
-    labelDragArmRef.current = null;
-    scaleEdgeTapRef.current = null;
-    setEdgeEdit({
-      id: guideId,
-      text: parseScaleEdgeEditSeed(guide),
-    });
-    clearHover();
-  };
-
-  const cancelScaleEdgeEdit = () => {
-    setEdgeEdit(null);
-  };
-
-  const commitScaleEdgeEdit = () => {
-    if (!edgeEdit || !onScaleEdgeNumericCommit) {
-      setEdgeEdit(null);
-      return;
-    }
-    const parsed = Number(edgeEdit.text.trim());
-    if (!Number.isFinite(parsed)) {
-      setEdgeEdit(null);
-      return;
-    }
-    const id = edgeEdit.id;
-    setEdgeEdit(null);
-    onScaleEdgeNumericCommit({ id, value: parsed });
-  };
-
-  const endScaleEdgeDrag = (phase: "end" | "cancel") => {
-    const cur = edgeDragRef.current;
-    if (!cur) return;
-    const guide = scaleEdgeLabels.find((g) => g.id === cur.id);
-    emitScaleEdgeDrag(cur.id, guide?.value ?? 0, phase);
-    edgeDragRef.current = null;
-    setEdgeDragId(null);
-  };
+  const { lookbackPinchActiveRef } = useTrendLookbackGesture({
+    plotRef,
+    onLookbackWheel,
+    edgeEdit,
+    edgeDragRef,
+    labelDragArmRef,
+    xDraftRef,
+    xScopeDraggingRef,
+    pinClickArmRef,
+    onXScopePointerCancel,
+  });
 
   const onPlotPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (!isPrimaryPress(e)) return;
@@ -1565,17 +1214,6 @@ export function TrendChart({
     placeTipNear(a.x, a.y, a.w, a.h);
   }, [hoverIdx, hoverEventMark]);
 
-  useLayoutEffect(() => {
-    if (hoverIdx != null || hoverEventMark) {
-      setCrosshairChipVisible(false);
-      return;
-    }
-    const last = lastCrosshairRef.current;
-    if (!last.on) return;
-    fillCrosshairChip(last.x, last.y);
-    setCrosshairChipVisible(true);
-  });
-
   const markerStride =
     markerDensity === "sparse" ? Math.max(1, Math.ceil(n / 8)) : 1;
   const shouldShowMarker = (i: number) => {
@@ -1600,144 +1238,24 @@ export function TrendChart({
     [axisTicks, innerW, padL, period, viewW],
   );
 
-  /** 알람/한계 점선 — 동일 axis·밴드 1회. */
-  const uniqueAlarmBands = useMemo(
-    () => collectUniqueAlarmBands(series, rangeBands),
-    [series, rangeBands],
-  );
-
-  const alarmFillBands = useMemo(
-    () => uniqueAlarmBands.filter((b) => b.fillWindow !== false),
-    [uniqueAlarmBands],
-  );
-  const alarmPresence = useClipPresence(
-    alarmFillBands,
-    (b) =>
-      b.id ??
-      `${b.axis}:${Number(b.band.lo).toFixed(3)}:${Number(b.band.hi).toFixed(3)}`,
-    { enabled: clipWipeEnabled },
-  );
-
-  /** referenceLines 중 알람 band 모서리와 중복되는 점선 제거. */
-  const dedupedReferenceLines = useMemo(
-    () => dedupeReferenceLines(referenceLines, uniqueAlarmBands),
-    [referenceLines, uniqueAlarmBands],
-  );
-
-  const unitForAxis = (axis: TrendAxis) =>
-    axis === "right" ? rightUnit : leftUnit;
-
-  /**
-   * 한계(점선) 끝단 라벨
-   * - 단일 Y: 좌끝 / 이중 Y: 축별 좌·우끝 (상한 위선·하한 아래선)
-   */
-  const edgeBandLabels = useMemo(() => {
-    if (mode !== "line") return [] as EdgeBandLabel[];
-    const out: EdgeBandLabel[] = [];
-    const seriesColorForAxis = (axis: TrendAxis): string | null => {
-      const match = series.find((s) => (s.axis ?? "left") === axis);
-      return match?.color ?? null;
-    };
-    const sideForLimit = (axis: TrendAxis): "left" | "right" => {
-      if (usesRight) return axis === "right" ? "right" : "left";
-      return "left";
-    };
-    const colorForLimit = (axis: TrendAxis): string => {
-      if (usesRight) {
-        return seriesColorForAxis(axis) ?? SEV_COLOR.warning;
-      }
-      return SEV_COLOR.warning;
-    };
-    uniqueAlarmBands.forEach(({ band, axis, fillWindow }, idx) => {
-      if (fillWindow) return;
-      const unit = unitForAxis(axis);
-      const side = sideForLimit(axis);
-      const color = colorForLimit(axis);
-      for (const edge of ["hi", "lo"] as const) {
-        const value = band[edge];
-        const y = yFor(value, axis);
-        if (!Number.isFinite(y)) continue;
-        out.push({
-          id: `alarm-${idx}-${axis}-${edge}-${value}`,
-          side,
-          topPct: (y / chartH) * 100,
-          text: formatTrendBandEdge(value, unit),
-          color,
-          title: `한계 ${edge === "hi" ? "상한" : "하한"}`,
-          mark: edge === "hi" ? "overline" : "underline",
-        });
-      }
+  const { alarmPresence, dedupedReferenceLines, edgeBandLabels } =
+    useTrendEdgeBandLabels({
+      mode,
+      series,
+      rangeBands,
+      referenceLines,
+      scaleEdgeLabels,
+      usesRight,
+      leftUnit,
+      rightUnit,
+      chartH,
+      innerH,
+      leftDomain: [lMin, lMax],
+      rightDomain: [rMin, rMax],
+      editingEdgeId: edgeEdit?.id,
+      overlayHoverMerge,
+      clipWipeEnabled,
     });
-    for (const ref of dedupedReferenceLines) {
-      if (ref.hideLabel) continue;
-      const axis = ref.axis ?? "left";
-      const y = yFor(ref.value, axis);
-      if (!Number.isFinite(y)) continue;
-      const [mn, mx] = axis === "right" ? [rMin, rMax] : [lMin, lMax];
-      const mid = (mn + mx) / 2;
-      out.push({
-        id: `ref-${axis}-${ref.value}`,
-        side: sideForLimit(axis),
-        topPct: (y / chartH) * 100,
-        text:
-          ref.label?.trim() ||
-          formatTrendBandEdge(ref.value, unitForAxis(axis)),
-        color: usesRight
-          ? seriesColorForAxis(axis) ?? ref.color
-          : ref.color,
-        title: "한계",
-        mark: ref.value >= mid ? "overline" : "underline",
-      });
-    }
-    for (const guide of scaleEdgeLabels) {
-      if (guide.hideLabel && edgeEdit?.id !== guide.id) continue;
-      const axis = guide.axis ?? "left";
-      const y = yFor(guide.value, axis);
-      if (!Number.isFinite(y)) continue;
-      out.push({
-        id: guide.id,
-        side: guide.side ?? "right",
-        topPct: (y / chartH) * 100,
-        text: guide.text,
-        leadingText: guide.leadingText,
-        color: guide.color,
-        title: guide.title ?? guide.text,
-        mark: guide.mark,
-        draggable: Boolean(guide.draggable),
-        editValue: guide.editValue,
-        labelLane: guide.labelLane ?? "outer",
-        showApplyActions: Boolean(guide.showApplyActions),
-        labelIcon: guide.labelIcon,
-      });
-    }
-    return nudgeEdgeLabelTops(
-      stackLeftAlarmBaselineLabels(
-        mergeOverlappingTempHumEdgeLabels(out, 5.5),
-        8.5,
-        overlayHoverMerge,
-      ),
-      5.5,
-    );
-    // yFor/chartH are stable for given domains+height
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- yFor closes over domain/size
-  }, [
-    mode,
-    usesRight,
-    series,
-    uniqueAlarmBands,
-    dedupedReferenceLines,
-    scaleEdgeLabels,
-    leftUnit,
-    rightUnit,
-    chartH,
-    lMin,
-    lMax,
-    rMin,
-    rMax,
-    innerH,
-    edgeEdit?.id,
-    overlayHoverMerge,
-  ]);
 
   /** hover 중인 스케일 칩(강조 대상). 없으면 dim 미적용 */
   const hoveredEdge =
