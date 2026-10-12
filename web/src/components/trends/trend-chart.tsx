@@ -1,107 +1,35 @@
 "use client";
 
-import {
-  useMemo,
-  useState,
-  useRef,
-  useId,
-  type MouseEvent as ReactMouseEvent,
-  type PointerEvent as ReactPointerEvent,
-} from "react";
 import { cn } from "@/lib/utils";
-import {
-  buildTrendAxisMarks,
-  parseCategoryTimelineMs,
-  trendChartTickTargetForWidth,
-} from "@/lib/farm/trend-display-buckets";
-import { isPrimaryPress } from "@/lib/ui/pointer-press";
-import { useClipPresence, usePresenceValue } from "@/lib/ui/use-clip-presence";
-import { motionDuration } from "@/lib/ui/motion-tokens";
-
 import type {
-  TrendAxis,
-  TrendSeries,
-  TrendSpreadContributor,
-  TrendBreachNavTarget,
-  TrendSpreadExtremes,
-  TrendEnvelopePolyPoint,
-  TrendEnvelope,
-  TrendHistogram,
-  TrendReferenceLine,
-  TrendScaleEdgeLabel,
-  TrendRangeBand,
   ScaleEdgeDragEvent,
   ScaleEdgeNumericCommitEvent,
+  TrendAxis,
+  TrendBreachNavTarget,
+  TrendCommandSettingSeg,
+  TrendEnvelope,
+  TrendEnvelopePolyPoint,
   TrendEventLane,
   TrendEventMark,
-  TrendCommandSettingSeg,
+  TrendHistogram,
+  TrendRangeBand,
+  TrendReferenceLine,
+  TrendScaleEdgeLabel,
+  TrendSeries,
+  TrendSpreadContributor,
+  TrendSpreadExtremes,
 } from "@/lib/domain/trend-chart-types";
-import {
-  inferHoverMetricGroup,
-  isOverlayMergedHoverGroup,
-  resolveBreachNavTarget,
-  TREND_Y_LABEL_CHIP_SAMPLE,
-} from "@/lib/farm/trend-chart-format";
-import {
-  PAD_TOP,
-  PAD_BOTTOM,
-  VIEW_W_NORM,
-  SCALE_EDGE_HIT_PX,
-  SCALE_EDGE_LABEL_DRAG_PX,
-  bindTrendPlotPaths,
-  collectTrendNullGapRanges,
-  domainFor,
-  finiteValues,
-  markerRadiusInViewUnits,
-  tipPinId,
-  trendChartHasRenderableContent,
-  trendPlotPadPx,
-} from "@/lib/farm/trend-chart-geometry";
-import {
-  buildAxisTickViews,
-  buildLeftAxisTicks,
-  computeBarLayout,
-  plotXForBar,
-  plotXForIndex,
-  plotXForMs,
-  plotYForValue,
-  positionCommandSettingHits,
-  positionEventMarks,
-  type TrendPlotXScale,
-} from "@/lib/farm/trend-chart-layout";
-import {
-  MAX_PINNED_TIPS,
-  PIN_CLICK_SLOP_PX,
-  SCALE_EDGE_DOUBLE_TAP_MS,
-  SCALE_EDGE_DOUBLE_TAP_SLOP_PX,
-  handleScaleEdgeDoubleTap,
-  type PinnedTip,
-} from "./trend-chart-interaction";
-import { useTrendPinnedTips } from "./use-trend-pinned-tips";
-import { useTrendPlotSize } from "./use-trend-plot-size";
-import { useTrendLookbackGesture } from "./use-trend-lookback-gesture";
-import { useTrendPinWindowRemap } from "./use-trend-pin-window-remap";
-import { useTrendCrosshair } from "./use-trend-crosshair";
-import { useTrendScaleEdgeEdit } from "./use-trend-scale-edge-edit";
-import { useTrendEdgeBandLabels } from "./use-trend-edge-band-labels";
-import { useTrendHover } from "./use-trend-hover";
-import { TrendChartHoverCard } from "./trend-chart-hover-card";
-import { useTrendScopeGesture } from "./use-trend-scope-gesture";
-import { type TrendPlotGeom } from "./trend-chart-svg-layers";
-import {
-  CommandSettingHitOverlay,
-  EventLaneHtmlOverlay,
-} from "./trend-chart-event-lane";
+import { PAD_TOP } from "@/lib/farm/trend-chart-geometry";
 import { TrendChartLegend } from "./trend-chart-legend";
-import { TrendChartPlotSvg } from "./trend-chart-plot-svg";
+import { TrendChartPlotBody } from "./trend-chart-plot-body";
+import { createTrendChartPlotPointer } from "./trend-chart-plot-pointer";
 import { TrendChartXAxis } from "./trend-chart-x-axis";
-import { TrendChartCrosshairChip } from "./trend-chart-crosshair-chip";
-import { TrendChartYAxis } from "./trend-chart-y-axis";
-import { TrendChartEdgeLabels } from "./trend-chart-edge-labels";
-import { TrendChartPinnedCards } from "./trend-chart-pinned-cards";
 import type { TrendChartProps } from "./trend-chart-props";
-import { findTrendDataPointHit } from "./trend-chart-hit";
-import { resolveTrendHoverCardLive } from "./trend-chart-hover-live";
+import { useTrendChartDecor } from "./use-trend-chart-decor";
+import { useTrendChartModel } from "./use-trend-chart-model";
+import { useTrendLookbackGesture } from "./use-trend-lookback-gesture";
+import { useTrendScaleEdgeEdit } from "./use-trend-scale-edge-edit";
+import { useTrendScopeGesture } from "./use-trend-scope-gesture";
 
 export type {
   TrendAxis,
@@ -123,328 +51,60 @@ export type {
 };
 export type { TrendChartProps };
 
-
-
-export function TrendChart({
-  mode,
-  categories,
-  series,
-  height = 132,
-  leftUnit = "",
-  rightUnit = "",
-  leftDomain,
-  rightDomain,
-  yAxisTicks = "full",
-  referenceLines = [],
-  scaleEdgeLabels = [],
-  yGutterStartCaption,
-  yGutterEndCaption,
-  rangeBands = [],
-  envelopes = [],
-  histograms = [],
-  emptyLabel = "데이터 없음",
-  tickEvery,
-  period,
-  barWidthCapPct,
-  showLegend = true,
-  legendTrailing = null,
-  legendDensity = "full",
-  scaleEdgeHitPx = SCALE_EDGE_HIT_PX,
-  labelGutter = false,
-  hideAxisChrome = false,
-  showMarkers = true,
-  markerDensity = "all",
-  markerRadiusPx = 3,
-  animate = false,
-  layoutKey: _layoutKey,
-  layerClipWipe,
-  splitBandGuides = [],
-  showNullGaps = false,
-  coverageBands = [],
-  xScopeSelect = false,
-  onLookbackWheel,
-  onXScopeCommit,
-  guidedXScopeGesture = null,
-  onGuidedXScopeComplete,
-  onXScopeBack,
-  scopeMotionKey = 0,
-  scopeMotionDir = "in",
-  onPlotDoubleClick,
-  onPlotBackgroundContextMenu,
-  onBreachEquipmentNavigate,
-  onScaleEdgeDrag,
-  onScaleEdgeNumericCommit,
-  onScaleEdgeApply,
-  onScaleEdgeRevert,
-  scaleEdgeApplyBusy = false,
-  scaleEdgeApplyDisabled = false,
-  overlayHoverMerge = false,
-  crosshairValues,
-  onPlotWidthChange,
-  fillParent = false,
-  eventLane = null,
-  eventLaneHeight = 0,
-  commandSettingSegs = [],
-  pinResetKey,
-}: TrendChartProps) {
-  void _layoutKey;
-  void tickEvery;
-  const clipWipeEnabled = layerClipWipe ?? animate;
-  /** 호버 — 인덱스 변경 시에만 setState (mousemove 전량 리렌더 방지) */
+export function TrendChart(props: TrendChartProps) {
+  const model = useTrendChartModel(props);
   const {
-    hoverIdx,
-    setHoverIdx,
-    hoverSeries,
-    setHoverSeries,
-    hoverEventMark,
-    setHoverEventMark,
-    plotHovering,
-    setPlotHovering,
     hoverIdxRef,
     hoverSeriesRef,
     hoverEventMarkRef,
-    tipRef,
-    lastAnchorRef,
-    placeTipNear,
-  } = useTrendHover();
-  /** 고정 카드 실측 크기(px) — 배치·점선 앵커 정확도용 (id별) */
-  const [pinCardSizes, setPinCardSizes] = useState<
-    Record<string, { w: number; h: number }>
-  >({});
-  /** 클릭으로 고정한 비교용 데이터 카드 (다중) — 상태·리셋·외부클릭 해제는 훅에서 */
-  const { pinnedTips, setPinnedTips, bringPinToFront, chartRootRef } =
-    useTrendPinnedTips({
-      resetKey: pinResetKey ?? `${period ?? ""}|${categories.length}`,
-    });
-  /** 스케일 값 칩 hover → 해당 기준선 강조 + 나머지 dim */
-  const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null);
-  const pinClickArmRef = useRef<{
-    x: number;
-    y: number;
-    pointerId: number;
-  } | null>(null);
-  const { plotRef, plotPx } = useTrendPlotSize({
-    fillParent,
-    height,
-    categoriesLength: categories.length,
-    seriesLength: series.length,
-    onPlotWidthChange,
-  });
-  const glowFilterId = `tc-glow-${useId().replace(/:/g, "")}`;
-  /** 기간 변경 시만 plot wipe — 카테고리 trim/X스코프는 remount 금지 */
-  const plotEnterKey = animate ? String(period ?? "p") : "static";
-
-  const plotEmptyTapRef = useRef<{ t: number; x: number; y: number } | null>(
-    null,
-  );
-  const plotTouchDoubleTapLockRef = useRef(false);
-  const pinCardDragRef = useRef<{
-    id: string;
-    pointerId: number;
-    startX: number;
-    startY: number;
-    origOx: number;
-    origOy: number;
-  } | null>(null);
-
-  const seriesPresence = useClipPresence(series, (s) => s.name, {
-    enabled: clipWipeEnabled,
-  });
-  const histPresence = useClipPresence(
-    histograms,
-    (h) =>
-      `${h.legendLabel ?? "hist"}:${h.groupIndex ?? 0}:${h.style ?? "macd"}`,
-    { enabled: clipWipeEnabled },
-  );
-  const envelopePresence = useClipPresence(
-    envelopes,
-    (e) => e.legendLabel ?? "envelope",
-    { enabled: clipWipeEnabled },
-  );
-  const pinPresence = useClipPresence(pinnedTips, (p) => p.id, {
-    enterMs: motionDuration.fast,
-    exitMs: motionDuration.exit,
-  });
-  const guidePresence = useClipPresence(
-    splitBandGuides
-      .map((gy, i) => ({ gy, i }))
-      .filter((g) => Number.isFinite(g.gy)),
-    (g) => String(g.i),
-    { enabled: clipWipeEnabled },
-  );
-
-  const hasAny = trendChartHasRenderableContent({
-    series,
-    histograms,
-    categoriesLength: categories.length,
-    eventLaneActive: Boolean(eventLane) && eventLaneHeight > 0,
-  });
-  const n = categories.length;
-  const categoryAxisKey = n > 0 ? categories.join("\0") : "";
-  const timeAxisMs = useMemo(
-    () => (mode === "bar" ? null : parseCategoryTimelineMs(categories)),
-    // 배열 identity가 아니라 라벨 내용. 매 렌더 new Date() 재파싱 방지.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- categoryAxisKey
-    [categoryAxisKey, mode],
-  );
-
-  const axisH = hideAxisChrome ? 0 : 16;
-  const yLabelColumn = fillParent && !labelGutter;
-  const chartH = fillParent
-    ? Math.max(48, plotPx.h > 8 ? plotPx.h : 48)
-    : height - axisH;
-  /** 원단위 Y축(C2) 또는 모바일 거터 */
-  const showNativeLeftAxis = Boolean(leftUnit);
-  const viewW = plotPx.w > 32 ? plotPx.w : VIEW_W_NORM;
-  const { padL, padR, innerW } = trendPlotPadPx(viewW, {
-    leftUnit: showNativeLeftAxis,
-    labelGutter,
-  });
-  const eventLaneH =
-    eventLane && eventLaneHeight > 0 ? eventLaneHeight : 0;
-  const innerH = chartH - PAD_TOP - PAD_BOTTOM - eventLaneH;
-  const eventLaneTop = PAD_TOP + innerH;
-
-  /** preserveAspectRatio=none 에서 원이 옆으로 퍼지지 않도록 viewBox rx/ry 보정 */
-  const markerRx = (rPx: number) =>
-    markerRadiusInViewUnits(rPx, viewW, plotPx.w, 32);
-  const markerRy = (rPx: number) =>
-    markerRadiusInViewUnits(rPx, chartH, plotPx.h, 8);
-
-  const usesRight = series.some((s) => s.axis === "right") || referenceLines.some((r) => r.axis === "right");
-
-  const [lMin, lMax] = domainFor(finiteValues(series, "left"), leftDomain);
-  const [rMin, rMax] = domainFor(finiteValues(series, "right"), rightDomain);
-
-  const yFor = (value: number, axis: TrendAxis): number =>
-    plotYForValue(
-      value,
-      axis === "right" ? [rMin, rMax] : [lMin, lMax],
-      innerH,
-    );
-
-  const leftAxisTicks = buildLeftAxisTicks({
-    show: !hideAxisChrome && showNativeLeftAxis,
-    domain: [lMin, lMax],
-    mode: yAxisTicks,
+    setHoverIdx,
+    setHoverSeries,
+    setHoverEventMark,
+    setCrosshairVisible,
+    scaleEdgeLabels,
+    scaleEdgeHitPx,
     chartH,
     innerH,
-    unit: leftUnit,
-  });
-
-  const xScale: TrendPlotXScale = { n, timeAxisMs, padL, innerW };
-  const xFor = (i: number): number => plotXForIndex(i, xScale);
-  const xForMs = (ms: number): number | null => plotXForMs(ms, xScale);
-
-  const positionedEventMarks = positionEventMarks(
-    eventLane,
-    { eventLaneH, eventLaneTop },
-    xForMs,
-  );
-
-  const positionedCommandHits = positionCommandSettingHits(
-    commandSettingSegs,
-    { xMin: padL, xMax: viewW - padR },
-    xForMs,
-    (value) => yFor(value, "left"),
-  );
-
-  const barLayout = computeBarLayout({
-    mode,
-    n,
-    innerW,
-    seriesCount: series.length,
-    barWidthCapPct,
-  });
-  const { barW, barSlotW } = barLayout;
-
-  const xForBar = (i: number): number =>
-    plotXForBar(i, barLayout, xScale, xFor);
-
-  const xAtIndex = (i: number): number =>
-    mode === "bar" ? xForBar(i) : xFor(i);
-
-  useTrendPinWindowRemap({
-    mode,
-    n,
-    timeAxisMs,
-    series,
-    histograms,
-    eventLane,
-    eventLaneH,
-    eventLaneTop,
-    chartH,
-    viewW,
-    xForMs,
-    xAtIndex,
+    lMin,
+    lMax,
+    rMin,
+    rMax,
     yFor,
-    setPinnedTips,
-  });
-
-  const {
-    crossVRef,
-    crossHRef,
-    crossChipRef,
-    crossChipTimeRef,
-    crossChipTempRef,
-    crossChipHumRef,
-    crossChipMotorRef,
-    crossChipOtherRef,
-    setCrosshairChipVisible,
-    fillCrosshairChip,
-    setCrosshairVisible,
-    setCrosshairAt,
-  } = useTrendCrosshair({
-    plotRef,
-    plotW: plotPx.w,
-    viewW,
-    chartH,
+    onScaleEdgeDrag,
+    onScaleEdgeNumericCommit,
+    n,
     padL,
     innerW,
-    innerH,
-    n,
-    timeAxisMs,
-    categories,
-    period,
-    leftDomain: [lMin, lMax],
-    leftUnit,
-    crosshairValues,
-    hoverActive: hoverIdx != null || Boolean(hoverEventMark),
-  });
-
-  const findDataPointHit = (
-    xPx: number,
-    yPx: number,
-    plotW: number,
-    plotH: number,
-  ) =>
-    findTrendDataPointHit({
-      xPx,
-      yPx,
-      plotW,
-      plotH,
-      markerRadiusPx,
-      eventLane: Boolean(eventLane),
-      eventLaneH,
-      eventLaneTop,
-      chartH,
-      innerW,
-      innerH,
-      n,
-      viewW,
-      mode,
-      series,
-      histograms,
-      barW,
-      barSlotW,
-      padTop: PAD_TOP,
-      yFor,
-      xFor,
-      xForBar,
-      xAtIndex,
-      markerRy,
-      positionedEventMarks,
-    });
+    viewW,
+    padR,
+    eventLaneH,
+    xScopeSelect,
+    onXScopeCommit,
+    onXScopeBack,
+    guidedXScopeGesture,
+    onGuidedXScopeComplete,
+    plotRef,
+    onLookbackWheel,
+    pinClickArmRef,
+    chartRootRef,
+    fillParent,
+    showLegend,
+    legendTrailing,
+    legendDensity,
+    series,
+    usesRight,
+    positionedCommandHits,
+    envelopes,
+    histograms,
+    coverageBands,
+    eventLane,
+    setHoveredEdgeId,
+    setPlotHovering,
+    hideAxisChrome,
+    hasAny,
+    height,
+    emptyLabel,
+  } = model;
 
   const clearHover = () => {
     hoverIdxRef.current = null;
@@ -455,23 +115,7 @@ export function TrendChart({
     setHoverEventMark(null);
     setCrosshairVisible(false);
   };
-
-  const {
-    edgeDragId,
-    setEdgeDragId,
-    edgeEdit,
-    setEdgeEdit,
-    edgeDragRef,
-    labelDragArmRef,
-    scaleEdgeTapRef,
-    domainValueFromYView,
-    hitDraggableScaleEdge,
-    emitScaleEdgeDrag,
-    beginScaleEdgeEdit,
-    cancelScaleEdgeEdit,
-    commitScaleEdgeEdit,
-    endScaleEdgeDrag,
-  } = useTrendScaleEdgeEdit({
+  const scale = useTrendScaleEdgeEdit({
     scaleEdgeLabels,
     scaleEdgeHitPx,
     chartH,
@@ -483,7 +127,12 @@ export function TrendChart({
     onScaleEdgeNumericCommit,
     clearHover,
   });
-
+  const {
+    edgeDragId,
+    edgeEdit,
+    edgeDragRef,
+    labelDragArmRef,
+  } = scale;
   const indexFromXView = (xView: number): number => {
     if (n <= 1) return 0;
     const u = (xView - padL) / innerW;
@@ -530,20 +179,7 @@ export function TrendChart({
     padL + Math.min(1, Math.max(0, r)) * innerW;
   const yViewFromRatio = (r: number) =>
     PAD_TOP + Math.min(1, Math.max(0, r)) * innerH;
-
-  const {
-    xDraft,
-    xDraftRef,
-    xScopeDraggingRef,
-    beginXScopeAt,
-    moveXScopeAt,
-    endXScopeAt,
-    onXScopePointerDown,
-    onXScopePointerMove,
-    onXScopePointerUp,
-    onXScopePointerCancel,
-    onXScopeContextMenu,
-  } = useTrendScopeGesture({
+  const scopeGesture = useTrendScopeGesture({
     xScopeSelect,
     n,
     onXScopeCommit,
@@ -558,7 +194,13 @@ export function TrendChart({
     yViewFromClient,
     clearHover,
   });
-  const { lookbackPinchActiveRef } = useTrendLookbackGesture({
+  const {
+    xDraft,
+    xDraftRef,
+    xScopeDraggingRef,
+    onXScopePointerCancel,
+  } = scopeGesture;
+  const lookback = useTrendLookbackGesture({
     plotRef,
     onLookbackWheel,
     edgeEdit,
@@ -569,443 +211,32 @@ export function TrendChart({
     pinClickArmRef,
     onXScopePointerCancel,
   });
-
-  const onPlotPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (!isPrimaryPress(e)) return;
-    if (edgeEdit) return;
-    /** 핀치 세션 중(또는 touchstart가 pointerdown보다 먼저인 경우) X스코프·핀 암 생략 */
-    if (lookbackPinchActiveRef.current) return;
-    pinClickArmRef.current = {
-      x: e.clientX,
-      y: e.clientY,
-      pointerId: e.pointerId,
-    };
-    /** 플롯 본문·명령 레인 모두 시간 줌 가능 — 알람선 전체폭 hit로 X스코프를 가로채지 않음.
-     *  알람 세로 조절은 좌·우측 숫자 라벨 더블클릭·우클릭 숫자 입력
-     *  (현재 장비 경보값을 표시).
-     *  명령 레인 유지띠 탭/드래그는 EventLaneHtmlOverlay가 처리. */
-    if (xScopeSelect) onXScopePointerDown(e);
-  };
-
-  const onPlotPointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
-    const pinDrag = pinCardDragRef.current;
-    if (pinDrag && pinDrag.pointerId === e.pointerId) {
-      const dx = e.clientX - pinDrag.startX;
-      const dy = e.clientY - pinDrag.startY;
-      setPinnedTips((prev) =>
-        prev.map((p) =>
-          p.id === pinDrag.id
-            ? { ...p, ox: pinDrag.origOx + dx, oy: pinDrag.origOy + dy }
-            : p,
-        ),
-      );
-      return;
-    }
-
-    const arm = labelDragArmRef.current;
-    if (arm && !edgeDragRef.current) {
-      const dx = Math.abs(e.clientX - arm.x);
-      const dy = Math.abs(e.clientY - arm.y);
-                    if (dx >= SCALE_EDGE_LABEL_DRAG_PX || dy >= SCALE_EDGE_LABEL_DRAG_PX) {
-        if (!onScaleEdgeDrag) {
-          labelDragArmRef.current = null;
-          return;
-        }
-        scaleEdgeTapRef.current = null;
-        labelDragArmRef.current = null;
-        pinClickArmRef.current = null;
-        edgeDragRef.current = { id: arm.id, axis: arm.axis };
-        setEdgeDragId(arm.id);
-        clearHover();
-        emitScaleEdgeDrag(arm.id, arm.value, "start");
-        const rect = e.currentTarget.getBoundingClientRect();
-        const yView = yViewFromClient(e.clientY, rect);
-        const value = domainValueFromYView(yView, arm.axis);
-        emitScaleEdgeDrag(arm.id, value, "move");
-      }
-      return;
-    }
-    const cur = edgeDragRef.current;
-    if (cur) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const yView = yViewFromClient(e.clientY, rect);
-      const value = domainValueFromYView(yView, cur.axis);
-      emitScaleEdgeDrag(cur.id, value, "move");
-      return;
-    }
-    if (xScopeSelect) onXScopePointerMove(e);
-    if (e.pointerType === "touch" || e.pointerType === "pen") {
-      setPlotHovering(true);
-    }
-  };
-
-  const onPlotPointerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
-    if (
-      pinCardDragRef.current &&
-      pinCardDragRef.current.pointerId === e.pointerId
-    ) {
-      pinCardDragRef.current = null;
-      try {
-        e.currentTarget.releasePointerCapture(e.pointerId);
-      } catch {
-        /* ignore */
-      }
-      return;
-    }
-
-    const pinArm = pinClickArmRef.current;
-    pinClickArmRef.current = null;
-
-    const labelArm = labelDragArmRef.current;
-
-    if (labelArm && labelArm.pointerId === e.pointerId && !edgeDragRef.current) {
-      labelDragArmRef.current = null;
-      if (onScaleEdgeNumericCommit) {
-        handleScaleEdgeDoubleTap(
-          e,
-          labelArm,
-          scaleEdgeTapRef,
-          beginScaleEdgeEdit,
-        );
-      }
-      return;
-    }
-
-    if (labelDragArmRef.current) {
-      labelDragArmRef.current = null;
-      return;
-    }
-    if (edgeDragRef.current) {
-      endScaleEdgeDrag("end");
-      return;
-    }
-
-    const wasScopeDrag = xScopeDraggingRef.current;
-    if (xScopeSelect) onXScopePointerUp(e);
-
-    if (wasScopeDrag) return;
-    if (!pinArm || pinArm.pointerId !== e.pointerId) return;
-    const dist = Math.hypot(e.clientX - pinArm.x, e.clientY - pinArm.y);
-    if (dist > PIN_CLICK_SLOP_PX) return;
-
-    const rect = e.currentTarget.getBoundingClientRect();
-    if (rect.width <= 0 || rect.height <= 0) return;
-    const hit = findDataPointHit(
-      e.clientX - rect.left,
-      e.clientY - rect.top,
-      rect.width,
-      rect.height,
-    );
-    if (!hit) {
-      const isTouchLike =
-        e.pointerType === "touch" || e.pointerType === "pen";
-      if (isTouchLike && onPlotDoubleClick) {
-        const now = e.timeStamp;
-        const prev = plotEmptyTapRef.current;
-        if (
-          prev &&
-          now - prev.t <= SCALE_EDGE_DOUBLE_TAP_MS &&
-          Math.hypot(e.clientX - prev.x, e.clientY - prev.y) <=
-            SCALE_EDGE_DOUBLE_TAP_SLOP_PX
-        ) {
-          plotEmptyTapRef.current = null;
-          plotTouchDoubleTapLockRef.current = true;
-          window.setTimeout(() => {
-            plotTouchDoubleTapLockRef.current = false;
-          }, 400);
-          onPlotDoubleClick();
-          return;
-        }
-        plotEmptyTapRef.current = { t: now, x: e.clientX, y: e.clientY };
-      }
-      return;
-    }
-    plotEmptyTapRef.current = null;
-
-    /**
-     * 오버레이(온도·습도·모터 겹침): 어느 쪽을 클릭해도 한 핀으로 정규화
-     * → 병합 카드 1개만 고정(중복 방지·토글 일관).
-     */
-    const hitGroup = hit.seriesKey
-      ? inferHoverMetricGroup(hit.seriesKey)
-      : null;
-    const yPx = e.clientY - rect.top;
-    const laneTopPx =
-      eventLane && eventLaneH > 0
-        ? (eventLaneTop / chartH) * rect.height
-        : Infinity;
-    const pinAsEvent =
-      Boolean(hit.eventMark) && yPx >= laneTopPx - 4;
-    const mergePin =
-      overlayHoverMerge &&
-      !pinAsEvent &&
-      isOverlayMergedHoverGroup(hitGroup);
-    const pinSeriesKey = mergePin ? "온도" : hit.seriesKey;
-    const id = pinAsEvent
-      ? `event:${hit.eventMark!.id}`
-      : tipPinId(hit.idx, pinSeriesKey);
-    setPinnedTips((prev) => {
-      if (prev.some((p) => p.id === id)) {
-        return prev.filter((p) => p.id !== id);
-      }
-      const next: PinnedTip = {
-        id,
-        idx: hit.idx,
-        seriesKey: pinSeriesKey,
-        nx: hit.xView / viewW,
-        ny: hit.yView / chartH,
-        ox: 0,
-        oy: 0,
-        eventMark: pinAsEvent ? hit.eventMark : undefined,
-        atMs: pinAsEvent
-          ? hit.eventMark!.atMs
-          : (timeAxisMs?.[hit.idx] ?? undefined),
-      };
-      return [...prev, next].slice(-MAX_PINNED_TIPS);
-    });
-  };
-
-  const onPlotPointerCancel = () => {
-    pinCardDragRef.current = null;
-    pinClickArmRef.current = null;
-    scaleEdgeTapRef.current = null;
-    plotEmptyTapRef.current = null;
-    labelDragArmRef.current = null;
-    if (edgeDragRef.current) {
-      endScaleEdgeDrag("cancel");
-      return;
-    }
-    onXScopePointerCancel();
-    setPlotHovering(false);
-  };
-
-  const onPlotDoubleClickHandler = (e: ReactMouseEvent<HTMLDivElement>) => {
-    if (plotTouchDoubleTapLockRef.current) return;
-    if (edgeEdit || edgeDragRef.current || labelDragArmRef.current) return;
-    if (xScopeDraggingRef.current) return;
-    if (onScaleEdgeNumericCommit) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const hit = hitDraggableScaleEdge(e.clientY, rect);
-      if (hit) {
-        e.preventDefault();
-        e.stopPropagation();
-        beginScaleEdgeEdit(hit.id);
-        return;
-      }
-    }
-    if (!onPlotDoubleClick) return;
-    e.preventDefault();
-    onPlotDoubleClick();
-  };
-
-  const onPlotContextMenu = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (onScaleEdgeNumericCommit) {
-      const rect = e.currentTarget.getBoundingClientRect();
-      const hit = hitDraggableScaleEdge(e.clientY, rect);
-      if (hit) {
-        e.preventDefault();
-        e.stopPropagation();
-        beginScaleEdgeEdit(hit.id);
-        return;
-      }
-    }
-    // 빈 공간 우클릭: 고정 카드가 있으면 일괄 닫기(줌인 뒤로가기·스코프 뒤로가기보다 우선)
-    if (pinnedTips.length > 0) {
-      e.preventDefault();
-      e.stopPropagation();
-      setPinnedTips([]);
-      return;
-    }
-    /**
-     * 한계 이탈 데이터 카드가 떠 있을 때만 장비 바로가기.
-     * 카드가 없으면 스코프 뒤로가기·설정모드 종료로 통과.
-     */
-    if (onBreachEquipmentNavigate) {
-      const idx = hoverIdxRef.current;
-      if (idx != null) {
-        const target = resolveBreachNavTarget({
-          series,
-          envelopes,
-          hoverIdx: idx,
-          hoverSeriesName: hoverSeriesRef.current,
-        });
-        if (target) {
-          e.preventDefault();
-          e.stopPropagation();
-          onBreachEquipmentNavigate(target);
-          return;
-        }
-      }
-    }
-    // 설정모드 종료 등 — 스코프 뒤로가기와 분리 (동시 등록하지 않음)
-    if (onPlotBackgroundContextMenu) {
-      e.preventDefault();
-      e.stopPropagation();
-      onPlotBackgroundContextMenu();
-      return;
-    }
-    if (xScopeSelect && onXScopeBack) onXScopeContextMenu(e);
-  };
-
-  const onMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (
-      edgeEdit != null ||
-      edgeDragRef.current != null ||
-      labelDragArmRef.current != null ||
-      xScopeDraggingRef.current ||
-      xDraftRef.current != null
-    )
-      return;
-    setPlotHovering(true);
-    if (n === 0 && positionedEventMarks.length === 0) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    if (rect.width <= 0 || rect.height <= 0) return;
-    const xPx = e.clientX - rect.left;
-    const yPx = e.clientY - rect.top;
-
-    /** 십자선 — 플롯·명령 레인까지 (시간축 PAD_BOTTOM 제외) */
-    const xView = Math.min(
-      viewW - padR,
-      Math.max(padL, (xPx / rect.width) * viewW),
-    );
-    const yView = Math.min(
-      scopeYMax,
-      Math.max(PAD_TOP, (yPx / rect.height) * chartH),
-    );
-    setCrosshairAt(xView, yView);
-
-    const overEventMark =
-      e.target instanceof Element &&
-      Boolean(e.target.closest("[data-trend-event-mark]"));
-    if (overEventMark) {
-      setCrosshairChipVisible(false);
-      return;
-    }
-
-    const hit = findDataPointHit(xPx, yPx, rect.width, rect.height);
-    if (!hit) {
-      fillCrosshairChip(xView, yView);
-      setCrosshairChipVisible(true);
-      if (
-        hoverIdxRef.current != null ||
-        hoverSeriesRef.current != null ||
-        hoverEventMarkRef.current
-      ) {
-        hoverIdxRef.current = null;
-        hoverSeriesRef.current = null;
-        hoverEventMarkRef.current = null;
-        setHoverIdx(null);
-        setHoverSeries(null);
-        setHoverEventMark(null);
-      }
-      return;
-    }
-    setCrosshairChipVisible(false);
-    const anchorX = (hit.xView / viewW) * rect.width;
-    const anchorY = (hit.yView / chartH) * rect.height;
-    lastAnchorRef.current = {
-      x: anchorX,
-      y: anchorY,
-      w: rect.width,
-      h: rect.height,
-    };
-    if (hit.seriesKey && !hit.seriesKey.startsWith("event:")) {
-      placeTipNear(anchorX, anchorY, rect.width, rect.height);
-    }
-    const same =
-      hit.idx === hoverIdxRef.current &&
-      hit.seriesKey === hoverSeriesRef.current &&
-      (hit.eventMark?.id ?? null) === (hoverEventMarkRef.current?.id ?? null);
-    if (same) return;
-    hoverIdxRef.current = hit.idx;
-    hoverSeriesRef.current = hit.seriesKey;
-    hoverEventMarkRef.current = hit.eventMark ?? null;
-    setHoverIdx(hit.idx);
-    setHoverSeries(hit.seriesKey);
-    setHoverEventMark(hit.eventMark ?? null);
-  };
-
-  const markerStride =
-    markerDensity === "sparse" ? Math.max(1, Math.ceil(n / 8)) : 1;
-  const shouldShowMarker = (i: number) => {
-    if (markerDensity === "all") return true;
-    if (i === 0 || i === n - 1) return true;
-    return i % markerStride === 0;
-  };
-
-  const stackedAxis = labelGutter || (plotPx.w > 0 && plotPx.w < 480);
-  const tickTarget = trendChartTickTargetForWidth(
-    plotPx.w > 32 ? plotPx.w : labelGutter ? 360 : 800,
-    { stacked: stackedAxis },
-  );
-  const axisMarks = useMemo(
-    () => buildTrendAxisMarks(categories, tickTarget),
-    [categories, tickTarget],
-  );
-  const axisTicks = axisMarks.majors;
-
-  const axisTickViews = useMemo(
-    () => buildAxisTickViews(axisTicks, { period, padL, innerW, viewW }),
-    [axisTicks, innerW, padL, period, viewW],
-  );
-
-  const { alarmPresence, dedupedReferenceLines, edgeBandLabels } =
-    useTrendEdgeBandLabels({
-      mode,
-      series,
-      rangeBands,
-      referenceLines,
-      scaleEdgeLabels,
-      usesRight,
-      leftUnit,
-      rightUnit,
-      chartH,
-      innerH,
-      leftDomain: [lMin, lMax],
-      rightDomain: [rMin, rMax],
-      editingEdgeId: edgeEdit?.id,
-      overlayHoverMerge,
-      clipWipeEnabled,
-    });
-
-  /** hover 중인 스케일 칩(강조 대상). 없으면 dim 미적용 */
-  const hoveredEdge =
-    hoveredEdgeId != null
-      ? (edgeBandLabels.find((l) => l.id === hoveredEdgeId) ?? null)
-      : null;
-  const hoveredEdgePresence = usePresenceValue(hoveredEdge);
-  const draftPresence = usePresenceValue(xDraft);
-
-  const hoverCardLive = useMemo(
-    () =>
-      resolveTrendHoverCardLive({
-        hoverEventMark,
-        pinnedTips,
-        hoverIdx,
-        n,
-        hoverSeries,
-        overlayHoverMerge,
-      }),
-    [
-      hoverEventMark,
-      pinnedTips,
-      hoverIdx,
-      n,
-      hoverSeries,
-      overlayHoverMerge,
-    ],
-  );
-  const hoverCardPresence = usePresenceValue(hoverCardLive);
-
-  /** 플롯 위를 보는 중이면 기준 칩을 낮춤. 칩 호버는 제외 */
-  const dimPlotValues =
-    hoveredEdgeId == null &&
-    (plotHovering || pinPresence.length > 0);
-
-  const edgeValueMaxCh = edgeBandLabels.reduce(
-    (max, label) => Math.max(max, label.text.length),
-    TREND_Y_LABEL_CHIP_SAMPLE.length,
-  );
+  /* 팩토리는 ref를 핸들러 클로저에 담기만 하고, current는 이벤트 안에서만 읽는다. */
+  /* eslint-disable react-hooks/refs */
+  const {
+    onPlotPointerDown,
+    onPlotPointerMove,
+    onPlotPointerUp,
+    onPlotPointerCancel,
+    onPlotDoubleClickHandler,
+    onPlotContextMenu,
+    onMove,
+  } = createTrendChartPlotPointer({
+    ...model,
+    ...scale,
+    ...scopeGesture,
+    ...lookback,
+    clearHover,
+    scopeYMax,
+    yViewFromClient,
+  });
+  /* eslint-enable react-hooks/refs */
+  const decor = useTrendChartDecor({
+    ...model,
+    edgeEdit,
+    xDraft,
+  });
+  const { axisMarks, axisTicks, axisTickViews } = decor;
 
   if (!hasAny || n === 0) {
     return (
@@ -1017,25 +248,6 @@ export function TrendChart({
       </div>
     );
   }
-
-  const nullGapRanges = collectTrendNullGapRanges(series, n, {
-    coverageBandCount: coverageBands.length,
-    showNullGaps,
-    mode,
-  });
-  const { lineSegments, envelopePaths } = bindTrendPlotPaths(xFor, yFor, n);
-
-  const plotGeom: TrendPlotGeom = {
-    xFor,
-    yFor,
-    padL,
-    padR,
-    viewW,
-    innerW,
-    innerH,
-    n,
-  };
-
   return (
     <div
       ref={chartRootRef}
@@ -1100,415 +312,13 @@ export function TrendChart({
         onDoubleClick={onPlotDoubleClickHandler}
         onContextMenu={onPlotContextMenu}
       >
-      <TrendChartPlotSvg
-        viewW={viewW}
-        chartH={chartH}
-        fillParent={fillParent}
-        glowFilterId={glowFilterId}
-        plotEnterKey={plotEnterKey}
-        scopeMotionKey={scopeMotionKey}
-        animate={animate}
-        scopeMotionDir={scopeMotionDir}
-        coverageBands={coverageBands}
-        nullGapRanges={nullGapRanges}
-        plotGeom={plotGeom}
-        guidePresence={guidePresence}
-        mode={mode}
-        n={n}
-        padL={padL}
-        padR={padR}
-        innerH={innerH}
-        innerW={innerW}
-        barW={barW}
-        barSlotW={barSlotW}
-        hoverIdx={hoverIdx}
-        hoverSeries={hoverSeries}
-        edgeDragId={edgeDragId}
-        hoveredEdgeId={hoveredEdgeId}
-        showMarkers={showMarkers}
-        markerRadiusPx={markerRadiusPx}
-        series={series}
-        histPresence={histPresence}
-        envelopePresence={envelopePresence}
-        seriesPresence={seriesPresence}
-        scaleEdgeLabels={scaleEdgeLabels}
-        alarmPresence={alarmPresence}
-        dedupedReferenceLines={dedupedReferenceLines}
-        pinnedTips={pinnedTips}
-        yFor={yFor}
-        xFor={xFor}
-        xForBar={xForBar}
-        markerRx={markerRx}
-        markerRy={markerRy}
-        shouldShowMarker={shouldShowMarker}
-        lineSegments={lineSegments}
-        envelopePaths={envelopePaths}
-        positionedCommandHits={positionedCommandHits}
-        hoverEventMark={hoverEventMark}
-        eventLane={eventLane}
-        eventLaneH={eventLaneH}
-        positionedEventMarks={positionedEventMarks}
-        eventLaneTop={eventLaneTop}
-        crossVRef={crossVRef}
-        crossHRef={crossHRef}
-        draftPresence={draftPresence}
-        scopeYMax={scopeYMax}
-      />
-
-      <TrendChartCrosshairChip
-        chipRef={crossChipRef}
-        timeRef={crossChipTimeRef}
-        tempRef={crossChipTempRef}
-        humRef={crossChipHumRef}
-        motorRef={crossChipMotorRef}
-        otherRef={crossChipOtherRef}
-      />
-
-      {eventLane && eventLaneH > 0 ? (
-        <EventLaneHtmlOverlay
-          lane={eventLane}
-          marks={positionedEventMarks}
-          viewW={viewW}
-          chartH={chartH}
-          laneTop={eventLaneTop}
-          laneH={eventLaneH}
-          padL={padL}
-          padR={padR}
-          labelGutter={labelGutter}
-          selectedId={
-            [...pinnedTips]
-              .reverse()
-              .find((p) => p.eventMark)?.eventMark?.id ??
-            hoverEventMark?.id ??
-            null
-          }
-          onSelect={(mark, anchor) => {
-            const placed = positionedEventMarks.find(
-              (row) => row.mark.id === mark.id,
-            );
-            if (!placed && !anchor) return;
-            const id = `event:${mark.id}`;
-            setPinnedTips((prev) => {
-              if (prev.some((p) => p.id === id)) {
-                return prev.filter((p) => p.id !== id);
-              }
-              const next: PinnedTip = {
-                id,
-                idx: 0,
-                seriesKey: id,
-                nx: anchor ? anchor.nx : placed!.xView / viewW,
-                ny: anchor ? anchor.ny : placed!.yView / chartH,
-                ox: 0,
-                oy: 0,
-                eventMark: mark,
-                atMs: mark.atMs,
-              };
-              return [...prev, next].slice(-MAX_PINNED_TIPS);
-            });
-          }}
-          onEmptyContextMenu={() => {
-            // 카드가 있으면 일괄 닫기(줌인 뒤로가기보다 우선). 처리 시 true.
-            if (pinnedTips.length > 0) {
-              setPinnedTips([]);
-              return true;
-            }
-            return false;
-          }}
-          onHover={(mark, client) => {
-            if (!mark) {
-              if (hoverEventMarkRef.current) {
-                hoverEventMarkRef.current = null;
-                setHoverEventMark(null);
-              }
-              if (hoverSeriesRef.current?.startsWith("event:")) {
-                hoverIdxRef.current = null;
-                hoverSeriesRef.current = null;
-                setHoverIdx(null);
-                setHoverSeries(null);
-              }
-              return;
-            }
-            const same = hoverEventMarkRef.current?.id === mark.id;
-            hoverEventMarkRef.current = mark;
-            if (!same) {
-              hoverIdxRef.current = null;
-              hoverSeriesRef.current = `event:${mark.id}`;
-              setHoverIdx(null);
-              setHoverSeries(`event:${mark.id}`);
-              setHoverEventMark(mark);
-            }
-            const plot = plotRef.current;
-            if (!plot) return;
-            const rect = plot.getBoundingClientRect();
-            const placed = positionedEventMarks.find(
-              (row) => row.mark.id === mark.id,
-            );
-            const anchorX = client
-              ? Math.min(rect.width, Math.max(0, client.x - rect.left))
-              : placed
-                ? (placed.xView / viewW) * rect.width
-                : rect.width / 2;
-            const anchorY = client
-              ? Math.min(rect.height, Math.max(0, client.y - rect.top))
-              : placed
-                ? (placed.yView / chartH) * rect.height
-                : rect.height / 2;
-            lastAnchorRef.current = {
-              x: anchorX,
-              y: anchorY,
-              w: rect.width,
-              h: rect.height,
-            };
-            placeTipNear(anchorX, anchorY, rect.width, rect.height);
-          }}
-          scopeHandlers={
-            xScopeSelect
-              ? {
-                  begin: (clientX, clientY) => {
-                    const plot = plotRef.current;
-                    if (!plot) return;
-                    beginXScopeAt(clientX, clientY, plot);
-                  },
-                  move: (clientX, clientY) => {
-                    const plot = plotRef.current;
-                    if (!plot) return;
-                    moveXScopeAt(clientX, clientY, plot);
-                  },
-                  end: (clientX, clientY) => {
-                    const plot = plotRef.current;
-                    if (!plot) return false;
-                    return endXScopeAt(clientX, clientY, plot);
-                  },
-                  cancel: () => onXScopePointerCancel(),
-                }
-              : null
-          }
-        />
-      ) : null}
-
-      {positionedCommandHits.length > 0 ? (
-        <CommandSettingHitOverlay
-          hits={positionedCommandHits}
-          viewW={viewW}
-          chartH={chartH}
-          selectedId={
-            [...pinnedTips]
-              .reverse()
-              .find((p) => p.eventMark)?.eventMark?.id ??
-            hoverEventMark?.id ??
-            null
-          }
-          onSelect={(mark, anchor) => {
-            const hit = positionedCommandHits.find(
-              (row) => row.seg.mark.id === mark.id,
-            );
-            if (!hit && !anchor) return;
-            const id = `event:${mark.id}`;
-            setPinnedTips((prev) => {
-              if (prev.some((p) => p.id === id)) {
-                return prev.filter((p) => p.id !== id);
-              }
-              const nx = anchor
-                ? anchor.nx
-                : (hit!.x0 + hit!.x1) / 2 / viewW;
-              const ny = anchor
-                ? anchor.ny
-                : (hit!.y + hit!.h / 2) / chartH;
-              const next: PinnedTip = {
-                id,
-                idx: 0,
-                seriesKey: id,
-                nx,
-                ny,
-                ox: 0,
-                oy: 0,
-                eventMark: mark,
-                atMs: mark.atMs,
-              };
-              return [...prev, next].slice(-MAX_PINNED_TIPS);
-            });
-          }}
-          onEmptyContextMenu={() => {
-            if (pinnedTips.length > 0) {
-              setPinnedTips([]);
-              return true;
-            }
-            return false;
-          }}
-          onHover={(mark, client) => {
-            if (!mark) {
-              if (hoverEventMarkRef.current) {
-                hoverEventMarkRef.current = null;
-                setHoverEventMark(null);
-              }
-              if (hoverSeriesRef.current?.startsWith("event:")) {
-                hoverIdxRef.current = null;
-                hoverSeriesRef.current = null;
-                setHoverIdx(null);
-                setHoverSeries(null);
-              }
-              return;
-            }
-            const same = hoverEventMarkRef.current?.id === mark.id;
-            hoverEventMarkRef.current = mark;
-            if (!same) {
-              hoverIdxRef.current = null;
-              hoverSeriesRef.current = `event:${mark.id}`;
-              setHoverIdx(null);
-              setHoverSeries(`event:${mark.id}`);
-              setHoverEventMark(mark);
-            }
-            const plot = plotRef.current;
-            if (!plot) return;
-            const rect = plot.getBoundingClientRect();
-            const hit = positionedCommandHits.find(
-              (row) => row.seg.mark.id === mark.id,
-            );
-            const anchorX = client
-              ? Math.min(rect.width, Math.max(0, client.x - rect.left))
-              : hit
-                ? ((hit.x0 + hit.x1) / 2 / viewW) * rect.width
-                : rect.width / 2;
-            const anchorY = client
-              ? Math.min(rect.height, Math.max(0, client.y - rect.top))
-              : hit
-                ? ((hit.y + hit.h / 2) / chartH) * rect.height
-                : rect.height / 2;
-            lastAnchorRef.current = {
-              x: anchorX,
-              y: anchorY,
-              w: rect.width,
-              h: rect.height,
-            };
-            placeTipNear(anchorX, anchorY, rect.width, rect.height);
-          }}
-          scopeHandlers={
-            xScopeSelect
-              ? {
-                  begin: (clientX, clientY) => {
-                    const plot = plotRef.current;
-                    if (!plot) return;
-                    beginXScopeAt(clientX, clientY, plot);
-                  },
-                  move: (clientX, clientY) => {
-                    const plot = plotRef.current;
-                    if (!plot) return;
-                    moveXScopeAt(clientX, clientY, plot);
-                  },
-                  end: (clientX, clientY) => {
-                    const plot = plotRef.current;
-                    if (!plot) return false;
-                    return endXScopeAt(clientX, clientY, plot, {
-                      timeOnly: true,
-                    });
-                  },
-                  cancel: () => onXScopePointerCancel(),
-                }
-              : null
-          }
-        />
-      ) : null}
-
-      {viewW > 0
-        ? coverageBands.map((g) => {
-            const x0 = xFor(g.i0);
-            const x1 = xFor(g.i1);
-            const slot = n > 1 ? innerW / (n - 1) : innerW;
-            const left = Math.max(padL, x0 - slot / 2);
-            const right = Math.min(viewW - padR, x1 + slot / 2);
-            const width = Math.max(0, right - left);
-            if (width / viewW < 0.08 && g.i1 - g.i0 < 1) return null;
-            const color =
-              g.kind === "sparse"
-                ? "var(--status-warn-on-canvas)"
-                  : g.kind === "offline"
-                  ? "var(--status-danger-on-canvas)"
-                  : undefined;
-            return (
-              <span
-                key={`cov-lab-${g.kind}-${g.i0}-${g.i1}`}
-                className="pointer-events-none absolute top-1 z-[1] truncate px-0.5 farm-chart-fs-axis tabular-nums"
-                style={{
-                  left: `${(left / viewW) * 100}%`,
-                  width: `${(width / viewW) * 100}%`,
-                  color: color ?? "var(--muted-foreground)",
-                }}
-              >
-                {g.label}
-              </span>
-            );
-          })
-        : null}
-
-      <TrendChartYAxis
-        yGutterStartCaption={yGutterStartCaption}
-        yGutterEndCaption={yGutterEndCaption}
-        hideAxisChrome={hideAxisChrome}
-        dimPlotValues={dimPlotValues}
-        leftAxisTicks={leftAxisTicks}
-        labelGutter={labelGutter}
-        yLabelColumn={yLabelColumn}
-      />
-
-      <TrendChartEdgeLabels
-        hoveredEdgePresence={hoveredEdgePresence}
-        edgeBandLabels={edgeBandLabels}
-        edgeEdit={edgeEdit}
-        setEdgeEdit={setEdgeEdit}
-        onScaleEdgeApply={onScaleEdgeApply}
-        onScaleEdgeRevert={onScaleEdgeRevert}
-        labelGutter={labelGutter}
-        onScaleEdgeDrag={onScaleEdgeDrag}
-        yLabelColumn={yLabelColumn}
-        hoveredEdgeId={hoveredEdgeId}
-        setHoveredEdgeId={setHoveredEdgeId}
-        dimPlotValues={dimPlotValues}
-        edgeDragId={edgeDragId}
+      <TrendChartPlotBody
+        {...model}
+        {...decor}
+        {...scale}
+        {...scopeGesture}
         clearHover={clearHover}
-        scaleEdgeLabels={scaleEdgeLabels}
-        plotRef={plotRef}
-        labelDragArmRef={labelDragArmRef}
-        onScaleEdgeNumericCommit={onScaleEdgeNumericCommit}
-        beginScaleEdgeEdit={beginScaleEdgeEdit}
-        edgeValueMaxCh={edgeValueMaxCh}
-        commitScaleEdgeEdit={commitScaleEdgeEdit}
-        cancelScaleEdgeEdit={cancelScaleEdgeEdit}
-        scaleEdgeApplyBusy={scaleEdgeApplyBusy}
-        scaleEdgeApplyDisabled={scaleEdgeApplyDisabled}
-      />
-
-      <TrendChartPinnedCards
-        pinPresence={pinPresence}
-        n={n}
-        plotPx={plotPx}
-        pinCardSizes={pinCardSizes}
-        setPinCardSizes={setPinCardSizes}
-        plotRef={plotRef}
-        bringPinToFront={bringPinToFront}
-        pinCardDragRef={pinCardDragRef}
-        setPinnedTips={setPinnedTips}
-        overlayHoverMerge={overlayHoverMerge}
-        categories={categories}
-        series={series}
-        envelopes={envelopes}
-        histograms={histograms}
-        leftUnit={leftUnit}
-        rightUnit={rightUnit}
-        onBreachEquipmentNavigate={onBreachEquipmentNavigate}
-      />
-
-      <TrendChartHoverCard
-        presence={hoverCardPresence}
-        tipRef={tipRef}
-        coverageBands={coverageBands}
-        overlayHoverMerge={overlayHoverMerge}
-        categories={categories}
-        series={series}
-        envelopes={envelopes}
-        histograms={histograms}
-        leftUnit={leftUnit}
-        rightUnit={rightUnit}
-        onBreachEquipmentNavigate={onBreachEquipmentNavigate}
+        scopeYMax={scopeYMax}
       />
       </div>
       </div>
