@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Fragment,
   useMemo,
   useState,
   useRef,
@@ -15,7 +14,6 @@ import {
   parseCategoryTimelineMs,
   trendChartTickTargetForWidth,
 } from "@/lib/farm/trend-display-buckets";
-import { motionClass } from "@/lib/ui/motion-classes";
 import { isPrimaryPress } from "@/lib/ui/pointer-press";
 import { useClipPresence, usePresenceValue } from "@/lib/ui/use-clip-presence";
 import { motionDuration } from "@/lib/ui/motion-tokens";
@@ -77,8 +75,6 @@ import {
   SCALE_EDGE_DOUBLE_TAP_MS,
   SCALE_EDGE_DOUBLE_TAP_SLOP_PX,
   handleScaleEdgeDoubleTap,
-  chartTipPresenceClass,
-  chartBandGuideClass,
   type PinnedTip,
 } from "./trend-chart-interaction";
 import { useTrendPinnedTips } from "./use-trend-pinned-tips";
@@ -91,20 +87,14 @@ import { useTrendEdgeBandLabels } from "./use-trend-edge-band-labels";
 import { useTrendHover } from "./use-trend-hover";
 import { TrendChartHoverCard } from "./trend-chart-hover-card";
 import { useTrendScopeGesture } from "./use-trend-scope-gesture";
+import { type TrendPlotGeom } from "./trend-chart-svg-layers";
 import {
-  BandGuidesLayer,
-  CoverageBandsLayer,
-  NullGapsLayer,
-  type TrendPlotGeom,
-} from "./trend-chart-svg-layers";
-import { TrendChartDataLayers } from "./trend-chart-data-layers";
-import {
-  CommandHoldLaneSvg,
   CommandSettingHitOverlay,
   EventLaneHtmlOverlay,
-  EventLaneSvgGuides,
 } from "./trend-chart-event-lane";
 import { TrendChartLegend } from "./trend-chart-legend";
+import { TrendChartPlotSvg } from "./trend-chart-plot-svg";
+import { TrendChartXAxis } from "./trend-chart-x-axis";
 import { TrendChartCrosshairChip } from "./trend-chart-crosshair-chip";
 import { TrendChartYAxis } from "./trend-chart-y-axis";
 import { TrendChartEdgeLabels } from "./trend-chart-edge-labels";
@@ -1156,240 +1146,60 @@ export function TrendChart({
         onDoubleClick={onPlotDoubleClickHandler}
         onContextMenu={onPlotContextMenu}
       >
-      <svg
-        viewBox={`0 0 ${viewW} ${chartH}`}
-        preserveAspectRatio="none"
-        className="w-full select-none"
-        style={{ height: fillParent ? "100%" : chartH }}
-        shapeRendering="geometricPrecision"
-        role="img"
-        aria-label="추이 차트"
-      >
-        <defs>
-          <filter
-            id={glowFilterId}
-            x="-40%"
-            y="-40%"
-            width="180%"
-            height="180%"
-          >
-            <feGaussianBlur in="SourceGraphic" stdDeviation="1.35" />
-          </filter>
-        </defs>
-        <g
-          key={`${plotEnterKey}:${scopeMotionKey}`}
-          className={cn(
-            motionClass.farmChartCrosshair,
-            animate && scopeMotionKey === 0
-              ? motionClass.farmChartPlotReveal
-              : undefined,
-            scopeMotionKey > 0
-              ? scopeMotionDir === "out"
-                ? motionClass.farmChartScopeZoomOut
-                : motionClass.farmChartScopeZoomIn
-              : undefined,
-          )}
-        >
-        <CoverageBandsLayer bands={coverageBands} geom={plotGeom} />
-        <NullGapsLayer gaps={nullGapRanges} geom={plotGeom} />
-        <BandGuidesLayer
-          guides={guidePresence.map(({ item, key, phase }) => ({
-            key,
-            value: item.gy,
-            className: chartBandGuideClass(phase),
-          }))}
-          geom={plotGeom}
-        />
-        <TrendChartDataLayers
-          mode={mode}
-          n={n}
-          padL={padL}
-          padR={padR}
-          viewW={viewW}
-          innerH={innerH}
-          innerW={innerW}
-          barW={barW}
-          barSlotW={barSlotW}
-          hoverIdx={hoverIdx}
-          hoverSeries={hoverSeries}
-          edgeDragId={edgeDragId}
-          hoveredEdgeId={hoveredEdgeId}
-          glowFilterId={glowFilterId}
-          showMarkers={showMarkers}
-          markerRadiusPx={markerRadiusPx}
-          series={series}
-          histPresence={histPresence}
-          envelopePresence={envelopePresence}
-          seriesPresence={seriesPresence}
-          scaleEdgeLabels={scaleEdgeLabels}
-          uniqueAlarmBands={alarmPresence}
-          dedupedReferenceLines={dedupedReferenceLines}
-          pinnedTips={pinnedTips}
-          plotGeom={plotGeom}
-          yFor={yFor}
-          xFor={xFor}
-          xForBar={xForBar}
-          markerRx={markerRx}
-          markerRy={markerRy}
-          shouldShowMarker={shouldShowMarker}
-          lineSegments={lineSegments}
-          envelopePaths={envelopePaths}
-          commandSettingHits={positionedCommandHits}
-          commandHoverId={hoverEventMark?.id ?? null}
-        />
-        {eventLane && eventLaneH > 0 ? (
-          <>
-            <CommandHoldLaneSvg
-              marks={positionedEventMarks}
-              padL={padL}
-              padR={padR}
-              viewW={viewW}
-              laneTop={eventLaneTop}
-              laneH={eventLaneH}
-              rowCount={eventLane.rowLabels.length}
-            />
-            <EventLaneSvgGuides
-              padL={padL}
-              padR={padR}
-              viewW={viewW}
-              laneTop={eventLaneTop}
-              laneH={eventLaneH}
-              rowCount={eventLane.rowLabels.length}
-            />
-          </>
-        ) : null}
-        </g>
-        {/* 마우스 기준 회색 십자선 — DOM 직접 갱신(리렌더 최소화) */}
-        <line
-          ref={crossVRef}
-          x1={padL}
-          x2={padL}
-          y1={PAD_TOP}
-          y2={PAD_TOP + innerH + eventLaneH}
-          stroke="var(--muted-foreground)"
-          strokeWidth={0.7}
-          strokeDasharray="2.5 2"
-          vectorEffect="non-scaling-stroke"
-          opacity={0}
-          className={motionClass.farmChartCrosshair}
-          style={{ opacity: 0 }}
-          pointerEvents="none"
-        />
-        <line
-          ref={crossHRef}
-          x1={padL}
-          x2={viewW - padR}
-          y1={PAD_TOP}
-          y2={PAD_TOP}
-          stroke="var(--muted-foreground)"
-          strokeWidth={0.7}
-          strokeDasharray="2.5 2"
-          vectorEffect="non-scaling-stroke"
-          opacity={0}
-          className={motionClass.farmChartCrosshair}
-          style={{ opacity: 0 }}
-          pointerEvents="none"
-        />
-        {(() => {
-          const win = draftPresence.mounted ? draftPresence.value : null;
-          if (win == null) return null;
-          const x0 = win.a;
-          const x1 = win.b;
-          const y0 = win.y0;
-          const y1 = win.y;
-          const left = Math.min(x0, x1);
-          const right = Math.max(x0, x1);
-          const top = Math.min(y0, y1);
-          const bot = Math.max(y0, y1);
-          const w = Math.max(0.5, right - left);
-          const rawH = bot - top;
-          const h = Math.max(3.2, rawH);
-          const yMid = (top + bot) / 2;
-          const yBox = Math.min(
-            scopeYMax - h,
-            Math.max(PAD_TOP, rawH < 3.2 ? yMid - h / 2 : top),
-          );
-          const rx = markerRx(4.2);
-          const ry = markerRy(4.2);
-          const rxEnd = markerRx(5);
-          const ryEnd = markerRy(5);
-          return (
-            <g
-              pointerEvents="none"
-              aria-hidden
-              className={chartTipPresenceClass(draftPresence.phase)}
-            >
-              <rect
-                x={left}
-                y={yBox}
-                width={w}
-                height={h}
-                fill="var(--channel-hum)"
-                fillOpacity={0.12}
-                stroke="var(--channel-hum)"
-                strokeWidth={0.5}
-                vectorEffect="non-scaling-stroke"
-              />
-              <rect
-                className={motionClass.farmChartScopeHandlePulse}
-                x={left}
-                y={yBox}
-                width={0.7}
-                height={h}
-                fill="var(--channel-hum)"
-                opacity={0.95}
-              />
-              <rect
-                className={motionClass.farmChartScopeHandlePulse}
-                x={right - 0.7}
-                y={yBox}
-                width={0.7}
-                height={h}
-                fill="var(--channel-hum)"
-                opacity={0.95}
-              />
-              <ellipse
-                cx={x0}
-                cy={y0}
-                rx={rx}
-                ry={ry}
-                fill="var(--channel-hum)"
-                stroke="#fff"
-                strokeWidth={0.35}
-                vectorEffect="non-scaling-stroke"
-              />
-              <ellipse
-                cx={x1}
-                cy={y1}
-                rx={rxEnd}
-                ry={ryEnd}
-                fill="#fff"
-                stroke="var(--channel-hum)"
-                strokeWidth={0.55}
-                vectorEffect="non-scaling-stroke"
-              />
-              <ellipse
-                cx={x1}
-                cy={y1}
-                rx={markerRx(2)}
-                ry={markerRy(2)}
-                fill="var(--channel-hum)"
-              />
-              <line
-                x1={x0}
-                y1={y0}
-                x2={x1}
-                y2={y1}
-                stroke="var(--channel-hum)"
-                strokeWidth={0.35}
-                strokeDasharray="1.2 1.2"
-                vectorEffect="non-scaling-stroke"
-                opacity={0.7}
-              />
-            </g>
-          );
-        })()}
-      </svg>
+      <TrendChartPlotSvg
+        viewW={viewW}
+        chartH={chartH}
+        fillParent={fillParent}
+        glowFilterId={glowFilterId}
+        plotEnterKey={plotEnterKey}
+        scopeMotionKey={scopeMotionKey}
+        animate={animate}
+        scopeMotionDir={scopeMotionDir}
+        coverageBands={coverageBands}
+        nullGapRanges={nullGapRanges}
+        plotGeom={plotGeom}
+        guidePresence={guidePresence}
+        mode={mode}
+        n={n}
+        padL={padL}
+        padR={padR}
+        innerH={innerH}
+        innerW={innerW}
+        barW={barW}
+        barSlotW={barSlotW}
+        hoverIdx={hoverIdx}
+        hoverSeries={hoverSeries}
+        edgeDragId={edgeDragId}
+        hoveredEdgeId={hoveredEdgeId}
+        showMarkers={showMarkers}
+        markerRadiusPx={markerRadiusPx}
+        series={series}
+        histPresence={histPresence}
+        envelopePresence={envelopePresence}
+        seriesPresence={seriesPresence}
+        scaleEdgeLabels={scaleEdgeLabels}
+        alarmPresence={alarmPresence}
+        dedupedReferenceLines={dedupedReferenceLines}
+        pinnedTips={pinnedTips}
+        yFor={yFor}
+        xFor={xFor}
+        xForBar={xForBar}
+        markerRx={markerRx}
+        markerRy={markerRy}
+        shouldShowMarker={shouldShowMarker}
+        lineSegments={lineSegments}
+        envelopePaths={envelopePaths}
+        positionedCommandHits={positionedCommandHits}
+        hoverEventMark={hoverEventMark}
+        eventLane={eventLane}
+        eventLaneH={eventLaneH}
+        positionedEventMarks={positionedEventMarks}
+        eventLaneTop={eventLaneTop}
+        crossVRef={crossVRef}
+        crossHRef={crossHRef}
+        draftPresence={draftPresence}
+        scopeYMax={scopeYMax}
+      />
 
       <TrendChartCrosshairChip
         chipRef={crossChipRef}
@@ -1749,61 +1559,15 @@ export function TrendChart({
       </div>
       </div>
 
-      {!hideAxisChrome ? (
-      <div className="relative shrink-0 overflow-visible border-t border-border">
-        <div className="relative">
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-[1]" aria-hidden>
-          {axisMarks.minors.map((t) => (
-            <span
-              key={`axis-minor-${t}`}
-              className="absolute top-0 w-px h-1.5 -translate-x-1/2 bg-muted-foreground/30"
-              style={{ left: `${viewW > 0 ? ((padL + t * innerW) / viewW) * 100 : 0}%` }}
-            />
-          ))}
-          {axisTicks.map((m) => (
-            <span
-              key={`axis-major-${m.t}-${m.fullLabel}`}
-              className="absolute top-0 w-px h-2 -translate-x-1/2 bg-muted-foreground/55"
-              style={{
-                left: `${viewW > 0 ? ((padL + m.t * innerW) / viewW) * 100 : 0}%`,
-              }}
-            />
-          ))}
-          <span
-            className="absolute top-0 w-0.5 h-2.5 -translate-x-1/2 bg-muted-foreground/70"
-            style={{
-              left: `${viewW > 0 ? ((padL + innerW) / viewW) * 100 : 100}%`,
-            }}
-          />
-        </div>
-        <div className="relative farm-chart-tick-rail-stacked overflow-visible">
-          {axisTickViews.map((v) =>
-            v.parts.date ? (
-              <span
-                key={`tick-date-${v.key}`}
-                className="pointer-events-none absolute top-0.5 -translate-x-1/2 text-center farm-chart-fs-axis leading-none text-muted-foreground tabular-nums whitespace-nowrap"
-                style={{ left: `${v.leftPct}%` }}
-              >
-                {v.parts.date}
-              </span>
-            ) : null,
-          )}
-          {axisTickViews.map((v) =>
-            v.parts.time ? (
-              <span
-                key={`tick-time-${v.key}`}
-                className="pointer-events-none absolute bottom-0.5 -translate-x-1/2 text-center farm-chart-fs-axis leading-none text-muted-foreground tabular-nums whitespace-nowrap"
-                style={{ left: `${v.leftPct}%` }}
-                title={v.fullLabel}
-              >
-                {v.parts.time}
-              </span>
-            ) : null,
-          )}
-        </div>
-        </div>
-      </div>
-      ) : null}
+      <TrendChartXAxis
+        hideAxisChrome={hideAxisChrome}
+        axisMarksMinors={axisMarks.minors}
+        axisTicks={axisTicks}
+        axisTickViews={axisTickViews}
+        viewW={viewW}
+        padL={padL}
+        innerW={innerW}
+      />
       </div>
     </div>
   );
