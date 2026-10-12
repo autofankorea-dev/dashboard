@@ -5,6 +5,8 @@ const config: KnipConfig = {
     "src/app/**/*.{ts,tsx}",
     "src/**/*.test.ts",
     "scripts/*.{mjs,ts}",
+    // 스모크가 런타임에 앱으로 복사하는 페이지 fixture — 여기서 import하는 컴포넌트는 사용 중
+    "scripts/fixtures/*.tsx",
   ],
   project: ["src/**/*.{ts,tsx}"],
   ignore: [

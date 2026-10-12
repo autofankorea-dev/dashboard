@@ -2,7 +2,7 @@ stages:
   - verify
 
 default:
-  image: node:20-bookworm
+  image: node:22-bookworm
   cache:
     key: "${CI_COMMIT_REF_SLUG}-web"
     paths:
@@ -22,6 +22,12 @@ web:lint:
   needs: [web:install]
   script:
     - cd web && npm run lint
+
+web:typecheck:
+  stage: verify
+  needs: [web:install]
+  script:
+    - cd web && npm run typecheck
 
 web:test:
   stage: verify

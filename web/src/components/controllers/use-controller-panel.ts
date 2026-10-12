@@ -180,7 +180,9 @@ export function useControllerPanel(
 ) {
   const editStart = editStartDraft ?? EDIT_START_DRAFT;
   const editStartRef = useRef(editStart);
-  editStartRef.current = editStart;
+  useEffect(() => {
+    editStartRef.current = editStart;
+  });
   const knownSettings = useMemo(() => panelCommandFailed(latestCommand)
     ? liveBaseline ? { ...liveBaseline, source: "live" as const, updatedAt: target?.receivedAt ?? "" } : null
     : providedSettings, [latestCommand, liveBaseline, target?.receivedAt, providedSettings]);

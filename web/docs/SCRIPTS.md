@@ -12,6 +12,10 @@
 
 | npm / 파일 | 용도 |
 |------------|------|
+| `npm run check` | `lint` → `typecheck` → `test` → `knip` 묶음. push 전 1회 실행 권장 |
+| `npm run lint` | ESLint (Next core-web-vitals + TS + 모션/색 토큰 `no-restricted-syntax`) |
+| `npm run typecheck` | `tsc --noEmit` (strict) |
+| `npm run knip` | 미사용 파일·의존성·중복 export 게이트 ([`GITLAB_CI.md`](./GITLAB_CI.md) § Knip) |
 | `npm test` / `test:unit` → `run-unit-tests.mjs` | `src/**/*.test.ts` · `supabase/functions/**/*.test.ts` |
 | `verify:hub` → `verify-hub.mjs` | 허브 URL·keep-alive 유닛 ([`HUB_STABILITY_P0.md`](./HUB_STABILITY_P0.md)) |
 | `verify:design` | `verify-motion-classes` + `verify-ui-density` + `verify-ui-affordance` |
@@ -26,7 +30,7 @@
 | `measure:hub-ttfb` → `measure-hub-ttfb.mjs` | 허브 TTFB |
 | `audit-shared.mjs` | 감사 공통 (직접 실행 아님) |
 
-GitLab `web:test` / `web:verify-design`, GitHub `.github/workflows/web-verify.yml`이 A 일부를 돌린다.
+GitLab(`.gitlab-ci.yml`)과 GitHub(`.github/workflows/web-verify.yml`) 모두 `lint` · `typecheck` · `test` · `knip` · `verify:design` · `build`를 동일하게 돌린다 (2026-10 정렬).
 
 ---
 

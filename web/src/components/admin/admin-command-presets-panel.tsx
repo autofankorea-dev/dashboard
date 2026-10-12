@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   deleteSharedCommandPresetAction,
@@ -143,12 +143,17 @@ export function AdminCommandPresetsPanel({
     null,
   );
 
-  useEffect(() => {
+  // router.refresh() 후 서버 props가 바뀌면 낙관 상태를 서버값으로 재동기화
+  const [syncedDefaults, setSyncedDefaults] = useState(initialDefaults);
+  if (initialDefaults !== syncedDefaults) {
+    setSyncedDefaults(initialDefaults);
     setDefaults(initialDefaults);
-  }, [initialDefaults]);
-  useEffect(() => {
+  }
+  const [syncedPresets, setSyncedPresets] = useState(initialPresets);
+  if (initialPresets !== syncedPresets) {
+    setSyncedPresets(initialPresets);
     setPresets(initialPresets);
-  }, [initialPresets]);
+  }
 
   const forStall = useMemo(
     () =>

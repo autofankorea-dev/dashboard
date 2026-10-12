@@ -8,6 +8,7 @@
 | --- | --- | --- |
 | `web:install` | `npm ci` | 파이프라인 중단 |
 | `web:lint` | ESLint | 파이프라인 중단 |
+| `web:typecheck` | `tsc --noEmit` | 파이프라인 중단 |
 | `web:test` | `npm test` — `src/**/*.test.ts` (protocol · hub URL 등) | 파이프라인 중단 |
 | `web:verify-design` | `npm run verify:design` (motion + map density) | 파이프라인 중단 |
 | `web:knip` | dead files · deps · duplicates | 파이프라인 중단 |
@@ -16,7 +17,7 @@
 
 ## Knip
 
-- 설정: `knip.config.ts` — `src/app`·`src/**/*.test.ts`·`scripts/*`를 entry로 둔다. ignore: 미연결 디자인 헬퍼. `buffer`는 webpack 폴리필이라 `ignoreDependencies`. `scripts/archive/**`는 entry에 넣지 않는다.
+- 설정: `knip.config.ts` — `src/app`·`src/**/*.test.ts`·`scripts/*`·`scripts/fixtures/*.tsx`(스모크가 앱으로 복사하는 페이지)를 entry로 둔다. ignore: 미연결 디자인 헬퍼. `buffer`는 webpack 폴리필이라 `ignoreDependencies`. `scripts/archive/**`는 entry에 넣지 않는다.
 - CI: `npm run knip` — files/dependencies/duplicates만 게이트
 - 로컬 점진 정리: `npm run knip:exports` — unused export 전체 목록
 
@@ -47,8 +48,9 @@ npm run audit:health-drilldown
 
 ## GitHub
 
-원격이 GitHub(`SIJackLee/dashboard`)인 경우 [`../../.github/workflows/web-verify.yml`](../../.github/workflows/web-verify.yml)이  
-`npm test` · `verify:design` · `build`를 push/PR에서 실행한다.
+원격이 GitHub(`autofankorea-dev/dashboard`)인 경우 [`../../.github/workflows/web-verify.yml`](../../.github/workflows/web-verify.yml)이  
+`lint` · `typecheck` · `test` · `knip` · `verify:design` · `build`를 push/PR에서 실행한다 (GitLab job 구성과 동일).  
+GitHub → Vercel이 실제 배포 경로이므로 이 workflow가 **배포 전 게이트 정본**이다.
 
 ## GitHub mirror (구 메모)
 
