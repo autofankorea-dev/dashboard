@@ -23,6 +23,15 @@ Cursor 규칙: `.cursor/rules/farm-shell-routing.mdc`.
 - 모바일: 그리드만 + 카드 탭 시 Bottom sheet 직행 (인라인 상세 없음)
 - 모바일 상세 «차트로 옮기기»: 차트 탭으로 이동하며 그 그래프가 **펼쳐집니다**. 필드 탭으로 돌아와도 `chartW1`/`chartW2`는 유지
 
+레이아웃 (통합 on):
+
+- PC(`lg+`): 맵|표 밀도 토글 없음. 좌측 카드는 상태 면색 + 명칭 + 온·습도(히트맵 없음). 펼침 15rem / 접힘 2.5rem, 너비 전환 `duration-motion-moderate`
+- 필터 전환: exit fade(150ms) → 교체 → stagger enter(40ms, `ui-motion-stagger-in`). 좌측 선택 시 해당 컨트롤러 스크롤·하이라이트
+- 카드 헤더 「축사유형 N번 축사」/`컨트롤러 M` + 단일 순환. 컨트롤러는 그래프 → 설정 → 그래프. 일괄 그래프는 설정 → 그래프 → 설정. 일괄 설정은 그래프 → 설정 → 그래프
+- 모바일: 축사 카드·시트 제목·컨트롤러 피커는 아이콘+번호(축사 창고 마크 · 컨트롤러 장치 마크). 시트 안 그래프/설정이 컨트롤러 역할. 라인은 LTTB·점 마커 없음·핀·카드 유지. 구간 줌 없음
+- 기능 안내: 필드 PC·모바일 `TOUR_VERSION` 24+. 차트 42+(축사유형 평균 → 유형 칸 → 축사번호 평균 → 축사 펼침 → 표시 레이어 → 온·습 상·하한. 목록은 30일, 펼친 카드는 휠. 차트에서 컨트롤러 명령은 보내지 않음)
+- 구현: `farm-page-content.tsx`, `farm-field-status-grid.tsx`, `top-bar.tsx`(`data-farm-view-toggle-slot="desktop"`), `dashboard-viewport-shell.tsx`, `account-menu.tsx`
+
 ---
 
 ## 쿼리 키

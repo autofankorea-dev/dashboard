@@ -5,7 +5,7 @@
 > 배포: `commit → push → main → Vercel` · 규칙: `SI1/.cursor/rules/single-agent.mdc`  
 > 코드 반영: **`git status` / `origin/main`이 문서보다 우선**
 
-목차 축은 시스템 계층 **R 수집 · S 저장 · C 앱 · 횡단**이다. 이 단계는 문서를 그 계층으로 가리키기만 하고, 본문 통합은 다음 단계다.
+목차 축은 시스템 계층 **R 수집 · S 저장 · C 앱 · 횡단**이다. 표시가 스텁인 파일은 경로만 남기고 본문은 정본으로 옮겼다.
 
 ---
 
@@ -16,7 +16,7 @@
 | 문서 | 내용 |
 |------|------|
 | [`SYSTEM_INSTANCE.md`](./SYSTEM_INSTANCE.md) | EC2 · MQTT · RS/C |
-| [`HOME_SIM_PILOT.md`](./HOME_SIM_PILOT.md) | 집 PC FARM01 LIVE 시뮬 |
+| [`HOME_SIM_PILOT.md`](./HOME_SIM_PILOT.md) | 스텁 → [인스턴스 §5](./SYSTEM_INSTANCE.md) |
 | [`incidents/20260917-rs-supabase-outage.md`](./incidents/20260917-rs-supabase-outage.md) | 2026-09-17 RS 수집 공백 원인. 미결 체크는 [런북 §8](./SYSTEM_RUNBOOK.md) |
 
 ### 업링크
@@ -35,7 +35,7 @@
 | [`COMBINED_CHANNEL_COMMAND.md`](./COMBINED_CHANNEL_COMMAND.md) | A/B/C 통합 명령 `v0x0D` |
 | [`DEVICE_ALARM_COMMAND.md`](./DEVICE_ALARM_COMMAND.md) | 저온·고온 경보 `0x0E` |
 | [`CTRL_THERMO_COMMAND_PHASE_A.md`](./CTRL_THERMO_COMMAND_PHASE_A.md) | thermo 명령 Phase A 관측 |
-| [`CTRL_THERMO_COMMAND_PHASE_B.md`](./CTRL_THERMO_COMMAND_PHASE_B.md) | Phase B 정책 확정 |
+| [`CTRL_THERMO_COMMAND_PHASE_B.md`](./CTRL_THERMO_COMMAND_PHASE_B.md) | 스텁 → [DB §2.8](./SYSTEM_DB.md) |
 | [`CTRL_THERMO_COMMAND_PHASE_C.md`](./CTRL_THERMO_COMMAND_PHASE_C.md) | Phase C 적용 결과 |
 | [`CTRL_THERMO_KEYS_P0_P1.md`](./CTRL_THERMO_KEYS_P0_P1.md) | 키·인덱스 적용 |
 | [`FARM02_ACK_TRIAGE.md`](./FARM02_ACK_TRIAGE.md) | FARM02 ACK 점검 (패치 미실행) |
@@ -47,7 +47,7 @@
 | 문서 | 내용 |
 |------|------|
 | [`SYSTEM_DB.md`](./SYSTEM_DB.md) | Supabase 운영 프로젝트 · 테이블 · RLS |
-| [`LIVE_HOT_VIEW_RULES.md`](./LIVE_HOT_VIEW_RULES.md) | HOT list 뷰 thin 규칙 |
+| [`LIVE_HOT_VIEW_RULES.md`](./LIVE_HOT_VIEW_RULES.md) | 스텁 → [DB §2.3](./SYSTEM_DB.md) |
 
 ### 보존
 
@@ -56,7 +56,7 @@
 | [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) | 보존 채택·cron **정본** |
 | [`DECODED_ROWCOUNT_PLAN.md`](./DECODED_ROWCOUNT_PLAN.md) | 파티션·행 수 계획. 희소 PoC **OFF** 2026-09-01 |
 | [`SPARSE_OBSERVATION.md`](./SPARSE_OBSERVATION.md) | 희소 관측 쿼리 · `sparse_enabled=false` |
-| [`IOT_ARCHIVE_AND_THERMO_FLAT.md`](./IOT_ARCHIVE_AND_THERMO_FLAT.md) | archive DROP · slim · thermo flat |
+| [`IOT_ARCHIVE_AND_THERMO_FLAT.md`](./IOT_ARCHIVE_AND_THERMO_FLAT.md) | 스텁 → [보존 정본](./IOT_RETENTION_OPTIONS.md) |
 
 ### 용량 기록
 
@@ -83,7 +83,7 @@
 | 문서 | 내용 |
 |------|------|
 | [`farm-hub-url.md`](./farm-hub-url.md) | `/farm` URL·탭·epoch |
-| [`FARM_FIELD_MERGE_P0.md`](./FARM_FIELD_MERGE_P0.md) | 필드 통합 스플릿 |
+| [`FARM_FIELD_MERGE_P0.md`](./FARM_FIELD_MERGE_P0.md) | 스텁 → [허브 URL](./farm-hub-url.md) |
 | [`ENVIRONMENT_STATUS_POLICY.md`](./ENVIRONMENT_STATUS_POLICY.md) | 장비 경보·통신 상태. DELIN·권장 띠 제거 |
 | [`HUB_STABILITY_P0.md`](./HUB_STABILITY_P0.md) | 허브 회귀 게이트 |
 | [`aria-protocol.md`](./aria-protocol.md) | 폐기 스텁 → [환경 상태 정책](./ENVIRONMENT_STATUS_POLICY.md) |

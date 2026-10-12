@@ -150,7 +150,7 @@ flowchart LR
 | **raw/decoded 논리 분리·물리 단일** | 월 파티션·retention cron·sparse·hot view로 계층 분리. Free tier에서 물리 샤딩 불필요 | raw 전용 클러스터 · decoded만 S3 아카이브 | [`DECODED_CAPACITY.md`](./DECODED_CAPACITY.md) |
 | **decode-batch on Edge** | raw INSERT 직후 **pg_cron ~10s** · cursor·`last_value`·config **DB co-location** | RS decode · Next API batch · per-farm worker | `supabase/functions/decode-batch/` |
 | **ctrl_thermo_command in DB** | 감사·RLS·pending queue · uplink thermo↔command **ACK 비교** · C.py 단일 소비 | MQTT cmd topic 직접 · Redis 명령 큐 | [`CTRL_THERMO_COMMAND_PHASE_A.md`](./CTRL_THERMO_COMMAND_PHASE_A.md) |
-| **LIVE view 2h hot** | `received_at` 신선도 · list/latest tier 분리 · decode 부하와 read 분리 | 앱 raw scan · 무제한 latest view | [`LIVE_HOT_VIEW_RULES.md`](./LIVE_HOT_VIEW_RULES.md) |
+| **LIVE view 2h hot** | `received_at` 신선도 · list/latest tier 분리 · decode 부하와 read 분리 | 앱 raw scan · 무제한 latest view | [`SYSTEM_DB.md`](./SYSTEM_DB.md) §2.3 |
 
 #### 2.2.1 경로·객체
 
@@ -294,7 +294,7 @@ flowchart LR
 |------|------|
 | 작업 맥락·스키마 요약 | [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md) |
 | 배포 | [`CLOUD_DEPLOY.md`](./CLOUD_DEPLOY.md) |
-| LIVE view 규칙 | [`LIVE_HOT_VIEW_RULES.md`](./LIVE_HOT_VIEW_RULES.md) |
+| LIVE view 규칙 | [`SYSTEM_DB.md`](./SYSTEM_DB.md) §2.3 |
 | Raw/용량 | [`RAW_STORAGE_CHANGE.md`](./RAW_STORAGE_CHANGE.md) · [`DECODED_CAPACITY.md`](./DECODED_CAPACITY.md) |
 | Sparse·coverage | [`SPARSE_OBSERVATION.md`](./SPARSE_OBSERVATION.md) |
 | 명령 파이프라인 | [`CTRL_THERMO_COMMAND_PHASE_A.md`](./CTRL_THERMO_COMMAND_PHASE_A.md) 등 |
@@ -320,7 +320,7 @@ web/src/app/(dashboard)/admin/ops/     # 운영
 |------|------|
 | RS-DB-C | Receive(EC2) · Store(DB) · Consume(Vercel) |
 | list tier | `v_iot_dashboard_list` — channels[] 생략한 LIVE |
-| hot view | `received_at > now()-2h` 필터 ([`LIVE_HOT_VIEW_RULES.md`](./LIVE_HOT_VIEW_RULES.md)) |
+| hot view | `received_at > now()-2h` 필터 ([`SYSTEM_DB.md`](./SYSTEM_DB.md) §2.3) |
 | sparse | 값 변화 없으면 decoded skip — **2026-09-01 OFF** ([`SPARSE_OBSERVATION.md`](./SPARSE_OBSERVATION.md)) |
 | clock_kst | firmware KST→UTC 오인 보정 farm 목록 |
 

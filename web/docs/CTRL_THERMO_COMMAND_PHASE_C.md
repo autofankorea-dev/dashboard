@@ -39,7 +39,7 @@
 |------|------|
 | C1 migration | `supabase/migrations/20260806110000_ctrl_thermo_cancel_stale_sent.sql` |
 | C2 migration | `supabase/migrations/20260806111500_ctrl_thermo_cleanup_hot_90d.sql` |
-| 정책 | [`CTRL_THERMO_COMMAND_PHASE_B.md`](./CTRL_THERMO_COMMAND_PHASE_B.md) |
+| 정책 | [`SYSTEM_DB.md`](./SYSTEM_DB.md) §2.8 |
 
 ## 5. 영향
 

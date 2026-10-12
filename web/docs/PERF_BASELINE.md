@@ -172,7 +172,7 @@ Admin hub grid is overview-only. Farm drill-in uses full panel (or enrich). Bulk
 
 ## HOT view · retention (Sprint C → 적용)
 
-- Thin list 규칙: [`LIVE_HOT_VIEW_RULES.md`](./LIVE_HOT_VIEW_RULES.md) · 가드 `live-read-select.ts` + unit test
+- Thin list 규칙: [`SYSTEM_DB.md`](./SYSTEM_DB.md) §2.3 · 가드 `live-read-select.ts` + unit test
 - Retention: [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) — **채택·cron 적용**(30d detach/archive · raw DELETE · archive soak DROP). 정합 2026-08-06
 - cmd-poll ids 배칭: 백로그 (현행 조건부 폴링 유지)
 

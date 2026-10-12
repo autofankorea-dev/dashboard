@@ -20,7 +20,7 @@
 ## 3. 실행 방법
 
 > **경로:** `dashboard/web/` (저장소 루트 `dashboard/` 기준).  
-> 집 LIVE 시뮬: [`HOME_SIM_PILOT.md`](./HOME_SIM_PILOT.md) (`simulator/sim_pilot_farm01.py`). 회사 MQTT/RS 없이 raw INSERT + `decode-batch`.
+> 집 LIVE 시뮬: [`SYSTEM_INSTANCE.md`](./SYSTEM_INSTANCE.md) §5 (`simulator/sim_pilot_farm01.py`). 회사 MQTT/RS 없이 raw INSERT + `decode-batch`.
 
 ```bash
 cd web

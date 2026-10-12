@@ -3,7 +3,7 @@
 > **정합:** 2026-08-28 · 구 `iot-cloud` 실측 cron (ops 로그 7일 추가)  
 > **운영 DB (현재):** `fkkrjljeqxpbmazfnync` · 구 `iot-cloud`(`ompufmezugftzoergdbn`) **폐기**  
 > **역할:** 보존 정책의 옵션 이력 · **실행 상태는 본 문서 §현재 상태**가 정본  
-> 상세 설계·파티션: [`DECODED_ROWCOUNT_PLAN.md`](./DECODED_ROWCOUNT_PLAN.md) · archive DROP: [`IOT_ARCHIVE_AND_THERMO_FLAT.md`](./IOT_ARCHIVE_AND_THERMO_FLAT.md) · 용량: [`DECODED_CAPACITY.md`](./DECODED_CAPACITY.md)
+> 상세 설계·파티션: [`DECODED_ROWCOUNT_PLAN.md`](./DECODED_ROWCOUNT_PLAN.md) · archive DROP·slim·thermo flat: 아래 slim 절 · 용량: [`DECODED_CAPACITY.md`](./DECODED_CAPACITY.md)
 
 대시보드 읽기는 `latest` 뷰 + trend RPC. 보존은 디스크·스캔 상한용 운영 과제였고, **아래 채택안은 적용 완료**.
 
@@ -44,7 +44,13 @@
 
 구 `iot-cloud` 적용 (2026-08-28): HTTP **481 MB → 3.4 MB**, cron 기록 **340 MB → 37 MB**, DB **1,171 MB → 391 MB**. 일일 잡 `cleanup-ops-logs-7d-daily` (03:50 KST). 현재 운영은 `fkkrjljeqxpbmazfnync`.
 
-함수·마이그레이션: dashboard `supabase/migrations` · 운영 메모 [`IOT_ARCHIVE_AND_THERMO_FLAT.md`](./IOT_ARCHIVE_AND_THERMO_FLAT.md).
+함수·마이그레이션: dashboard `supabase/migrations`.
+
+### slim · thermo flat (2026-08-05)
+
+전 행 `decoded_json` → `v0c-slim-1` (`tempsC` + `channels`만). 실측: 대부분 slim · avg JSON ~509B.
+
+서모 flat 컬럼: `setpoint_temp`, `temp_deviation`, `min_vent_pct`, `max_vent_pct`. `v_iot_dashboard_list`는 flat만 사용한다 (JSON extract 제거). Edge decode-batch가 Channel A thermo를 flat에 기록한다.
 
 ### 대시보드 영향 (현재)
 
@@ -90,4 +96,4 @@
 | cmd-poll ids 배칭 | 백로그 (보존과 무관) |
 | 문서 | 본 문서 = retention **정본** (구 “미실행” 문구 폐기) |
 
-관련: [`LIVE_HOT_VIEW_RULES.md`](./LIVE_HOT_VIEW_RULES.md) · [`PERF_BASELINE.md`](./PERF_BASELINE.md) · [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md)
+관련: [`SYSTEM_DB.md`](./SYSTEM_DB.md) §2.3 · [`PERF_BASELINE.md`](./PERF_BASELINE.md) · [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md)

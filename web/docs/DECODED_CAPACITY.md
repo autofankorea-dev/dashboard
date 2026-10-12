@@ -24,7 +24,7 @@
 | raw | ~21 MB | ~22 MB |
 | legacy 복제 | (D1 직후 ~34 MB) | **없음(DROP)** |
 
-관련: [`DECODED_JSON_SLIM.md`](./DECODED_JSON_SLIM.md) · [`IOT_ARCHIVE_AND_THERMO_FLAT.md`](./IOT_ARCHIVE_AND_THERMO_FLAT.md) · [`SPARSE_OBSERVATION.md`](./SPARSE_OBSERVATION.md)
+관련: [`DECODED_JSON_SLIM.md`](./DECODED_JSON_SLIM.md) · [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) · [`SPARSE_OBSERVATION.md`](./SPARSE_OBSERVATION.md)
 
 ### LIVE/list 스모크 (2026-08-05)
 
@@ -114,7 +114,6 @@
 
 - [`RAW_STORAGE_CHANGE.md`](./RAW_STORAGE_CHANGE.md) — raw Phase 1~4
 - [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) — retention **정본**(2026-08-06 정합)
-- [`IOT_ARCHIVE_AND_THERMO_FLAT.md`](./IOT_ARCHIVE_AND_THERMO_FLAT.md)
-- [`LIVE_HOT_VIEW_RULES.md`](./LIVE_HOT_VIEW_RULES.md)
+- [`SYSTEM_DB.md`](./SYSTEM_DB.md) §2.3 — HOT list 뷰
 - [`SPARSE_OBSERVATION.md`](./SPARSE_OBSERVATION.md) — 희소 재관측
 - D1 파티션·retention·월 파티션 cron은 **적용 완료** (본 §3 표)

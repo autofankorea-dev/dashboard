@@ -21,8 +21,8 @@
 | **운영 단일 Postgres** | Auth·RLS·JOIN view·Edge cron·명령 ACK **한 스키마** | 농장별 DB · read replica만 분리 · **multi-DB COLD(E)** | [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) |
 | **raw/decoded 논리 분리·물리 단일** | 월 파티션·retention·sparse·hot view로 계층 분리. Free tier 현실 | raw 전용 클러스터 · decoded만 S3 | [`DECODED_CAPACITY.md`](./DECODED_CAPACITY.md) |
 | **decode-batch on Edge** | raw 옆 **pg_cron ~10s** · cursor·`last_value`·config **DB co-location** | RS decode · Next API batch · per-farm worker | [`decode-batch`](../supabase/functions/decode-batch/) |
-| **ctrl_thermo_command in DB** | 감사·RLS·pending queue · uplink ACK diff · C.py 단일 소비 | MQTT cmd 직접 · Redis 큐 | [`CTRL_THERMO_COMMAND_PHASE_A.md`](./CTRL_THERMO_COMMAND_PHASE_A.md) |
-| **LIVE view 2h hot** | `received_at` 신선도 · list/latest tier · decode 부하와 read 분리 | 앱 raw scan · 무제한 latest | [`LIVE_HOT_VIEW_RULES.md`](./LIVE_HOT_VIEW_RULES.md) |
+| **ctrl_thermo_command in DB** | 감사·RLS·pending queue · uplink ACK diff · C.py 단일 소비 | MQTT cmd 직접 · Redis 큐 | 본 문서 §2.8 · [`CTRL_THERMO_COMMAND_PHASE_A.md`](./CTRL_THERMO_COMMAND_PHASE_A.md) |
+| **LIVE view 2h hot** | `received_at` 신선도 · list/latest tier · decode 부하와 read 분리 | 앱 raw scan · 무제한 latest | 본 문서 §2.3 |
 | **물리 테이블→View 치환 금지** | 디스크 절약 **위장** 불가 — retention은 detach/archive | HOT/WARM view-only 아카이브 | [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) |
 
 ### 1.1 DB 물리 분리를 하지 않은 이유
@@ -105,16 +105,37 @@ erDiagram
 
 ### 2.3 LIVE Views
 
+Free tier · Micro에서는 HOT list 뷰를 얇게 유지한다. 코드 정본은 [`live-read-select.ts`](../src/lib/domain/live-read-select.ts), 호출 계약은 [`live-config.ts`](../src/lib/domain/live-config.ts), 성능은 [`PERF_BASELINE.md`](./PERF_BASELINE.md).
+
 | View | 용도 | hot 조건 |
 |------|------|----------|
-| `v_iot_dashboard_list` | 카드·목록·soft refresh | `received_at > now()-2h` · **평면 스칼라** |
-| `v_iot_decoded_latest` | 패널 bootstrap · `channels[]` · bulk | 동일 2h · LATERAL 최신 1행 |
-| `v_iot_farm_overview` | admin hub 집계 | list 위 집계 |
+| `v_iot_dashboard_list` | 카드·목록·soft refresh·Admin hub overview | `received_at > now()-2h` · **평면 스칼라만** · LATERAL 최신 1행 |
+| `v_iot_decoded_latest` | 패널 bootstrap · `channels[]` · bulk · enrich | 동일 2h 키 · LATERAL 최신 1행 |
+| `v_iot_farm_overview` | admin hub 집계 | list 위 집계만. LIVE 전체 DISTINCT ON 금지 |
+| `farm_trend_history*` | 차트 | RPC. View에 이력 스캔을 넣지 않음 |
 | `v_iot_raw_live` | 레거시 TS decode 경로 | RS-DB-C 전환 잔재 |
 
-**list vs latest tier:** list=경량 · latest=channels 필요 시 ([`live-read-select.ts`](../src/lib/domain/live-read-select.ts)).
+**list vs latest tier:** list=경량 · latest=channels 필요 시.
 
-PR 체크: `LIVE_LIST_FORBIDDEN_TOKENS` · `npm run measure:live` p95<300ms ([`LIVE_HOT_VIEW_RULES.md`](./LIVE_HOT_VIEW_RULES.md)).
+list에서 금지:
+
+- `decoded_json`, `channels` (및 동등 JSON/배열 페이로드)
+- 다테이블 조인으로 list를 풀 패널로 키우기
+- soft refresh를 full(`decoded_latest`)로 되돌리기
+- 물리 테이블을 View로 치환해 디스크 절약을 위장
+- LIVE 전체 이력 `DISTINCT ON` (12만+ 행 스캔 → statement timeout)
+
+컨트롤러 키는 `received_at > now() - 2 hours` 에서만 찾는다. 오프라인 판정은 1시간. 2시간 넘게 신호가 없는 컨트롤러는 목록·개요에서 빠진다.
+
+PR 체크 (View / LIVE SELECT 변경 시):
+
+- [ ] list SELECT에 `LIVE_LIST_FORBIDDEN_TOKENS` 없음 (`npm test` · `live-read-select.test.ts`)
+- [ ] 새 컬럼이 카드/목록에만 필요하면 list · 채널·명령이면 decoded_latest
+- [ ] `npm run measure:live` — farm-scoped list p95 &lt; 300 ms
+- [ ] soft refresh 후 벌크/채널 적용: channels merge 또는 enrich 가드 유지
+- [ ] migration은 사용자 승인 후만
+
+롤백: 앱은 `NEXT_PUBLIC_LIVE_READ_TIER=legacy`. View는 migration revert (승인 후).
 
 ### 2.4 Edge · RPC
 
@@ -168,6 +189,25 @@ PR 체크: `LIVE_LIST_FORBIDDEN_TOKENS` · `npm run measure:live` p95<300ms ([`L
 | `20260901003000_farm_trend_uplink_coverage_mesure_align.sql` | coverage RPC |
 | `20260915104500_farm_trend_history_channel_thermo.sql` | 컨트롤러 추이 A/B/C 설정(thermo) |
 | `20261008040000_command_defaults_presets_by_stall_ty.sql` | 전역 기본값 + 축사유형별 공용 프리셋 |
+
+### 2.8 명령 행 보존 (Phase B, 2026-08-06)
+
+정책 확정 · C1+C2 적용 완료. 관측은 [`CTRL_THERMO_COMMAND_PHASE_A.md`](./CTRL_THERMO_COMMAND_PHASE_A.md), 적용 결과는 [`CTRL_THERMO_COMMAND_PHASE_C.md`](./CTRL_THERMO_COMMAND_PHASE_C.md).
+
+| 항목 | 결정 |
+|------|------|
+| HOT (`applied` / `cancelled`) | `created_at` 기준 90일 · 초과분 hard DELETE (`cleanup_ctrl_thermo_hot`) |
+| stale `sent` | `sent_at < now() - interval '24 hours'` → `status = 'cancelled'` |
+| 사유 기록 | `note` / `error_msg`에 `stale_sent_24h` (기존 값 있으면 append) |
+| 소급 (C1) | 완료 — 182건 (FARM01 125 + FARM02 57) |
+| archive 테이블 | 1차 비채택 |
+| 신규 status `expired` | 비채택 — `cancelled` 재사용 |
+| FARM02 ACK | 정책과 별도 점검 ([`FARM02_ACK_TRIAGE.md`](./FARM02_ACK_TRIAGE.md)) |
+
+- 최초 C2 시점 90일 초과 행 = 0 (oldest ≈ 2026-07-14). cron은 창이 차면 자동 삭제.
+- `ttl_sec`(300)는 C 전송 창으로 유지. DB 만료 기준으로 쓰지 않음 (24h 규칙).
+- `health_command_checkpoint.command_id` → CASCADE DELETE.
+- C1 dry-run + 함수 + 소급 + 일 cron, C2 HOT 90d DELETE 함수 + 일 cron은 2026-08-06 적용.
 
 ---
 
@@ -237,4 +277,5 @@ PR 체크: `LIVE_LIST_FORBIDDEN_TOKENS` · `npm run measure:live` p95<300ms ([`L
 
 | 날짜 | 내용 |
 |------|------|
+| 2026-10-12 | HOT 뷰 규칙 §2.3 · 명령 행 보존 §2.8 흡수 |
 | 2026-09-01 | 초안 — 설계 이유·ER·RLS·cron (Canvas §2.2 승인 반영) |
