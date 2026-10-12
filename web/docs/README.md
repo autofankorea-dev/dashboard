@@ -40,7 +40,7 @@
 
 | 항목 | 정본 | 내용 |
 |------|------|------|
-| 인수인계 | [`HANDOVER.md`](./HANDOVER.md) | 배포 경계 · 수집/명령 한 줄 · 막히면 여는 문서 |
+| 인수인계 | [`HANDOVER.md`](./HANDOVER.md) | 현장 BLDC·SL802B·SL9001·라우터 · 수집/명령 · 막히면 여는 문서 |
 | 배포·장애 | [`OPS.md`](./OPS.md) | 배포 · Preview 게이트 · CI · 스크립트 · 런북 |
 | 출고 게이트 | [`QA_SHIP_GATE.md`](./QA_SHIP_GATE.md) | 출고마다·메이저·분기 · 스모크 |
 | 출고 기준·기록 | [`QA_RECORD.md`](./QA_RECORD.md) | 전수 체계 · 2026-08-05 실행 · 성능 · 운영 메모 |

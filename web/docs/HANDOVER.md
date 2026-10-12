@@ -11,27 +11,44 @@
 ```mermaid
 flowchart LR
   subgraph field [현장]
-    dev[컨트롤러]
+    motor["BLDC 모터"]
+    sl802["SL802B"]
+    sl9001["SL9001"]
+    router["라우터"]
   end
   subgraph r [수집 · EC2 rsd]
-    rs[RS.py · raw만 저장]
-    cpy[C.py · 명령만 송신]
+    rs["RS.py · raw만 저장"]
+    cpy["C.py · 명령만 송신"]
   end
   subgraph s [저장 · Supabase]
-    raw[(iot_room_state_raw)]
-    dec[decode-batch · 약 10초]
-    list[목록 뷰 · 최근 2시간]
-    trend[차트 RPC · 30일]
-    cmd[(ctrl_thermo_command)]
+    raw[("iot_room_state_raw")]
+    dec["decode-batch · 약 10초"]
+    list["목록 뷰 · 최근 2시간"]
+    trend["차트 RPC · 30일"]
+    cmd[("ctrl_thermo_command")]
   end
   subgraph c [앱 · Vercel]
-    app[Next.js /farm]
+    app["Next.js /farm"]
   end
-  dev -->|MQTT raw| rs --> raw --> dec
+  motor <-->|"RS-485"| sl802
+  sl802 <-->|"RS-485"| sl9001
+  sl9001 <-->|"LAN TCP/IP"| router
+  router -->|"MQTT raw"| rs --> raw --> dec
   dec --> list --> app
   dec --> trend --> app
-  app -->|명령 insert| cmd --> cpy -->|MQTT cmd| dev
+  app -->|"명령 insert"| cmd --> cpy -->|"MQTT cmd"| router
 ```
+
+현장 선은 양방향이다. 측정은 모터에서 라우터로, 명령은 라우터에서 모터로 같은 선을 탄다.
+
+| 장비 | 문서의 이름 | 선 |
+|------|-------------|-----|
+| BLDC 모터 | 환기 구동 | 입출력 RS-485 |
+| SL802B | 컨트롤러 | 입출력 RS-485. 모터와 SL9001 사이 |
+| SL9001 | 통신모듈 | 컨트롤러 쪽 RS-485, 라우터 쪽 LAN TCP/IP |
+| 라우터 | 현장 LAN의 출구 | SL9001와는 LAN TCP/IP. EC2가 받는 입구는 MQTT |
+
+SL9001이 SL802B를 RS-485로 순차로 읽고, 한 대 읽을 때마다 MQTT `…/raw` 1건이 된다. 모듈당 최대 48대. 화면과 DB의 컨트롤러 키는 SL802B이다.
 
 Next.js는 wire를 해석하지 않고 MQTT를 직접 쏘지 않는다. 해석은 Edge `decode-batch`이다.
 
@@ -47,14 +64,14 @@ Next.js는 wire를 해석하지 않고 MQTT를 직접 쏘지 않는다. 해석�
 
 위 화살표와 같은 순서다.
 
-1. 컨트롤러가 MQTT로 측정값을 보낸다.
-2. RS.py가 `iot_room_state_raw`에 raw만 넣는다.
-3. `decode-batch`가 약 10초마다 해석한다.
-4. 목록·카드는 최근 2시간 스칼라 뷰만 읽는다. 차트는 30일 RPC를 읽는다.
-5. 운영자가 설정을 보내면 `ctrl_thermo_command` 행이 생긴다.
-6. C.py가 `0x0D` 또는 `0x0E` 패킷을 내린다.
-7. 장비 ACK가 raw로 다시 올라온다.
-8. 화면이 접수·전송·확인을 갱신한다.
+1. BLDC 모터와 SL802B가 RS-485로 상태를 주고받는다.
+2. SL802B와 SL9001이 RS-485로 그 값을 주고받는다.
+3. SL9001이 라우터와 LAN TCP/IP로 붙는다.
+4. 라우터 너머 MQTT `…/raw`가 RS.py에 들어가 `iot_room_state_raw`에 raw만 쌓인다.
+5. `decode-batch`가 약 10초마다 해석한다.
+6. 목록·카드는 최근 2시간 스칼라 뷰만 읽는다. 차트는 30일 RPC를 읽는다.
+7. 운영자가 설정을 보내면 `ctrl_thermo_command` 행이 생기고, C.py가 `0x0D` 또는 `0x0E`를 MQTT `…/cmd`로 내린다.
+8. 명령은 라우터 → SL9001(LAN TCP/IP) → SL802B(RS-485) → BLDC 모터(RS-485)로 돌아간다. ACK는 다시 raw로 올라오고, 화면이 접수·전송·확인을 갱신한다.
 
 명령 행은 적용·취소 후 90일이다. `sent`가 24시간 지나면 취소로 정리된다. 기준은 [`SYSTEM_DB.md`](./SYSTEM_DB.md) §2.8이다.
 
