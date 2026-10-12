@@ -19,7 +19,6 @@ import {
   parseCategoryTimelineMs,
   trendChartTickTargetForWidth,
 } from "@/lib/farm/trend-display-buckets";
-import { SEV_COLOR } from "@/lib/farm/severity-score";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { isPrimaryPress } from "@/lib/ui/pointer-press";
 import { useClipPresence, usePresenceValue } from "@/lib/ui/use-clip-presence";
@@ -51,7 +50,6 @@ import type {
 } from "@/lib/domain/trend-chart-types";
 import {
   type HoverMetricGroup,
-  formatTrendBandEdge,
   inferHoverMetricGroup,
   isOverlayMergedHoverGroup,
   resolveBreachNavTarget,
@@ -74,21 +72,15 @@ import {
   domainFor,
   finiteValues,
   markerRadiusInViewUnits,
-  mergeOverlappingTempHumEdgeLabels,
-  nudgeEdgeLabelTops,
-  stackLeftAlarmBaselineLabels,
   parseScaleEdgeValueUnit,
   tipPinId,
   trendChartHasRenderableContent,
   trendPlotPadPx,
-  type EdgeBandLabel,
 } from "@/lib/farm/trend-chart-geometry";
 import {
   buildAxisTickViews,
   buildLeftAxisTicks,
-  collectUniqueAlarmBands,
   computeBarLayout,
-  dedupeReferenceLines,
   plotXForBar,
   plotXForIndex,
   plotXForMs,
@@ -115,6 +107,7 @@ import { useTrendLookbackGesture } from "./use-trend-lookback-gesture";
 import { useTrendPinWindowRemap } from "./use-trend-pin-window-remap";
 import { useTrendCrosshair } from "./use-trend-crosshair";
 import { useTrendScaleEdgeEdit } from "./use-trend-scale-edge-edit";
+import { useTrendEdgeBandLabels } from "./use-trend-edge-band-labels";
 import { useTrendScopeGesture } from "./use-trend-scope-gesture";
 import {
   BandGuidesLayer,
@@ -1245,144 +1238,24 @@ export function TrendChart({
     [axisTicks, innerW, padL, period, viewW],
   );
 
-  /** 알람/한계 점선 — 동일 axis·밴드 1회. */
-  const uniqueAlarmBands = useMemo(
-    () => collectUniqueAlarmBands(series, rangeBands),
-    [series, rangeBands],
-  );
-
-  const alarmFillBands = useMemo(
-    () => uniqueAlarmBands.filter((b) => b.fillWindow !== false),
-    [uniqueAlarmBands],
-  );
-  const alarmPresence = useClipPresence(
-    alarmFillBands,
-    (b) =>
-      b.id ??
-      `${b.axis}:${Number(b.band.lo).toFixed(3)}:${Number(b.band.hi).toFixed(3)}`,
-    { enabled: clipWipeEnabled },
-  );
-
-  /** referenceLines 중 알람 band 모서리와 중복되는 점선 제거. */
-  const dedupedReferenceLines = useMemo(
-    () => dedupeReferenceLines(referenceLines, uniqueAlarmBands),
-    [referenceLines, uniqueAlarmBands],
-  );
-
-  const unitForAxis = (axis: TrendAxis) =>
-    axis === "right" ? rightUnit : leftUnit;
-
-  /**
-   * 한계(점선) 끝단 라벨
-   * - 단일 Y: 좌끝 / 이중 Y: 축별 좌·우끝 (상한 위선·하한 아래선)
-   */
-  const edgeBandLabels = useMemo(() => {
-    if (mode !== "line") return [] as EdgeBandLabel[];
-    const out: EdgeBandLabel[] = [];
-    const seriesColorForAxis = (axis: TrendAxis): string | null => {
-      const match = series.find((s) => (s.axis ?? "left") === axis);
-      return match?.color ?? null;
-    };
-    const sideForLimit = (axis: TrendAxis): "left" | "right" => {
-      if (usesRight) return axis === "right" ? "right" : "left";
-      return "left";
-    };
-    const colorForLimit = (axis: TrendAxis): string => {
-      if (usesRight) {
-        return seriesColorForAxis(axis) ?? SEV_COLOR.warning;
-      }
-      return SEV_COLOR.warning;
-    };
-    uniqueAlarmBands.forEach(({ band, axis, fillWindow }, idx) => {
-      if (fillWindow) return;
-      const unit = unitForAxis(axis);
-      const side = sideForLimit(axis);
-      const color = colorForLimit(axis);
-      for (const edge of ["hi", "lo"] as const) {
-        const value = band[edge];
-        const y = yFor(value, axis);
-        if (!Number.isFinite(y)) continue;
-        out.push({
-          id: `alarm-${idx}-${axis}-${edge}-${value}`,
-          side,
-          topPct: (y / chartH) * 100,
-          text: formatTrendBandEdge(value, unit),
-          color,
-          title: `한계 ${edge === "hi" ? "상한" : "하한"}`,
-          mark: edge === "hi" ? "overline" : "underline",
-        });
-      }
+  const { alarmPresence, dedupedReferenceLines, edgeBandLabels } =
+    useTrendEdgeBandLabels({
+      mode,
+      series,
+      rangeBands,
+      referenceLines,
+      scaleEdgeLabels,
+      usesRight,
+      leftUnit,
+      rightUnit,
+      chartH,
+      innerH,
+      leftDomain: [lMin, lMax],
+      rightDomain: [rMin, rMax],
+      editingEdgeId: edgeEdit?.id,
+      overlayHoverMerge,
+      clipWipeEnabled,
     });
-    for (const ref of dedupedReferenceLines) {
-      if (ref.hideLabel) continue;
-      const axis = ref.axis ?? "left";
-      const y = yFor(ref.value, axis);
-      if (!Number.isFinite(y)) continue;
-      const [mn, mx] = axis === "right" ? [rMin, rMax] : [lMin, lMax];
-      const mid = (mn + mx) / 2;
-      out.push({
-        id: `ref-${axis}-${ref.value}`,
-        side: sideForLimit(axis),
-        topPct: (y / chartH) * 100,
-        text:
-          ref.label?.trim() ||
-          formatTrendBandEdge(ref.value, unitForAxis(axis)),
-        color: usesRight
-          ? seriesColorForAxis(axis) ?? ref.color
-          : ref.color,
-        title: "한계",
-        mark: ref.value >= mid ? "overline" : "underline",
-      });
-    }
-    for (const guide of scaleEdgeLabels) {
-      if (guide.hideLabel && edgeEdit?.id !== guide.id) continue;
-      const axis = guide.axis ?? "left";
-      const y = yFor(guide.value, axis);
-      if (!Number.isFinite(y)) continue;
-      out.push({
-        id: guide.id,
-        side: guide.side ?? "right",
-        topPct: (y / chartH) * 100,
-        text: guide.text,
-        leadingText: guide.leadingText,
-        color: guide.color,
-        title: guide.title ?? guide.text,
-        mark: guide.mark,
-        draggable: Boolean(guide.draggable),
-        editValue: guide.editValue,
-        labelLane: guide.labelLane ?? "outer",
-        showApplyActions: Boolean(guide.showApplyActions),
-        labelIcon: guide.labelIcon,
-      });
-    }
-    return nudgeEdgeLabelTops(
-      stackLeftAlarmBaselineLabels(
-        mergeOverlappingTempHumEdgeLabels(out, 5.5),
-        8.5,
-        overlayHoverMerge,
-      ),
-      5.5,
-    );
-    // yFor/chartH are stable for given domains+height
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- yFor closes over domain/size
-  }, [
-    mode,
-    usesRight,
-    series,
-    uniqueAlarmBands,
-    dedupedReferenceLines,
-    scaleEdgeLabels,
-    leftUnit,
-    rightUnit,
-    chartH,
-    lMin,
-    lMax,
-    rMin,
-    rMax,
-    innerH,
-    edgeEdit?.id,
-    overlayHoverMerge,
-  ]);
 
   /** hover 중인 스케일 칩(강조 대상). 없으면 dim 미적용 */
   const hoveredEdge =
