@@ -34,9 +34,6 @@ import {
   emptyTrendControllerPeriodData,
   isContextControllerTrend30d,
   pickTrendCanvasPeriod,
-  TREND_MINI_STRIDE_MS,
-  TREND_PERIODS,
-  TREND_ZOOM_15M_MAX_DAYS,
   controllerTrendPeriodHasSeries,
   type TrendControllerPeriodData,
   type TrendControllerSeries,
@@ -48,15 +45,18 @@ import {
 } from "@/lib/farm/trend-uplink-coverage";
 import {
   applyCoverageToWindow,
-  binControllerWindowToStride,
-  brushSliceRange,
-  bucketAtsRangeMs,
   buildTrendBrushOverview,
-  controllerWindowHasValues,
   downsampleSeriesForChart,
   mapIndexWindowToSlice,
   sliceControllerSeries,
 } from "@/components/farm/unified-barn-trend-panel-helpers";
+import { buildUnifiedBarnTrendWindow } from "@/components/farm/unified-barn-trend-window";
+import { buildUnifiedCommandSettingSegs } from "@/components/farm/unified-barn-trend-command-overlay";
+import {
+  resolveXScopeRangeMs,
+  scopeEntryFromZoomHint,
+  xScopeEntryOutOfRange,
+} from "@/components/farm/unified-barn-trend-x-scope";
 import {
   window15mCovers,
 } from "@/lib/farm/trend-brush-coverage";
@@ -76,11 +76,7 @@ import {
 } from "@/lib/farm/farm-chart-scope";
 import type { ControllerThermoSettings } from "@/lib/controllers/controller-settings";
 import { sliceControllerTrendByTime } from "@/lib/domain/trend-period-slice";
-import { buildDecodedSettingHoldSegments, sliceFanControlWindows } from "@/lib/farm/channel-thermo";
-import {
-  clipCommandSettingY,
-  decodedSettingHoldToEventMark,
-} from "@/lib/farm/decoded-setting-hold";
+import { sliceFanControlWindows } from "@/lib/farm/channel-thermo";
 import {
   DEFAULT_COMMAND_CHANNEL_FLAGS,
   toggleCommandChannelFlag,
@@ -90,13 +86,10 @@ import { buildFarmTrendScaleEdges } from "@/components/farm/unified-barn-trend-s
 import {
   tickEveryForDisplayBars,
   formatTrendScopeRangeLabel,
-  parseCategoryTimelineMs,
 } from "@/lib/farm/trend-display-buckets";
 import {
   aggregateUnifiedBarnTrendRaw,
   DEFAULT_UNIFIED_LAYERS,
-  mapMotorPctToSplitY,
-  mapTempCToSplitY,
   mapUnifiedBarnTrendRawToSplitY,
   overlayControllerMetricSeries,
   replaceAverageMetricSeries,
@@ -536,119 +529,31 @@ export function UnifiedBarnTrendPanel({
       : canvasPeriod;
 
   /** 펼친 기본·휠 = 30일 1시간 슬라이스. 미니 = 24시간 2시간 평균. 15분은 드래그 줌만. */
-  const windowBundle = useMemo(() => {
-    const collectRange = (periodId: TrendPeriodId, from: number, to: number) => {
-      const periodData = controllerTrendByPeriod?.[periodId] ?? null;
-      const categoriesRaw = periodData?.categories ?? [];
-      if (!categoriesRaw.length) return null;
-      const windowCategories = categoriesRaw.slice(from, to);
-      if (windowCategories.length < 2) return null;
-
-      const seriesList = controllers
-        .map((c) => {
-          const r = c.reading;
-          if (!r) return null;
-          const found = findControllerTrendSeries(
-            controllerTrendByPeriod,
-            periodId,
-            r.stallTyCode,
-            r.stallNo,
-            r.controllerKey,
-          );
-          if (!found) return null;
-          // 표시 정본 = 채널 슬롯(A/B/C) — series.fanA/B/C 를 그대로 사용.
-          return {
-            ...sliceControllerSeries(found, from, to),
-            zoneLabel: formatControllerHeaderPrimary(r),
-            equipmentLabel: formatControllerHeaderSecondary(r),
-            stallTyCode: r.stallTyCode
-              ? normalizeStallTyCode(r.stallTyCode)
-              : undefined,
-          };
-        })
-        .filter((s): s is NonNullable<typeof s> => s != null);
-
-      if (!seriesList.length) return null;
-      const bucketAts = (periodData?.bucketAts ?? []).slice(from, to);
-      return {
-        categories: windowCategories,
-        bucketAts,
-        seriesList: applyCoverageToWindow(
-          seriesList,
-          bucketAts,
-          uplinkCoverage,
-        ),
-      };
-    };
-
-    const collect = (periodId: TrendPeriodId, brush: boolean) => {
-      const periodData = controllerTrendByPeriod?.[periodId] ?? null;
-      const categoriesRaw = periodData?.categories ?? [];
-      if (!categoriesRaw.length) return null;
-      if (!brush) return collectRange(periodId, 0, categoriesRaw.length);
-      const range = brushSliceRange(categoriesRaw.length, brushWindow);
-      return collectRange(periodId, range.from, range.to);
-    };
-
-    const finish = (
-      bundle: {
-        categories: string[];
-        bucketAts: string[];
-        seriesList: ReturnType<typeof applyCoverageToWindow>;
-      } | null,
-    ) => {
-      if (!bundle) return null;
-      if (overview) {
-        return binControllerWindowToStride(bundle, TREND_MINI_STRIDE_MS);
-      }
-      return bundle;
-    };
-
-    if (overview) {
-      const h24 = collect("24h", false);
-      if (h24) return finish(h24);
-      const d30n = controllerTrendByPeriod?.["30d"]?.categories.length ?? 0;
-      const hours24 = Math.round(
-        TREND_PERIODS["24h"].durationMs / TREND_PERIODS["30d"].strideMs,
-      );
-      if (d30n >= hours24) {
-        const tail = collectRange("30d", d30n - hours24, d30n);
-        if (tail) return finish(tail);
-      }
-      return null;
-    }
-
-    if (useBrushCanvas && context30d) {
-      const hourly = collect("30d", true);
-      if (hourly && (comparisonActive || controllerWindowHasValues(hourly))) return hourly;
-    }
-    const h24 = collect("24h", false);
-    if (h24 && controllerWindowHasValues(h24)) {
-      return binControllerWindowToStride(
-        h24,
-        TREND_PERIODS["30d"].strideMs,
-      );
-    }
-    if (useBrushCanvas && context30d) {
-      const hourly = collect("30d", true);
-      if (hourly) return hourly;
-    }
-
-    const primary = collect(canvasPeriod, false);
-    if (primary) return finish(primary);
-    if (canvasPeriod !== "24h") return finish(collect("24h", false));
-    return null;
-  }, [
-    controllers,
-    controllerTrendByPeriod,
-    canvasPeriod,
-    useBrushCanvas,
-    context30d,
-    brushWindow,
-    uplinkCoverage,
-    overview,
-    comparisonActive,
-  ]);
+  const windowBundle = useMemo(
+    () =>
+      buildUnifiedBarnTrendWindow({
+        controllers,
+        controllerTrendByPeriod,
+        canvasPeriod,
+        useBrushCanvas,
+        context30d,
+        brushWindow,
+        uplinkCoverage,
+        overview,
+        comparisonActive,
+      }),
+    [
+      controllers,
+      controllerTrendByPeriod,
+      canvasPeriod,
+      useBrushCanvas,
+      context30d,
+      brushWindow,
+      uplinkCoverage,
+      overview,
+      comparisonActive,
+    ],
+  );
   /** SSR/첫 hydration은 셸만 맞추고 SVG용 집계는 background render에서 계산한다. */
   const clientReady = useSyncExternalStore(
     emptySubscribe,
@@ -749,36 +654,23 @@ export function UnifiedBarnTrendPanel({
   }
 
   /** 데이터 길이/인덱스 불일치 시 스택 비우기 */
-  if (xScope && picked && xScopeStack.length > 0) {
-    const n = picked.categories.length;
-    if (
-      n < 2 ||
-      xScope.start < 0 ||
-      xScope.end >= n ||
-      xScope.start > xScope.end ||
-      xScope.end - xScope.start < 2
-    ) {
-      setXScopeStack([]);
-    }
+  if (
+    xScope &&
+    picked &&
+    xScopeStack.length > 0 &&
+    xScopeEntryOutOfRange(picked.categories.length, xScope)
+  ) {
+    setXScopeStack([]);
   }
 
   const xScopeRangeMs = useMemo(() => {
-    if (overview || !xScope || !picked || !windowBundle) return null;
-    const slice = mapIndexWindowToSlice(
-      picked.categories.length,
-      xScope.start,
-      xScope.end,
-      windowBundle.bucketAts.length,
-    );
-    const range = bucketAtsRangeMs(
-      windowBundle.bucketAts,
-      slice.from,
-      slice.to,
-    );
-    if (!range) return null;
-    const maxMs = TREND_ZOOM_15M_MAX_DAYS * TREND_PERIODS["24h"].durationMs;
-    if (range.toMs - range.fromMs > maxMs + 1) return null;
-    return range;
+    if (!picked || !windowBundle) return null;
+    return resolveXScopeRangeMs({
+      overview,
+      scope: xScope,
+      categoryCount: picked.categories.length,
+      bucketAts: windowBundle.bucketAts,
+    });
   }, [overview, xScope, picked, windowBundle]);
 
   useEffect(() => {
@@ -814,51 +706,10 @@ export function UnifiedBarnTrendPanel({
       effectiveZoom.endRatio.toFixed(3),
       String(n),
     ].join("|");
-    if (initialZoomKeyRef.current === key) return;
-    let start: number;
-    let end: number;
-    if (
-      effectiveZoom.startIndex != null &&
-      effectiveZoom.endIndex != null &&
-      Number.isFinite(effectiveZoom.startIndex) &&
-      Number.isFinite(effectiveZoom.endIndex)
-    ) {
-      start = Math.max(
-        0,
-        Math.min(
-          n - 1,
-          Math.round(Math.min(effectiveZoom.startIndex, effectiveZoom.endIndex)),
-        ),
-      );
-      end = Math.max(
-        0,
-        Math.min(
-          n - 1,
-          Math.round(Math.max(effectiveZoom.startIndex, effectiveZoom.endIndex)),
-        ),
-      );
-    } else {
-      const i0 = Math.round(effectiveZoom.startRatio * (n - 1));
-      const i1 = Math.round(effectiveZoom.endRatio * (n - 1));
-      start = Math.max(0, Math.min(i0, i1));
-      end = Math.min(n - 1, Math.max(i0, i1));
-    }
-    if (end - start < 2) {
-      if (end < n - 1) end = Math.min(n - 1, start + 2);
-      else start = Math.max(0, end - 2);
-    }
-    if (end - start < 2) return;
+    const entry = scopeEntryFromZoomHint(n, effectiveZoom);
+    if (initialZoomKeyRef.current === key || !entry) return;
     initialZoomKeyRef.current = key;
-    const measureBands = effectiveZoom.yBands.filter((b) => b !== "command");
-    setXScopeStack([
-      {
-        start,
-        end,
-        yBands: measureBands.length
-          ? (measureBands as UnifiedYBandId[])
-          : null,
-      },
-    ]);
+    setXScopeStack([entry]);
     bumpScopeMotion("in");
   }, [effectiveZoom, comparisonZoom, picked, period, bumpScopeMotion]);
 
@@ -1051,91 +902,43 @@ export function UnifiedBarnTrendPanel({
     Boolean(layers.motors || layers.motorCh) &&
     layout.motorHi > layout.motorLo;
   const showCommandOverlay = showTempCommandOverlay || showMotorCommandOverlay;
-  const commandSettingSegs = useMemo((): TrendCommandSettingSeg[] => {
-    const windows = scoped?.thermoWindows;
-    if (!showCommandOverlay || !built || !windows) return [];
-    const cats = scoped?.categories ?? [];
-    const times = parseCategoryTimelineMs(cats);
-    if (!times || times.length < 1) return [];
-    const endMs = times[times.length - 1]!;
-    const segs = buildDecodedSettingHoldSegments(windows, times, endMs);
-    const mapLo = plotThresholds.tempLow;
-    const mapHi = plotThresholds.tempHigh;
-    const out: TrendCommandSettingSeg[] = [];
-    for (const seg of segs) {
-      if (!commandChannels[seg.channel]) continue;
-      const mark = decodedSettingHoldToEventMark(seg);
-      if (showTempCommandOverlay) {
-        const clipped = clipCommandSettingY(
-          mapTempCToSplitY(
-            seg.tempLo,
-            mapLo,
-            mapHi,
-            tempMapLayout,
-            overlayAlign ? undefined : tempMapDomain,
-            overlayAlign,
-            tempMapOverflow,
-          ),
-          mapTempCToSplitY(
-            seg.tempHi,
-            mapLo,
-            mapHi,
-            tempMapLayout,
-            overlayAlign ? undefined : tempMapDomain,
-            overlayAlign,
-            tempMapOverflow,
-          ),
-          layout.tempLo,
-          layout.tempHi,
-        );
-        if (clipped) {
-          out.push({
-            mark,
-            x0Ms: seg.x0Ms,
-            x1Ms: seg.x1Ms,
-            yLo: clipped.yLo,
-            yHi: clipped.yHi,
-            band: "temp",
-          });
-        }
-      }
-      if (showMotorCommandOverlay) {
-        const clipped = clipCommandSettingY(
-          mapMotorPctToSplitY(seg.ventLo, tempMapLayout),
-          mapMotorPctToSplitY(seg.ventHi, tempMapLayout),
-          tempMapLayout.motorLo,
-          tempMapLayout.motorHi,
-        );
-        if (clipped) {
-          out.push({
-            mark,
-            x0Ms: seg.x0Ms,
-            x1Ms: seg.x1Ms,
-            yLo: clipped.yLo,
-            yHi: clipped.yHi,
-            band: "motor",
-          });
-        }
-      }
-    }
-    return out;
-  }, [
-    showCommandOverlay,
-    showTempCommandOverlay,
-    showMotorCommandOverlay,
-    built,
-    scoped?.thermoWindows,
-    scoped?.categories,
-    plotThresholds.tempLow,
-    plotThresholds.tempHigh,
-    layout.tempLo,
-    layout.tempHi,
-    tempMapLayout,
-    tempMapDomain,
-    tempMapOverflow,
-    overlayAlign,
-    commandChannels,
-  ]);
+  const commandSettingSegs = useMemo(
+    (): TrendCommandSettingSeg[] =>
+      buildUnifiedCommandSettingSegs({
+        showCommandOverlay,
+        showTempCommandOverlay,
+        showMotorCommandOverlay,
+        hasBuilt: Boolean(built),
+        windows: scoped?.thermoWindows,
+        categories: scoped?.categories ?? [],
+        tempLow: plotThresholds.tempLow,
+        tempHigh: plotThresholds.tempHigh,
+        tempBandLo: layout.tempLo,
+        tempBandHi: layout.tempHi,
+        layout: tempMapLayout,
+        tempDomain: tempMapDomain,
+        tempOverflowDomain: tempMapOverflow,
+        overlayAlign,
+        commandChannels,
+      }),
+    [
+      showCommandOverlay,
+      showTempCommandOverlay,
+      showMotorCommandOverlay,
+      built,
+      scoped?.thermoWindows,
+      scoped?.categories,
+      plotThresholds.tempLow,
+      plotThresholds.tempHigh,
+      layout.tempLo,
+      layout.tempHi,
+      tempMapLayout,
+      tempMapDomain,
+      tempMapOverflow,
+      overlayAlign,
+      commandChannels,
+    ],
+  );
   const chartPlotHeightForChart = chartPlotHeight;
 
   const emitZoom = useCallback(
