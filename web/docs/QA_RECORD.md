@@ -899,12 +899,12 @@ SHIP 수동 시나리오 2·3·4·8은 이번 출고마다에서 생략(계획�
 | `/app/download` | 307 → Supabase signed URL → APK **8,202,607 bytes**, ZIP/APK magic OK |
 | 실기기 설치·로그인 | **PASS** — 사용자 수동 확인 완료 (2026-08-05) |
 
-증적: `scripts/mobile-audit-output/p2-3-app-download-report.json` (gitignore).
+증적: 로컬 산출 `p2-3-app-download-report.json` (커밋하지 않음).
 
 #### P2-2 / P2-3 수동 재검수 (2026-08-05)
 
-- P2-2: `node scripts/p2-2-delin-redirect.mjs` → **PASS** (오탐 해제)
-- P2-3: `node scripts/p2-3-app-download.mjs` → prod/local **다운로드 PASS**
+- P2-2: DELIN 리다이렉트 오탐 해제 **PASS**
+- P2-3: prod/local **다운로드 PASS**
 - P2-3 실기기: 사용자 확인 → **PASS** (설치·로그인)
 
 **실기기 (사용자)**

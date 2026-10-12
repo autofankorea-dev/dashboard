@@ -293,12 +293,7 @@ UI_VERIFY_BASE=https://<preview-or-prod>.vercel.app npm run smoke:hub-url
 1. Chrome DevTools → Network (Fetch/XHR) · Performance/Memory  
 2. `/farm` 로그인 → 목록·차트 각 1회 진입 후 그리드로 복귀  
 3. 다른 앱 탭으로 전환(숨김) 30초 → 복귀  
-4. 숨김 중·복귀 직후 `live` / Supabase 요청이 **활성 탭 수준**인지 기록  
-5. (선택) 출고 당시 폴링 스모크 재실행:
-
-```bash
-node scripts/archive/ship-p0-visibility-poll-smoke.mjs
-```
+4. 숨김 중·복귀 직후 `live` / Supabase 요청이 **활성 탭 수준**인지 기록
 
 결과를 이 문서 또는 이슈에 p50/p95·maxInFlight로 남긴다. 기준 참고: [`PERF_BASELINE.md`](./PERF_BASELINE.md) · [`SHIP_CHECKLIST.md`](./SHIP_CHECKLIST.md).
 

@@ -196,7 +196,7 @@ UI_VERIFY_BASE=https://<preview-or-prod>.vercel.app node scripts/farm-hub-url-ma
 
 ### Knip
 
-- 설정: `knip.config.ts` — `src/app`·`src/**/*.test.ts`·`scripts/*`·`scripts/fixtures/*.tsx`(스모크가 앱으로 복사하는 페이지)를 entry로 둔다. ignore: 미연결 디자인 헬퍼. `buffer`는 webpack 폴리필이라 `ignoreDependencies`. `scripts/archive/**`는 entry에 넣지 않는다.
+- 설정: `knip.config.ts` — `src/app`·`src/**/*.test.ts`·`scripts/*`·`scripts/fixtures/*.tsx`(스모크가 앱으로 복사하는 페이지)를 entry로 둔다. ignore: 미연결 디자인 헬퍼. `buffer`는 webpack 폴리필이라 `ignoreDependencies`.
 - CI: `npm run knip` — files/dependencies/duplicates만 게이트
 - 로컬 점진 정리: `npm run knip:exports` — unused export 전체 목록
 
@@ -246,7 +246,7 @@ GitHub → Vercel이 실제 배포 경로이므로 이 workflow가 **배포 전 
 
 실행 위치: 항상 `dashboard/web/` (`npm run …` 또는 `npx tsx scripts/…`).
 
-분류: **A** CI/npm 게이트 · **B** assert·공유 · **C** 로컬 스모크·도구 · **D** archive(일회성)
+분류: **A** CI/npm 게이트 · **B** assert·공유 · **C** 로컬 스모크·도구
 
 ---
 
@@ -298,25 +298,7 @@ GitLab(`.gitlab-ci.yml`)과 GitHub(`.github/workflows/web-verify.yml`) 모두 `l
 | `test:e2e` (npm) | 위 둘 묶음 — 부트(미인증)→인증 핵심 플로 E2E 게이트. 서버 기동 + `.env.local`(Supabase) 필요 |
 | `verify-channel-bulk-commands.mjs` | 채널 일괄 명령 |
 | `set-test-passwords.mjs` / `test-accounts.mjs` | 로컬 테스트 계정 (비밀값 커밋 금지) |
-
----
-
-### D — archive (일회성 · 재실행 시만)
-
-경로: `scripts/archive/` — 설명은 [`scripts/archive/README.md`](../scripts/archive/README.md).
-
-| 파일 | 당시 용도 |
-|------|-----------|
-| `ship-p0-gate-smoke.mjs` | P0 hydration·테마·적용·LIVE |
-| `ship-p0-visibility-poll-smoke.mjs` | 탭 숨김·대량 LIVE 폴링 |
-| `manual-scenarios-13562-smoke.mjs` | 수동 시나리오 자동화 |
-| `diag-tab-hidden-poll.mjs` | 탭 숨김 폴링 진단 |
-| `detailed-reverify.mjs` | 상세 재검증 |
-| `graph-mode-card-collapse-smoke.mjs` | 그래프 모드 카드 접힘 |
-| `daily-report-qa-a.mts` | 일보 QA |
-| `daily-report-payload-smoke.mts` | 일보 payload 스모크 |
-
-과거 PASS 기록은 [`SHIP_CHECKLIST.md`](./SHIP_CHECKLIST.md)에 남김. 경로만 `scripts/archive/…`로 갱신.
+| `ship-gate-ce-smoke.mjs` | 목록 LIVE 표본 · 옛 `view=aria` 에 DELIN 배지 없음 |
 
 ---
 

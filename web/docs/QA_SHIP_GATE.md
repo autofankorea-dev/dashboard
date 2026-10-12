@@ -162,9 +162,9 @@ npm run audit:ship-checklist
 
 ### 공통
 
-- [x] 로그인 → `/farm` 진입, FARM01 LIVE(임신/분만/자돈) 표시 — `audit:ship-checklist` · `scripts/archive/ship-p0-gate-smoke` (2026-07-28)
+- [x] 로그인 → `/farm` 진입, FARM01 LIVE(임신/분만/자돈) 표시 — `audit:ship-checklist` (2026-07-28)
 - [x] 빈 SP·위치만 농장이 제품 화면에 이질감 없이 처리 — LIVE SP만 표시·위치만 뱃지 (제품화 반영)
-- [x] DevTools / Next 이슈 배지에 **hydration mismatch 없음** — Playwright Chromium cold load + 테마 토글 (`scripts/archive/ship-p0-gate-smoke`, 2026-07-24)
+- [x] DevTools / Next 이슈 배지에 **hydration mismatch 없음** — Playwright Chromium cold load + 테마 토글 (2026-07-24)
 
 ### admin
 
@@ -172,7 +172,7 @@ npm run audit:ship-checklist
 - [x] Farm switcher: `LIVE` / `위치만` 뱃지 (해당 시) — 제품화 반영
 - [x] 헤더 **도구 → 운영** → `/admin/ops` 시스템·사용자·농장 탭 로드 — `audit:ship-checklist` (2026-07-28)
 - [x] 레거시 `/admin/health/farm/:slug` → `/admin/ops?farm=…&modules=1` (proxy middleware, `--`·`:` slug 모두) — curl 307 (2026-07-27)
-- [x] 테마·모바일 미리보기 토글 동작, hydration 경고 없음 — `scripts/archive/ship-p0-gate-smoke` 테마 (2026-07-24)
+- [x] 테마·모바일 미리보기 토글 동작, hydration 경고 없음 (2026-07-24)
 
 ### operator
 
@@ -194,9 +194,10 @@ npm run audit:ship-checklist
 ```bash
 # dev 서버 실행 중
 npm run audit:ship-checklist
+node scripts/ship-gate-ce-smoke.mjs
 ```
 
-결과는 `scripts/mobile-audit-output/ship-checklist-report.json`에 저장된다.
+`audit:ship-checklist` 결과는 `scripts/mobile-audit-output/ship-checklist-report.json`에 저장된다. `ship-gate-ce-smoke.mjs`는 목록 LIVE 표본과, 제거된 DELIN 배지가 옛 `view=aria` 주소에 없는지를 본다.
 
 ### 수동 시나리오 (실사용 경로)
 
@@ -285,24 +286,21 @@ npm run audit:ship-checklist
 
 | # | 시나리오 | 결과 | 증거/비고 | 일시 |
 | --- | --- | --- | --- | --- |
-| 1 | 적용 연타 | PASS | Playwright `scripts/archive/manual-scenarios-13562-smoke.mjs` — 연타 후 결과 1회 | 2026-07-24 |
+| 1 | 적용 연타 | PASS | 연타 후 결과 1회 | 2026-07-24 |
 | 2 | Offline 적용 | PASS | Offline 즉시 `적용 실패`·네트워크 문구 → Online 재시도 ACK `명령 등록 · 전송 대기` (오버레이 autoDismiss 전에 검출) | 2026-07-24 |
 | 3 | LIVE 중 이탈 | PASS | 배너 중 `/farm` 이탈 후 목록 재진입 · 적용 UI 복구 | 2026-07-24 |
 | 4 | 탭 숨김 | PASS | quiet → hide → 1.5s drain 후 신규 poll 0 (`hiddenAfterDrain:0`). #8 maxInFlight 2 | 2026-07-24 |
 | 5 | 채널 미매칭 | PASS | farm-scoped LIVE가 `decoded_latest`로 channels[] 포함. B-only → toast `채널 미매칭 1대` · DB `SET_CHANNEL_THERMO`×12 (B/EC02) · SP02 0건 · 시뮬 CMD applied | 2026-07-24 |
-| 6 | 알람만 일괄 | PASS | toast + 맵 detail 설정 `온도 알림 하한` DOM 일치 (`targetLow=shownLow=10.5`, `sliderDomOk`) — `ONLY=6 node scripts/archive/manual-scenarios-13562-smoke.mjs` | 2026-07-24 |
+| 6 | 알람만 일괄 | PASS | toast + 맵 detail 설정 `온도 알림 하한` DOM 일치 (`targetLow=shownLow=10.5`, `sliderDomOk`) | 2026-07-24 |
 | 7 | viewer ops | PASS | ship-checklist 자동화 | 2026-07-24 |
-| 8 | 대량 LIVE 폴링 | PASS | `scripts/archive/ship-p0-visibility-poll-smoke.mjs` — maxInFlight 3 (≤4) · pollPosts 50 | 2026-07-24 |
+| 8 | 대량 LIVE 폴링 | PASS | maxInFlight 3 (≤4) · pollPosts 50 | 2026-07-24 |
 
-자동화 재실행 (일회성 스모크는 `scripts/archive/`):
+자동화 재실행:
 
 ```bash
 # dev 서버 실행 중
-node scripts/archive/manual-scenarios-13562-smoke.mjs
-ONLY=6 node scripts/archive/manual-scenarios-13562-smoke.mjs   # #6 슬라이더 DOM만
 node scripts/verify-channel-bulk-commands.mjs
-node scripts/archive/ship-p0-visibility-poll-smoke.mjs   # #4 · #8
-node scripts/archive/ship-p0-gate-smoke.mjs              # P0 hydration·테마·적용·LIVE 축사
+node scripts/ship-gate-ce-smoke.mjs
 npm run audit:ship-checklist                     # 역할 공통 경로
 ```
 
@@ -312,7 +310,7 @@ npm run audit:ship-checklist                     # 역할 공통 경로
 
 | 역할 | 결과 | 비고 |
 | --- | --- | --- |
-| admin | PASS (2026-07-24) | `audit:ship-checklist` — `/farm` LIVE 3축사 · `/admin/ops` · `scripts/archive/ship-p0-gate-smoke` 테마 |
+| admin | PASS (2026-07-24) | `audit:ship-checklist` — `/farm` LIVE 3축사 · `/admin/ops` · 테마 토글 |
 | operator | PASS (2026-07-24) | ACK `명령 등록 · 전송 대기` · 일괄 시나리오 1~6·8 |
 | viewer | PASS (2026-07-24) | `audit:ship-checklist` — 조회 전용 · ops 차단 · 적용 없음 |
 
