@@ -22,19 +22,10 @@
 
 ## 할 일 — RS 수집 공백 재발 방지
 
-2026-09-17 Supabase HTTPS INSERT `ReadTimeout`으로 `rsd-rs`가 정체돼
-`17:14~18:49 KST` raw 수집 공백이 발생했다. RS 재시작으로 서비스는
-복구됐지만 clean session·메모리 큐 구조와 EBS 스냅샷 부재로 해당 구간은
-복구하지 못했다.
-
-- [ ] RS SQLite WAL durable Outbox
-- [ ] MQTT 수신과 Supabase 전송 worker 분리
-- [ ] 재시작 replay·idempotency·용량 상한 검증
-- [ ] Outbox oldest age·disk·DB write 경보
-- [ ] 운영 대형 SQL `EXPLAIN`·timeout·실행 범위 가드
-
-상세 원인·영향·완료 조건:
-[`incidents/20260917-rs-supabase-outage.md`](./incidents/20260917-rs-supabase-outage.md)
+2026-09-17 raw 수집 공백의 재발 방지 체크는
+[`SYSTEM_RUNBOOK.md`](./SYSTEM_RUNBOOK.md) §8이 정본이다.
+원인과 영향은
+[`incidents/20260917-rs-supabase-outage.md`](./incidents/20260917-rs-supabase-outage.md).
 
 ---
 

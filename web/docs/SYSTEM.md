@@ -212,14 +212,14 @@ flowchart LR
 | **URL hub contract** | 딥링크·새로고침·Capacitor 동일. `resolveFarmHubView` 단일 진입 | 탭별 localStorage only · 임의 query | [`farm-hub-url.md`](./farm-hub-url.md) |
 | **received vs mesure UI 분리** | 카드 caution=측정 정체 · 채널색≠상태색 · replay 오해 방지 | received만 LIVE · 단일 timestamp | `live-status` · [`UI_CHROMA.md`](./UI_CHROMA.md) |
 | **RSC+client hybrid** | LIVE SSR prefetch · 차트/맵 client · stale-while-revalidate | 전 CSR · 전 RSC blocking | [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md) §10 |
-| **델린 view=aria 분리** | NLP·음성 PoC 허브 탭 격리 · env gate | 전역 챗봇 · jarvis 확장 | [`aria-protocol.md`](./aria-protocol.md) |
+| **델린·view=aria 제거** | 권장 띠·뱃지·전용 탭 삭제. 옛 주소는 필드 | 권장값으로 경보 대체 | [`ENVIRONMENT_STATUS_POLICY.md`](./ENVIRONMENT_STATUS_POLICY.md) |
 | **명령 UX — 즉시 반영(낙관)** | insert 직후 `patchThermoFromCommand`로 게이지·설정값 **즉시** 표시 · 설정은 한눈 행 채움 · 일괄은 필드 덮개에서 접수→확인 | LIVE uplink 올 때까지 UI frozen · applied DB만 표시 | [`farm-live-refresh.tsx`](../src/components/farm/farm-live-refresh.tsx) · [`UI_FEEDBACK.md`](./UI_FEEDBACK.md) · [`SHIP_CHECKLIST.md`](./SHIP_CHECKLIST.md) §6 |
 
 #### 2.4.1 경로·객체
 
 | 라우트/영역 | 대표 경로·컴포넌트 | 데이터·관심사 |
 |-------------|-------------------|---------------|
-| 허브 | `/farm` · `use-farm-hub-view-shell` | LIVE · trend RPC · 델린 |
+| 허브 | `/farm` · `use-farm-hub-view-shell` | LIVE · trend RPC · 필드/차트 |
 | 필드 | `FarmMapView` · `FarmMapCard` | map · env cover |
 | 목록 | `BarnListSummary` · `ControllerCardGrid` | gauge · caution |
 | 차트 | `TrendChart` · `UnifiedBarnTrendPanel` | `mesure_at` · coverage |

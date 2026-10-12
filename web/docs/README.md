@@ -17,7 +17,7 @@
 |------|------|
 | [`SYSTEM_INSTANCE.md`](./SYSTEM_INSTANCE.md) | EC2 · MQTT · RS/C |
 | [`HOME_SIM_PILOT.md`](./HOME_SIM_PILOT.md) | 집 PC FARM01 LIVE 시뮬 |
-| [`incidents/20260917-rs-supabase-outage.md`](./incidents/20260917-rs-supabase-outage.md) | 2026-09-17 RS 수집 공백 · 재발 방지 |
+| [`incidents/20260917-rs-supabase-outage.md`](./incidents/20260917-rs-supabase-outage.md) | 2026-09-17 RS 수집 공백 원인. 미결 체크는 [런북 §8](./SYSTEM_RUNBOOK.md) |
 
 ### 업링크
 
@@ -86,8 +86,9 @@
 | [`FARM_FIELD_MERGE_P0.md`](./FARM_FIELD_MERGE_P0.md) | 필드 통합 스플릿 |
 | [`ENVIRONMENT_STATUS_POLICY.md`](./ENVIRONMENT_STATUS_POLICY.md) | 장비 경보·통신 상태. DELIN·권장 띠 제거 |
 | [`HUB_STABILITY_P0.md`](./HUB_STABILITY_P0.md) | 허브 회귀 게이트 |
-| [`aria-protocol.md`](./aria-protocol.md) | 폐기 스텁 → 환경 상태 정책 |
-| [`UI_ARIA_PRESENCE.md`](./UI_ARIA_PRESENCE.md) | 폐기 스텁 → 환경 상태 정책 |
+| [`aria-protocol.md`](./aria-protocol.md) | 폐기 스텁 → [환경 상태 정책](./ENVIRONMENT_STATUS_POLICY.md) |
+| [`UI_ARIA_PRESENCE.md`](./UI_ARIA_PRESENCE.md) | 폐기 스텁 → [환경 상태 정책](./ENVIRONMENT_STATUS_POLICY.md) |
+| [`user-manual/12-ARIA.md`](./user-manual/12-ARIA.md) | 사용설명서의 DELIN 제거 안내 |
 
 ### UI 토큰
 
@@ -117,7 +118,7 @@
 | [`user-manual/README.md`](./user-manual/README.md) | 목차 |
 | [`user-manual/`](./user-manual/) | 00–12 절 + images |
 
-스크린샷 추가 예정: `user-manual/images/11-farm-chart.png`, `12-farm-aria.png`.
+스크린샷 추가 예정: `user-manual/images/11-farm-chart.png`. `12-farm-aria.png`는 DELIN 제거로 쓰지 않습니다.
 
 ### Android
 
@@ -148,7 +149,7 @@
 | [`SHIP_CHECKLIST.md`](./SHIP_CHECKLIST.md) | 출고 스모크 |
 | [`QA_SHIP_RUN_2026-08-05.md`](./QA_SHIP_RUN_2026-08-05.md) | 2026-08-05 실행 기록 |
 | [`PERF_BASELINE.md`](./PERF_BASELINE.md) | LIVE/TTFB |
-| [`WORKSPACE_NOTES.md`](./WORKSPACE_NOTES.md) | 운영 메모(스냅샷) |
+| [`WORKSPACE_NOTES.md`](./WORKSPACE_NOTES.md) | 운영 메모(스냅샷). RS 미결은 런북 §8 |
 
 ---
 

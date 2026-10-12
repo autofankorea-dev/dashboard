@@ -15,7 +15,7 @@
 | 3 | **S DB decode** | raw 있음·decoded 없음 = Edge/cursor/sparse |
 | 4 | **S DB read** | decoded 있음·view empty = 2h hot · RLS |
 | 5 | **C Next.js** | DB OK·UI만 깨짐 = tier · env · 배포 SHA |
-| 6 | **기록** | incident md · 복구 커밋 · WORKSPACE_NOTES |
+| 6 | **기록** | incident md · 복구 커밋 · 미결은 §8 |
 
 ---
 
@@ -194,7 +194,7 @@ FARM02 사례: sent만 · applied 0 — 장비/펌웨어 triage.
 | 복구 | commit · restart · config |
 | 후속 | migration · rsd · 문서 |
 
-저장: [`WORKSPACE_NOTES.md`](./WORKSPACE_NOTES.md) 또는 `docs/incidents/YYYYMMDD-*.md` (승인 후).
+저장: `docs/incidents/YYYYMMDD-*.md` (승인 후). 열린 체크는 이 런북에 둔다. [`WORKSPACE_NOTES.md`](./WORKSPACE_NOTES.md)는 스냅샷만.
 
 ---
 
@@ -218,9 +218,60 @@ FARM02 사례: sent만 · applied 0 — 장비/펌웨어 triage.
 
 ---
 
+## 8. 미결 — 2026-09-17 RS 수집 공백 재발 방지
+
+서비스는 복구됐다. `17:14~18:49 KST` 약 95분 raw는 복구하지 못한다. 원인·흐름은 [`incidents/20260917-rs-supabase-outage.md`](./incidents/20260917-rs-supabase-outage.md).
+
+목표 흐름:
+
+```text
+MQTT → RS 수신 → SQLite Outbox commit → MQTT ACK
+                                  ↓
+                         DB worker → Supabase
+```
+
+### P0 — RS durable Outbox
+
+- [ ] `SIJackLee/rsd`의 현재 `RS.py` MQTT callback·DB flush 구조 확인
+- [ ] MQTT callback에서 SQLite WAL Outbox에 먼저 commit
+- [ ] Outbox와 Supabase 전송 worker 분리
+- [ ] DB 실패 시 exponential backoff와 circuit breaker 적용
+- [ ] RS 재시작 후 미전송 행을 오래된 순서로 자동 전송
+- [ ] Outbox를 72시간 및 2~5GB 중 먼저 도달한 상한으로 제한
+- [ ] 디스크 여유 20% 이하, Outbox oldest age·row count 경보
+- [ ] Supabase 성공이 불명확한 timeout 재시도에 대비한 idempotency 설계
+
+### P1 — MQTT·DB 방어선
+
+- [ ] RS 고정 `client_id`와 persistent session 적용 검토
+- [ ] Mosquitto `persistence true`·queued message 상한·디스크 경보 검증
+- [ ] raw `ingest_key` unique 제약 필요성 검토
+- [ ] 운영 MCP/SQL 역할에 `statement_timeout`·`lock_timeout` 적용 검토
+- [ ] 대형 SQL은 실행 전 `EXPLAIN`, 범위·예상 비용·운영 영향 확인
+- [ ] 무거운 분석 쿼리는 read replica 또는 별도 분석 경로로 분리 검토
+
+DB migration, Mosquitto 설정, EC2 systemd 변경과 운영 재시작은 각각 영향도를 확인하고 별도 승인 후 적용한다.
+
+### 완료 조건
+
+1. Supabase 연결을 30분 차단한 동안 MQTT payload가 Outbox에 보존된다.
+2. DB 장애 중 `rsd-rs`를 재시작해도 Outbox 행이 유지된다.
+3. DB 복구 후 모든 행이 자동 저장되며 누락과 중복이 없다.
+4. Outbox 상한과 디스크 경보가 동작한다.
+5. `raw_last_received_at`과 Outbox oldest age가 운영 화면 또는 알림에 노출된다.
+
+### 롤백
+
+- 기존 `RS.py`와 systemd unit을 보존하고 문제 발생 시 이전 버전으로 복원한다.
+- 롤백 시에도 SQLite Outbox 파일은 삭제하지 않는다.
+- DB schema 변경이 포함되면 forward migration 방식으로 별도 롤백 계획을 작성한다.
+
+---
+
 ## 변경 이력
 
 | 날짜 | 내용 |
 |------|------|
+| 2026-10-12 | 2026-09-17 RS 공백 재발 방지 체크를 §8로 모음 |
 | 2026-09-17 | FARM01 C안 시각 재배치 · 백업 테이블 §4.9 |
 | 2026-09-01 | 초안 — 배포·모니터링·시나리오 runbook (Canvas §3 승인 반영) |

@@ -43,7 +43,7 @@ Cursor 규칙: `.cursor/rules/farm-shell-routing.mdc`.
 | `chartStall` | 축사번호 | — | 차트 집계 (축사). `chartSp` 필요 |
 | `chartCtrl` | 컨트롤러 키 | — | 차트 집계 트리 선택(컨트롤러). `chartSp`+`chartStall` 필요. 명령 이력 대상. `URLSearchParams`가 인코딩함. 옛 `%253A` 이중 인코딩은 읽기에서 복원 |
 | `chartW1` / `chartW2` | `축사유형\|축사번호\|컨트롤러키` 또는 `-` | — | 목록·펼침 선택. **3칸**. 4칸 이상(키가 한 번 더 붙은 옛 URL)은 앞 3칸만 사용. `-`는 빈 칸(집계 딥링크 재시드 방지). 없으면 `chartCtrl`을 위로 시드. 칸 없음=목록(축사유형 평균), `W1`만=해당 **컨트롤러 개별 그래프**. `W1`+`W2`=두 컨트롤러 개별 그래프 비교(다른 축사·유형도 가능) |
-| `chartYBand` | `temp` \| `hum` \| `motor` (+로 복수). 레거시 `command`는 `chartCmd`로 해석 | — | 지표 집중(Y밴드). 칩·드래그·델린 handoff |
+| `chartYBand` | `temp` \| `hum` \| `motor` (+로 복수). 레거시 `command`는 `chartCmd`로 해석 | — | 지표 집중(Y밴드). 칩·드래그 |
 | `chartCmd` | `1` | — | 컨트롤러 집계에서 온도·모터 본선 **명령 이력**(A/B/C 창·선). 집계 트리 컨트롤러 행 「명령」 토글 |
 | `chartX0` / `chartX1` | 0–1 비율 | — | 집중·줌의 시간 구간(전체면 생략) |
 
@@ -180,7 +180,7 @@ flowchart LR
 |------|-----------|
 | 쿼리 키·의미·soft home·epoch | 본 문서 (정본) |
 | 탭 슬라이드·패널 모션 | `UI_MOTION.md` · `motionClass`만 소비 |
-| `view=aria` (호환) | 필드 정규화. 추천 UI는 뱃지 · `aria-protocol.md` |
+| `view=aria` (호환) | 필드 정규화. 뱃지·권장 안내는 제거 · [`ENVIRONMENT_STATUS_POLICY.md`](./ENVIRONMENT_STATUS_POLICY.md) |
 | `view=plan` · `view=model` | 은퇴. 필드로 정규화 |
 | `view=chartlab` | 옛 테스트 탭. `view=chart`로 정규화 |
 
@@ -189,7 +189,7 @@ flowchart LR
 ## 관련 문서
 
 - 사용설명서 IA: [user-manual/10-메뉴구조도.md](./user-manual/10-메뉴구조도.md)
-- ARIA: [aria-protocol.md](./aria-protocol.md) (**정본**)
+- 환경 상태: [ENVIRONMENT_STATUS_POLICY.md](./ENVIRONMENT_STATUS_POLICY.md) (**정본**. DELIN 문서는 폐기 스텁)
 - 문서 진입점: [README.md](./README.md)
 - Preview 게이트 절차: [VERCEL_PREVIEW_GATE.md](./VERCEL_PREVIEW_GATE.md)
 - 허브 안정화 P0: [HUB_STABILITY_P0.md](./HUB_STABILITY_P0.md) (`npm run verify:hub` · `npm run smoke:hub-url`)

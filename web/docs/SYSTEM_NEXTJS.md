@@ -106,7 +106,7 @@ SELECT 계약: [`live-read-select.ts`](../src/lib/domain/live-read-select.ts)
 | `/auth/callback` | [`auth/callback/route.ts`](../src/app/auth/callback/route.ts) |
 | `/app/download` | [`app/download/route.ts`](../src/app/download/route.ts) — APK signed URL |
 
-> DELIN `/api/voice-report` — PoC·env gate ([`aria-protocol.md`](./aria-protocol.md)). 미구현 구간은 env off.
+> DELIN `/api/voice-report`와 뱃지는 제거되었다. 환경 판단은 [`ENVIRONMENT_STATUS_POLICY.md`](./ENVIRONMENT_STATUS_POLICY.md).
 
 ### A.8 Admin health DAG
 
@@ -135,14 +135,14 @@ SELECT 계약: [`live-read-select.ts`](../src/lib/domain/live-read-select.ts)
 | **URL hub contract** | 딥링크·새로고침·Capacitor 동일 · `resolveFarmHubView` | 탭별 localStorage · 임의 query | [`farm-hub-url.md`](./farm-hub-url.md) |
 | **received vs mesure UI** | caution=측정 정체 · 채널색≠상태색 · replay 구분 | received만 LIVE | [`UI_CHROMA.md`](./UI_CHROMA.md) |
 | **RSC+client hybrid** | LIVE SSR prefetch · 차트/맵 client · SWR | 전 CSR · 전 RSC blocking | [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md) §10 |
-| **델린 view=aria** | NLP PoC 허브 탭 격리 · `ARIA_PROTOCOL_V1` | 전역 챗봇 | [`aria-protocol.md`](./aria-protocol.md) |
+| **델린·view=aria 제거** | 옛 주소는 필드로 정규화 | 권장 띠·뱃지·전용 탭 | [`ENVIRONMENT_STATUS_POLICY.md`](./ENVIRONMENT_STATUS_POLICY.md) |
 | **명령 UX — 즉시 반영(낙관)** | insert 직후 패치 · 설정은 한눈 행 채움 · 일괄은 필드 덮개에서 접수→확인 | 확인 전 UI 동결 | [`controller-env-cover.tsx`](../src/components/farm/controller-env-cover.tsx) · [`settings-glance-strip.tsx`](../src/components/farm/settings-glance-strip.tsx) · [`UI_FEEDBACK.md`](./UI_FEEDBACK.md) |
 
 ### B.2 라우트·역할
 
 | 라우트 | 파일 | 역할 | 데이터 |
 |--------|------|------|--------|
-| `/farm` | [`farm/page.tsx`](../src/app/(dashboard)/farm/page.tsx) | 허브 (map/list/chart/델린) | iot-live-fetch · trend RPC |
+| `/farm` | [`farm/page.tsx`](../src/app/(dashboard)/farm/page.tsx) | 허브 (map/list/chart) | iot-live-fetch · trend RPC |
 | `/admin/ops` | [`admin/ops/`](../src/app/(dashboard)/admin/ops/) | 헬스 DAG | service_role |
 | `/settings` | settings | 알람·프로필 | profiles |
 | `/login` · `/pending` | auth | gate | Supabase Auth |
@@ -181,7 +181,7 @@ SELECT 계약: [`live-read-select.ts`](../src/lib/domain/live-read-select.ts)
 | 목록 | `BarnListSummary` · `ControllerCardGrid` | gauge · caution |
 | 차트 | `TrendChart` · `UnifiedBarnTrendPanel` | `mesure_at` · coverage |
 | 일괄 | `farm-map-bulk-apply` | 명령 draft |
-| 델린 | `farm-aria-view` · `delin-env-badge` | `view=aria` · env flag |
+| 델린 | 제거 | 옛 `view=aria`는 필드. [`ENVIRONMENT_STATUS_POLICY.md`](./ENVIRONMENT_STATUS_POLICY.md) |
 | keep-alive | [`farm-hub-keepalive.ts`](../src/lib/farm/farm-hub-keepalive.ts) | list 5m / chart 3m TTL |
 
 ### B.5 Prefetch · bootstrap
@@ -204,7 +204,7 @@ SELECT 계약: [`live-read-select.ts`](../src/lib/domain/live-read-select.ts)
 | 그룹 | 변수 |
 |------|------|
 | Core | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` |
-| LIVE/허브 | `NEXT_PUBLIC_LIVE_READ_TIER`, `NEXT_PUBLIC_FARM_FIELD_MERGE_V1`, `NEXT_PUBLIC_DELIN_ENABLED` |
+| LIVE/허브 | `NEXT_PUBLIC_LIVE_READ_TIER`, `NEXT_PUBLIC_FARM_FIELD_MERGE_V1` |
 | Auth | `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_GOOGLE_WEB_CLIENT_ID`, `KAKAO_*` |
 | Maps | `KAKAO_JS_KEY`, `KAKAO_REST_API_KEY` |
 | Admin/QA | `HEALTH_COLLECTOR_GROUPS`, `UI_VERIFY_BASE`, `SKIP_ADMIN_HUB_WARM` |
