@@ -1,5 +1,5 @@
 /**
- * 실행: npx tsx src/components/trends/trend-chart-geometry.test.ts
+ * 실행: npx tsx src/lib/farm/trend-chart-geometry.test.ts
  */
 import assert from "node:assert/strict";
 import {
@@ -28,7 +28,7 @@ import {
   chartDomainYFromViewY,
   crosshairChipFlipsRight,
   type EdgeBandLabel,
-} from "./trend-chart-geometry";
+} from "@/lib/farm/trend-chart-geometry";
 import { inferHoverMetricGroup } from "@/lib/farm/trend-chart-format";
 import type {
   TrendEnvelope,

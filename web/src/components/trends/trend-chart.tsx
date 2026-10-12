@@ -15,18 +15,12 @@ import {
 import { Check, RotateCcw } from "lucide-react";
 import { AlarmDomainIcon } from "@/components/settings/alarm-domain-icon";
 import { cn } from "@/lib/utils";
-import type { TrendPeriodId } from "@/lib/domain/farm-trend-types";
 import {
   buildTrendAxisMarks,
-  formatTrendAxisTickParts,
   parseCategoryTimelineMs,
   trendChartTickTargetForWidth,
 } from "@/lib/farm/trend-display-buckets";
-import {
-  type Band,
-  SEV_COLOR,
-} from "@/lib/farm/severity-score";
-import type { UplinkCoverageBand } from "@/lib/farm/trend-uplink-coverage";
+import { SEV_COLOR } from "@/lib/farm/severity-score";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { isPrimaryPress } from "@/lib/ui/pointer-press";
 import { useClipPresence, usePresenceValue } from "@/lib/ui/use-clip-presence";
@@ -88,13 +82,26 @@ import {
   parseScaleEdgeValueUnit,
   tipPinId,
   trendChartHasRenderableContent,
-  trendMsToPlotX,
   trendPlotPadPx,
   interpolateTimelineMsFromXView,
   formatCrosshairClock,
   chartDomainYFromViewY,
   type EdgeBandLabel,
-} from "./trend-chart-geometry";
+} from "@/lib/farm/trend-chart-geometry";
+import {
+  buildAxisTickViews,
+  buildLeftAxisTicks,
+  collectUniqueAlarmBands,
+  computeBarLayout,
+  dedupeReferenceLines,
+  plotXForBar,
+  plotXForIndex,
+  plotXForMs,
+  plotYForValue,
+  positionCommandSettingHits,
+  positionEventMarks,
+  type TrendPlotXScale,
+} from "@/lib/farm/trend-chart-layout";
 import {
   MAX_PINNED_TIPS,
   PIN_CLICK_SLOP_PX,
@@ -123,9 +130,8 @@ import {
   CommandSettingHitOverlay,
   EventLaneHtmlOverlay,
   EventLaneSvgGuides,
-  type PositionedCommandSettingHit,
-  type PositionedEventMark,
 } from "./trend-chart-event-lane";
+import type { TrendChartProps } from "./trend-chart-props";
 
 export type {
   TrendAxis,
@@ -145,192 +151,7 @@ export type {
   TrendEventMark,
   TrendCommandSettingSeg,
 };
-
-type TrendChartProps = {
-  mode: "line" | "bar";
-  categories: string[];
-  series: TrendSeries[];
-  height?: number;
-  leftUnit?: string;
-  rightUnit?: string;
-  /** Force axis domains; otherwise auto-fit with padding. */
-  leftDomain?: [number, number];
-  rightDomain?: [number, number];
-  /**
-   * 좌측 원단위 Y 눈금.
-   * full=5단(기본) · thirds=밴드 위·가운데·아래(1안) · ends=상·하한만 (현장 카드)
-   */
-  yAxisTicks?: "full" | "thirds" | "ends";
-  referenceLines?: TrendReferenceLine[];
-  /** 우측/좌측 스케일 상하한(원단위 텍스트). */
-  scaleEdgeLabels?: TrendScaleEdgeLabel[];
-  /** 위젯 왼쪽 Y칸 상단 표기 (알람). */
-  yGutterStartCaption?: string;
-  /** 위젯 오른쪽 Y칸 상단 단위 표기. */
-  yGutterEndCaption?: string;
-  /** 플롯 안 투명 구간(현장 알람 범위 등). */
-  rangeBands?: TrendRangeBand[];
-  /** line 모드 — 시리즈 아래 면 채우기(클라우드·밴드). */
-  envelopes?: TrendEnvelope[];
-  /** line 모드 — MACD형 히스토그램 막대. */
-  histograms?: TrendHistogram[];
-  emptyLabel?: string;
-  /** Show every Nth category tick (auto if omitted). */
-  tickEvery?: number;
-  /** 있으면 X축 tick 축약 (categories·툴팁은 풀 라벨 유지). 7d/30d는 월 경계=`N월`, 나머지=일. */
-  period?: TrendPeriodId;
-  /**
-   * 고정(핀) 카드 초기화 키. 줌(윈도우 슬라이스)과 무관하게 스코프·기간 등
-   * 데이터 소스가 바뀔 때만 값이 변하도록 호출측에서 지정한다.
-   * (미지정 시 `period|categories.length` 폴백 — 줌마다 초기화됨)
-   */
-  pinResetKey?: string;
-  /** false면 시리즈 범례 행 숨김 (sheet compact 등). */
-  showLegend?: boolean;
-  /** 범례 행 우측(구간 줌 칩 등). showLegend=false여도 단독 표시 가능. */
-  legendTrailing?: ReactNode;
-  /**
-   * full: 전 시리즈·산포·편차
-   * core: 모바일용 — 온도·습도·모터만 (EMA/산포/편차는 호버)
-   */
-  legendDensity?: "full" | "core";
-  /** 설정모드 스케일 가이드 세로 hit(px). 기본 10 · 모바일 권장 22 */
-  scaleEdgeHitPx?: number;
-  /**
-   * 모바일 — 플롯을 왼쪽으로 좁히고 우측에 스케일 라벨 거터.
-   * viewBox 기준 우측 여백 ~20.
-   */
-  labelGutter?: boolean;
-  /** 미니 칸 — 날짜·Y축 글자·눈금 레일 생략 */
-  hideAxisChrome?: boolean;
-  /**
-   * bar 모드 — 바 1개의 최대 너비(차트 폭 % 단위, 0~100).
-   * 카테고리 수가 적을 때 통짜 바가 되지 않게 상한을 두고 슬롯 중앙에 정렬한다.
-   * (viewBox가 non-uniform 스케일이라 px 대신 % 단위를 사용)
-   */
-  barWidthCapPct?: number;
-  /** line 모드 데이터 점 표시. 기본 true. */
-  showMarkers?: boolean;
-  /**
-   * 마커 밀도 — all=전점, sparse≈8점/시리즈(+호버 강조점).
-   * 차트 탭 반응성용 sparse 권장.
-   */
-  markerDensity?: "all" | "sparse";
-  /** 화면 기준 점 반지름(px). preserveAspectRatio=none 보정에 사용. */
-  markerRadiusPx?: number;
-  /**
-   * 차트 탭 enter motion — 마운트·기간·레이어 밴드 변경 시 reveal.
-   */
-  animate?: boolean;
-  /** @deprecated 밴드 Y 보간 사용. 전달해도 plot reflow CSS 미적용 */
-  layoutKey?: string;
-  /** 시리즈·히스토그램 추가/삭제 개별 클립 와이프 (기본 animate와 동일) */
-  layerClipWipe?: boolean;
-  /**
-   * split-Y 밴드 경계 가이드 (차트 domain Y, 예: motorHi·humHi).
-   * 레이어 on/off 재배치 시 fade-in.
-   */
-  splitBandGuides?: number[];
-  /**
-   * line 모드 — 전 시리즈가 null인 연속 구간을 세로 음영(결측)으로 표시.
-   */
-  showNullGaps?: boolean;
-  /**
-   * 추이 차트 — 희소/통신두절/없음 구간. 있으면 showNullGaps 일반 결측 음영은 쓰지 않음.
-   */
-  coverageBands?: UplinkCoverageBand[];
-  /**
-   * P1/P2 X스코프 — 드래그로 시간 구간(+Y밴드) 선택.
-   * y*Ratio: plot 상단=0 · 하단=1
-   */
-  xScopeSelect?: boolean;
-  /**
-   * 플롯 휠/핀치 — 연속 룩백. dir<0 확대, dir>0 축소.
-   * Ctrl/Meta+휠은 브라우저 페이지 줌에 맡긴다.
-   */
-  onLookbackWheel?: (dir: 1 | -1) => void;
-  onXScopeCommit?: (range: {
-    start: number;
-    end: number;
-    yStartRatio: number;
-    yEndRatio: number;
-  }) => void;
-  /**
-   * 구간 안내 — 실제 X스코프 UI와 동일 경로로 클릭→드래그→커밋 시연.
-   * token 증가 시 재생. CSS 오버레이가 아님.
-   */
-  guidedXScopeGesture?: {
-    token: number;
-    startRatio: number;
-    endRatio: number;
-    /** 카테고리 절대 인덱스 — 있으면 커밋 시 비율 재변환 생략 */
-    startIndex?: number;
-    endIndex?: number;
-    yRatio?: number;
-    yStartRatio?: number;
-    yEndRatio?: number;
-    durationMs?: number;
-  } | null;
-  onGuidedXScopeComplete?: () => void;
-  /** 우클릭 — 줌 한 단계 뒤로 (스택 pop). 있으면 컨텍스트 메뉴 억제 */
-  onXScopeBack?: () => void;
-  /** 스코프 스택 변경 시 줌 인/아웃 모션 키 */
-  scopeMotionKey?: number;
-  scopeMotionDir?: "in" | "out";
-  /** 빈 플롯 더블클릭 — 설정모드 진입 등 */
-  onPlotDoubleClick?: () => void;
-  /**
-   * 빈 플롯 우클릭 (스케일 라벨 hit 아님).
-   * 설정모드 종료 등 — onXScopeBack과 동시에 쓰지 말 것(호출측에서 모드별 분리).
-   */
-  onPlotBackgroundContextMenu?: () => void;
-  /**
-   * 한계 이탈 데이터 카드가 떠 있을 때만 우클릭 → 해당 장비 차트.
-   * 스코프 줌 뒤로가기(onXScopeBack)보다 우선, 카드 없으면 호출되지 않음.
-   */
-  onBreachEquipmentNavigate?: (target: TrendBreachNavTarget) => void;
-  /**
-   * draggable scaleEdgeLabels — 세로 드래그로 domain Y 조절.
-   * X스코프와 충돌 시 가이드 hit이 우선.
-   */
-  onScaleEdgeDrag?: (event: ScaleEdgeDragEvent) => void;
-  /** 우클릭 숫자 입력 확정 */
-  onScaleEdgeNumericCommit?: (event: ScaleEdgeNumericCommitEvent) => void;
-  /** showApplyActions 라벨 — 적용 */
-  onScaleEdgeApply?: () => void;
-  /** showApplyActions 라벨 — 되돌리기 */
-  onScaleEdgeRevert?: () => void;
-  scaleEdgeApplyBusy?: boolean;
-  scaleEdgeApplyDisabled?: boolean;
-  /** 오버레이(온도·습도·모터 겹침): hover 카드에 세 지표를 병합해 표시 */
-  overlayHoverMerge?: boolean;
-  /**
-   * 십자선 교차점 칩 — 차트 domain Y → 온도/습도/모터(자).
-   * 없으면 왼쪽 원단위 축만 역산한다.
-   */
-  crosshairValues?: (chartY: number) => {
-    tempC?: number | null;
-    humidityPct?: number | null;
-    motorPct?: number | null;
-  } | null;
-  /** 플롯 CSS 너비(px). 차트 탭 다운샘플 밀도용 */
-  onPlotWidthChange?: (widthPx: number) => void;
-  /**
-   * 부모 flex 높이를 플롯이 채움. `height`는 최솟값.
-   * 범례·시간축은 내용 높이, SVG만 남는 세로를 씀.
-   */
-  fillParent?: boolean;
-  /**
-   * 데이터 밴드 아래 이벤트 행(명령 적중).
-   * X는 추이 `xFor`와 같은 시각 축. height에 eventLaneHeight를 더해 전달.
-   */
-  eventLane?: TrendEventLane | null;
-  /** `height`와 같은 단위(플롯 view Y). 기본 0 */
-  eventLaneHeight?: number;
-  /** 온도 본선 위 채널 명령 이력. 토글로 끈 경우 빈 배열 */
-  commandSettingSegs?: TrendCommandSettingSeg[];
-};
-
+export type { TrendChartProps };
 
 
 
@@ -625,125 +446,50 @@ export function TrendChart({
   const [lMin, lMax] = domainFor(finiteValues(series, "left"), leftDomain);
   const [rMin, rMax] = domainFor(finiteValues(series, "right"), rightDomain);
 
-  const yFor = (value: number, axis: TrendAxis): number => {
-    const [mn, mx] = axis === "right" ? [rMin, rMax] : [lMin, lMax];
-    if (
-      !Number.isFinite(value) ||
-      !Number.isFinite(mn) ||
-      !Number.isFinite(mx)
-    ) {
-      return PAD_TOP + innerH;
-    }
-    const t = (value - mn) / (mx - mn || 1);
-    return PAD_TOP + innerH - t * innerH;
-  };
-
-  const leftAxisTicks =
-    !hideAxisChrome &&
-    showNativeLeftAxis && Number.isFinite(lMin) && Number.isFinite(lMax) && lMax > lMin
-      ? (yAxisTicks === "ends"
-          ? [0, 1]
-          : yAxisTicks === "thirds"
-            ? [0, 1, 2]
-            : [0, 1, 2, 3, 4]
-        ).map((i, _, steps) => {
-          const denom = Math.max(1, steps.length - 1);
-          const value = lMin + ((lMax - lMin) * i) / denom;
-          const y = yFor(value, "left");
-          return {
-            id: `left-axis-${i}`,
-            topPct: (y / chartH) * 100,
-            text: formatTrendBandEdge(value, leftUnit),
-          };
-        })
-      : [];
-
-  const xFor = (i: number): number => {
-    if (n <= 1) return padL + innerW / 2;
-    if (timeAxisMs && timeAxisMs.length === n) {
-      const t0 = timeAxisMs[0]!;
-      const ti = timeAxisMs[i];
-      const span = timeAxisMs[n - 1]! - t0;
-      if (span > 0 && ti != null && Number.isFinite(ti) && Number.isFinite(t0)) {
-        const t = (ti - t0) / span;
-        return padL + Math.min(1, Math.max(0, t)) * innerW;
-      }
-    }
-    return padL + (i / (n - 1)) * innerW;
-  };
-
-  const xForMs = (ms: number): number | null => {
-    if (n <= 1) return padL + innerW / 2;
-    if (timeAxisMs && timeAxisMs.length === n) {
-      return trendMsToPlotX(
-        ms,
-        timeAxisMs[0]!,
-        timeAxisMs[n - 1]!,
-        padL,
-        innerW,
-      );
-    }
-    return null;
-  };
-
-  const positionedEventMarks: PositionedEventMark[] = (() => {
-    if (!eventLane || eventLaneH <= 0) return [];
-    const rows = Math.max(1, eventLane.rowLabels.length);
-    const out: PositionedEventMark[] = [];
-    for (const mark of eventLane.marks) {
-      const xView = xForMs(mark.atMs);
-      if (xView == null) continue;
-      const row = Math.min(rows - 1, Math.max(0, mark.row));
-      const yView = eventLaneTop + ((row + 0.5) / rows) * eventLaneH;
-      out.push({ mark, xView, yView });
-    }
-    return out;
-  })();
-
-  const positionedCommandHits: PositionedCommandSettingHit[] = (() => {
-    if (commandSettingSegs.length === 0) return [];
-    const xMin = padL;
-    const xMax = viewW - padR;
-    const out: PositionedCommandSettingHit[] = [];
-    for (const seg of commandSettingSegs) {
-      const raw0 = xForMs(seg.x0Ms);
-      const raw1 = xForMs(seg.x1Ms);
-      const x0 = raw0 ?? xMin;
-      const x1 = raw1 ?? xMax;
-      const xa = Math.max(xMin, Math.min(xMax, Math.min(x0, x1)));
-      const xb = Math.max(xMin, Math.min(xMax, Math.max(x0, x1)));
-      if (!(xb - xa > 0.3)) continue;
-      const yA = yFor(seg.yLo, "left");
-      const yB = yFor(seg.yHi, "left");
-      if (!Number.isFinite(yA) || !Number.isFinite(yB)) continue;
-      const y = Math.min(yA, yB);
-      const h = Math.max(2, Math.abs(yB - yA));
-      out.push({ seg, x0: xa, x1: xb, y, h });
-    }
-    return out;
-  })();
-
-  const barGroupW = n > 0 ? innerW / n : innerW;
-  const rawBarW =
-    series.length > 0 ? (barGroupW * 0.7) / series.length : barGroupW * 0.7;
-  const barW =
-    barWidthCapPct != null ? Math.min(rawBarW, barWidthCapPct) : rawBarW;
-  const barSlotW = barW * Math.max(1, series.length);
-
-  /** 팬 1~4개 — 차트 중앙 기준 클러스터(1=중앙, 2=중앙 좌·우). 5개 이상은 전폭 분산. */
-  const barCenterCluster = mode === "bar" && n > 0 && n <= 4;
-
-  const xForBar = (i: number): number => {
-    const center = padL + innerW / 2;
-    if (n <= 1) return center;
-    if (!barCenterCluster) return xFor(i);
-    const spacing = Math.min(
-      Math.max(barSlotW * 1.25, innerW / (n + 2)),
-      n > 1 ? innerW / (n - 1) : innerW,
+  const yFor = (value: number, axis: TrendAxis): number =>
+    plotYForValue(
+      value,
+      axis === "right" ? [rMin, rMax] : [lMin, lMax],
+      innerH,
     );
-    const span = (n - 1) * spacing;
-    return center - span / 2 + i * spacing;
-  };
+
+  const leftAxisTicks = buildLeftAxisTicks({
+    show: !hideAxisChrome && showNativeLeftAxis,
+    domain: [lMin, lMax],
+    mode: yAxisTicks,
+    chartH,
+    innerH,
+    unit: leftUnit,
+  });
+
+  const xScale: TrendPlotXScale = { n, timeAxisMs, padL, innerW };
+  const xFor = (i: number): number => plotXForIndex(i, xScale);
+  const xForMs = (ms: number): number | null => plotXForMs(ms, xScale);
+
+  const positionedEventMarks = positionEventMarks(
+    eventLane,
+    { eventLaneH, eventLaneTop },
+    xForMs,
+  );
+
+  const positionedCommandHits = positionCommandSettingHits(
+    commandSettingSegs,
+    { xMin: padL, xMax: viewW - padR },
+    xForMs,
+    (value) => yFor(value, "left"),
+  );
+
+  const barLayout = computeBarLayout({
+    mode,
+    n,
+    innerW,
+    seriesCount: series.length,
+    barWidthCapPct,
+  });
+  const { barW, barSlotW } = barLayout;
+
+  const xForBar = (i: number): number =>
+    plotXForBar(i, barLayout, xScale, xFor);
 
   const xAtIndex = (i: number): number =>
     mode === "bar" ? xForBar(i) : xFor(i);
@@ -1849,60 +1595,16 @@ export function TrendChart({
   );
   const axisTicks = axisMarks.majors;
 
-  const axisTickViews = useMemo(() => {
-    const last = axisTicks.length - 1;
-    return axisTicks.map((mark, tickOrd) => {
-      const prevLabel =
-        tickOrd > 0 ? (axisTicks[tickOrd - 1]?.fullLabel ?? null) : null;
-      const parts = period
-        ? formatTrendAxisTickParts(period, mark.fullLabel, {
-            endpoint: tickOrd === 0 || tickOrd === last,
-            prevLabel,
-            stacked: true,
-          })
-        : { date: null, time: mark.fullLabel };
-      const xView = padL + mark.t * innerW;
-      return {
-        key: `${tickOrd}-${mark.fullLabel}`,
-        fullLabel: mark.fullLabel,
-        parts,
-        leftPct: viewW > 0 ? (xView / viewW) * 100 : 0,
-      };
-    });
-  }, [axisTicks, innerW, padL, period, viewW]);
+  const axisTickViews = useMemo(
+    () => buildAxisTickViews(axisTicks, { period, padL, innerW, viewW }),
+    [axisTicks, innerW, padL, period, viewW],
+  );
 
   /** 알람/한계 점선 — 동일 axis·밴드 1회. */
-  const uniqueAlarmBands = useMemo(() => {
-    const seen = new Set<string>();
-    const out: {
-      band: Band;
-      axis: TrendAxis;
-      color?: string;
-      fillWindow?: boolean;
-      fillOpacity?: number;
-      id?: string;
-    }[] = [];
-    for (const s of series) {
-      if (!s.band) continue;
-      const axis = s.axis ?? "left";
-      const key = `${axis}:${s.band.lo}:${s.band.hi}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      const fillWindow = false;
-      out.push({ band: s.band, axis, color: s.color, fillWindow });
-    }
-    for (const range of rangeBands) {
-      out.push({
-        id: range.id,
-        band: { lo: range.lo, hi: range.hi },
-        axis: range.axis ?? "left",
-        color: range.color,
-        fillWindow: true,
-        fillOpacity: range.fillOpacity,
-      });
-    }
-    return out;
-  }, [series, rangeBands]);
+  const uniqueAlarmBands = useMemo(
+    () => collectUniqueAlarmBands(series, rangeBands),
+    [series, rangeBands],
+  );
 
   const alarmFillBands = useMemo(
     () => uniqueAlarmBands.filter((b) => b.fillWindow !== false),
@@ -1917,18 +1619,10 @@ export function TrendChart({
   );
 
   /** referenceLines 중 알람 band 모서리와 중복되는 점선 제거. */
-  const dedupedReferenceLines = useMemo(() => {
-    if (uniqueAlarmBands.length === 0) return referenceLines;
-    return referenceLines.filter((ref) => {
-      const axis = ref.axis ?? "left";
-      return !uniqueAlarmBands.some(
-        ({ band, axis: bandAxis }) =>
-          bandAxis === axis &&
-          (Math.abs(band.lo - ref.value) < 1e-6 ||
-            Math.abs(band.hi - ref.value) < 1e-6),
-      );
-    });
-  }, [referenceLines, uniqueAlarmBands]);
+  const dedupedReferenceLines = useMemo(
+    () => dedupeReferenceLines(referenceLines, uniqueAlarmBands),
+    [referenceLines, uniqueAlarmBands],
+  );
 
   const unitForAxis = (axis: TrendAxis) =>
     axis === "right" ? rightUnit : leftUnit;

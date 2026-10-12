@@ -19,14 +19,15 @@ import { motionClass } from "@/lib/ui/motion-classes";
 import { motionStaggerStepMs } from "@/lib/ui/motion-tokens";
 import type { ClipPresenceEntry } from "@/lib/ui/use-clip-presence";
 import { inferHoverMetricGroup } from "@/lib/farm/trend-chart-format";
-import { PAD_TOP } from "./trend-chart-geometry";
+import { PAD_TOP } from "@/lib/farm/trend-chart-geometry";
 import { clipWipeClass, type PinnedTip } from "./trend-chart-interaction";
 import {
   AlarmBandsLayer,
   ReferenceLinesLayer,
   type TrendPlotGeom,
 } from "./trend-chart-svg-layers";
-import { CommandSettingBandsSvg, type PositionedCommandSettingHit } from "./trend-chart-event-lane";
+import { CommandSettingBandsSvg } from "./trend-chart-event-lane";
+import type { PositionedCommandSettingHit } from "@/lib/farm/trend-chart-layout";
 
 /**
  * TrendChart SVG 데이터 레이어 (히스토그램·엔벨로프·시리즈·호버/핀).
