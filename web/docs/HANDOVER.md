@@ -76,7 +76,41 @@ SL9001 ════ MQTT/TCP/IP QoS 1 ════ Mosquitto · RS.py
 
 ---
 
-## 4. 막히면 여는 문서
+## 4. 내부 — 대분류 안은 무엇으로 나뉘나
+
+§2의 EC2·DB·화면을 연 그림이다. 잎이 그 중분류의 핵심이다. 현장 장비는 §1이다.
+
+```text
+EC2
+├─ Mosquitto      QoS 1. sungil/{농장}/{축종}/raw|cmd|epoch. 농장 식별은 토픽
+├─ rsd-rs         sungil/+/+/raw → topic · payload_bytea · received_at
+├─ rsd-c          pending → …/cmd → sent. 전송 창 300초. 적용은 다음 raw
+└─ health check   mqtt·rs·c·mem·disk → instance_health_current. 10분 주의 · 30분 미상
+
+DB
+├─ 적재           iot_room_state_raw. 트리거가 토픽에서 농장·축종을 채움
+├─ 해석           decode-batch 약 10초. 월 파티션 mesure_at. FARM02·03은 −9h
+├─ 읽기           2시간 list(스칼라)·latest(채널). 차트는 30일 RPC
+├─ 명령           ctrl_thermo_command. 0x0D · 0x0E 33바이트. 90일 · sent 24h
+├─ 신원           admin · operator · viewer. can_read · can_command. user_can_read_farm
+├─ 운영           헬스는 service_role. KST 03:00–03:50 cron. 측정 30일
+└─ 알림           push-dispatch FCM. 센서 경로와 분리. 인증은 cron_secret
+
+화면   app → components → lib
+├─ app                  라우트 · Server Action. /farm 허브. 명령은 pending INSERT
+├─ components           UI와 그 화면의 hook
+├─ lib/data             서버가 뷰·RPC. 농장 500 · 전체 1500 · 캐시 300초. 브라우저는 data/browser
+├─ lib/domain           수신 15분 정상 · 60분 주의 · 그 밖 통신두절. 키 · 차트 · 공유 타입
+├─ 기능 폴더            farm URL · controllers wire · admin 헬스 · report PDF
+├─ lib/auth · supabase  프로필과 user_access. 쿠키 세션 · service_role은 헬스
+└─ lib/ui · navigation  토큰 · 모바일 레이아웃 · 전역 스토어
+```
+
+해석에서 축사유형이 1–10 밖이면 `iot_room_state_decode_failed`로 빠진다. 수신이 살아 있어도 측정이 60분 넘으면 화면은 주의로 내린다. 기능 폴더의 나머지는 `geo` · `monitoring` · `onboarding` · `push` · `app-install`이다.
+
+---
+
+## 5. 막히면 여는 문서
 
 | 증상 | 정본 |
 |------|------|
