@@ -85,13 +85,14 @@ flowchart LR
 |------|--------|---------------|
 | 파일 LOC | ≤ 400 권장, 800 초과 금지(신규) | 500+ 컴포넌트 22 · lib 14 — P2 분해 대상 |
 | 컴포넌트 hook 수 | ≤ 8. 넘으면 `use-*.ts`로 추출 | `trend-chart.tsx` 33 → 18 호출(ref 27 → 5, effect 6 → 0) — P2-1d 후 |
-| export 수/파일 | ≤ 20 | `unified-barn-trend-series.ts` 62 |
+| export 수/파일 | ≤ 20 | `unified-barn-trend-series.ts`는 재export 배럴. 구현은 `unified-trend-*` (P2-2) |
 
 분해 순서: 순수 함수 추출(→ `lib`) → hook 추출(→ `use-*.ts`) → 하위 컴포넌트 분리. 각 단계 `npm run check`.  
 차트(`TrendChart`)는 추가로 `npm run snapshot:chart-markup -- --baseline <분해 전 캡처>`로 렌더 markup diff 0 을 확인한다 ([`SCRIPTS.md`](./SCRIPTS.md) § C).  
 `TrendChart` 순수 계산은 `lib/farm/trend-chart-geometry.ts`(패딩·도메인·라벨 배치)와 `lib/farm/trend-chart-layout.ts`(좌표 매핑·눈금·밴드/이벤트 배치)에 두고, 컴포넌트는 클로저로 감싸 호출만 한다. 스냅샷 fixture는 line 모드만 렌더하므로 bar 모드·이벤트 레인·명령 밴드 경로는 `trend-chart-layout.test.ts`가 담당한다.  
 `TrendChart`의 상태·effect는 `components/trends/use-trend-*.ts`에 역할별로 둔다: `plot-size`(ResizeObserver), `crosshair`(십자선 DOM 조작), `pin-window-remap`(줌 시 고정 카드 재배치), `lookback-gesture`(휠·핀치), `scale-edge-edit`(스케일 엣지 드래그/숫자 입력), `edge-band-labels`(알람·기준선 끝단 라벨), `pinned-tips`, `scope-gesture`, `hover`(호버 인덱스·카드 배치). hook은 옵션 객체 하나를 받고, JSX에 부착할 ref와 핸들러를 그대로 반환한다(동작 변경 없는 1:1 이동 원칙). `clearHover`만 십자선 숨김 때문에 `TrendChart`에 남긴다.  
-화면 조각은 `trend-chart-legend.tsx`, `trend-chart-crosshair-chip.tsx`, `trend-y-label-chip.tsx`, `trend-chart-y-axis.tsx`, `trend-chart-edge-labels.tsx`, `trend-chart-pinned-cards.tsx`, `trend-chart-hover-card.tsx`에 두고, 포인터 좌표 계산은 플롯 루트에 남긴다.
+화면 조각은 `trend-chart-legend.tsx`, `trend-chart-crosshair-chip.tsx`, `trend-y-label-chip.tsx`, `trend-chart-y-axis.tsx`, `trend-chart-edge-labels.tsx`, `trend-chart-pinned-cards.tsx`, `trend-chart-hover-card.tsx`에 두고, 포인터 좌표 계산은 플롯 루트에 남긴다.  
+통합 추세 순수 로직은 `unified-trend-split-y.ts`(값↔밴드), `unified-trend-raw.ts`(집계·EMA), `unified-trend-build.ts`(시리즈 조립), `unified-trend-layers.ts`(레이어 선택·트림), `unified-trend-colors.ts`(색·이름)에 둔다. `unified-barn-trend-series.ts`는 임계 코리도와 공개 이름 재export만 남기고, 기존 `@/lib/farm/unified-barn-trend-series` import는 유지한다. 이 모듈은 차트를 그리지 않으므로 markup 스냅샷 대상이 아니다.
 
 ---
 
@@ -114,7 +115,8 @@ GitHub Actions(`.github/workflows/web-verify.yml`)와 GitLab CI가 동일 단계
 |------|------|-----------|
 | ~~`lib/data/iot.ts` 타입 → `lib/domain/iot-types.ts`~~ | 완료 (P2-0, 2026-10-11). `iot.ts` 446→214줄 | — |
 | `lib/**` → `@/app/**/actions` 6건 | lib가 라우팅 레이어를 모르게 | action 호출을 호출측(components/app)에서 주입하거나 `lib/actions`로 이동 |
-| 500 LOC+ 핫스팟 분해 | §4 | `trend-chart.tsx` · `unified-barn-trend-*` · `farm-page-content.tsx` |
+| ~~`unified-barn-trend-series.ts` 구현 분리~~ | 완료 (P2-2). 배럴 2387→310줄. 구현은 `unified-trend-split-y` · `raw` · `build` · `layers` · `colors` | — |
+| 500 LOC+ 핫스팟 분해 | §4 | `trend-chart.tsx` · `unified-barn-trend-panel.tsx` · `farm-page-content.tsx` |
 | vitest 도입 | coverage · watch | 패키지 추가 승인 필요 |
 
 ---
@@ -125,3 +127,4 @@ GitHub Actions(`.github/workflows/web-verify.yml`)와 GitLab CI가 동일 단계
 |------|------|
 | 2026-10-11 | 초안 — P1: `lib/domain` 분리(38+15 test) · 피처 hook `components/`로 · `lib/data/browser` · ESLint 경계 규칙 |
 | 2026-10-11 | P2-0: `iot-types.ts` · `barn-meta-types.ts` 분리, domain → data 타입 import 금지로 전환 |
+| 2026-10-12 | P2-2: `unified-barn-trend-series.ts` 구현을 split-y·raw·build·layers·colors로 분리. 배럴 재export로 import 경로 유지 |
