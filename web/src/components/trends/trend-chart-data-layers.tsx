@@ -26,7 +26,8 @@ import {
   ReferenceLinesLayer,
   type TrendPlotGeom,
 } from "./trend-chart-svg-layers";
-import { CommandSettingBandsSvg, type PositionedCommandSettingHit } from "./trend-chart-event-lane";
+import { CommandSettingBandsSvg } from "./trend-chart-event-lane";
+import type { PositionedCommandSettingHit } from "@/lib/farm/trend-chart-layout";
 
 /**
  * TrendChart SVG 데이터 레이어 (히스토그램·엔벨로프·시리즈·호버/핀).
