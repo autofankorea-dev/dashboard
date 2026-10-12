@@ -16,13 +16,13 @@ import { normalizeStallTyCode } from "@/lib/domain/stall-type";
 import { stallKeyFromReading } from "@/lib/domain/reading-hierarchy";
 import type { TrendPeriodData, TrendPeriodId } from "@/lib/domain/farm-trend-types";
 import { FarmMapView } from "@/components/farm/farm-map-view";
-import { FarmChartLabView } from "@/components/farm/farm-chart-lab-view";
 import { BarnTable } from "@/components/farm/barn-table";
 import {
-  FarmFieldStatusGrid,
   firstControllerKeyForBarn,
   readingsMatchingBarn,
 } from "@/components/farm/farm-field-status-grid";
+import { FarmFieldSplit } from "@/components/farm/farm-field-split";
+import { FarmChartSlot } from "@/components/farm/farm-chart-slot";
 import { FarmFeatureTour } from "@/components/onboarding/feature-tour";
 import { FarmViewToggle } from "@/components/farm/farm-view-toggle";
 import {
@@ -628,72 +628,35 @@ export function FarmPageContent({
                 suppressBottomOverlays={view === "chart"}
               />
             ) : (
-              <div
-                className={cn(
-                  "grid min-h-[28rem] grid-cols-1 gap-3 lg:items-start",
-                  "transition-[grid-template-columns] duration-motion-moderate ease-[var(--motion-ease-standard)]",
-                  fieldStatusOpen
-                    ? "lg:grid-cols-[15rem_minmax(0,1fr)]"
-                    : "lg:grid-cols-[2.5rem_minmax(0,1fr)]",
-                )}
-                data-tour-id="field-split"
-                data-field-status={fieldStatusOpen ? "open" : "collapsed"}
-              >
-                <div className="min-w-0 overflow-hidden">
-                  <div
-                    className={cn(
-                      "transition-[width,max-width] duration-motion-moderate ease-[var(--motion-ease-standard)]",
-                      fieldStatusOpen
-                        ? "w-[15rem] max-w-[15rem]"
-                        : "w-10 max-w-10",
-                    )}
-                  >
-                    <FarmFieldStatusGrid
-                      barns={barnSnapshots}
-                      readings={readings}
-                      selectedBarnId={fieldSelectedBarnId}
-                      onSelectBarn={selectBarnForList}
-                      onShowAll={clearFieldBarnFilter}
-                      collapsed={!fieldStatusOpen}
-                      onHide={() => setFieldStatusOpen(false)}
-                      onShow={() => setFieldStatusOpen(true)}
-                      alarmSettings={alarmSettings}
-                    />
-                  </div>
-                </div>
-                <div className="min-w-0 rounded-md border">
-                  <div
-                    className={cn(
-                      "transition-opacity duration-motion-exit ease-[var(--motion-ease-exit)]",
-                      fieldFilterPhase === "exiting"
-                        ? "opacity-0"
-                        : "opacity-100",
-                    )}
-                    data-field-list-filter={fieldFilterPhase}
-                  >
-                    <BarnTable
-                      rows={fieldMotionRows}
-                      controller={controller ?? null}
-                      thermoSettings={thermoSettings}
-                      alarmSettings={alarmSettings}
-                      canCommand={controller?.canCommand ?? false}
-                      initialSp={listSp}
-                      initialListMode={listMode}
-                      initialListLayout={listLayout}
-                      focusControllerKey={listFocusKey}
-                      hubMode={hubMode}
-                      onHubUrlChange={onHubUrlChange}
-                      liveRefreshManaged={liveRefreshManaged}
-                      staggerMount={readings.length > STAGGER_MOUNT_MIN_READINGS}
-                      onRequestPanelEnrichment={enrichListIfNeeded}
-                      trendPeriod={trendPeriod}
-                      onOpenChart={onOpenControllerChart}
-                      panelLiveActive={fieldActive}
-                      listFilterEnterEpoch={fieldFilterEnterEpoch}
-                    />
-                  </div>
-                </div>
-              </div>
+              <FarmFieldSplit
+                fieldStatusOpen={fieldStatusOpen}
+                barns={barnSnapshots}
+                readings={readings}
+                selectedBarnId={fieldSelectedBarnId}
+                onSelectBarn={selectBarnForList}
+                onShowAll={clearFieldBarnFilter}
+                onHideStatus={() => setFieldStatusOpen(false)}
+                onShowStatus={() => setFieldStatusOpen(true)}
+                alarmSettings={alarmSettings}
+                fieldFilterPhase={fieldFilterPhase}
+                rows={fieldMotionRows}
+                controller={controller ?? null}
+                thermoSettings={thermoSettings}
+                canCommand={controller?.canCommand ?? false}
+                initialSp={listSp}
+                initialListMode={listMode}
+                initialListLayout={listLayout}
+                focusControllerKey={listFocusKey}
+                hubMode={hubMode}
+                onHubUrlChange={onHubUrlChange}
+                liveRefreshManaged={liveRefreshManaged}
+                staggerMount={readings.length > STAGGER_MOUNT_MIN_READINGS}
+                onRequestPanelEnrichment={enrichListIfNeeded}
+                trendPeriod={trendPeriod}
+                onOpenChart={onOpenControllerChart}
+                panelLiveActive={fieldActive}
+                listFilterEnterEpoch={fieldFilterEnterEpoch}
+              />
             )}
           </div>
         ) : (
@@ -756,40 +719,28 @@ export function FarmPageContent({
         )}
 
         {chartEverOpened ? (
-          <div
-            className={cn(
-              panelMotionClass("chart"),
-              view === "chart" &&
-                "flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden",
-            )}
-            aria-hidden={view !== "chart"}
-            data-farm-view-panel="chart"
-            data-farm-view-active={view === "chart"}
-            data-farm-chart-shell="lab"
-          >
-            <div className="relative flex min-h-0 flex-1 flex-col">
-              <FarmChartLabView
-                key={keepAliveFarmId}
-                readings={readings}
-                farmKey={gridFarmKey}
-                controllerTrendByPeriod={gridControllerTrend}
-                trendLoading={gridTrendLoading}
-                trendError={Boolean(gridTrendError)}
-                trendExtending={gridTrendExtending}
-                window15mLoading={gridTrendWindowLoading}
-                window15m={gridTrendWindow15m}
-                onNeedWindow15m={ensureGridTrendWindow15m}
-                period={trendPeriod}
-                alarmSettings={alarmSettings}
-                thermoSettings={thermoSettings}
-                canCommand={controller?.canCommand ?? false}
-                isMobileStack={viewportCompact}
-                selection={chartLabSelection}
-                onSelectionChange={onChartLabSelectionChange}
-                layersToolbarActive={view === "chart"}
-              />
-            </div>
-          </div>
+          <FarmChartSlot
+            className={panelMotionClass("chart")}
+            active={view === "chart"}
+            keepAliveFarmId={keepAliveFarmId}
+            readings={readings}
+            farmKey={gridFarmKey}
+            controllerTrendByPeriod={gridControllerTrend}
+            trendLoading={gridTrendLoading}
+            trendError={Boolean(gridTrendError)}
+            trendExtending={gridTrendExtending}
+            window15mLoading={gridTrendWindowLoading}
+            window15m={gridTrendWindow15m}
+            onNeedWindow15m={ensureGridTrendWindow15m}
+            period={trendPeriod}
+            alarmSettings={alarmSettings}
+            thermoSettings={thermoSettings}
+            canCommand={controller?.canCommand ?? false}
+            isMobileStack={viewportCompact}
+            selection={chartLabSelection}
+            onSelectionChange={onChartLabSelectionChange}
+            layersToolbarActive={view === "chart"}
+          />
         ) : null}
 
       </div>
