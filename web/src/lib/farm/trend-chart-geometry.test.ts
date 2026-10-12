@@ -3,8 +3,10 @@
  */
 import assert from "node:assert/strict";
 import {
+  bindTrendPlotPaths,
   buildEnvelopePaths,
   buildLineSegments,
+  collectTrendNullGapRanges,
   computeTipPlacement,
   domainFor,
   finiteValues,
@@ -385,5 +387,56 @@ assert.equal(inferHoverMetricGroup("습도 산포"), "hum");
 
 assert.equal(crosshairChipFlipsRight(20, 12, 40, 8), true);
 assert.equal(crosshairChipFlipsRight(80, 12, 40, 8), false);
+
+{
+  const temp: TrendSeries = {
+    name: "온도",
+    data: [1, null, null, 4, null],
+    color: "#000",
+  };
+  const other: TrendSeries = {
+    name: "습도",
+    data: [null, null, null, null, null],
+    color: "#111",
+  };
+  assert.deepEqual(
+    collectTrendNullGapRanges([other, temp], 5, {
+      coverageBandCount: 0,
+      showNullGaps: true,
+      mode: "line",
+    }),
+    [{ i0: 1, i1: 2 }],
+  );
+  assert.deepEqual(
+    collectTrendNullGapRanges([temp], 5, {
+      coverageBandCount: 1,
+      showNullGaps: true,
+      mode: "line",
+    }),
+    [],
+  );
+  assert.deepEqual(
+    collectTrendNullGapRanges([temp], 5, {
+      coverageBandCount: 0,
+      showNullGaps: false,
+      mode: "line",
+    }),
+    [],
+  );
+  assert.deepEqual(
+    collectTrendNullGapRanges([temp], 5, {
+      coverageBandCount: 0,
+      showNullGaps: true,
+      mode: "bar",
+    }),
+    [],
+  );
+  const bound = bindTrendPlotPaths(xForId, yForId, 5);
+  assert.equal(
+    bound.lineSegments({ ...temp, data: [1, 2, null, null, 4] }).length,
+    1,
+  );
+  assert.equal(bound.envelopePaths({ high: [2, 3], low: [1, 1] } as TrendEnvelope).length, 1);
+}
 
 console.log("trend-chart-geometry.test.ts: ok");

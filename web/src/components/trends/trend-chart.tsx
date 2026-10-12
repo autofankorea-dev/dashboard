@@ -48,8 +48,8 @@ import {
   VIEW_W_NORM,
   SCALE_EDGE_HIT_PX,
   SCALE_EDGE_LABEL_DRAG_PX,
-  buildEnvelopePaths,
-  buildLineSegments,
+  bindTrendPlotPaths,
+  collectTrendNullGapRanges,
   domainFor,
   finiteValues,
   markerRadiusInViewUnits,
@@ -101,6 +101,7 @@ import { TrendChartEdgeLabels } from "./trend-chart-edge-labels";
 import { TrendChartPinnedCards } from "./trend-chart-pinned-cards";
 import type { TrendChartProps } from "./trend-chart-props";
 import { findTrendDataPointHit } from "./trend-chart-hit";
+import { resolveTrendHoverCardLive } from "./trend-chart-hover-live";
 
 export type {
   TrendAxis,
@@ -975,41 +976,25 @@ export function TrendChart({
   const hoveredEdgePresence = usePresenceValue(hoveredEdge);
   const draftPresence = usePresenceValue(xDraft);
 
-  const hoverEventVisible =
-    hoverEventMark != null &&
-    !pinnedTips.some((p) => p.eventMark?.id === hoverEventMark.id);
-  const hoverPointVisible =
-    hoverIdx != null &&
-    hoverIdx >= 0 &&
-    hoverIdx < n &&
-    hoverSeries != null &&
-    !hoverSeries.startsWith("event:") &&
-    !pinnedTips.some(
-      (p) =>
-        p.id ===
-        tipPinId(
-          hoverIdx,
-          overlayHoverMerge &&
-            isOverlayMergedHoverGroup(inferHoverMetricGroup(hoverSeries))
-            ? "온도"
-            : hoverSeries,
-        ),
-    );
-  const hoverCardLive = useMemo(() => {
-    if (hoverEventVisible && hoverEventMark) {
-      return { kind: "event" as const, mark: hoverEventMark };
-    }
-    if (hoverPointVisible && hoverIdx != null && hoverSeries) {
-      return { kind: "point" as const, idx: hoverIdx, seriesKey: hoverSeries };
-    }
-    return null;
-  }, [
-    hoverEventVisible,
-    hoverEventMark,
-    hoverPointVisible,
-    hoverIdx,
-    hoverSeries,
-  ]);
+  const hoverCardLive = useMemo(
+    () =>
+      resolveTrendHoverCardLive({
+        hoverEventMark,
+        pinnedTips,
+        hoverIdx,
+        n,
+        hoverSeries,
+        overlayHoverMerge,
+      }),
+    [
+      hoverEventMark,
+      pinnedTips,
+      hoverIdx,
+      n,
+      hoverSeries,
+      overlayHoverMerge,
+    ],
+  );
   const hoverCardPresence = usePresenceValue(hoverCardLive);
 
   /** 플롯 위를 보는 중이면 기준 칩을 낮춤. 칩 호버는 제외 */
@@ -1033,43 +1018,12 @@ export function TrendChart({
     );
   }
 
-  /** Build polyline segments, breaking on null (gap shading). */
-  const lineSegments = (s: TrendSeries): string[] =>
-    buildLineSegments(s, xFor, yFor);
-
-  /** 결측 구간 — 커버리지 밴드가 있으면 희소/통신두절/없음으로 대체. */
-  const nullGapRanges: { i0: number; i1: number }[] = [];
-  if (
-    coverageBands.length === 0 &&
-    showNullGaps &&
-    mode === "line" &&
-    series.length > 0
-  ) {
-    const ref =
-      series.find((s) => s.name === "온도" || s.name.startsWith("온도")) ??
-      series[0]!;
-    let start: number | null = null;
-    const isGapAt = (i: number) => {
-      const v = ref.data[i];
-      return v == null || !Number.isFinite(v);
-    };
-    const flush = (end: number) => {
-      if (start == null) return;
-      if (end - start + 1 >= 2) nullGapRanges.push({ i0: start, i1: end });
-      start = null;
-    };
-    for (let i = 0; i < n; i++) {
-      if (isGapAt(i)) {
-        if (start == null) start = i;
-      } else {
-        flush(i - 1);
-      }
-    }
-    flush(n - 1);
-  }
-
-  const envelopePaths = (env: TrendEnvelope): string[] =>
-    buildEnvelopePaths(env, n, xFor, yFor);
+  const nullGapRanges = collectTrendNullGapRanges(series, n, {
+    coverageBandCount: coverageBands.length,
+    showNullGaps,
+    mode,
+  });
+  const { lineSegments, envelopePaths } = bindTrendPlotPaths(xFor, yFor, n);
 
   const plotGeom: TrendPlotGeom = {
     xFor,

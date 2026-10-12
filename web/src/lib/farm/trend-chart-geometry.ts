@@ -97,6 +97,65 @@ export function buildEnvelopePaths(
   return paths;
 }
 
+/** 결측 구간. 길이 2 이상만. 커버리지 밴드가 있으면 호출측 음영을 쓰지 않는다. */
+export type TrendNullGapRange = { i0: number; i1: number };
+
+export function collectTrendNullGapRanges(
+  series: readonly TrendSeries[],
+  n: number,
+  options: {
+    coverageBandCount: number;
+    showNullGaps: boolean;
+    mode: "line" | "bar";
+  },
+): TrendNullGapRange[] {
+  const nullGapRanges: TrendNullGapRange[] = [];
+  if (
+    options.coverageBandCount === 0 &&
+    options.showNullGaps &&
+    options.mode === "line" &&
+    series.length > 0
+  ) {
+    const ref =
+      series.find((s) => s.name === "온도" || s.name.startsWith("온도")) ??
+      series[0]!;
+    let start: number | null = null;
+    const isGapAt = (i: number) => {
+      const v = ref.data[i];
+      return v == null || !Number.isFinite(v);
+    };
+    const flush = (end: number) => {
+      if (start == null) return;
+      if (end - start + 1 >= 2) nullGapRanges.push({ i0: start, i1: end });
+      start = null;
+    };
+    for (let i = 0; i < n; i++) {
+      if (isGapAt(i)) {
+        if (start == null) start = i;
+      } else {
+        flush(i - 1);
+      }
+    }
+    flush(n - 1);
+  }
+  return nullGapRanges;
+}
+
+/** 렌더 시점 좌표 클로저에 세그먼트·엔벨로프 빌더를 묶는다. */
+export function bindTrendPlotPaths(
+  xFor: XForFn,
+  yFor: YForFn,
+  n: number,
+): {
+  lineSegments: (s: TrendSeries) => string[];
+  envelopePaths: (env: TrendEnvelope) => string[];
+} {
+  return {
+    lineSegments: (s) => buildLineSegments(s, xFor, yFor),
+    envelopePaths: (env) => buildEnvelopePaths(env, n, xFor, yFor),
+  };
+}
+
 /** 플롯 안 좌우 여백 — 라벨은 바깥 칸. 선이 테두리에 붙지 않을 정도만 (너비의 1%). */
 export const PAD_X = 1;
 export const PAD_TOP = 6;
