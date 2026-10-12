@@ -54,11 +54,11 @@ Next.js는 wire를 해석하지 않고 MQTT를 직접 쏘지 않는다. 해석�
 
 | 칸 | 저장소 | 하는 일 |
 |----|--------|---------|
-| 수집 | EC2 systemd `rsd-rs` · `rsd-c` | MQTT를 받아 raw를 넣고, 명령 행을 현장으로 보낸다 |
+| 수집 | Git 없음. SSH·에이전트로 EC2의 `rsd-rs`·`rsd-c`를 관리 | MQTT를 받아 raw를 넣고, 명령 행을 현장으로 보낸다 |
 | 저장 | Supabase `fkkrjljeqxpbmazfnync` | raw를 해석하고, 목록·차트·명령 행을 보관한다 |
 | 앱 | `dashboard/web` → Vercel | 뷰를 읽고 명령을 넣는다. 운영자가 보는 화면이다 |
 
-수집 코드는 이 대시보드 저장소에 없다. 실행 단위는 EC2의 `rsd-rs`, `rsd-c`이다. `github.com/SIJackLee/rsd`는 현재 수집 저장소가 아니다.
+수집 인스턴스 안의 코드는 Git으로 관리하지 않는다. 변경은 SSH 접속과 에이전트로 한다. 프로세스는 `rsd-rs`, `rsd-c`이다.
 
 ---
 

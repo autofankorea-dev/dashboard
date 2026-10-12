@@ -10,7 +10,7 @@
 ## Dashboard 배포 — RS-DB-C (Vercel)
 
 > **EC2 Cloud Agent 범위 밖** — 이 앱은 Vercel이 배포한다.  
-> EC2(RS+C): systemd `rsd-rs` · `rsd-c`. `github.com/SIJackLee/rsd`는 현재 수집 저장소가 아니다  
+> EC2(RS+C): Git으로 관리하지 않음. SSH 접속과 에이전트로 `rsd-rs` · `rsd-c`를 다룬다.  
 > 게이트 상세: [`OPS.md`](#preview-게이트)  
 > 문서 허브: [`README.md`](./README.md)
 
@@ -368,7 +368,7 @@ GitLab(`.gitlab-ci.yml`)과 GitHub(`.github/workflows/web-verify.yml`) 모두 `l
 | 작업 | 절차 |
 |------|------|
 | RS 롤백 | `cp wire_decode.py.bak.phase3 wire_decode.py && sudo systemctl restart rsd-rs` |
-| systemd·env | rsd repo — SSH **승인 후** |
+| systemd·env | SSH·에이전트 — **승인 후** |
 | 키 로테 | Supabase + EC2 동시 — 문서에 값 기록 금지 |
 
 ---

@@ -9,7 +9,7 @@
 
 | 결정 | 설계 이유 | 하지 않은 것 | 근거 |
 |------|-----------|--------------|------|
-| **Instance·Dashboard repo 분리** | `rsd`=상시 MQTT·systemd · `dashboard`=Vercel git 배포. **수집 장애와 UI 릴리스 분리** | 대시보드 repo에 RS/C 통합 · UI를 EC2에서 호스팅 | [`OPS.md`](./OPS.md#배포) |
+| **Instance·Dashboard 분리** | EC2는 SSH·에이전트로 관리 · `dashboard`는 Vercel git 배포. **수집 장애와 UI 릴리스 분리** | 대시보드 repo에 RS/C를 넣어 Git으로 배포 · UI를 EC2에서 호스팅 | [`OPS.md`](./OPS.md#배포) |
 | **RS는 raw INSERT만** | EC2 blast radius 최소. decode는 upsert·sparse·월 파티션·`last_value` 갱신 → **DB 소유** | RS wire decode(Phase3+ 폐기) · RS sparse 필터 | [`STORAGE_LOG.md`](./STORAGE_LOG.md) · [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) |
 | **C.py는 EC2 유지** | MQTT cmd 구독·long poll·현장 네트워크 근접. **serverless/Vercel 부적합** | Next.js MQTT publish · 농장마다 cmd 브로커 | [`COMMANDS.md`](./COMMANDS.md#부록--phase-a-관측) · [`데이터폼.md`](./protocol/데이터폼.md) §4 |
 | **헬스→DB 적재** | admin DAG가 **DB만** 읽어 전국 상태. EC2 SSH 없이 관측 | Prometheus만 별도 · 대시보드가 EC2 SSH | [`SYSTEM_APP.md`](./SYSTEM_APP.md#작업-맥락) §6 |
@@ -44,7 +44,7 @@ Instance는 **R(Receive)** 계층만 담당한다.
 
 | 구분 | 경로 | 비고 |
 |------|------|------|
-| EC2 실행 | systemd `rsd-rs` · `rsd-c` | dashboard repo와 **분리**. `github.com/SIJackLee/rsd`는 현재 수집 저장소가 아니다 |
+| EC2 관리 | SSH 접속 · 에이전트 | Git으로 관리하지 않음. 프로세스는 systemd `rsd-rs` · `rsd-c` |
 | Dashboard | `dashboard/web` → Vercel | Instance 코드 없음 |
 | 레퍼런스 | `Operation/RSD/` | 로컬 참고용 |
 
@@ -58,7 +58,7 @@ Instance는 **R(Receive)** 계층만 담당한다.
 | `wire_decode.py` (EC2) | Phase3 레거시 보조 | **주력 decode는 Edge** |
 | `D.py` | decoded INSERT (레거시) | **폐기** |
 
-**Instance 실측 경로 (SSH/rsd repo 아님):** `/admin/ops` Health DAG · DB `instance_health_current` · [`fetch-instance-health.ts`](../src/lib/admin/health/fetch-instance-health.ts). 아래 §2.3 표 참고.
+**상태 실측은 SSH 없이:** `/admin/ops` Health DAG · DB `instance_health_current` · [`fetch-instance-health.ts`](../src/lib/admin/health/fetch-instance-health.ts). 아래 §2.3 표 참고. 코드 변경은 SSH·에이전트이다.
 
 ### 2.3 Health로 보는 Instance 실측
 
@@ -73,7 +73,7 @@ Instance는 **R(Receive)** 계층만 담당한다.
 | `mem_available_mb` · `disk_used_percent` | EC2 자원 | warn 임계 §3.1 |
 | `payload` · `note` | rsd 부가 JSON | drill-down (있을 때) |
 
-조회: admin `/admin/ops` · SQL `instance_health_current` (service_role). **SSH·rsd repo 열람은 장애 runbook 필수 단계가 아님.**
+조회: admin `/admin/ops` · SQL `instance_health_current` (service_role). 상태 확인은 SSH 없이 이 경로로 한다.
 
 ### 2.4 MQTT · raw INSERT
 
@@ -163,8 +163,8 @@ flowchart LR
 | 작업 | 승인 | 롤백 |
 |------|------|------|
 | RS wire_decode 교체 | 운영 | `.bak.phase3` 복원 + restart |
-| systemd·env 변경 | 운영 | rsd repo 커밋 revert |
-| EC2 force·키 로테 | **명시 승인** | rsd + Supabase 동시 |
+| systemd·env 변경 | 운영 | SSH로 인스턴스 파일을 이전 내용으로 복원 |
+| EC2 force·키 로테 | **명시 승인** | EC2 파일과 Supabase를 함께 |
 
 ### 3.4 알려진 gap / 백로그
 

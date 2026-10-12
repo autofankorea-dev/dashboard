@@ -196,7 +196,7 @@ GitHub Actions(`.github/workflows/web-verify.yml`)와 GitLab CI가 동일 단계
 | **S** (Store) | Supabase Postgres | raw · decoded · last_value · 명령·프로필 |
 | **C** (Consume) | Vercel Next.js + Edge Functions | LIVE 카드 · 차트 · PDF · 관리자 헬스 |
 
-- **배포 분리:** EC2 = systemd `rsd-rs` · `rsd-c` · 대시보드 = `dashboard/web` → Vercel ([`OPS.md`](./OPS.md#배포)). `github.com/SIJackLee/rsd`는 현재 수집 저장소가 아니다
+- **배포 분리:** EC2는 SSH·에이전트로 관리(`rsd-rs` · `rsd-c`, Git 없음) · 대시보드 = `dashboard/web` → Vercel ([`OPS.md`](./OPS.md#배포))
 - **decode 소유:** 과거 D.py INSERT → **현행은 Edge `decode-batch` + 앱 read path** ([`OPS.md`](./OPS.md#배포) § RS-DB-C)
 
 #### 1.3 데이터 흐름 (정상 경로)
@@ -282,7 +282,7 @@ flowchart LR
 
 | 결정 | 설계 이유 | 하지 않은 것 | 근거 |
 |------|-----------|--------------|------|
-| **Instance·Dashboard repo 분리** | `rsd`=상시 MQTT·systemd · `dashboard`=Vercel git 배포. **수집 장애와 UI 릴리스 분리** | 대시보드 repo에 RS/C 통합 · UI를 EC2에서 호스팅 | [`OPS.md`](./OPS.md#배포) · rsd repo |
+| **Instance·Dashboard 분리** | EC2는 SSH·에이전트, dashboard는 Vercel git. **수집 장애와 UI 릴리스 분리** | 대시보드 repo에 RS/C를 넣어 Git으로 배포 · UI를 EC2에서 호스팅 | [`OPS.md`](./OPS.md#배포) |
 | **RS는 raw INSERT만** | EC2 blast radius 최소. decode는 upsert·sparse·월 파티션·`last_value` 갱신 필요 → DB 소유 | RS wire decode(Phase3+ 폐기) · RS sparse 필터 | [`STORAGE_LOG.md`](./STORAGE_LOG.md) · [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) |
 | **C.py는 EC2 유지** | MQTT cmd 구독·long poll·현장 네트워크 근접. **serverless/Vercel 부적합** | Next.js MQTT publish · 농장마다 cmd 브로커 | [`데이터폼.md`](./protocol/데이터폼.md) §4 · HOME_SIM |
 | **헬스→DB 적재** | admin DAG가 **DB만** 읽어 전국 상태. EC2 SSH 없이 관측 | Prometheus만 별도 · 대시보드가 EC2 SSH | [`SYSTEM_APP.md`](#작업-맥락) §6 |
@@ -292,7 +292,7 @@ flowchart LR
 
 | 구분 | 경로/객체 | 역할 |
 |------|-----------|------|
-| 실행 | EC2 systemd `rsd-rs` · `rsd-c` | RS/C/MQTT. `github.com/SIJackLee/rsd`는 현재 수집 저장소가 아니다 |
+| 관리 | EC2 SSH · 에이전트 | Git 없음. 프로세스는 `rsd-rs` · `rsd-c` |
 | 수집 | `RS.py` → `iot_room_state_raw` | topic + `payload_bytea` + `received_at` |
 | 다운 | `C.py` ← `ctrl_thermo_command` | pending → MQTT downlink |
 | 헬스 | `rsd-healthcheck.timer` → `instance_health_current` | mem/disk/mqtt/rs/c |
