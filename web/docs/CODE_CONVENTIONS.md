@@ -28,13 +28,12 @@ flowchart LR
 |------|------|---------------------|
 | `app` → `components`, `lib` | O | — |
 | `components` → `lib` | O | `components` → `@/lib/supabase/*` |
-| `lib` → `lib` | O | `lib/**` → `@/components/*` |
+| `lib` → `lib` | O | `lib/**` → `@/components/*` · `@/app/*` |
 | `lib/domain` → | `lib/domain` 만 | `react` · `next*` · `server-only` · `@/lib/supabase/*` · `@/lib/data/*`(타입 포함) · `@/components` · `@/app` |
 
 공유 타입은 `lib/domain/*-types.ts`에 둔다 (`iot-types.ts` · `barn-meta-types.ts`). `lib/data/iot.ts`·`barn-meta.ts`는 호환용으로 같은 이름을 재export하므로 기존 `@/lib/data/iot` 타입 import는 그대로 동작한다. **신규 코드는 `@/lib/domain/iot-types`를 직접 import**한다.
 
-알려진 예외(추후 정리 대상, §6):
-- `lib/**` → `@/app/**/actions` server action import 6건 (`lib/push`, `lib/navigation`, `lib/farm/fetch-farm-panel-enrich`, `lib/auth/native-oauth` 등). 규칙으로 막지 않았다.
+서버 액션을 부르는 React provider는 `components`에 둔다. 농장 라이브 리프레시는 `components/farm/farm-live-refresh.tsx`이고, `lib/navigation/farm-live-refresh-bridge.ts`는 핸들러 등록만 남긴다. lib가 액션이 필요하면 호출측이 함수를 넘긴다 (`fetchFarmPanelEnrichShared`, `registerPushDeviceIfNative`).
 
 ---
 
@@ -116,7 +115,7 @@ GitHub Actions(`.github/workflows/web-verify.yml`)와 GitLab CI가 동일 단계
 | 항목 | 이유 | 완료 조건 |
 |------|------|-----------|
 | ~~`lib/data/iot.ts` 타입 → `lib/domain/iot-types.ts`~~ | 완료 (P2-0, 2026-10-11). `iot.ts` 446→214줄 | — |
-| `lib/**` → `@/app/**/actions` 6건 | lib가 라우팅 레이어를 모르게 | action 호출을 호출측(components/app)에서 주입하거나 `lib/actions`로 이동 |
+| ~~`lib/**` → `@/app/**`~~ | 완료 (P2-14). 런타임 3곳 주입 · `OAuthProvider`는 `lib/auth` · provider는 `components/farm`. ESLint가 `lib` → `@/app`를 막는다 | — |
 | ~~`unified-barn-trend-series.ts` 구현 분리~~ | 완료 (P2-2). 배럴 2387→310줄. 구현은 `unified-trend-split-y` · `raw` · `build` · `layers` · `colors` | — |
 | 500 LOC+ 핫스팟 분해 | §4 | `trend-chart.tsx` · `unified-barn-trend-panel.tsx` · `farm-page-content.tsx` |
 | vitest 도입 | coverage · watch | 패키지 추가 승인 필요 |
@@ -141,3 +140,4 @@ GitHub Actions(`.github/workflows/web-verify.yml`)와 GitLab CI가 동일 단계
 | 2026-10-12 | P2-11: `unified-barn-trend-layout.ts`에서 레이어·Y밴드 마스킹을 `unified-trend-y-bands.ts`로 분리. 872→435줄. 기존 import는 레이아웃 재export로 유지 |
 | 2026-10-12 | P2-12: 호버 카드 값과 결측·세그먼트 빌더를 분리. `trend-chart.tsx` 1574→1528줄. 포인터 핸들러는 플롯 루트에 유지 |
 | 2026-10-12 | P2-13: 통합 추세 패널의 TrendChart 값 조립을 `unified-barn-trend-chart.tsx`로 분리. `unified-barn-trend-panel.tsx` 1376→1276줄. 줌 setState는 패널에 유지 |
+| 2026-10-12 | P2-14: `lib`가 서버 액션을 직접 부르지 않게 한다. 패널 enrich·푸시 등록은 호출측이 액션을 주입하고, 라이브 리프레시 provider는 `components/farm/farm-live-refresh.tsx`로 옮겼다. `OAuthProvider`는 `lib/auth/oauth-provider.ts`로 옮기고 액션이 재export한다 |

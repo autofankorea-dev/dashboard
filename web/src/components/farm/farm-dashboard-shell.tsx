@@ -23,7 +23,7 @@ import {
   FarmLiveRefreshProvider,
   useFarmLiveRefresh,
   type FarmLiveSlice,
-} from "@/lib/navigation/farm-live-refresh";
+} from "@/components/farm/farm-live-refresh";
 import { FarmApplyQueueProvider } from "@/components/farm/apply-queue-context";
 
 export type FarmDashboardShellProps = {

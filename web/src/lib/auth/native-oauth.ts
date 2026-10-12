@@ -4,7 +4,7 @@ import { Capacitor } from "@capacitor/core";
 import { SocialLogin } from "@capgo/capacitor-social-login";
 import { KakaoLogin } from "@chuseok22/capacitor-kakao-login";
 import { createClient } from "@/lib/supabase/browser";
-import type { OAuthProvider } from "@/app/auth/actions";
+import type { OAuthProvider } from "@/lib/auth/oauth-provider";
 
 let googleReady: Promise<void> | null = null;
 

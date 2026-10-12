@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import {
   fetchActiveModuleAlarmsAction,
   fetchFarmScopedLiveDataAction,
+  fetchFarmScopedPanelDataAction,
   persistBarnLayoutsQuietAction,
   revalidateFarmLiveAction,
 } from "@/app/(dashboard)/farm/actions";
@@ -417,7 +418,7 @@ export function FarmLiveRefreshProvider({
   const fetchAndApplyPanel = useCallback((key: FarmKey) => {
     const farmId = farmKeyId(key);
     let cancelled = false;
-    void fetchFarmPanelEnrichShared(key)
+    void fetchFarmPanelEnrichShared(key, fetchFarmScopedPanelDataAction)
       .then((data) => {
         if (cancelled) return;
         if (farmKeyId(data.farmKey) !== farmId) return;
@@ -555,7 +556,10 @@ export function FarmLiveRefreshProvider({
       try {
         await revalidateFarmLiveAction(farmKey);
         if (mode === "full") {
-          const fresh = await fetchFarmPanelEnrichShared(farmKey);
+          const fresh = await fetchFarmPanelEnrichShared(
+            farmKey,
+            fetchFarmScopedPanelDataAction,
+          );
           if (seq !== revalidateSeq.current) return;
           applyFreshPanel({
             farmId,

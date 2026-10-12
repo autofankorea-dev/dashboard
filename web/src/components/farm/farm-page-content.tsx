@@ -67,11 +67,12 @@ import {
   invalidateFarmStallTrendCache,
   prefetchFarmStallTrend,
 } from "@/components/farm/use-farm-stall-trend";
+import { fetchFarmScopedPanelDataAction } from "@/app/(dashboard)/farm/actions";
 import { fetchFarmPanelEnrichShared } from "@/lib/farm/fetch-farm-panel-enrich";
 import {
   readFarmPanelCache,
   useFarmLiveRefreshOptional,
-} from "@/lib/navigation/farm-live-refresh";
+} from "@/components/farm/farm-live-refresh";
 import { useHydrationSafeDashboardCompact } from "@/components/layout/dashboard-viewport-context";
 import { cn } from "@/lib/utils";
 import { useFieldListFilterMotion } from "@/components/farm/use-field-list-filter-motion";
@@ -195,7 +196,10 @@ export function FarmPageContent({
 
     const gen = ++enrichGenRef.current;
     try {
-      const data = await fetchFarmPanelEnrichShared(lazyListFarmKey);
+      const data = await fetchFarmPanelEnrichShared(
+        lazyListFarmKey,
+        fetchFarmScopedPanelDataAction,
+      );
       if (gen !== enrichGenRef.current) return;
       if (farmKeyId(data.farmKey) !== farmId) return;
       liveRefreshRef.current?.hydrateScopedPanel(data);

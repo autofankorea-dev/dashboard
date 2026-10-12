@@ -48,7 +48,7 @@ const colorRestrictedSyntax = [
 
 /**
  * 레이어 경계 (docs/CODE_CONVENTIONS.md)
- * app → components → lib. lib는 components/app를 모른다.
+ * app → components → lib. lib는 components와 app를 모른다.
  * lib/domain은 순수(React·Next·Supabase·server-only 금지). Supabase 접근은 lib/data·lib/auth·lib/supabase만.
  */
 const layerBoundaries = [
@@ -60,9 +60,9 @@ const layerBoundaries = [
         {
           patterns: [
             {
-              group: ["@/components/*"],
+              group: ["@/components/*", "@/app/*"],
               message:
-                "lib → components 금지. 컴포넌트를 쓰는 hook/헬퍼는 components/<feature>/ 로 옮긴다 (docs/CODE_CONVENTIONS.md)",
+                "lib → components/app 금지. 컴포넌트와 서버 액션 호출은 components/<feature>/ 에 두고, lib에는 호출측이 넘긴 함수만 받는다 (docs/CODE_CONVENTIONS.md)",
             },
           ],
         },

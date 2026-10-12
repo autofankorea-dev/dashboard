@@ -14,7 +14,7 @@ import {
 } from "@/components/farm/use-bulk-command-pipeline-tracker";
 import type { BulkSentCommandItem } from "@/app/(dashboard)/controllers/actions";
 import type { ThermoCommand } from "@/lib/data/commands";
-import { useFarmLiveRefreshOptional } from "@/lib/navigation/farm-live-refresh";
+import { useFarmLiveRefreshOptional } from "@/components/farm/farm-live-refresh";
 
 type ApplyQueueContextValue = {
   startSession: (items: BulkSentCommandItem[]) => void;

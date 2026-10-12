@@ -55,7 +55,7 @@ import { useFarmControllerTrend } from "@/components/farm/use-farm-controller-tr
 import {
   type TrendPeriodId,
 } from "@/lib/domain/farm-trend-types";
-import { useFarmLiveRefreshOptional } from "@/lib/navigation/farm-live-refresh";
+import { useFarmLiveRefreshOptional } from "@/components/farm/farm-live-refresh";
 import { scheduleSafeRouterRefresh } from "@/lib/navigation/safe-router-refresh";
 import { useSoftRefresh } from "@/lib/ui/use-soft-refresh";
 import { normalizeStallTyCode } from "@/lib/domain/stall-type";
