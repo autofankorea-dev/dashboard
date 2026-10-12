@@ -16,7 +16,7 @@ flowchart LR
     sl9001["SL9001"]
     router["라우터"]
   end
-  subgraph r [수집 · EC2 rsd]
+  subgraph r [수집 · EC2]
     rs["RS.py · raw만 저장"]
     cpy["C.py · 명령만 송신"]
   end
@@ -54,9 +54,11 @@ Next.js는 wire를 해석하지 않고 MQTT를 직접 쏘지 않는다. 해석�
 
 | 칸 | 저장소 | 하는 일 |
 |----|--------|---------|
-| 수집 | [`rsd`](https://github.com/SIJackLee/rsd) | MQTT를 받아 raw를 넣고, 명령 행을 현장으로 보낸다 |
+| 수집 | EC2 systemd `rsd-rs` · `rsd-c` | MQTT를 받아 raw를 넣고, 명령 행을 현장으로 보낸다 |
 | 저장 | Supabase `fkkrjljeqxpbmazfnync` | raw를 해석하고, 목록·차트·명령 행을 보관한다 |
 | 앱 | `dashboard/web` → Vercel | 뷰를 읽고 명령을 넣는다. 운영자가 보는 화면이다 |
+
+수집 코드는 이 대시보드 저장소에 없다. 실행 단위는 EC2의 `rsd-rs`, `rsd-c`이다. `github.com/SIJackLee/rsd`는 현재 수집 저장소가 아니다.
 
 ---
 

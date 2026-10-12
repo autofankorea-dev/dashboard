@@ -10,7 +10,7 @@
 ## Dashboard 배포 — RS-DB-C (Vercel)
 
 > **EC2 Cloud Agent 범위 밖** — 이 앱은 Vercel이 배포한다.  
-> EC2(RS+C): `https://github.com/SIJackLee/rsd`  
+> EC2(RS+C): systemd `rsd-rs` · `rsd-c`. `github.com/SIJackLee/rsd`는 현재 수집 저장소가 아니다  
 > 게이트 상세: [`OPS.md`](#preview-게이트)  
 > 문서 허브: [`README.md`](./README.md)
 
@@ -549,7 +549,7 @@ MQTT → RS 수신 → SQLite Outbox commit → MQTT ACK
 
 #### P0 — RS durable Outbox
 
-- [ ] `SIJackLee/rsd`의 현재 `RS.py` MQTT callback·DB flush 구조 확인
+- [ ] EC2에서 도는 `RS.py`의 MQTT callback·DB flush 구조 확인
 - [ ] MQTT callback에서 SQLite WAL Outbox에 먼저 commit
 - [ ] Outbox와 Supabase 전송 worker 분리
 - [ ] DB 실패 시 exponential backoff와 circuit breaker 적용

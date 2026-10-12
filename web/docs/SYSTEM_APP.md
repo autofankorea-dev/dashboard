@@ -196,7 +196,7 @@ GitHub Actions(`.github/workflows/web-verify.yml`)와 GitLab CI가 동일 단계
 | **S** (Store) | Supabase Postgres | raw · decoded · last_value · 명령·프로필 |
 | **C** (Consume) | Vercel Next.js + Edge Functions | LIVE 카드 · 차트 · PDF · 관리자 헬스 |
 
-- **배포 분리:** EC2 = [`rsd` 저장소](https://github.com/SIJackLee/rsd) · 대시보드 = `dashboard/web` → Vercel ([`OPS.md`](./OPS.md#배포))
+- **배포 분리:** EC2 = systemd `rsd-rs` · `rsd-c` · 대시보드 = `dashboard/web` → Vercel ([`OPS.md`](./OPS.md#배포)). `github.com/SIJackLee/rsd`는 현재 수집 저장소가 아니다
 - **decode 소유:** 과거 D.py INSERT → **현행은 Edge `decode-batch` + 앱 read path** ([`OPS.md`](./OPS.md#배포) § RS-DB-C)
 
 #### 1.3 데이터 흐름 (정상 경로)
@@ -292,7 +292,7 @@ flowchart LR
 
 | 구분 | 경로/객체 | 역할 |
 |------|-----------|------|
-| Repo | `github.com/SIJackLee/rsd` | RS/C/MQTT · systemd |
+| 실행 | EC2 systemd `rsd-rs` · `rsd-c` | RS/C/MQTT. `github.com/SIJackLee/rsd`는 현재 수집 저장소가 아니다 |
 | 수집 | `RS.py` → `iot_room_state_raw` | topic + `payload_bytea` + `received_at` |
 | 다운 | `C.py` ← `ctrl_thermo_command` | pending → MQTT downlink |
 | 헬스 | `rsd-healthcheck.timer` → `instance_health_current` | mem/disk/mqtt/rs/c |

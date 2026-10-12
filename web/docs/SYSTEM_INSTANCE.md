@@ -44,7 +44,7 @@ Instance는 **R(Receive)** 계층만 담당한다.
 
 | 구분 | 경로 | 비고 |
 |------|------|------|
-| EC2 repo | `https://github.com/SIJackLee/rsd` | dashboard repo와 **분리** |
+| EC2 실행 | systemd `rsd-rs` · `rsd-c` | dashboard repo와 **분리**. `github.com/SIJackLee/rsd`는 현재 수집 저장소가 아니다 |
 | Dashboard | `dashboard/web` → Vercel | Instance 코드 없음 |
 | 레퍼런스 | `Operation/RSD/` | 로컬 참고용 |
 
