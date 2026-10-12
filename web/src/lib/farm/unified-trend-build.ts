@@ -40,10 +40,12 @@ import {
   mapMotorPctToSplitY,
   mapTempCToSplitY,
   mapTempDeviationToSplitY,
-  resolveTempOverflowFitDomain,
   tempBrokenLinearEdge,
-  tempRawOverflowColumns,
 } from "./unified-trend-split-y";
+import {
+  resolveTempOverflowFitDomain,
+  tempRawOverflowColumns,
+} from "./unified-trend-split-y-overflow";
 import type { TempBandAnchor } from "./unified-trend-split-y";
 import {
   DEV_HIDE_ABS_C,
