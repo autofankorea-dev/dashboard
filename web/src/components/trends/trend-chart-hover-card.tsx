@@ -4,7 +4,6 @@ import type { RefObject } from "react";
 import type {
   TrendBreachNavTarget,
   TrendEnvelope,
-  TrendEventMark,
   TrendHistogram,
   TrendSeries,
 } from "@/lib/domain/trend-chart-types";
@@ -20,10 +19,9 @@ import {
   TrendPointCardBody,
 } from "./trend-hover-card";
 import { chartTipPresenceClass } from "./trend-chart-interaction";
+import type { TrendHoverCardValue } from "./trend-chart-hover-live";
 
-export type TrendHoverCardValue =
-  | { kind: "event"; mark: TrendEventMark }
-  | { kind: "point"; idx: number; seriesKey: string };
+export type { TrendHoverCardValue } from "./trend-chart-hover-live";
 
 /**
  * 호버 데이터 카드. 위치는 placeTipNear가 tipRef로 직접 쓴다.
