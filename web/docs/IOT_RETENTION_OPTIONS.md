@@ -3,7 +3,7 @@
 > **정합:** 2026-08-28 · 구 `iot-cloud` 실측 cron (ops 로그 7일 추가)  
 > **운영 DB (현재):** `fkkrjljeqxpbmazfnync` · 구 `iot-cloud`(`ompufmezugftzoergdbn`) **폐기**  
 > **역할:** 보존 정책의 옵션 이력 · **실행 상태는 본 문서 §현재 상태**가 정본  
-> 상세 설계·파티션: [`DECODED_ROWCOUNT_PLAN.md`](./DECODED_ROWCOUNT_PLAN.md) · archive DROP·slim·thermo flat: 아래 slim 절 · 용량: [`DECODED_CAPACITY.md`](./DECODED_CAPACITY.md)
+> 상세 설계·파티션: [행 수 계획](#행-수-계획) · archive DROP·slim·thermo flat: 아래 slim 절 · 용량: [`STORAGE_LOG.md`](./STORAGE_LOG.md)
 
 대시보드 읽기는 `latest` 뷰 + trend RPC. 보존은 디스크·스캔 상한용 운영 과제였고, **아래 채택안은 적용 완료**.
 
@@ -92,11 +92,11 @@
 | --- | --- |
 | 정책 | HOT=보관=차트 **30일** · archive soak **+30일** 후 DROP · ops 로그 **7일** |
 | SQL / 함수 / cron | **적용·active** (위 표 + `cleanup-ops-logs-7d-daily`) |
-| 희소(D3) | PoC on · 확대 보류 ([`SPARSE_OBSERVATION.md`](./SPARSE_OBSERVATION.md)) |
+| 희소(D3) | PoC on · 확대 보류 ([`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md)) |
 | cmd-poll ids 배칭 | 백로그 (보존과 무관) |
 | 문서 | 본 문서 = retention **정본** (구 “미실행” 문구 폐기) |
 
-관련: [`SYSTEM_DB.md`](./SYSTEM_DB.md) §2.3 · [`PERF_BASELINE.md`](./PERF_BASELINE.md) · [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md)
+관련: [`SYSTEM_DB.md`](./SYSTEM_DB.md) §2.3 · [`QA_RECORD.md`](./QA_RECORD.md) · [`SYSTEM_APP.md`](./SYSTEM_APP.md#작업-맥락)
 
 ---
 
@@ -113,11 +113,11 @@
 > ① D1 파티션 **운영 적용** · legacy **DROP** (2026-08-05)  
 > ② 희소 PoC — allowlist 적용 후 **OFF 2026-09-01** (`sparse_enabled=false` · LIVE·델린 side effect) · migration `20260901153000`  
 > ③ retention **cron on** — `cleanup_iot_retention_30d` 매일 03:30 KST · archive soak DROP · 월 파티션 ensure  
-> **문서 정합:** 2026-09-11 — sparse OFF · [`SPARSE_OBSERVATION.md`](./SPARSE_OBSERVATION.md)
+> **문서 정합:** 2026-09-11 — sparse OFF · [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md)
 
 실측(2026-08-06): decoded ~9.4k행 · 파티션 합 ~27MB · raw ~22MB.
 
-관련: [`DECODED_CAPACITY.md`](./DECODED_CAPACITY.md) · [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) · [`DECODED_JSON_SLIM.md`](./DECODED_JSON_SLIM.md) · [`SPARSE_OBSERVATION.md`](./SPARSE_OBSERVATION.md)
+관련: [`STORAGE_LOG.md`](./STORAGE_LOG.md) · [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) · [`STORAGE_LOG.md`](./STORAGE_LOG.md) · [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md)
 
 ---
 
@@ -266,7 +266,7 @@ skip 시에도 decode cursor는 전진(raw 보존 · 재디코드는 cursor rewi
     └─③ 30d detach→archive + archive soak DROP + raw 30d → **cron on**
 ```
 
-①·③ **완료**. ② 희소 allowlist PoC **OFF** 2026-09-01 ([`SPARSE_OBSERVATION.md`](./SPARSE_OBSERVATION.md)).
+①·③ **완료**. ② 희소 allowlist PoC **OFF** 2026-09-01 ([`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md)).
 
 ---
 
@@ -293,7 +293,7 @@ skip 시에도 decode cursor는 전진(raw 보존 · 재디코드는 cursor rewi
 > **롤백:** `UPDATE iot_decode_config SET sparse_enabled = true WHERE id = 1;` (승인 후)  
 > **대상 (당시):** 구 `iot-cloud` · allowlist `FARM01/P00`, `FARM02/P00` (OFF 시 gate 미적용)  
 > **운영 DB (현재):** `fkkrjljeqxpbmazfnync` · 구 `iot-cloud` **폐기**  
-> **관련:** [`DECODED_ROWCOUNT_PLAN.md`](./DECODED_ROWCOUNT_PLAN.md)
+> **관련:** [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md)
 
 ---
 

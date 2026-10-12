@@ -1,7 +1,7 @@
 # 출고 게이트 축소판 (프로필)
 
-> 출고 때 **실제로 돌리는 짧은 게이트**. 전수 정의·태그 정본은 [`QA_PRE_RELEASE.md`](./QA_PRE_RELEASE.md).  
-> 스모크 실행 본체는 [`SHIP_CHECKLIST.md`](./SHIP_CHECKLIST.md).
+> 출고 때 **실제로 돌리는 짧은 게이트**. 전수 정의·태그 정본은 [`QA_RECORD.md`](./QA_RECORD.md).  
+> 스모크 실행 본체는 [`QA_SHIP_GATE.md`](#출고-스모크).
 
 ## 태그 의미
 
@@ -31,7 +31,7 @@
 
 ### A. 범위·정적 (0 · 2)
 
-- [ ] **필수** 출고 범위(포함/제외)·commit이 고정됨 — [`QA_PRE_RELEASE`](./QA_PRE_RELEASE.md) 0단계
+- [ ] **필수** 출고 범위(포함/제외)·commit이 고정됨 — [`QA_PRE_RELEASE`](./QA_RECORD.md) 0단계
 - [ ] **필수** `npm run lint` 오류 0
 - [ ] **필수** `npx tsc --noEmit` (또는 프로젝트 typecheck) 오류 0
 - [ ] **필수** `npm run build` 성공
@@ -39,7 +39,7 @@
 
 ### B. 스모크 · 권한 (3 · 11 · SHIP)
 
-- [ ] **필수** [`SHIP_CHECKLIST.md`](./SHIP_CHECKLIST.md) — `npm run audit:ship-checklist` + 역할별 핵심 수동 항목
+- [ ] **필수** [`QA_SHIP_GATE.md`](#출고-스모크) — `npm run audit:ship-checklist` + 역할별 핵심 수동 항목
 - [ ] **필수** admin / operator / viewer 권한·메뉴·명령 차단이 서버까지 일치
 - [ ] **필수** URL·API 직접 호출로 타 농장·운영 경로 우회 불가
 
@@ -63,18 +63,18 @@ operator 계정 · 설정온도 또는 일괄 적용 1회.
 ### E. DELIN / ARIA (3 · 6)
 
 - [ ] **필수** ARIA 탭 진입·질의(또는 companion) 후 답변 표면이 깨지지 않음
-- [ ] **필수** 답변·화면 문구에 내부 ID/영문 필드명이 노출되지 않음 ([`aria-protocol.md`](./aria-protocol.md))
+- [ ] **필수** 답변·화면 문구에 내부 ID/영문 필드명이 노출되지 않음 ([`farm-hub-url.md`](./farm-hub-url.md#환경-상태-정책))
 - [ ] **필수** CTRL 추천만 하고 “적용했다” 환각·무단 명령 전송이 없음
 - [ ] **필수** production에서 DELIN 게이트(기본 off 등) 정책이 문서/환경과 일치
 
 ### F. Android 배포 가능 (7 · 12)
 
-증적: `/app` 접속 · 버전 표시 · 다운로드 가능 여부. 상세 [`android-app-install.md`](./android-app-install.md).
+증적: `/app` 접속 · 버전 표시 · 다운로드 가능 여부. 상세 [`ANDROID.md`](./ANDROID.md#설치).
 
 - [ ] **필수** `https://smart.autofankorea.com/app` (또는 이번 출고 URL) 설치 페이지 동작
 - [ ] **필수** APK 다운로드(비밀번호·signed URL) 성공 · 객체/버전이 **이번 출고와 맞음**
 - [ ] **필수** 업로드된 APK가 최신 release 빌드임 (빌드일·`APP_APK_VERSION` 확인)
-- [ ] **필수** 설치 후 로그인·푸시 권한 안내가 가능한 수준으로 동작 ([`android-push.md`](./android-push.md) 요약)
+- [ ] **필수** 설치 후 로그인·푸시 권한 안내가 가능한 수준으로 동작 ([`ANDROID.md`](./ANDROID.md#푸시) 요약)
 
 ### G. 최종 (14)
 
@@ -101,10 +101,10 @@ npm run audit:ship-checklist
 - [ ] **권장** 경계·경쟁(늦은 응답·화면 이탈) 표본 — 마스터 3단계
 - [ ] **권장** 비정상 데이터(누락·역순·지연) 주입 1세트 — 4단계
 - [ ] **권장** 단절·재연결 후 중복 구독/값 후퇴 없음 — 5·10단계
-- [ ] **권장** 배포 smoke · 롤백 절차 확인 — [`CLOUD_DEPLOY.md`](./CLOUD_DEPLOY.md) · 12단계
-- [ ] **권장** 모션 토큰·reduced-motion — `npm run verify:motion-tokens` / [`UI_MOTION.md`](./UI_MOTION.md)
-- [ ] **권장** 허브 keep-alive·URL — `npm run verify:hub` / [`HUB_STABILITY_P0.md`](./HUB_STABILITY_P0.md)
-- [ ] **권장** 성능 스냅샷 — [`PERF_BASELINE.md`](./PERF_BASELINE.md)
+- [ ] **권장** 배포 smoke · 롤백 절차 확인 — [`OPS.md`](./OPS.md#배포) · 12단계
+- [ ] **권장** 모션 토큰·reduced-motion — `npm run verify:motion-tokens` / [`UI.md`](./UI.md#모션)
+- [ ] **권장** 허브 keep-alive·URL — `npm run verify:hub` / [`farm-hub-url.md`](./farm-hub-url.md#허브-본체-안정화--p0-관측·재현-게이트)
+- [ ] **권장** 성능 스냅샷 — [`QA_RECORD.md`](./QA_RECORD.md)
 
 ---
 
@@ -133,7 +133,7 @@ npm run audit:ship-checklist
 | 차단 사유 | 없음. FARM01 MQTT 시뮬 종료. 사용자 유입은 도메인, 권한부여·모니터링은 ADMIN. |
 | 승인자 | 사용자 (본 출고 대화) |
 
-결함 상세 양식은 마스터 [`QA_PRE_RELEASE.md`](./QA_PRE_RELEASE.md) «검수 결함 기록 양식»을 사용한다.
+결함 상세 양식은 마스터 [`QA_RECORD.md`](./QA_RECORD.md) «검수 결함 기록 양식»을 사용한다.
 
 ---
 
@@ -142,7 +142,7 @@ npm run audit:ship-checklist
 ## 출고 품질 체크리스트 (단일 농장)
 
 출고 직전 **깨지면 출고 불가**인 경로만 짧게 확인한다. 전수 UI 검수가 아니다.  
-전수 체계: [`QA_PRE_RELEASE.md`](./QA_PRE_RELEASE.md) · **출고 실행 축소판**: [`QA_SHIP_GATE.md`](./QA_SHIP_GATE.md).
+전수 체계: [`QA_RECORD.md`](./QA_RECORD.md) · **출고 실행 축소판**: [`QA_SHIP_GATE.md`](./QA_SHIP_GATE.md).
 
 ### 전제
 
@@ -330,5 +330,5 @@ FAIL만 후속 수정 후보로 올린다.
 
 ### 관련
 
-- 성능 기준: [`PERF_BASELINE.md`](./PERF_BASELINE.md)
+- 성능 기준: [`QA_RECORD.md`](./QA_RECORD.md)
 - LIVE 측정: `npm run measure:live`

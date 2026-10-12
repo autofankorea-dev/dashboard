@@ -1,6 +1,6 @@
 # Instance — EC2 · MQTT · RS/C
 
-> **상위:** [`SYSTEM.md`](./SYSTEM.md) §2.1 · **배포:** [`CLOUD_DEPLOY.md`](./CLOUD_DEPLOY.md)  
+> **상위:** [`SYSTEM_APP.md`](./SYSTEM_APP.md#시스템-총론) §2.1 · **배포:** [`OPS.md`](./OPS.md#배포)  
 > **작성 원칙:** 설계 이유 → 경로 → 운영. 비밀값·키는 문서에 기록하지 않는다.
 
 ---
@@ -9,11 +9,11 @@
 
 | 결정 | 설계 이유 | 하지 않은 것 | 근거 |
 |------|-----------|--------------|------|
-| **Instance·Dashboard repo 분리** | `rsd`=상시 MQTT·systemd · `dashboard`=Vercel git 배포. **수집 장애와 UI 릴리스 분리** | 대시보드 repo에 RS/C 통합 · UI를 EC2에서 호스팅 | [`CLOUD_DEPLOY.md`](./CLOUD_DEPLOY.md) |
-| **RS는 raw INSERT만** | EC2 blast radius 최소. decode는 upsert·sparse·월 파티션·`last_value` 갱신 → **DB 소유** | RS wire decode(Phase3+ 폐기) · RS sparse 필터 | [`RAW_STORAGE_CHANGE.md`](./RAW_STORAGE_CHANGE.md) · [`DECODED_ROWCOUNT_PLAN.md`](./DECODED_ROWCOUNT_PLAN.md) |
-| **C.py는 EC2 유지** | MQTT cmd 구독·long poll·현장 네트워크 근접. **serverless/Vercel 부적합** | Next.js MQTT publish · 농장마다 cmd 브로커 | [`CTRL_THERMO_COMMAND_PHASE_A.md`](./CTRL_THERMO_COMMAND_PHASE_A.md) · [`protocol/데이터폼_정책문서.md`](./protocol/데이터폼_정책문서.md) §4 |
-| **헬스→DB 적재** | admin DAG가 **DB만** 읽어 전국 상태. EC2 SSH 없이 관측 | Prometheus만 별도 · 대시보드가 EC2 SSH | [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md) §6 |
-| **공유 수집 Instance** | MQTT 브릿지 **1벌** · 다농장 topic multiplex. 운영 인력·키 관리 단순 | **농장별 EC2** · tenant별 MQTT 클러스터 | [`SYSTEM.md`](./SYSTEM.md) §1.7 |
+| **Instance·Dashboard repo 분리** | `rsd`=상시 MQTT·systemd · `dashboard`=Vercel git 배포. **수집 장애와 UI 릴리스 분리** | 대시보드 repo에 RS/C 통합 · UI를 EC2에서 호스팅 | [`OPS.md`](./OPS.md#배포) |
+| **RS는 raw INSERT만** | EC2 blast radius 최소. decode는 upsert·sparse·월 파티션·`last_value` 갱신 → **DB 소유** | RS wire decode(Phase3+ 폐기) · RS sparse 필터 | [`STORAGE_LOG.md`](./STORAGE_LOG.md) · [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) |
+| **C.py는 EC2 유지** | MQTT cmd 구독·long poll·현장 네트워크 근접. **serverless/Vercel 부적합** | Next.js MQTT publish · 농장마다 cmd 브로커 | [`COMMANDS.md`](./COMMANDS.md#부록--phase-a-관측) · [`데이터폼.md`](./protocol/데이터폼.md) §4 |
+| **헬스→DB 적재** | admin DAG가 **DB만** 읽어 전국 상태. EC2 SSH 없이 관측 | Prometheus만 별도 · 대시보드가 EC2 SSH | [`SYSTEM_APP.md`](./SYSTEM_APP.md#작업-맥락) §6 |
+| **공유 수집 Instance** | MQTT 브릿지 **1벌** · 다농장 topic multiplex. 운영 인력·키 관리 단순 | **농장별 EC2** · tenant별 MQTT 클러스터 | [`SYSTEM_APP.md`](./SYSTEM_APP.md#시스템-총론) §1.7 |
 
 ### 1.1 RS-DB-C에서 Instance 위치
 
@@ -23,7 +23,7 @@ Instance는 **R(Receive)** 계층만 담당한다.
 - **downlink:** `ctrl_thermo_command` → `C.py` → MQTT → 현장
 - **decode·LIVE view·UI:** Instance 밖 (Supabase Edge + Vercel)
 
-과거 D.py가 EC2에서 decoded INSERT 하던 경로는 **폐기**. 현행 decode 소유는 [`decode-batch`](../supabase/functions/decode-batch/) ([`CLOUD_DEPLOY.md`](./CLOUD_DEPLOY.md)).
+과거 D.py가 EC2에서 decoded INSERT 하던 경로는 **폐기**. 현행 decode 소유는 [`decode-batch`](../supabase/functions/decode-batch/) ([`OPS.md`](./OPS.md#배포)).
 
 ### 1.2 농장별 Instance를 쪼개지 않은 이유
 
@@ -80,7 +80,7 @@ Instance는 **R(Receive)** 계층만 담당한다.
 | 항목 | 내용 |
 |------|------|
 | QoS | uplink QoS1 (재전송·버퍼 replay 가능) |
-| topic 예 | `sungil/FARM02/P00/raw` ([`RAW_STORAGE_CHANGE.md`](./RAW_STORAGE_CHANGE.md)) |
+| topic 예 | `sungil/FARM02/P00/raw` ([`STORAGE_LOG.md`](./STORAGE_LOG.md)) |
 | INSERT 대상 | `iot_room_state_raw` |
 | Phase 3/4 필드 | `topic` + `payload_bytea` + `received_at` (passthrough 컬럼 DROP) |
 | `received_at` 의미 | **EC2/DB 수신 시각** — LIVE 신선도·2h hot view 기준 |
@@ -130,7 +130,7 @@ flowchart LR
 | mem | ≥200MB avail | <200MB warn | RS 노드 합산 |
 | disk | ≤85% | >85% warn | |
 | raw | `raw_last_received_at` 최신 | 2h+ 무신호 | uplink 중단 triage |
-| C | `command_last_sent_at` 갱신 | sent 24h+ stuck | [`CTRL_THERMO_COMMAND_PHASE_A.md`](./CTRL_THERMO_COMMAND_PHASE_A.md) |
+| C | `command_last_sent_at` 갱신 | sent 24h+ stuck | [`COMMANDS.md`](./COMMANDS.md#부록--phase-a-관측) |
 
 상수: `INSTANCE_HEALTH_STALE_WARN_SEC=600`, `INSTANCE_HEALTH_STALE_UNKNOWN_SEC=1800` ([`constants.ts`](../src/lib/admin/health/constants.ts)).
 
@@ -152,11 +152,11 @@ flowchart LR
 
 1. Health C 그래프 · `ctrl_thermo_command` where `status=sent` and age > TTL
 2. C.py systemd · MQTT cmd topic
-3. uplink ACK: LIVE thermo vs command payload ([`FARM02_ACK_TRIAGE.md`](./FARM02_ACK_TRIAGE.md))
+3. uplink ACK: LIVE thermo vs command payload ([`COMMANDS.md`](./COMMANDS.md#부록--farm02-ack))
 
 #### decode는 정상인데 UI만 empty
 
-→ Instance가 아닌 **read path** ([`SYSTEM_DB.md`](./SYSTEM_DB.md) · [`SYSTEM_NEXTJS.md`](./SYSTEM_NEXTJS.md)).
+→ Instance가 아닌 **read path** ([`SYSTEM_DB.md`](./SYSTEM_DB.md) · [`SYSTEM_APP.md`](./SYSTEM_APP.md#nextjs)).
 
 ### 3.3 변경·롤백
 
@@ -168,7 +168,7 @@ flowchart LR
 
 ### 3.4 알려진 gap / 백로그
 
-- **FARM02 ACK·현장** — uplink/장비 반영 triage ([`FARM02_ACK_TRIAGE.md`](./FARM02_ACK_TRIAGE.md)) · 필요 시 브로커 `/cmd`·`/raw` 모니터
+- **FARM02 ACK·현장** — uplink/장비 반영 triage ([`COMMANDS.md`](./COMMANDS.md#부록--farm02-ack)) · 필요 시 브로커 `/cmd`·`/raw` 모니터
 - **외부 연계** — Health DAG Ekape/FTP **미구현** (대기 노드 정합)
 - **Health `payload`→운영 문서** — topic 규칙 등 rsd JSON이 Health에 실리면 §2.3 표에 매핑 추가 (선택)
 
@@ -178,10 +178,10 @@ flowchart LR
 
 | 문서 | 내용 |
 |------|------|
-| [`SYSTEM.md`](./SYSTEM.md) | RS-DB-C 전체 · §1.7 횡단 설계 |
+| [`SYSTEM_APP.md`](./SYSTEM_APP.md#시스템-총론) | RS-DB-C 전체 · §1.7 횡단 설계 |
 | [`SYSTEM_DB.md`](./SYSTEM_DB.md) | raw·decode·명령 테이블 |
-| [`SYSTEM_RUNBOOK.md`](./SYSTEM_RUNBOOK.md) | 장애 대응 순서 |
-| [`RAW_STORAGE_CHANGE.md`](./RAW_STORAGE_CHANGE.md) | Phase 1–4 raw 슬림 |
+| [`OPS.md`](./OPS.md#장애·런북) | 장애 대응 순서 |
+| [`STORAGE_LOG.md`](./STORAGE_LOG.md) | Phase 1–4 raw 슬림 |
 
 ---
 

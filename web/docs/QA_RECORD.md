@@ -17,10 +17,10 @@
 
 | 문서 | 범위 |
 |------|------|
-| **이 문서 (`QA_PRE_RELEASE.md`)** | 출고 전 전수 품질 체계(0~14단계)·게이트·시나리오 마스터 |
+| **이 문서 (`QA_RECORD.md`)** | 출고 전 전수 품질 체계(0~14단계)·게이트·시나리오 마스터 |
 | [`QA_SHIP_GATE.md`](./QA_SHIP_GATE.md) | **출고마다 / 메이저 / 분기** 실행 축소판 |
-| [`SHIP_CHECKLIST.md`](./SHIP_CHECKLIST.md) | 출고 직전 **깨지면 출고 불가** 스모크 |
-| [`VERCEL_PREVIEW_GATE.md`](./VERCEL_PREVIEW_GATE.md) · [`UI_MOTION.md`](./UI_MOTION.md) · [`PERF_BASELINE.md`](./PERF_BASELINE.md) 등 | 단계별 상세·자동화 |
+| [`QA_SHIP_GATE.md`](./QA_SHIP_GATE.md#출고-스모크) | 출고 직전 **깨지면 출고 불가** 스모크 |
+| [`OPS.md`](./OPS.md#preview-게이트) · [`UI.md`](./UI.md#모션) · [`QA_RECORD.md`](./QA_RECORD.md) 등 | 단계별 상세·자동화 |
 
 #### 태그
 
@@ -983,7 +983,7 @@ Phase 0 측정 기록. local dev · Supabase remote DB 기준.
 | LIVE SELECT p95 | &lt; 300 ms | local · 운영 DB |
 | 페이지 TTFB p95 | &lt; 1.5 s | **local · Vercel Preview · Production** |
 
-> **운영·배포에서도 TTFB 목표를 유지한다.** Preview/Production에서 목표를 넘기면 회귀로 보고 push 전·후 게이트에 반영한다 ([`VERCEL_PREVIEW_GATE.md`](./VERCEL_PREVIEW_GATE.md)).
+> **운영·배포에서도 TTFB 목표를 유지한다.** Preview/Production에서 목표를 넘기면 회귀로 보고 push 전·후 게이트에 반영한다 ([`OPS.md`](./OPS.md#preview-게이트)).
 
 ### 측정 방법
 
@@ -1200,8 +1200,8 @@ npm run measure:hub-ttfb
 
 | Table | total | heap | indexes | note |
 | --- | --- | --- | --- | --- |
-| `iot_room_state_raw` | 21 MB | ~3.9 MB | ~17 MB (81%) | Phase 4 후 · [`RAW_STORAGE_CHANGE.md`](./RAW_STORAGE_CHANGE.md) §10 |
-| `iot_room_state_decoded` | ~27 MB (파티션 합, 2026-08-06) | — | — | D1+slim 후 · [`DECODED_CAPACITY.md`](./DECODED_CAPACITY.md) |
+| `iot_room_state_raw` | 21 MB | ~3.9 MB | ~17 MB (81%) | Phase 4 후 · [`STORAGE_LOG.md`](./STORAGE_LOG.md) §10 |
+| `iot_room_state_decoded` | ~27 MB (파티션 합, 2026-08-06) | — | — | D1+slim 후 · [`STORAGE_LOG.md`](./STORAGE_LOG.md) |
 
 decoded: index DROP 비권장. D1·retention **적용 완료**. 잔여 용량 ROI = 희소 관측(확대 보류) · raw 인덱스 검토(승인 후).
 
@@ -1214,7 +1214,7 @@ decoded: index DROP 비권장. D1·retention **적용 완료**. 잔여 용량 RO
 
 > 갱신: 2026-07-30 · `dashboard/web`  
 > **진실의 원천은 `git status` / `origin/main`이다.** 이 파일은 메모일 뿐이다.  
-> 문서 허브: [`README.md`](./README.md) · 배포: [`CLOUD_DEPLOY.md`](./CLOUD_DEPLOY.md)
+> 문서 허브: [`README.md`](./README.md) · 배포: [`OPS.md`](./OPS.md#배포)
 
 구명칭 `CLEANUP_ARTIFACT_MAP` 내용은 본 파일로만 유지한다 (별도 stub 파일 없음).
 
@@ -1235,9 +1235,9 @@ decoded: index DROP 비권장. D1·retention **적용 완료**. 잔여 용량 RO
 ### 할 일 — RS 수집 공백 재발 방지
 
 2026-09-17 raw 수집 공백의 재발 방지 체크는
-[`SYSTEM_RUNBOOK.md`](./SYSTEM_RUNBOOK.md) §8이 정본이다.
+[`OPS.md`](./OPS.md#장애·런북) §8이 정본이다.
 원인과 영향은
-[`incidents/20260917-rs-supabase-outage.md`](./incidents/20260917-rs-supabase-outage.md).
+[`SYSTEM_INSTANCE.md`](./SYSTEM_INSTANCE.md#6-2026-09-17-rs-수집-공백).
 
 ---
 

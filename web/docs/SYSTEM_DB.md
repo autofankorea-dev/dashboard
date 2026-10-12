@@ -1,6 +1,6 @@
 # DB — Supabase · 운영 프로젝트
 
-> **상위:** [`SYSTEM.md`](./SYSTEM.md) §2.2 · **Migration:** `web/supabase/migrations/` (**적용은 사용자 승인 후**)  
+> **상위:** [`SYSTEM_APP.md`](./SYSTEM_APP.md#시스템-총론) §2.2 · **Migration:** `web/supabase/migrations/` (**적용은 사용자 승인 후**)  
 > **작성 원칙:** 설계 이유 → 경로 → 운영.
 
 ### 프로젝트 (정본)
@@ -19,9 +19,9 @@
 | 결정 | 설계 이유 | 하지 않은 것 | 근거 |
 |------|-----------|--------------|------|
 | **운영 단일 Postgres** | Auth·RLS·JOIN view·Edge cron·명령 ACK **한 스키마** | 농장별 DB · read replica만 분리 · **multi-DB COLD(E)** | [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) |
-| **raw/decoded 논리 분리·물리 단일** | 월 파티션·retention·sparse·hot view로 계층 분리. Free tier 현실 | raw 전용 클러스터 · decoded만 S3 | [`DECODED_CAPACITY.md`](./DECODED_CAPACITY.md) |
+| **raw/decoded 논리 분리·물리 단일** | 월 파티션·retention·sparse·hot view로 계층 분리. Free tier 현실 | raw 전용 클러스터 · decoded만 S3 | [`STORAGE_LOG.md`](./STORAGE_LOG.md) |
 | **decode-batch on Edge** | raw 옆 **pg_cron ~10s** · cursor·`last_value`·config **DB co-location** | RS decode · Next API batch · per-farm worker | [`decode-batch`](../supabase/functions/decode-batch/) |
-| **ctrl_thermo_command in DB** | 감사·RLS·pending queue · uplink ACK diff · C.py 단일 소비 | MQTT cmd 직접 · Redis 큐 | 본 문서 §2.8 · [`CTRL_THERMO_COMMAND_PHASE_A.md`](./CTRL_THERMO_COMMAND_PHASE_A.md) |
+| **ctrl_thermo_command in DB** | 감사·RLS·pending queue · uplink ACK diff · C.py 단일 소비 | MQTT cmd 직접 · Redis 큐 | 본 문서 §2.8 · [`COMMANDS.md`](./COMMANDS.md#부록--phase-a-관측) |
 | **LIVE view 2h hot** | `received_at` 신선도 · list/latest tier · decode 부하와 read 분리 | 앱 raw scan · 무제한 latest | 본 문서 §2.3 |
 | **물리 테이블→View 치환 금지** | 디스크 절약 **위장** 불가 — retention은 detach/archive | HOT/WARM view-only 아카이브 | [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) |
 
@@ -36,7 +36,7 @@
 | Edge cron 분산 | `decode-batch` + pg_cron 한 프로젝트 |
 | Free tier N× 비용 | 파티션 detach + archive |
 
-**HOT=30일, WARM 없음** — 차트·LIVE·보관 상한 동일 ([`DECODED_ROWCOUNT_PLAN.md`](./DECODED_ROWCOUNT_PLAN.md)).
+**HOT=30일, WARM 없음** — 차트·LIVE·보관 상한 동일 ([`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md)).
 
 ### 1.2 해석(decode)을 DB Edge로 처리한 이유
 
@@ -105,7 +105,7 @@ erDiagram
 
 ### 2.3 LIVE Views
 
-Free tier · Micro에서는 HOT list 뷰를 얇게 유지한다. 코드 정본은 [`live-read-select.ts`](../src/lib/domain/live-read-select.ts), 호출 계약은 [`live-config.ts`](../src/lib/domain/live-config.ts), 성능은 [`PERF_BASELINE.md`](./PERF_BASELINE.md).
+Free tier · Micro에서는 HOT list 뷰를 얇게 유지한다. 코드 정본은 [`live-read-select.ts`](../src/lib/domain/live-read-select.ts), 호출 계약은 [`live-config.ts`](../src/lib/domain/live-config.ts), 성능은 [`QA_RECORD.md`](./QA_RECORD.md).
 
 | View | 용도 | hot 조건 |
 |------|------|----------|
@@ -155,7 +155,7 @@ PR 체크 (View / LIVE SELECT 변경 시):
 
 차트 컨트롤러 범위는 같은 RPC의 버킷 마지막 thermo를 읽어 **설정이 바뀐 시점만** 점으로 표시한다. A는 평탄 컬럼(`setpoint_temp` 등), B·C는 `decoded_json.channels[].thermo`이며 B·C 설정온도는 A에 더하는 오프셋이다. migration `20260915104500` — 구 `iot-cloud`에 적용(2026-09-15) · 운영은 `fkkrjljeqxpbmazfnync`.
 
-**Sparse (Edge only):** ε_temp=0.2°C · ε_fan=2%p · heartbeat=1800s · RS 필터 **금지** ([`DECODED_ROWCOUNT_PLAN.md`](./DECODED_ROWCOUNT_PLAN.md)).
+**Sparse (Edge only):** ε_temp=0.2°C · ε_fan=2%p · heartbeat=1800s · RS 필터 **금지** ([`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md)).
 
 **clock_kst:** `FARM02`, `FARM03` → decode 시 −9h (live/replay 무관).
 
@@ -192,7 +192,7 @@ PR 체크 (View / LIVE SELECT 변경 시):
 
 ### 2.8 명령 행 보존 (Phase B, 2026-08-06)
 
-정책 확정 · C1+C2 적용 완료. 관측은 [`CTRL_THERMO_COMMAND_PHASE_A.md`](./CTRL_THERMO_COMMAND_PHASE_A.md), 적용 결과는 [`CTRL_THERMO_COMMAND_PHASE_C.md`](./CTRL_THERMO_COMMAND_PHASE_C.md).
+정책 확정 · C1+C2 적용 완료. 관측은 [`COMMANDS.md`](./COMMANDS.md#부록--phase-a-관측), 적용 결과는 [`COMMANDS.md`](./COMMANDS.md#부록--phase-c-적용).
 
 | 항목 | 결정 |
 |------|------|
@@ -202,7 +202,7 @@ PR 체크 (View / LIVE SELECT 변경 시):
 | 소급 (C1) | 완료 — 182건 (FARM01 125 + FARM02 57) |
 | archive 테이블 | 1차 비채택 |
 | 신규 status `expired` | 비채택 — `cancelled` 재사용 |
-| FARM02 ACK | 정책과 별도 점검 ([`FARM02_ACK_TRIAGE.md`](./FARM02_ACK_TRIAGE.md)) |
+| FARM02 ACK | 정책과 별도 점검 ([`COMMANDS.md`](./COMMANDS.md#부록--farm02-ack)) |
 
 - 최초 C2 시점 90일 초과 행 = 0 (oldest ≈ 2026-07-14). cron은 창이 차면 자동 삭제.
 - `ttl_sec`(300)는 C 전송 창으로 유지. DB 만료 기준으로 쓰지 않음 (24h 규칙).
@@ -266,10 +266,10 @@ PR 체크 (View / LIVE SELECT 변경 시):
 
 | 문서 | 내용 |
 |------|------|
-| [`DECODED_ROWCOUNT_PLAN.md`](./DECODED_ROWCOUNT_PLAN.md) | D1 파티션 · D3 sparse · D4 retention |
-| [`SPARSE_OBSERVATION.md`](./SPARSE_OBSERVATION.md) | sparse 관측 |
+| [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) | D1 파티션 · D3 sparse · D4 retention |
+| [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) | sparse 관측 |
 | [`SYSTEM_INSTANCE.md`](./SYSTEM_INSTANCE.md) | RS/C · MQTT |
-| [`SYSTEM_NEXTJS.md`](./SYSTEM_NEXTJS.md) | LIVE tier · read path |
+| [`SYSTEM_APP.md`](./SYSTEM_APP.md#nextjs) | LIVE tier · read path |
 
 ---
 

@@ -10,8 +10,8 @@
 ## Dashboard 배포 — RS-DB-C (Vercel)
 
 > **EC2 Cloud Agent 범위 밖** — 이 앱은 Vercel이 배포한다.  
-> EC2(RS+C): `https://github.com/SIJackLee/rsd` → `CLOUD_DEPLOY.md`  
-> 게이트 상세: [`VERCEL_PREVIEW_GATE.md`](./VERCEL_PREVIEW_GATE.md)  
+> EC2(RS+C): `https://github.com/SIJackLee/rsd`  
+> 게이트 상세: [`OPS.md`](#preview-게이트)  
 > 문서 허브: [`README.md`](./README.md)
 
 ---
@@ -34,7 +34,7 @@ commit → push → main 적용 → Vercel 자동 배포
 - Production 도메인 예: `https://smart.autofankorea.com`
 - **배포본 = Git 커밋만**. 미추적·미푸시 파일은 Vercel에 없다.
 - push 전: clean tree `npm test` · `npm run verify:design` · `npm run build` (가능하면).
-- **TTFB:** Production·Preview에서도 페이지 TTFB p95 **&lt; 1.5 s** 유지 ([`PERF_BASELINE.md`](./PERF_BASELINE.md) · [`VERCEL_PREVIEW_GATE.md`](./VERCEL_PREVIEW_GATE.md)).
+- **TTFB:** Production·Preview에서도 페이지 TTFB p95 **&lt; 1.5 s** 유지 ([`QA_RECORD.md`](./QA_RECORD.md) · [`OPS.md`](#preview-게이트)).
 
 #### 특수 케이스 — Vercel CLI
 
@@ -118,8 +118,8 @@ npm run lint
 ## Vercel Preview 게이트 (Git→배포 검증)
 
 > **배포 실행:** 단일 에이전트 (`SI1/.cursor/rules/single-agent.mdc`).  
-> **배포 기준 정본:** [`CLOUD_DEPLOY.md`](./CLOUD_DEPLOY.md) — `commit → push → main → Vercel 자동배포`  
-> 허브 URL: [`farm-hub-url.md`](./farm-hub-url.md) · 운영 메모: [`WORKSPACE_NOTES.md`](./WORKSPACE_NOTES.md)
+> **배포 기준 정본:** [`OPS.md`](#배포) — `commit → push → main → Vercel 자동배포`  
+> 허브 URL: [`farm-hub-url.md`](./farm-hub-url.md) · 운영 메모: [`QA_RECORD.md`](./QA_RECORD.md)
 
 Git에 push되면 Vercel이 **그 커밋만** 빌드·배포한다.  
 로컬 dirty / 미추적 파일은 배포본에 **없다**.
@@ -129,7 +129,7 @@ Git에 push되면 Vercel이 **그 커밋만** 빌드·배포한다.
 | 항목 | 요구 |
 |------|------|
 | 기본 경로 | commit → push → **main** → Production 자동 배포 |
-| 특수 | Vercel CLI / Redeploy — 장애·핫픽스만 (`CLOUD_DEPLOY.md`) |
+| 특수 | Vercel CLI / Redeploy — 장애·핫픽스만 (`OPS.md`) |
 | 반영 범위 | 의도한 산출물이 커밋에 **전부** 포함 (stub·반쪽 import 금지) |
 | 브랜치 | 가능하면 `feature/…` → Preview → main (긴급 hotfix는 clean build 후 main) |
 | Supabase | Vercel env = 로컬 `.env.local`과 **동일 프로젝트** (테스트 계정) |
@@ -142,8 +142,8 @@ Git에 push되면 Vercel이 **그 커밋만** 빌드·배포한다.
 2. 새 토큰·CSS·`motionClass`·env example이 같이 가는가  
 3. UI가 stub/플레이스홀더로 남아 “작동안 함”처럼 보이지 않는가  
 4. clean worktree `npm test` · `npm run verify:design` · `npm run build` PASS  
-4b. 허브 URL/셸 변경 시 `npm run verify:hub` PASS ([`HUB_STABILITY_P0.md`](./HUB_STABILITY_P0.md))  
-4c. **TTFB:** Preview/Production에서도 페이지 TTFB p95 **&lt; 1.5 s** 유지 ([`PERF_BASELINE.md`](./PERF_BASELINE.md)). 허브·LIVE 경로 변경 시 `measure:hub-ttfb` / 브라우저 샘플 권장  
+4b. 허브 URL/셸 변경 시 `npm run verify:hub` PASS ([`farm-hub-url.md`](./farm-hub-url.md#허브-본체-안정화--p0-관측·재현-게이트))  
+4c. **TTFB:** Preview/Production에서도 페이지 TTFB p95 **&lt; 1.5 s** 유지 ([`QA_RECORD.md`](./QA_RECORD.md)). 허브·LIVE 경로 변경 시 `measure:hub-ttfb` / 브라우저 샘플 권장  
 5. 보고에 포함 산출물(허브/디자인/ARIA/…)을 명시  
 
 ### 절차
@@ -170,7 +170,7 @@ UI_VERIFY_BASE=https://<preview-or-prod>.vercel.app node scripts/farm-hub-url-ma
 |------|------|
 | 기간 변경 줌 리셋 UX | 디자인/차트 |
 | `listMode=channel`→`graph` URL 정규화 | 허브 URL · dirty 분리 커밋 권장 |
-| 델린 뱃지 | 제거됨. [`ENVIRONMENT_STATUS_POLICY.md`](./ENVIRONMENT_STATUS_POLICY.md) |
+| 델린 뱃지 | 제거됨. [`farm-hub-url.md`](./farm-hub-url.md#환경-상태-정책) |
 
 
 ---
@@ -242,7 +242,7 @@ GitHub → Vercel이 실제 배포 경로이므로 이 workflow가 **배포 전 
 
 ## scripts/ — 스크립트 분류
 
-> 앱 문서 진입점: [`README.md`](./README.md) · 배포: [`CLOUD_DEPLOY.md`](./CLOUD_DEPLOY.md)
+> 앱 문서 진입점: [`README.md`](./README.md) · 배포: [`OPS.md`](#배포)
 
 실행 위치: 항상 `dashboard/web/` (`npm run …` 또는 `npx tsx scripts/…`).
 
@@ -257,9 +257,9 @@ GitHub → Vercel이 실제 배포 경로이므로 이 workflow가 **배포 전 
 | `npm run check` | `lint` → `typecheck` → `test` → `knip` 묶음. push 전 1회 실행 권장 |
 | `npm run lint` | ESLint (Next core-web-vitals + TS + 모션/색 토큰 `no-restricted-syntax`) |
 | `npm run typecheck` | `tsc --noEmit` (strict) |
-| `npm run knip` | 미사용 파일·의존성·중복 export 게이트 ([`GITLAB_CI.md`](./GITLAB_CI.md) § Knip) |
+| `npm run knip` | 미사용 파일·의존성·중복 export 게이트 ([`OPS.md`](#ci) § Knip) |
 | `npm test` / `test:unit` → `vitest run` | `src/**/*.test.ts` · `supabase/functions/**/*.test.ts`. `test:watch`는 저장 시 재실행, `test:coverage`는 v8 줄 커버리지 |
-| `verify:hub` → `verify-hub.mjs` | 허브 URL·keep-alive 유닛 ([`HUB_STABILITY_P0.md`](./HUB_STABILITY_P0.md)) |
+| `verify:hub` → `verify-hub.mjs` | 허브 URL·keep-alive 유닛 ([`farm-hub-url.md`](./farm-hub-url.md#허브-본체-안정화--p0-관측·재현-게이트)) |
 | `verify:design` | `verify-motion-classes` + `verify-ui-density` + `verify-ui-affordance` |
 | `verify:motion-css` / `verify:motion-tokens` / `verify:motion-classes` | 모션 |
 | `verify:ui-colors` / `verify:ui-density` / `verify:ui-elevation` / `verify:ui-affordance` | UI 토큰·밀도·어포던스 (colors/elevation은 Production 팔레트와 충돌 가능. affordance는 `verify:design`에 포함) |
@@ -294,7 +294,7 @@ GitLab(`.gitlab-ci.yml`)과 GitHub(`.github/workflows/web-verify.yml`) 모두 `l
 | `chart-controller-comparison-smoke.mjs` (`npm run smoke:chart-comparison`) | 가상 데이터로 미니그래프 3단계·개별/비교·URL 복원·공통 확대·모바일 검증. PC·모바일 확장 애니메이션의 매 프레임 dot 크기와 최종 원형 크기도 검사. 로컬 Next 서버와 임시 `/auth` fixture를 생성하고 종료 때 제거. Chrome 필요 (`CHART_SMOKE_BROWSER_PATH`로 Chromium 경로 지정 가능). 운영 계정·DB 불필요 |
 | `chart-markup-snapshot.mjs` (`npm run snapshot:chart-markup [-- --baseline <dir>]`) | **TrendChart characterization** — 가상 데이터 fixture로 계층(batch)·개별·호버·비교 4상태의 SVG/오버레이 markup을 `tmp/chart-markup/`에 고정 캡처(`useId` 기반 id 정규화). 리팩터링 전 베이스라인을 만들고 `--baseline`으로 비교해 **diff 0**을 확인한다. 이미 `npm run dev`가 떠 있으면 그 서버를 재사용. Chrome 필요(`CHART_SMOKE_BROWSER_PATH`). 출력 경로 `CHART_SNAPSHOT_OUTPUT` |
 | `controller-state-smoke.mjs` (`npm run smoke:controller-state`) | 가상 명령 상태로 이전 LIVE 수신 중 제출값 유지·실패 후 재시도·채널 독립·패널 재진입·LIVE 일치와 덮개의 환경/통신 문구를 PC·모바일에서 검증. 실제 명령은 전송하지 않음. 임시 `/auth` fixture와 로컬 서버는 종료 때 제거 |
-| `farm-hub-url-manual-smoke.mjs` (`npm run smoke:hub-url`) | 허브 URL·탭·soft home + 404 폴백 — [`VERCEL_PREVIEW_GATE.md`](./VERCEL_PREVIEW_GATE.md) · [`HUB_STABILITY_P0.md`](./HUB_STABILITY_P0.md) (test-accounts 필요) |
+| `farm-hub-url-manual-smoke.mjs` (`npm run smoke:hub-url`) | 허브 URL·탭·soft home + 404 폴백 — [`OPS.md`](#preview-게이트) · [`farm-hub-url.md`](./farm-hub-url.md#허브-본체-안정화--p0-관측·재현-게이트) (test-accounts 필요) |
 | `test:e2e` (npm) | 위 둘 묶음 — 부트(미인증)→인증 핵심 플로 E2E 게이트. 서버 기동 + `.env.local`(Supabase) 필요 |
 | `verify-channel-bulk-commands.mjs` | 채널 일괄 명령 |
 | `set-test-passwords.mjs` / `test-accounts.mjs` | 로컬 테스트 계정 (비밀값 커밋 금지) |
@@ -317,7 +317,7 @@ GitLab(`.gitlab-ci.yml`)과 GitHub(`.github/workflows/web-verify.yml`) 모두 `l
 
 ## 운영 Runbook — 장애 · 배포 · 모니터링
 
-> **상위:** [`SYSTEM.md`](./SYSTEM.md) §3 · **계층별 상세:** [`SYSTEM_INSTANCE.md`](./SYSTEM_INSTANCE.md) · [`SYSTEM_DB.md`](./SYSTEM_DB.md) · [`SYSTEM_NEXTJS.md`](./SYSTEM_NEXTJS.md)
+> **상위:** [`SYSTEM_APP.md`](./SYSTEM_APP.md#시스템-총론) §3 · **계층별 상세:** [`SYSTEM_INSTANCE.md`](./SYSTEM_INSTANCE.md) · [`SYSTEM_DB.md`](./SYSTEM_DB.md) · [`SYSTEM_APP.md`](./SYSTEM_APP.md#nextjs)
 
 ---
 
@@ -342,9 +342,9 @@ GitLab(`.gitlab-ci.yml`)과 GitHub(`.github/workflows/web-verify.yml`) 모두 `l
 
 | 단계 | 절차 | 문서 |
 |------|------|------|
-| 로컬 | `npm ci` · `npm test` · `verify:design` · `build` · `lint` | [`SCRIPTS.md`](./SCRIPTS.md) |
-| Git | feature → (Preview) → **main** push | [`CLOUD_DEPLOY.md`](./CLOUD_DEPLOY.md) |
-| Production | Vercel auto · `smart.autofankorea.com` | [`VERCEL_PREVIEW_GATE.md`](./VERCEL_PREVIEW_GATE.md) |
+| 로컬 | `npm ci` · `npm test` · `verify:design` · `build` · `lint` | [`OPS.md`](#스크립트) |
+| Git | feature → (Preview) → **main** push | [`OPS.md`](#배포) |
+| Production | Vercel auto · `smart.autofankorea.com` | [`OPS.md`](#preview-게이트) |
 | Preview 스모크 | `UI_VERIFY_BASE=... npm run smoke:hub-url` | |
 | 특수 redeploy | 장애/핫픽스만 — **이후 Git main 맞출 것** | |
 
@@ -425,7 +425,7 @@ GitLab(`.gitlab-ci.yml`)과 GitHub(`.github/workflows/web-verify.yml`) 모두 `l
 | RS | `sudo systemctl status rsd-rs` (SSH) |
 | 재시작 | wire_decode 롤백 + `restart rsd-rs` |
 
-참고: [`FARM02_ACK_TRIAGE.md`](./FARM02_ACK_TRIAGE.md)
+참고: [`COMMANDS.md`](./COMMANDS.md#부록--farm02-ack)
 
 #### 4.3 Decode 실패 / backlog
 
@@ -511,7 +511,7 @@ FARM02 사례: sent만 · applied 0 — 장비/펌웨어 triage.
 | 복구 | commit · restart · config |
 | 후속 | migration · rsd · 문서 |
 
-저장: `docs/incidents/YYYYMMDD-*.md` (승인 후). 열린 체크는 이 런북에 둔다. [`WORKSPACE_NOTES.md`](./WORKSPACE_NOTES.md)는 스냅샷만.
+저장: `docs/incidents/YYYYMMDD-*.md` (승인 후). 열린 체크는 이 런북에 둔다. [`QA_RECORD.md`](./QA_RECORD.md)는 스냅샷만.
 
 ---
 
@@ -520,7 +520,7 @@ FARM02 사례: sent만 · applied 0 — 장비/펌웨어 triage.
 - 운영 DB migration · RLS 삭제 · retention DELETE
 - Production env · `service_role` 노출
 - EC2 force · main force push
-- UI/UX H1–H5 — [`UI_*`](./UI_SURFACES.md) 별도 게이트
+- UI/UX H1–H5 — [`UI_*`](./UI.md#면) 별도 게이트
 
 ---
 
@@ -530,14 +530,14 @@ FARM02 사례: sent만 · applied 0 — 장비/펌웨어 triage.
 |----------|------|
 | MQTT·raw | [`SYSTEM_INSTANCE.md`](./SYSTEM_INSTANCE.md) §3 |
 | decode·view·RLS | [`SYSTEM_DB.md`](./SYSTEM_DB.md) §3 |
-| tier·Actions·hub URL | [`SYSTEM_NEXTJS.md`](./SYSTEM_NEXTJS.md) §D |
+| tier·Actions·hub URL | [`SYSTEM_APP.md`](./SYSTEM_APP.md#nextjs) §D |
 | 출고 QA | [`QA_SHIP_GATE.md`](./QA_SHIP_GATE.md) |
 
 ---
 
 ### 8. 미결 — 2026-09-17 RS 수집 공백 재발 방지
 
-서비스는 복구됐다. `17:14~18:49 KST` 약 95분 raw는 복구하지 못한다. 원인·흐름은 [`incidents/20260917-rs-supabase-outage.md`](./incidents/20260917-rs-supabase-outage.md).
+서비스는 복구됐다. `17:14~18:49 KST` 약 95분 raw는 복구하지 못한다. 원인·흐름은 [`SYSTEM_INSTANCE.md`](./SYSTEM_INSTANCE.md#6-2026-09-17-rs-수집-공백).
 
 목표 흐름:
 

@@ -5,7 +5,7 @@
 > 배포: `commit → push → main → Vercel` · 규칙: `SI1/.cursor/rules/single-agent.mdc`  
 > 코드 반영: **`git status` / `origin/main`이 문서보다 우선**
 
-목차는 시스템 계층이고, 각 항목은 정본 하나다. 품질만 출고 게이트와 기준·기록으로 나뉜다. 이전 파일명은 정본으로 가는 스텁이다.
+목차는 시스템 계층이고, 각 항목은 정본 하나다. 품질만 출고 게이트와 기준·기록으로 나뉜다.
 
 ---
 
@@ -14,7 +14,7 @@
 | 항목 | 정본 | 내용 |
 |------|------|------|
 | 인스턴스 | [`SYSTEM_INSTANCE.md`](./SYSTEM_INSTANCE.md) | EC2 · MQTT · RS/C · 로컬 시뮬 · 2026-09-17 수집 공백 원인 |
-| 업링크 | [`protocol/데이터폼.md`](./protocol/데이터폼.md) | 정책 전문 · wire `ver=0x0C`. 초안 [`프로토콜_개선안_v1.docx`](./protocol/프로토콜_개선안_v1.docx) |
+| 업링크 | [`protocol/데이터폼.md`](./protocol/데이터폼.md) | 정책 전문 · wire `ver=0x0C` |
 | 다운링크 | [`COMMANDS.md`](./COMMANDS.md) | `0x0D` · `0x0E` · thermo 이력 · FARM02 ACK |
 
 ## S 저장

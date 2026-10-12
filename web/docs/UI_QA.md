@@ -10,7 +10,7 @@
 ## 다크모드 가시성 — 현황 · 개선 계획
 
 > **역할:** 유지보수 계획 (H6 아님). 구현은 **사용자 승인 후**.  
-> **관련:** [`UI_SURFACES.md`](./UI_SURFACES.md) · [`UI_ELEVATION.md`](./UI_ELEVATION.md) · [`UI_CHROMA.md`](./UI_CHROMA.md) · [`UI_VISUAL_QA.md`](./UI_VISUAL_QA.md)  
+> **관련:** [`UI.md`](./UI.md#면) · [`UI.md`](./UI.md#단) · [`UI.md`](./UI.md#채도) · [`UI_QA.md`](./UI_QA.md)  
 > **조사일:** 2026-09-09 · **구현:** P0–P6 적용 (같은 날) · 라이브 다크 스크린샷은 검증 단계에서 보완
 
 다크모드는 갭5로 **면(바탕·카드·우물)** 은 나눴다. 글자·테두리·끊김·데이터 혼합은 라이트 공식(검정 잉크, 흰 혼합, 동일 상태 hex)이 남아 대비가 무너진다.
@@ -214,7 +214,7 @@ controllerEnvMetricTextClass(warn|danger) → status-*-ink (검정 혼합)
 
 | 항목 | 내용 |
 |------|------|
-| `UI_VISUAL_QA.md` | 다크 행: 컴팩트 주의 숫자, 끊김 덮개, 차트 EMA, 격자 경계 |
+| `UI_QA.md` | 다크 행: 컴팩트 주의 숫자, 끊김 덮개, 차트 EMA, 격자 경계 |
 | (선택) | 토큰 L 최소차 스크립트 — 신규 의존 없이 `globals.css` 파싱만 |
 | 수동 | 필드 / 차트 / 알림·델린 / 로그인 · compact+comfortable |
 
@@ -308,10 +308,10 @@ controllerEnvMetricTextClass(warn|danger) → status-*-ink (검정 혼합)
 2. **타이포 리듬** — **갭2 적용** (`dashboardReadout` · 숫자/단위/라벨 분리). **맵 카드는 `--density-map-value*` 고정** (readout 재사용 회귀 금지 · `verify:ui-density`).
 3. **채도 잔향** — violet/온도 orange는 제거·가드됨. 구역별 톤이 다시 섞이면 재스캔.
 4. **DELIN 뱃지** — 필드 우측 하단(차트에서는 숨김). 오브·스테이지는 폐기.
-5. **다크/라이트 비대칭** — **갭5 적용** (`--surface-*`). **P0–P6 적용** 2026-09-09: 타일 on-canvas 잉크 · 끊김 면 · border/ring · mix-lift/shade · 크롬 잔여 · 지도 타일 필터. **다크 상태 명도** · **Label 3·4단** · **muted≠secondary** · **destructive=status-danger** 2026-09-09. 정본 [`UI_DARK_VISIBILITY.md`](./UI_DARK_VISIBILITY.md).
+5. **다크/라이트 비대칭** — **갭5 적용** (`--surface-*`). **P0–P6 적용** 2026-09-09: 타일 on-canvas 잉크 · 끊김 면 · border/ring · mix-lift/shade · 크롬 잔여 · 지도 타일 필터. **다크 상태 명도** · **Label 3·4단** · **muted≠secondary** · **destructive=status-danger** 2026-09-09. 정본 [`UI_QA.md`](./UI_QA.md).
 
-6. **면 종류** — [UI_SURFACES.md](./UI_SURFACES.md). 덮개는 Status film(E). 유리 테 적용. Overlay(F) frost와 섞지 않음.
-7. **어포던스** — [UI_AFFORDANCE.md](./UI_AFFORDANCE.md) A–G 적용(2026-09-09). 표시 칩=우물 · 덮개 셰브론 · 탭 choiceIdle · CTA primary.
+6. **면 종류** — [UI.md](./UI.md#면). 덮개는 Status film(E). 유리 테 적용. Overlay(F) frost와 섞지 않음.
+7. **어포던스** — [UI.md](./UI.md#어포던스) A–G 적용(2026-09-09). 표시 칩=우물 · 덮개 셰브론 · 탭 choiceIdle · CTA primary.
 
 → 신규 H6는 **승인 전 착수 금지**. 갭은 이 문서에만 누적.
 

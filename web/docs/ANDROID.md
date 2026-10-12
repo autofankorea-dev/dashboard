@@ -285,7 +285,7 @@ npm run cap:open             # Android Studio
 
 - `capacitor.config.ts`의 `server.url`이 WebView가 로드하는 대시보드 URL
 - 1차 배포: APK 사이드로드 또는 Play 내부 테스트
-- 설치 안내 링크: [`/app`](./android-app-install.md) (`https://smart.autofankorea.com/app`)
+- 설치 안내 링크: [`/app`](#설치) (`https://smart.autofankorea.com/app`)
 
 ### 웹 동작
 

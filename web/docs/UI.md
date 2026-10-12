@@ -12,7 +12,7 @@
 대시보드 UI는 축(H1–H5)과 **면 종류**를 같이 본다.  
 Elevation 단(0~3)만으로는 덮개·히트맵·델린·시트가 한 덩어리로 섞인다.
 
-관련: [UI_ELEVATION.md](./UI_ELEVATION.md) · [UI_CHROMA.md](./UI_CHROMA.md) · [UI_DENSITY.md](./UI_DENSITY.md) · [UI_MOTION.md](./UI_MOTION.md) · [UI_FEEDBACK.md](./UI_FEEDBACK.md) · [UI_ARIA_PRESENCE.md](./UI_ARIA_PRESENCE.md) · [UI_AFFORDANCE.md](./UI_AFFORDANCE.md)  
+관련: [단](#단) · [채도](#채도) · [밀도](#밀도) · [모션](#모션) · [피드백](#피드백) · [환경 상태](./farm-hub-url.md#환경-상태-정책) · [어포던스](#어포던스)  
 코드: `dashboardElevation` · `dashboardUi` · `dashboardChroma` · `dashboardHubSurface` · `dashboardAffordance` (`src/lib/ui/dashboard-page-ui.ts`)  
 프리미티브: `src/components/ui/` · 농장: `src/components/farm/`
 
@@ -28,7 +28,7 @@ Glass(서리·투시)는 **이 표의 종류를 고른 뒤에만** 넣는다. �
 | Channel | 온·습·모터·정보·명령 | `--channel-temp\|hum\|motor\|info\|command` |
 | Density | 목록 readout · 맵 `--density-map-value*` · 덮개 `valueLg` | `dashboardTypography` / `dashboardReadout` |
 | Elevation | 0 바탕 · 1 우물 · 2 카드 · 3 오버레이 | `dashboardElevation` |
-| Motion | L1 `--motion-*` · L2 `motionClass` | `UI_MOTION.md` |
+| Motion | L1 `--motion-*` · L2 `motionClass` | `UI.md` |
 | Chroma | 크롬 낮음 · 데이터·알람 높음 | `dashboardChroma` |
 | Affordance | 명령·도구·선택군·칩·히트면·잉크 | `dashboardAffordance` |
 | Fill | 우물=`--muted` 믹스 · 회색 컨트롤=`--secondary` · 대기 버튼=`--control`(primary 12%+secondary) · 켜짐=`--control-active`(22%) | `--secondary`는 muted 복제 금지. `--control`은 `.dark`에서 oklch 재지정 금지(믹스 상속) |
@@ -108,7 +108,7 @@ E 덮개: `--status-*` 불투명 면 + `dashboardChroma.statusFilmGlassRim`. 흰
 대시보드 **면(surface) 계층** — 라이트 모드에서 깊이감은 그림자보다 **배경 리프트 + border/ring** 위주.  
 카드·그림자를 남용하지 않고 **2~3단**만 유지한다.
 
-관련: [UI_MOTION.md](./UI_MOTION.md) · [UI_DENSITY.md](./UI_DENSITY.md) · [UI_SURFACES.md](./UI_SURFACES.md) · `src/lib/ui/dashboard-page-ui.ts`
+관련: [모션](#모션) · [밀도](#밀도) · [면](#면) · `src/lib/ui/dashboard-page-ui.ts`
 
 ### 래더 (권장 4단 → 실제 사용 2~3단)
 
@@ -212,7 +212,7 @@ Elevation 단과 별개로, **떠 있는 UI**의 쌓임 순서:
 
 ## 밀도
 
-관련: [UI_MOTION.md](./UI_MOTION.md) · [UI_ELEVATION.md](./UI_ELEVATION.md)
+관련: [모션](#모션) · [단](#단)
 
 ## UI Density (T2)
 
@@ -293,7 +293,7 @@ CSS: `--density-readout*` · `--tracking-readout*` (`globals.css`, compact에서
 
 대시보드 **채도 역할** — 시선은 숫자·알람·차트에, 크롬(헤더/탭/선택)은 낮게.
 
-관련: [UI_MOTION.md](./UI_MOTION.md) · [UI_DENSITY.md](./UI_DENSITY.md) · [UI_ELEVATION.md](./UI_ELEVATION.md)  
+관련: [모션](#모션) · [밀도](#밀도) · [단](#단)  
 코드: `dashboardChroma` · `dashboardUi` (`src/lib/ui/dashboard-page-ui.ts`)
 
 ### 규칙
@@ -346,7 +346,7 @@ CSS: `--density-readout*` · `--tracking-readout*` (`globals.css`, compact에서
 라이트/다크 공통으로 **눌러지는지**가 대기 상태에서도 보이게 한다.  
 면 종류(A–H)·채도(크롬/데이터)와 **별개 축**. 새 색·글로우·H6 없음.
 
-관련: [UI_SURFACES.md](./UI_SURFACES.md) · [UI_CHROMA.md](./UI_CHROMA.md) · [UI_VISUAL_QA.md](./UI_VISUAL_QA.md)  
+관련: [면](#면) · [채도](#채도) · [UI_QA.md](./UI_QA.md)  
 코드: `dashboardAffordance` (`src/lib/ui/dashboard-page-ui.ts`)
 
 PC(`md+`)와 모바일(컴팩트)은 **같은 계약**, 히트만 밀도 토큰으로 커진다 (`size-9`/`md:size-11`, 덮개 패딩 `p-2.5`/`sm:p-3`).
@@ -394,7 +394,7 @@ PC(`md+`)와 모바일(컴팩트)은 **같은 계약**, 히트만 밀도 토큰�
 
 명령은 **접수 → 전송 → 확인** 세 단입니다 (`pending` → `sent` → `applied`). `applied`는 command_ack가 LIVE 설정과 명령을 맞춰 올린 적용 확인입니다. 설정 행·덮개 막대도 이 status를 따른다. LIVE 값이 먼저 맞아도 `sent` 폴링을 끊지 않는다(`applied`가 와야 확인단). 필드 격자에서는 해당 **환경 덮개** 값 아래에 채널별 잉크 게이지를 붙입니다.
 
-관련: [UI_MOTION.md](./UI_MOTION.md) · [UI_CHROMA.md](./UI_CHROMA.md) · [UI_ELEVATION.md](./UI_ELEVATION.md)  
+관련: [모션](#모션) · [채도](#채도) · [단](#단)  
 코드: `src/lib/ui/ops-feedback.ts` · `src/lib/farm/apply-queue.ts` · `controller-env-cover.tsx` · `command-pipeline-overlay.tsx` · `command-confirm-overlay.tsx` · `inline-status-toast.tsx`
 
 ### 톤 (`opsFeedbackTone`)
@@ -487,7 +487,7 @@ PC(`md+`)와 모바일(컴팩트)은 **같은 계약**, 히트만 밀도 토큰�
 PC·모바일·브라우저 공통 **motion token + L2 preset** 레이어.  
 Phase 1은 **규칙·프리셋·검증**까지 — 컴포넌트 전면 마이그레이션은 Phase 2~3.
 
-관련 디자인 문서: [UI_DENSITY.md](./UI_DENSITY.md) · [UI_ELEVATION.md](./UI_ELEVATION.md) · [UI_CHROMA.md](./UI_CHROMA.md) · [UI_FEEDBACK.md](./UI_FEEDBACK.md)
+관련 디자인 문서: [밀도](#밀도) · [단](#단) · [채도](#채도) · [피드백](#피드백)
 
 ### 아키텍처
 
@@ -685,7 +685,7 @@ import { motionPresetForIntent } from "@/lib/ui/motion-preset";
 **토큰 정렬 (투어·로그인)**: 리터럴 `cubic-bezier` / `ease-*` 제거.  
 hole=`moderate`+`emphasis`, tip=`normal`+`enter`, exit=`exit`+`enter`. accent glow=`--channel-hum`.
 
-톤 경계: DELIN 뱃지(H5)는 제거. [`ENVIRONMENT_STATUS_POLICY.md`](./ENVIRONMENT_STATUS_POLICY.md).
+톤 경계: DELIN 뱃지(H5)는 제거. [`farm-hub-url.md`](./farm-hub-url.md#환경-상태-정책).
 
 ---
 
@@ -703,7 +703,7 @@ hole=`moderate`+`emphasis`, tip=`normal`+`enter`, exit=`exit`+`enter`. accent gl
 신규 채널·정보 UI는 `sky`/`rose`/`amber`(모터) 하드코딩 금지 — `channel-*` 또는 `opsStatus`/`primary` 사용.  
 경고(주의)만 `amber` 유지.
 
-**DELIN 뱃지 (H5)**: 제거됨. 오브·도크 모션 없음. 상세=[`ENVIRONMENT_STATUS_POLICY.md`](./ENVIRONMENT_STATUS_POLICY.md).
+**DELIN 뱃지 (H5)**: 제거됨. 오브·도크 모션 없음. 상세=[`farm-hub-url.md`](./farm-hub-url.md#환경-상태-정책).
 
 **규칙**: 새 UI는 `motionIntent` / `motionClass`만 사용. 임의 `duration-N`·`transition-all`·차트 리터럴 ms 금지.
 
@@ -784,7 +784,7 @@ hole=`moderate`+`emphasis`, tip=`normal`+`enter`, exit=`exit`+`enter`. accent gl
 ### 동결 · 유지보수 (시스템 1.0)
 
 H1–H5 완료. **새 장식 모션·임의 hue 추가 금지.**  
-변경은 버그 수정·토큰 정렬·문서화된 예외만. 고급감 갭·수동 QA: [`UI_VISUAL_QA.md`](./UI_VISUAL_QA.md).
+변경은 버그 수정·토큰 정렬·문서화된 예외만. 고급감 갭·수동 QA: [`UI_QA.md`](./UI_QA.md).
 
 색 가드: `sky` / `rose` / `violet` / `orange`(온도) Tailwind 유틸 → `channel-*` / `primary` / `status-*`.  
 주의(경고)만 `amber` / `--status-warn` 유지.

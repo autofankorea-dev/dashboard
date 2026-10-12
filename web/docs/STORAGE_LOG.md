@@ -12,7 +12,7 @@
 > **실측:** 구 `iot-cloud` · **2026-08-06** · raw/decoded 용량 트랙 **완료로 종결**  
 > **운영 DB (현재):** `fkkrjljeqxpbmazfnync` · 구 프로젝트 **폐기** — 아래 수치는 역사 기록.  
 > **원칙:** 인덱스 DROP은 별도 승인. 본 문서는 실측·판단·이력.  
-> **잔여:** 희소 PoC **OFF** 2026-09-01 ([`SPARSE_OBSERVATION.md`](./SPARSE_OBSERVATION.md)). retention cron 적용 완료.
+> **잔여:** 희소 PoC **OFF** 2026-09-01 ([`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md)). retention cron 적용 완료.
 
 ---
 
@@ -33,7 +33,7 @@
 | raw | ~21 MB | ~22 MB |
 | legacy 복제 | (D1 직후 ~34 MB) | **없음(DROP)** |
 
-관련: [`DECODED_JSON_SLIM.md`](./DECODED_JSON_SLIM.md) · [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) · [`SPARSE_OBSERVATION.md`](./SPARSE_OBSERVATION.md)
+관련: [raw 저장 방식](#raw-저장-방식) · [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md)
 
 #### LIVE/list 스모크 (2026-08-05)
 
@@ -121,10 +121,10 @@
 
 ### 5. 관련
 
-- [`RAW_STORAGE_CHANGE.md`](./RAW_STORAGE_CHANGE.md) — raw Phase 1~4
+- [raw 저장 방식](#raw-저장-방식) — Phase 1~4
 - [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) — retention **정본**(2026-08-06 정합)
 - [`SYSTEM_DB.md`](./SYSTEM_DB.md) §2.3 — HOT list 뷰
-- [`SPARSE_OBSERVATION.md`](./SPARSE_OBSERVATION.md) — 희소 재관측
+- [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) — 희소 재관측
 - D1 파티션·retention·월 파티션 cron은 **적용 완료** (본 §3 표)
 
 
@@ -157,7 +157,7 @@
 | 수정 | `supabase/functions/decode-batch/index.ts` |
 | 수정 | `supabase/functions/decode-batch/wire-decode-v0c.ts` (`toSlimDecodedJson`) |
 | 수정(선택·테스트) | `src/lib/data/*` 읽기는 channels+tempsC면 이미 호환 |
-| 문서 | 본 파일 · `DECODED_CAPACITY.md` 요약 링크 |
+| 문서 | 본 파일 · `STORAGE_LOG.md` 요약 링크 |
 | 비대상 | raw 스키마, list tier SELECT, alarm `decoded_json` |
 
 ---

@@ -9,7 +9,7 @@
 
 ## 코드 컨벤션 — 폴더 책임 · 레이어 경계 · 네이밍
 
-> 문서 허브: [`README.md`](./README.md) · 시스템: [`SYSTEM_NEXTJS.md`](./SYSTEM_NEXTJS.md) · 게이트: [`SCRIPTS.md`](./SCRIPTS.md)  
+> 문서 허브: [`README.md`](./README.md) · 시스템: [`SYSTEM_APP.md`](#nextjs) · 게이트: [`OPS.md`](./OPS.md#스크립트)  
 > **강제 수단:** `eslint.config.mjs`의 `layerBoundaries`(`no-restricted-imports`) · `tsc --noEmit` · `knip`  
 > 적용: 2026-10 클린코드 P1. 이 문서와 코드가 다르면 **코드(`origin/main`)가 우선**이며 문서를 고친다.
 
@@ -97,7 +97,7 @@ flowchart LR
 | export 수/파일 | ≤ 20 | `unified-barn-trend-series.ts`는 재export 배럴. 구현은 `unified-trend-*` (P2-2) |
 
 분해 순서: 순수 함수 추출(→ `lib`) → hook 추출(→ `use-*.ts`) → 하위 컴포넌트 분리. 각 단계 `npm run check`.  
-차트(`TrendChart`)는 추가로 `npm run snapshot:chart-markup -- --baseline <분해 전 캡처>`로 렌더 markup diff 0 을 확인한다 ([`SCRIPTS.md`](./SCRIPTS.md) § C).  
+차트(`TrendChart`)는 추가로 `npm run snapshot:chart-markup -- --baseline <분해 전 캡처>`로 렌더 markup diff 0 을 확인한다 ([`OPS.md`](./OPS.md#스크립트) § C).  
 `TrendChart` 순수 계산은 `lib/farm/trend-chart-geometry.ts`(패딩·도메인·라벨 배치)와 `lib/farm/trend-chart-layout.ts`(좌표 매핑·눈금·밴드/이벤트 배치)에 두고, 컴포넌트는 클로저로 감싸 호출만 한다. 스냅샷 fixture는 line 모드만 렌더하므로 bar 모드·이벤트 레인·명령 밴드 경로는 `trend-chart-layout.test.ts`가 담당한다.  
 `TrendChart`의 상태·effect는 `components/trends/use-trend-*.ts`에 역할별로 둔다: `plot-size`(ResizeObserver), `crosshair`(십자선 DOM 조작), `pin-window-remap`(줌 시 고정 카드 재배치), `lookback-gesture`(휠·핀치), `scale-edge-edit`(스케일 엣지 드래그/숫자 입력), `edge-band-labels`(알람·기준선 끝단 라벨), `pinned-tips`, `scope-gesture`, `hover`(호버 인덱스·카드 배치). hook은 옵션 객체 하나를 받고, JSX에 부착할 ref와 핸들러를 그대로 반환한다(동작 변경 없는 1:1 이동 원칙). `clearHover`만 십자선 숨김 때문에 `TrendChart`에 남긴다.  
 화면 조각은 `trend-chart-legend.tsx`, `trend-chart-crosshair-chip.tsx`, `trend-y-label-chip.tsx`, `trend-chart-y-axis.tsx`, `trend-chart-edge-labels.tsx`, `trend-chart-pinned-cards.tsx`, `trend-chart-hover-card.tsx`에 둔다. 플롯 SVG(프레임·데이터·십자선·스코프 드래프트)는 `trend-chart-plot-svg.tsx`, X축 눈금 레일은 `trend-chart-x-axis.tsx`에 둔다. 데이터 지점 히트는 `trend-chart-hit.ts`, 호버 카드에 올릴 값은 `trend-chart-hover-live.ts`에 둔다. 결측 구간과 세그먼트 빌더는 `trend-chart-geometry.ts`에 둔다. 플롯 크기·호버·좌표 재료는 `use-trend-chart-model.ts`, 축 눈금·기준선 presence는 `use-trend-chart-decor.ts`, 플롯 루트 안쪽 화면은 `trend-chart-plot-body.tsx`에 둔다. 클라이언트 좌표 변환은 `trend-chart.tsx`에 남기고, 포인터 핸들러 본문은 `trend-chart-plot-pointer.ts`가 만들어 플롯 루트에 붙인다.  
@@ -119,7 +119,7 @@ npm run verify:design  # 모션·밀도·어포던스 토큰
 npm run build          # 더미 Supabase env로도 통과해야 함
 ```
 
-GitHub Actions(`.github/workflows/web-verify.yml`)와 GitLab CI가 동일 단계를 실행한다 ([`GITLAB_CI.md`](./GITLAB_CI.md)).
+GitHub Actions(`.github/workflows/web-verify.yml`)와 GitLab CI가 동일 단계를 실행한다 ([`OPS.md`](./OPS.md#ci)).
 
 ---
 
@@ -168,8 +168,8 @@ GitHub Actions(`.github/workflows/web-verify.yml`)와 GitLab CI가 동일 단계
 
 > **범위:** 스마트 축사 IoT 대시보드(RS-DB-C)의 **인스턴스(EC2) · DB(Supabase) · Next.js(Back/Front)**  
 > **작성 원칙:** 각 절은 **설계 이유**(왜) → **경로**(어디) → **운영**(장애·TODO) 순.  
-> UI/UX·디자인 토큰은 별도([`UI_SURFACES.md`](./UI_SURFACES.md) 등).  
-> **정본 우선순위:** `git status` / `origin/main` > 이 문서 > [`WORKSPACE_NOTES.md`](./WORKSPACE_NOTES.md)
+> UI/UX·디자인 토큰은 별도([`UI.md`](./UI.md#면) 등).  
+> **정본 우선순위:** `git status` / `origin/main` > 이 문서 > [`QA_RECORD.md`](./QA_RECORD.md)
 
 ---
 
@@ -196,8 +196,8 @@ GitHub Actions(`.github/workflows/web-verify.yml`)와 GitLab CI가 동일 단계
 | **S** (Store) | Supabase Postgres | raw · decoded · last_value · 명령·프로필 |
 | **C** (Consume) | Vercel Next.js + Edge Functions | LIVE 카드 · 차트 · PDF · 관리자 헬스 |
 
-- **배포 분리:** EC2 = [`rsd` 저장소](https://github.com/SIJackLee/rsd) · 대시보드 = `dashboard/web` → Vercel ([`CLOUD_DEPLOY.md`](./CLOUD_DEPLOY.md))
-- **decode 소유:** 과거 D.py INSERT → **현행은 Edge `decode-batch` + 앱 read path** ([`CLOUD_DEPLOY.md`](./CLOUD_DEPLOY.md) § RS-DB-C)
+- **배포 분리:** EC2 = [`rsd` 저장소](https://github.com/SIJackLee/rsd) · 대시보드 = `dashboard/web` → Vercel ([`OPS.md`](./OPS.md#배포))
+- **decode 소유:** 과거 D.py INSERT → **현행은 Edge `decode-batch` + 앱 read path** ([`OPS.md`](./OPS.md#배포) § RS-DB-C)
 
 #### 1.3 데이터 흐름 (정상 경로)
 
@@ -229,7 +229,7 @@ flowchart LR
 | 컨트롤러 | 온·습·팬 측정 단위 | `controller_key` (예 `SP07:01:01`) |
 | 축사 | 지도 카드 1장 | `stall_ty_code` + `stall_no` |
 
-상세: [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md) §5
+상세: [`SYSTEM_APP.md`](#작업-맥락) §5
 
 #### 1.5 시간축 정책 (혼동 방지)
 
@@ -237,7 +237,7 @@ flowchart LR
 |----|------|------|
 | **수신** | `received_at` | LIVE 카드 신선도 · 2h hot view |
 | **측정** | `mesure_at` / `mesure_dt` | 차트 · PDF · 히트맵 버킷 |
-| **clock 보정** | `iot_decode_config.clock_kst_farm_keys` | KST-stuffed firmware → decode 시 −9h ([`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md)) |
+| **clock 보정** | `iot_decode_config.clock_kst_farm_keys` | KST-stuffed firmware → decode 시 −9h ([`SYSTEM_APP.md`](#작업-맥락)) |
 
 수신은 최신인데 측정이 정체면 **주의(caution)** — 버퍼 replay·장비 시계 정지와 구분 ([`live-status.ts`](../src/lib/domain/live-status.ts)).
 
@@ -256,11 +256,11 @@ flowchart LR
 
 | 결정 | 설계 이유 | 하지 않은 것 | 근거 |
 |------|-----------|--------------|------|
-| **RS-DB-C 3계층** | 수집(EC2)·저장(DB)·소비(Vercel)의 배포 주기·장애 반경·스케일 요구가 다름 | 올인원 EC2(구 D.py decode+UI) · 브라우저 직접 MQTT | [`CLOUD_DEPLOY.md`](./CLOUD_DEPLOY.md) · [`protocol/데이터폼_최종안.md`](./protocol/데이터폼_최종안.md) §8 |
-| **해석(decode)을 DB Edge** | raw 옆 **~10초 cron** · batch cursor · sparse/clock이 `iot_decoded_last_value`·`iot_decode_config`와 같은 트랜잭션·스키마 필요 | RS에서 wire decode(Phase3+ 폐기) · Next API batch decode · 농장별 decode 서버 | [`DECODED_ROWCOUNT_PLAN.md`](./DECODED_ROWCOUNT_PLAN.md) · `supabase/functions/decode-batch/` |
-| **명령·uplink 동일 DB** | INSERT 감사·RLS·pending queue · uplink thermo와 command payload **ACK diff** · C.py **단일 downlink 소비자** | 대시보드→MQTT 직접 publish · 명령 전용 DB/Redis 분리 | [`CTRL_THERMO_COMMAND_PHASE_A.md`](./CTRL_THERMO_COMMAND_PHASE_A.md) · [`protocol/데이터폼_정책문서.md`](./protocol/데이터폼_정책문서.md) §4.3 |
+| **RS-DB-C 3계층** | 수집(EC2)·저장(DB)·소비(Vercel)의 배포 주기·장애 반경·스케일 요구가 다름 | 올인원 EC2(구 D.py decode+UI) · 브라우저 직접 MQTT | [`OPS.md`](./OPS.md#배포) · [`데이터폼.md`](./protocol/데이터폼.md) §8 |
+| **해석(decode)을 DB Edge** | raw 옆 **~10초 cron** · batch cursor · sparse/clock이 `iot_decoded_last_value`·`iot_decode_config`와 같은 트랜잭션·스키마 필요 | RS에서 wire decode(Phase3+ 폐기) · Next API batch decode · 농장별 decode 서버 | [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) · `supabase/functions/decode-batch/` |
+| **명령·uplink 동일 DB** | INSERT 감사·RLS·pending queue · uplink thermo와 command payload **ACK diff** · C.py **단일 downlink 소비자** | 대시보드→MQTT 직접 publish · 명령 전용 DB/Redis 분리 | [`COMMANDS.md`](./COMMANDS.md#부록--phase-a-관측) · [`데이터폼.md`](./protocol/데이터폼.md) §4.3 |
 | **운영 단일 Supabase 프로젝트** (`fkkrjljeqxpbmazfnync`) | Auth·RLS·JOIN view·Edge cron·명령 ACK를 **한 Postgres**에서 | multi-DB COLD(E) · 농장별 Supabase · **폐기된 `iot-cloud`(`ompufme…`) 재사용** | [`SYSTEM_DB.md`](./SYSTEM_DB.md) · [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) |
-| **LIVE vs 추이 시간축 분리** | `received_at`=신선도(2h hot) · `mesure_at`=차트/PDF. **버퍼 replay**와 live stream 구분 | REPLAY 전용 UI/DB 모드 · received만 LIVE 표시 | [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md) · [`live-status.ts`](../src/lib/domain/live-status.ts) |
+| **LIVE vs 추이 시간축 분리** | `received_at`=신선도(2h hot) · `mesure_at`=차트/PDF. **버퍼 replay**와 live stream 구분 | REPLAY 전용 UI/DB 모드 · received만 LIVE 표시 | [`SYSTEM_APP.md`](#작업-맥락) · [`live-status.ts`](../src/lib/domain/live-status.ts) |
 
 **Instance를 농장별로 쪼개지 않은 이유 (요약):** MQTT 브릿지·키·systemd 운영을 **1벌**로 유지. 다농장 topic multiplex. blast radius는 RS=raw-only·decode=DB로 이미 분리.
 
@@ -274,7 +274,7 @@ flowchart LR
 
 > **형식:** §2.x.0 설계 이유 · §2.x.1 경로 · §2.x.2 운영(TODO). 분리 문서(`SYSTEM_*.md`)도 동일 형식.
 
-> **작성 권장:** 아래 소절을 각각 독립 md로 분리해도 됨 (`SYSTEM_INSTANCE.md`, `SYSTEM_DB.md`, `SYSTEM_NEXTJS.md`).
+> **작성 권장:** 아래 소절을 각각 독립 md로 분리해도 됨 (`SYSTEM_INSTANCE.md`, `SYSTEM_DB.md`, `SYSTEM_APP.md`).
 
 #### 2.1 Instance (EC2 · 수집·다운링크)
 
@@ -282,10 +282,10 @@ flowchart LR
 
 | 결정 | 설계 이유 | 하지 않은 것 | 근거 |
 |------|-----------|--------------|------|
-| **Instance·Dashboard repo 분리** | `rsd`=상시 MQTT·systemd · `dashboard`=Vercel git 배포. **수집 장애와 UI 릴리스 분리** | 대시보드 repo에 RS/C 통합 · UI를 EC2에서 호스팅 | [`CLOUD_DEPLOY.md`](./CLOUD_DEPLOY.md) · rsd repo |
-| **RS는 raw INSERT만** | EC2 blast radius 최소. decode는 upsert·sparse·월 파티션·`last_value` 갱신 필요 → DB 소유 | RS wire decode(Phase3+ 폐기) · RS sparse 필터 | [`RAW_STORAGE_CHANGE.md`](./RAW_STORAGE_CHANGE.md) · [`DECODED_ROWCOUNT_PLAN.md`](./DECODED_ROWCOUNT_PLAN.md) |
-| **C.py는 EC2 유지** | MQTT cmd 구독·long poll·현장 네트워크 근접. **serverless/Vercel 부적합** | Next.js MQTT publish · 농장마다 cmd 브로커 | [`protocol/데이터폼_정책문서.md`](./protocol/데이터폼_정책문서.md) §4 · HOME_SIM |
-| **헬스→DB 적재** | admin DAG가 **DB만** 읽어 전국 상태. EC2 SSH 없이 관측 | Prometheus만 별도 · 대시보드가 EC2 SSH | [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md) §6 |
+| **Instance·Dashboard repo 분리** | `rsd`=상시 MQTT·systemd · `dashboard`=Vercel git 배포. **수집 장애와 UI 릴리스 분리** | 대시보드 repo에 RS/C 통합 · UI를 EC2에서 호스팅 | [`OPS.md`](./OPS.md#배포) · rsd repo |
+| **RS는 raw INSERT만** | EC2 blast radius 최소. decode는 upsert·sparse·월 파티션·`last_value` 갱신 필요 → DB 소유 | RS wire decode(Phase3+ 폐기) · RS sparse 필터 | [`STORAGE_LOG.md`](./STORAGE_LOG.md) · [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) |
+| **C.py는 EC2 유지** | MQTT cmd 구독·long poll·현장 네트워크 근접. **serverless/Vercel 부적합** | Next.js MQTT publish · 농장마다 cmd 브로커 | [`데이터폼.md`](./protocol/데이터폼.md) §4 · HOME_SIM |
+| **헬스→DB 적재** | admin DAG가 **DB만** 읽어 전국 상태. EC2 SSH 없이 관측 | Prometheus만 별도 · 대시보드가 EC2 SSH | [`SYSTEM_APP.md`](#작업-맥락) §6 |
 | **공유 수집 Instance** | MQTT 브릿지 1벌 · 다농장 topic. 운영 인력·키 관리 단순 | **농장별 EC2** · tenant별 MQTT 클러스터 | [`SYSTEM_INSTANCE.md`](./SYSTEM_INSTANCE.md) · Health DAG |
 
 ##### 2.1.1 경로·객체
@@ -313,9 +313,9 @@ flowchart LR
 | 결정 | 설계 이유 | 하지 않은 것 | 근거 |
 |------|-----------|--------------|------|
 | **운영 단일 Postgres** | Auth·RLS·JOIN view·Edge cron·명령 ACK **한 스키마** | 농장별 DB · read replica만 분리 · COLD multi-DB(E) · 구 `iot-cloud` | [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) · [`SYSTEM_DB.md`](./SYSTEM_DB.md) |
-| **raw/decoded 논리 분리·물리 단일** | 월 파티션·retention cron·sparse·hot view로 계층 분리. Free tier에서 물리 샤딩 불필요 | raw 전용 클러스터 · decoded만 S3 아카이브 | [`DECODED_CAPACITY.md`](./DECODED_CAPACITY.md) |
+| **raw/decoded 논리 분리·물리 단일** | 월 파티션·retention cron·sparse·hot view로 계층 분리. Free tier에서 물리 샤딩 불필요 | raw 전용 클러스터 · decoded만 S3 아카이브 | [`STORAGE_LOG.md`](./STORAGE_LOG.md) |
 | **decode-batch on Edge** | raw INSERT 직후 **pg_cron ~10s** · cursor·`last_value`·config **DB co-location** | RS decode · Next API batch · per-farm worker | `supabase/functions/decode-batch/` |
-| **ctrl_thermo_command in DB** | 감사·RLS·pending queue · uplink thermo↔command **ACK 비교** · C.py 단일 소비 | MQTT cmd topic 직접 · Redis 명령 큐 | [`CTRL_THERMO_COMMAND_PHASE_A.md`](./CTRL_THERMO_COMMAND_PHASE_A.md) |
+| **ctrl_thermo_command in DB** | 감사·RLS·pending queue · uplink thermo↔command **ACK 비교** · C.py 단일 소비 | MQTT cmd topic 직접 · Redis 명령 큐 | [`COMMANDS.md`](./COMMANDS.md#부록--phase-a-관측) |
 | **LIVE view 2h hot** | `received_at` 신선도 · list/latest tier 분리 · decode 부하와 read 분리 | 앱 raw scan · 무제한 latest view | [`SYSTEM_DB.md`](./SYSTEM_DB.md) §2.3 |
 
 ##### 2.2.1 경로·객체
@@ -344,11 +344,11 @@ flowchart LR
 
 | 결정 | 설계 이유 | 하지 않은 것 | 근거 |
 |------|-----------|--------------|------|
-| **decode는 Next가 안 함** | wire decode·sparse·clock은 Edge+DB. Vercel timeout·cold start·대량 raw scan 부적합 | API route decode proxy · RSC raw loop | [`CLOUD_DEPLOY.md`](./CLOUD_DEPLOY.md) |
+| **decode는 Next가 안 함** | wire decode·sparse·clock은 Edge+DB. Vercel timeout·cold start·대량 raw scan 부적합 | API route decode proxy · RSC raw loop | [`OPS.md`](./OPS.md#배포) |
 | **명령은 Server Action→DB** | 브라우저 MQTT 불가 · RLS·감사 · C.py만 downlink | 클라 MQTT · API→EC2 HTTP 직통 | `farm/actions` · CTRL_THERMO |
 | **LIVE read tier env** | list(경량) vs latest(channels). farm 규모·Functions 한도 | 항상 latest · 클라 only direct Supabase | `iot-live-fetch.ts` · `NEXT_PUBLIC_LIVE_READ_TIER` |
 | **admin health service_role** | 전국 `instance_health`는 RLS 밖 · `server-only` | anon 헬스 노출 · EC2 SSH | `lib/admin/health/*` |
-| **Vercel icn1 + webpack** | 국내 latency · Next16 webpack 정본 build | RS 동일 EC2 UI 호스팅 | [`CLOUD_DEPLOY.md`](./CLOUD_DEPLOY.md) |
+| **Vercel icn1 + webpack** | 국내 latency · Next16 webpack 정본 build | RS 동일 EC2 UI 호스팅 | [`OPS.md`](./OPS.md#배포) |
 
 ##### 2.3.1 경로·객체
 
@@ -365,7 +365,7 @@ flowchart LR
 
 ##### 2.3.2 운영·상세
 
-→ **[`SYSTEM_NEXTJS.md`](./SYSTEM_NEXTJS.md)** Part A (Backend)
+→ **[`SYSTEM_APP.md`](#nextjs)** Part A (Backend)
 
 ---
 
@@ -376,10 +376,10 @@ flowchart LR
 | 결정 | 설계 이유 | 하지 않은 것 | 근거 |
 |------|-----------|--------------|------|
 | **URL hub contract** | 딥링크·새로고침·Capacitor 동일. `resolveFarmHubView` 단일 진입 | 탭별 localStorage only · 임의 query | [`farm-hub-url.md`](./farm-hub-url.md) |
-| **received vs mesure UI 분리** | 카드 caution=측정 정체 · 채널색≠상태색 · replay 오해 방지 | received만 LIVE · 단일 timestamp | `live-status` · [`UI_CHROMA.md`](./UI_CHROMA.md) |
-| **RSC+client hybrid** | LIVE SSR prefetch · 차트/맵 client · stale-while-revalidate | 전 CSR · 전 RSC blocking | [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md) §10 |
-| **델린·view=aria 제거** | 권장 띠·뱃지·전용 탭 삭제. 옛 주소는 필드 | 권장값으로 경보 대체 | [`ENVIRONMENT_STATUS_POLICY.md`](./ENVIRONMENT_STATUS_POLICY.md) |
-| **명령 UX — 즉시 반영(낙관)** | insert 직후 `patchThermoFromCommand`로 게이지·설정값 **즉시** 표시 · 설정은 한눈 행 채움 · 일괄은 필드 덮개에서 접수→확인 | LIVE uplink 올 때까지 UI frozen · applied DB만 표시 | [`farm-live-refresh.tsx`](../src/components/farm/farm-live-refresh.tsx) · [`UI_FEEDBACK.md`](./UI_FEEDBACK.md) · [`SHIP_CHECKLIST.md`](./SHIP_CHECKLIST.md) §6 |
+| **received vs mesure UI 분리** | 카드 caution=측정 정체 · 채널색≠상태색 · replay 오해 방지 | received만 LIVE · 단일 timestamp | `live-status` · [`UI.md`](./UI.md#채도) |
+| **RSC+client hybrid** | LIVE SSR prefetch · 차트/맵 client · stale-while-revalidate | 전 CSR · 전 RSC blocking | [`SYSTEM_APP.md`](#작업-맥락) §10 |
+| **델린·view=aria 제거** | 권장 띠·뱃지·전용 탭 삭제. 옛 주소는 필드 | 권장값으로 경보 대체 | [`farm-hub-url.md`](./farm-hub-url.md#환경-상태-정책) |
+| **명령 UX — 즉시 반영(낙관)** | insert 직후 `patchThermoFromCommand`로 게이지·설정값 **즉시** 표시 · 설정은 한눈 행 채움 · 일괄은 필드 덮개에서 접수→확인 | LIVE uplink 올 때까지 UI frozen · applied DB만 표시 | [`farm-live-refresh.tsx`](../src/components/farm/farm-live-refresh.tsx) · [`UI.md`](./UI.md#피드백) · [`QA_SHIP_GATE.md`](./QA_SHIP_GATE.md#출고-스모크) §6 |
 
 ##### 2.4.1 경로·객체
 
@@ -394,21 +394,21 @@ flowchart LR
 
 ##### 2.4.2 운영·상세
 
-→ **[`SYSTEM_NEXTJS.md`](./SYSTEM_NEXTJS.md)** Part B (Frontend)
+→ **[`SYSTEM_APP.md`](#nextjs)** Part B (Frontend)
 
 ---
 
 ### 3. 운영 및 리스크 대응
 
-> **상세 runbook:** [`SYSTEM_RUNBOOK.md`](./SYSTEM_RUNBOOK.md)
+> **상세 runbook:** [`OPS.md`](./OPS.md#장애·런북)
 
 #### 3.1 배포·게이트
 
 | 단계 | 절차 | 문서 |
 |------|------|------|
-| 로컬 검증 | `npm test` · `verify:design` · `build` | [`SCRIPTS.md`](./SCRIPTS.md) |
-| Git | feature → (Preview) → **main** push | [`CLOUD_DEPLOY.md`](./CLOUD_DEPLOY.md) |
-| Production | Vercel auto · `smart.autofankorea.com` | [`VERCEL_PREVIEW_GATE.md`](./VERCEL_PREVIEW_GATE.md) |
+| 로컬 검증 | `npm test` · `verify:design` · `build` | [`OPS.md`](./OPS.md#스크립트) |
+| Git | feature → (Preview) → **main** push | [`OPS.md`](./OPS.md#배포) |
+| Production | Vercel auto · `smart.autofankorea.com` | [`OPS.md`](./OPS.md#preview-게이트) |
 | DB migration | `supabase/migrations` — **운영 적용 승인 필수** | §2.2 |
 
 #### 3.2 모니터링 포인트
@@ -426,9 +426,9 @@ flowchart LR
 
 | 리스크 | 증상 | 1차 확인 | 참고 |
 |--------|------|----------|------|
-| **Uplink 중단** | 화면 빈 LIVE | raw `received_at` 최신 · decoded 2h view | [`FARM02_ACK_TRIAGE.md`](./FARM02_ACK_TRIAGE.md) |
+| **Uplink 중단** | 화면 빈 LIVE | raw `received_at` 최신 · decoded 2h view | [`COMMANDS.md`](./COMMANDS.md#부록--farm02-ack) |
 | **버퍼 replay** | 오늘 수신·과거 측정 | `mesure_at` 분포 vs `received_at` | clock_kst −9h 적용 후에도 8/31 재전송 가능 |
-| **장비 시계/KST stuff** | 차트 날짜 어긋남 | `clock_kst_farm_keys` · epoch−received 분포 | [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md) |
+| **장비 시계/KST stuff** | 차트 날짜 어긋남 | `clock_kst_farm_keys` · epoch−received 분포 | [`SYSTEM_APP.md`](#작업-맥락) |
 | **명령 미반영** | applied 0 | LIVE thermo vs command payload | FARM02 사례 — 장비 미반영 |
 | **RLS/권한** | 빈 화면(데이터 있음) | `user_access` · admin role | |
 | **파티션 RLS** | advisor 경고 | child table policies | Supabase advisor |
@@ -441,7 +441,7 @@ flowchart LR
 3. **decode층** — decode-batch 로그 · failed 테이블
 4. **read층** — view 정의 · RLS · env tier
 5. **앱층** — Vercel build · API 5xx
-6. **기록** — `WORKSPACE_NOTES.md` 또는 incident md (원인·시각·복구 커밋)
+6. **기록** — `QA_RECORD.md` 또는 incident md (원인·시각·복구 커밋)
 
 #### 3.5 변경 금지·승인 필수
 
@@ -458,16 +458,16 @@ flowchart LR
 
 | 주제 | 문서 |
 |------|------|
-| 작업 맥락·스키마 요약 | [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md) |
-| 배포 | [`CLOUD_DEPLOY.md`](./CLOUD_DEPLOY.md) |
+| 작업 맥락·스키마 요약 | [`SYSTEM_APP.md`](#작업-맥락) |
+| 배포 | [`OPS.md`](./OPS.md#배포) |
 | LIVE view 규칙 | [`SYSTEM_DB.md`](./SYSTEM_DB.md) §2.3 |
-| Raw/용량 | [`RAW_STORAGE_CHANGE.md`](./RAW_STORAGE_CHANGE.md) · [`DECODED_CAPACITY.md`](./DECODED_CAPACITY.md) |
-| Sparse·coverage | [`SPARSE_OBSERVATION.md`](./SPARSE_OBSERVATION.md) |
-| 명령 파이프라인 | [`CTRL_THERMO_COMMAND_PHASE_A.md`](./CTRL_THERMO_COMMAND_PHASE_A.md) 등 |
-| 성능 | [`PERF_BASELINE.md`](./PERF_BASELINE.md) |
-| 출고 QA | [`QA_PRE_RELEASE.md`](./QA_PRE_RELEASE.md) · [`QA_SHIP_GATE.md`](./QA_SHIP_GATE.md) |
+| Raw/용량 | [`STORAGE_LOG.md`](./STORAGE_LOG.md) |
+| Sparse·coverage | [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) |
+| 명령 파이프라인 | [`COMMANDS.md`](./COMMANDS.md#부록--phase-a-관측) 등 |
+| 성능 | [`QA_RECORD.md`](./QA_RECORD.md) |
+| 출고 QA | [`QA_RECORD.md`](./QA_RECORD.md) · [`QA_SHIP_GATE.md`](./QA_SHIP_GATE.md) |
 | 운영자 UI | [`user-manual/README.md`](./user-manual/README.md) |
-| 프로토콜·페이로드 | [`protocol/`](./protocol/README.md) (`데이터폼_정책문서` · `데이터폼_최종안`) |
+| 프로토콜·페이로드 | [`protocol/데이터폼.md`](./protocol/데이터폼.md) |
 
 #### 4.2 코드 진입점
 
@@ -487,7 +487,7 @@ web/src/app/(dashboard)/admin/ops/     # 운영
 | RS-DB-C | Receive(EC2) · Store(DB) · Consume(Vercel) |
 | list tier | `v_iot_dashboard_list` — channels[] 생략한 LIVE |
 | hot view | `received_at > now()-2h` 필터 ([`SYSTEM_DB.md`](./SYSTEM_DB.md) §2.3) |
-| sparse | 값 변화 없으면 decoded skip — **2026-09-01 OFF** ([`SPARSE_OBSERVATION.md`](./SPARSE_OBSERVATION.md)) |
+| sparse | 값 변화 없으면 decoded skip — **2026-09-01 OFF** ([`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md)) |
 | clock_kst | firmware KST→UTC 오인 보정 farm 목록 |
 
 #### 4.4 개별 문서 (분리본)
@@ -496,8 +496,8 @@ web/src/app/(dashboard)/admin/ops/     # 운영
 |------|---------|------|
 | [`SYSTEM_INSTANCE.md`](./SYSTEM_INSTANCE.md) | §2.1 | EC2 · MQTT · RS/C · downlink |
 | [`SYSTEM_DB.md`](./SYSTEM_DB.md) | §2.2 | 테이블·뷰·RLS·Edge·cron |
-| [`SYSTEM_NEXTJS.md`](./SYSTEM_NEXTJS.md) | §2.3–2.4 | Backend · Frontend · env |
-| [`SYSTEM_RUNBOOK.md`](./SYSTEM_RUNBOOK.md) | §3 | 장애 시나리오 · 배포 · 모니터링 |
+| [`SYSTEM_APP.md`](#nextjs) | §2.3–2.4 | Backend · Frontend · env |
+| [`OPS.md`](./OPS.md#장애·런북) | §3 | 장애 시나리오 · 배포 · 모니터링 |
 
 ---
 
@@ -516,8 +516,8 @@ web/src/app/(dashboard)/admin/ops/     # 운영
 
 ## Next.js — Backend · Frontend
 
-> **상위:** [`SYSTEM.md`](./SYSTEM.md) §2.3–2.4 · **배포:** [`CLOUD_DEPLOY.md`](./CLOUD_DEPLOY.md)  
-> **UI 토큰:** [`UI_SURFACES.md`](./UI_SURFACES.md) 등 — 본 문서는 **시스템 경로·데이터 binding**만.
+> **상위:** [`SYSTEM_APP.md`](#시스템-총론) §2.3–2.4 · **배포:** [`OPS.md`](./OPS.md#배포)  
+> **UI 토큰:** [`UI.md`](./UI.md#면) 등 — 본 문서는 **시스템 경로·데이터 binding**만.
 
 ---
 
@@ -527,7 +527,7 @@ web/src/app/(dashboard)/admin/ops/     # 운영
 
 | 결정 | 설계 이유 | 하지 않은 것 | 근거 |
 |------|-----------|--------------|------|
-| **decode는 Next가 안 함** | wire decode·sparse·clock = Edge+DB. Vercel timeout·raw scan 부적합 | API decode proxy · RSC raw loop | [`CLOUD_DEPLOY.md`](./CLOUD_DEPLOY.md) |
+| **decode는 Next가 안 함** | wire decode·sparse·clock = Edge+DB. Vercel timeout·raw scan 부적합 | API decode proxy · RSC raw loop | [`OPS.md`](./OPS.md#배포) |
 | **명령 Server Action→DB** | 브라우저 MQTT 불가 · RLS·감사 · C.py만 downlink | 클라 MQTT · API→EC2 HTTP | [`controllers/actions.ts`](../src/app/(dashboard)/controllers/actions.ts) |
 | **LIVE read tier env** | list(경량) vs latest(channels). farm 규모·Functions 한도 | 항상 latest · 클라 only Supabase | [`iot-live-fetch.ts`](../src/lib/data/iot-live-fetch.ts) |
 | **admin health service_role** | 전국 `instance_health` RLS 밖 · `server-only` | anon 헬스 · EC2 SSH | [`fetch-snapshot.ts`](../src/lib/admin/health/fetch-snapshot.ts) |
@@ -622,7 +622,7 @@ SELECT 계약: [`live-read-select.ts`](../src/lib/domain/live-read-select.ts)
 | `/auth/callback` | [`auth/callback/route.ts`](../src/app/auth/callback/route.ts) |
 | `/app/download` | [`app/download/route.ts`](../src/app/download/route.ts) — APK signed URL |
 
-> DELIN `/api/voice-report`와 뱃지는 제거되었다. 환경 판단은 [`ENVIRONMENT_STATUS_POLICY.md`](./ENVIRONMENT_STATUS_POLICY.md).
+> DELIN `/api/voice-report`와 뱃지는 제거되었다. 환경 판단은 [`farm-hub-url.md`](./farm-hub-url.md#환경-상태-정책).
 
 #### A.8 Admin health DAG
 
@@ -649,10 +649,10 @@ SELECT 계약: [`live-read-select.ts`](../src/lib/domain/live-read-select.ts)
 | 결정 | 설계 이유 | 하지 않은 것 | 근거 |
 |------|-----------|--------------|------|
 | **URL hub contract** | 딥링크·새로고침·Capacitor 동일 · `resolveFarmHubView` | 탭별 localStorage · 임의 query | [`farm-hub-url.md`](./farm-hub-url.md) |
-| **received vs mesure UI** | caution=측정 정체 · 채널색≠상태색 · replay 구분 | received만 LIVE | [`UI_CHROMA.md`](./UI_CHROMA.md) |
-| **RSC+client hybrid** | LIVE SSR prefetch · 차트/맵 client · SWR | 전 CSR · 전 RSC blocking | [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md) §10 |
-| **델린·view=aria 제거** | 옛 주소는 필드로 정규화 | 권장 띠·뱃지·전용 탭 | [`ENVIRONMENT_STATUS_POLICY.md`](./ENVIRONMENT_STATUS_POLICY.md) |
-| **명령 UX — 즉시 반영(낙관)** | insert 직후 패치 · 설정은 한눈 행 채움 · 일괄은 필드 덮개에서 접수→확인 | 확인 전 UI 동결 | [`controller-env-cover.tsx`](../src/components/farm/controller-env-cover.tsx) · [`settings-glance-strip.tsx`](../src/components/farm/settings-glance-strip.tsx) · [`UI_FEEDBACK.md`](./UI_FEEDBACK.md) |
+| **received vs mesure UI** | caution=측정 정체 · 채널색≠상태색 · replay 구분 | received만 LIVE | [`UI.md`](./UI.md#채도) |
+| **RSC+client hybrid** | LIVE SSR prefetch · 차트/맵 client · SWR | 전 CSR · 전 RSC blocking | [`SYSTEM_APP.md`](#작업-맥락) §10 |
+| **델린·view=aria 제거** | 옛 주소는 필드로 정규화 | 권장 띠·뱃지·전용 탭 | [`farm-hub-url.md`](./farm-hub-url.md#환경-상태-정책) |
+| **명령 UX — 즉시 반영(낙관)** | insert 직후 패치 · 설정은 한눈 행 채움 · 일괄은 필드 덮개에서 접수→확인 | 확인 전 UI 동결 | [`controller-env-cover.tsx`](../src/components/farm/controller-env-cover.tsx) · [`settings-glance-strip.tsx`](../src/components/farm/settings-glance-strip.tsx) · [`UI.md`](./UI.md#피드백) |
 
 #### B.2 라우트·역할
 
@@ -697,7 +697,7 @@ SELECT 계약: [`live-read-select.ts`](../src/lib/domain/live-read-select.ts)
 | 목록 | `BarnListSummary` · `ControllerCardGrid` | gauge · caution |
 | 차트 | `TrendChart` · `UnifiedBarnTrendPanel` | `mesure_at` · coverage |
 | 일괄 | `farm-map-bulk-apply` | 명령 draft |
-| 델린 | 제거 | 옛 `view=aria`는 필드. [`ENVIRONMENT_STATUS_POLICY.md`](./ENVIRONMENT_STATUS_POLICY.md) |
+| 델린 | 제거 | 옛 `view=aria`는 필드. [`farm-hub-url.md`](./farm-hub-url.md#환경-상태-정책) |
 | keep-alive | [`farm-hub-keepalive.ts`](../src/lib/farm/farm-hub-keepalive.ts) | list 5m / chart 3m TTL |
 
 #### B.5 Prefetch · bootstrap
@@ -710,7 +710,7 @@ SELECT 계약: [`live-read-select.ts`](../src/lib/domain/live-read-select.ts)
 
 #### B.6 Android
 
-- Capacitor · OAuth · APK: [`android-app-install.md`](./android-app-install.md) · [`android-push.md`](./android-push.md)
+- Capacitor · OAuth · APK: [`ANDROID.md`](./ANDROID.md#설치) · [`ANDROID.md`](./ANDROID.md#푸시)
 - `CAPACITOR_SERVER_URL` — Production URL
 
 ---
@@ -772,9 +772,9 @@ Preview: `UI_VERIFY_BASE=https://<preview>.vercel.app npm run smoke:hub-url`
 | 문서 | 내용 |
 |------|------|
 | [`SYSTEM_DB.md`](./SYSTEM_DB.md) | views · RLS · decode |
-| [`SYSTEM_RUNBOOK.md`](./SYSTEM_RUNBOOK.md) | 장애 순서 |
-| [`VERCEL_PREVIEW_GATE.md`](./VERCEL_PREVIEW_GATE.md) | push 게이트 |
-| [`HUB_STABILITY_P0.md`](./HUB_STABILITY_P0.md) | 허브 P0 |
+| [`OPS.md`](./OPS.md#장애·런북) | 장애 순서 |
+| [`OPS.md`](./OPS.md#preview-게이트) | push 게이트 |
+| [`farm-hub-url.md`](./farm-hub-url.md#허브-본체-안정화--p0-관측·재현-게이트) | 허브 P0 |
 
 ---
 
@@ -792,7 +792,7 @@ Preview: `UI_VERIFY_BASE=https://<preview>.vercel.app npm run smoke:hub-url`
 ## 스마트 축사 IoT 대시보드 - 작업 맥락
 
 > **문서 허브:** [`README.md`](./README.md)  
-> **배포 기준:** [`CLOUD_DEPLOY.md`](./CLOUD_DEPLOY.md) (`commit → push → main → Vercel`)  
+> **배포 기준:** [`OPS.md`](./OPS.md#배포) (`commit → push → main → Vercel`)  
 > IoT 축사 모니터링·제어 대시보드. 인증/권한 기반 조회·명령.
 
 ### 1. 프로젝트 개요
@@ -835,7 +835,7 @@ npm run build    # webpack 프로덕션 빌드 검증
 
 ### 5. LIVE 데이터 경로 (현행)
 
-RS-DB-C: EC2는 raw INSERT, **decode·LIVE UI는 이 앱**. 배포 요약: [`CLOUD_DEPLOY.md`](./CLOUD_DEPLOY.md).
+RS-DB-C: EC2는 raw INSERT, **decode·LIVE UI는 이 앱**. 배포 요약: [`OPS.md`](./OPS.md#배포).
 
 | 계층 | 현행 |
 | --- | --- |
@@ -871,7 +871,7 @@ flowchart TB
 #### 페이로드·파싱 가정
 
 - 디코드 결과의 컨트롤러 배열 · 시계열 → UI 현재값은 보통 **마지막 원소**
-- 축사유형 바이트가 1~10 밖이면 Edge가 `iot_room_state_decoded`에 쓰지 않고 `iot_room_state_decode_failed.error_code=INVALID_STALL_TY`로 남김 (관측 쿼리: [`SPARSE_OBSERVATION.md`](./SPARSE_OBSERVATION.md))
+- 축사유형 바이트가 1~10 밖이면 Edge가 `iot_room_state_decoded`에 쓰지 않고 `iot_room_state_decode_failed.error_code=INVALID_STALL_TY`로 남김 (관측 쿼리: [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md))
 - 통신상태 ≈ **수신 시각(`received_at`) + 측정 시각(`mesure_dt`)** 신선도 (`lib/domain/live-status.ts`). 수신 ≤15분=정상 · ≤60분=주의 · 그 외=통신두절. 수신이 정상이어도 측정이 60분 넘게 정체하면(버퍼 replay·장비 시계정지) **주의로 강등**.
 - 추이 차트·리포트 시계열 ≈ **측정 시각(`mesure_at`)** — 재연결 시 컨트롤러 버퍼를 짧은 주기로 올려도 샘플 자체는 기존 5분 측정 간격. 패킷 unix가 서울 벽시계를 UTC처럼 넣은 경우 Edge가 9시간을 빼 실제 UTC로 맞춤. LIVE/REPLAY 플래그 구분 없이 `farm_trend_history*`에 포함 (`live`/`history`/`replay`)
   - **clock 보정 모드** (`decode-batch`, `iot_decode_config.clock_kst_farm_keys`): 목록에 오른 소스(`FARM02`·`FARM03`)는 **live/replay 무관하게 항상 -9h**. 지연 재전송(패킷 epoch가 수신보다 과거) burst도 실제 측정 시각에 정확히 안착. 목록 밖(파일럿 `FARM01` 시뮬레이터=정직한 UTC)은 기존 **future-only 휴리스틱**(수신보다 미래인 epoch만 -9h) 유지. 분류 근거=14일 raw `epoch−received` 분포(허용목록 소스는 +9h에 집중, 파일럿은 ≈0). HEALTH 등 신규 실장비 재가동 시 허용목록 추가 검토.
@@ -882,7 +882,7 @@ flowchart TB
 
 #### 데이터 모듈
 
-`lib/data` = 서버 전용 데이터 접근 · `lib/domain` = 순수 규칙·타입 (경계 규칙: [`CODE_CONVENTIONS.md`](./CODE_CONVENTIONS.md)).
+`lib/data` = 서버 전용 데이터 접근 · `lib/domain` = 순수 규칙·타입 (경계 규칙: [`SYSTEM_APP.md`](#코드-계약)).
 
 | 파일 | 용도 |
 | --- | --- |

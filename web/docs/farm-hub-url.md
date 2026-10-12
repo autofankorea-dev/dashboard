@@ -179,7 +179,7 @@ flowchart LR
 - 농장 키 변경 시 비활성 패널 keep-alive **즉시 flush**
 - `visibilitychange` → visible 시 TTL 재계산 (백그라운드 만료분 즉시 해제)
 - 재진입 시 다시 마운트 (차트 범위는 URL, 목록 스크롤 등은 리셋될 수 있음)
-- **P1 live pause:** DOM keep-alive와 별도 — 비활성 패널은 LIVE/enrich/폴링 중지 (`isFarmHubPanelLiveActive`). 캐시 유지 → 재진입 즉시 복구. 목록 enrich는 `view=list`일 때만 ([`HUB_STABILITY_P0.md`](./HUB_STABILITY_P0.md))
+- **P1 live pause:** DOM keep-alive와 별도 — 비활성 패널은 LIVE/enrich/폴링 중지 (`isFarmHubPanelLiveActive`). 캐시 유지 → 재진입 즉시 복구. 목록 enrich는 `view=list`일 때만 ([`farm-hub-url.md`](#허브-본체-안정화--p0-관측·재현-게이트))
 
 ---
 
@@ -188,8 +188,8 @@ flowchart LR
 | 변경 | 참고 문서 |
 |------|-----------|
 | 쿼리 키·의미·soft home·epoch | 본 문서 (정본) |
-| 탭 슬라이드·패널 모션 | `UI_MOTION.md` · `motionClass`만 소비 |
-| `view=aria` (호환) | 필드 정규화. 뱃지·권장 안내는 제거 · [`ENVIRONMENT_STATUS_POLICY.md`](./ENVIRONMENT_STATUS_POLICY.md) |
+| 탭 슬라이드·패널 모션 | `UI.md` · `motionClass`만 소비 |
+| `view=aria` (호환) | 필드 정규화. 뱃지·권장 안내는 제거 · [`farm-hub-url.md`](#환경-상태-정책) |
 | `view=plan` · `view=model` | 은퇴. 필드로 정규화 |
 | `view=chartlab` | 옛 테스트 탭. `view=chart`로 정규화 |
 
@@ -197,10 +197,10 @@ flowchart LR
 
 ## 관련 문서
 
-- 사용설명서 IA: [user-manual/10-메뉴구조도.md](./user-manual/10-메뉴구조도.md)
-- 환경 상태: 이 문서의 「환경 상태 정책」. DELIN 문서는 폐기 스텁
+- 사용설명서 IA: [메뉴구조도](./user-manual/README.md#10-메뉴구조도)
+- 환경 상태: 이 문서의 「환경 상태 정책」. DELIN 뱃지·권장 안내는 제거되었다
 - 문서 진입점: [README.md](./README.md)
-- Preview 게이트 절차: [VERCEL_PREVIEW_GATE.md](./VERCEL_PREVIEW_GATE.md)
+- Preview 게이트 절차: [OPS.md](./OPS.md#preview-게이트)
 - 허브 안정화 P0: 이 문서의 「허브 본체 안정화」 (`npm run verify:hub` · `npm run smoke:hub-url`)
 - 로그인 후 브라우저 스모크: `npm run smoke:hub-url` (dev 또는 Vercel)
   - 로컬: 기본 `http://localhost:3000`
@@ -295,7 +295,7 @@ UI_VERIFY_BASE=https://<preview-or-prod>.vercel.app npm run smoke:hub-url
 3. 다른 앱 탭으로 전환(숨김) 30초 → 복귀  
 4. 숨김 중·복귀 직후 `live` / Supabase 요청이 **활성 탭 수준**인지 기록
 
-결과를 이 문서 또는 이슈에 p50/p95·maxInFlight로 남긴다. 기준 참고: [`PERF_BASELINE.md`](./PERF_BASELINE.md) · [`SHIP_CHECKLIST.md`](./SHIP_CHECKLIST.md).
+결과를 이 문서 또는 이슈에 p50/p95·maxInFlight로 남긴다. 기준 참고: [`QA_RECORD.md`](./QA_RECORD.md) · [`QA_SHIP_GATE.md`](./QA_SHIP_GATE.md#출고-스모크).
 
 ---
 
