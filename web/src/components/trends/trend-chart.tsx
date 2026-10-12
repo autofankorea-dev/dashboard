@@ -116,6 +116,7 @@ import {
 } from "./trend-chart-event-lane";
 import { TrendChartLegend } from "./trend-chart-legend";
 import { TrendChartCrosshairChip } from "./trend-chart-crosshair-chip";
+import { TrendChartYAxis } from "./trend-chart-y-axis";
 import { TrendYLabelChip } from "./trend-y-label-chip";
 import type { TrendChartProps } from "./trend-chart-props";
 
@@ -1918,51 +1919,15 @@ export function TrendChart({
           })
         : null}
 
-      {yGutterStartCaption && !hideAxisChrome ? (
-        <span
-          className={cn(
-            "pointer-events-none absolute left-1 top-0.5 z-[2] farm-chart-fs-axis font-medium leading-none text-muted-foreground",
-            "transition-opacity duration-motion-fast",
-            dimPlotValues && "opacity-30",
-          )}
-        >
-          {yGutterStartCaption}
-        </span>
-      ) : null}
-      {yGutterEndCaption && !hideAxisChrome ? (
-        <span
-          className={cn(
-            "pointer-events-none absolute right-1 top-0.5 z-[2] farm-chart-fs-axis font-medium leading-none text-muted-foreground",
-            "transition-opacity duration-motion-fast",
-            dimPlotValues && "opacity-30",
-          )}
-        >
-          {yGutterEndCaption}
-        </span>
-      ) : null}
-
-      {leftAxisTicks.map((tick) => (
-        <span
-          key={tick.id}
-          className={cn(
-            "pointer-events-none absolute left-1 z-[1] -translate-y-1/2 leading-none text-muted-foreground",
-            labelGutter ? "farm-chart-fs-legend font-medium" : "farm-chart-fs-axis",
-            "transition-opacity duration-motion-fast",
-            dimPlotValues && "opacity-30",
-          )}
-          style={{ top: `${tick.topPct}%` }}
-          aria-hidden
-        >
-          <TrendYLabelChip
-            text={tick.text}
-            className={
-              labelGutter && !yLabelColumn
-                ? "min-h-7 px-1.5 py-1 farm-chart-fs-legend font-medium"
-                : "farm-chart-fs-axis"
-            }
-          />
-        </span>
-      ))}
+      <TrendChartYAxis
+        yGutterStartCaption={yGutterStartCaption}
+        yGutterEndCaption={yGutterEndCaption}
+        hideAxisChrome={hideAxisChrome}
+        dimPlotValues={dimPlotValues}
+        leftAxisTicks={leftAxisTicks}
+        labelGutter={labelGutter}
+        yLabelColumn={yLabelColumn}
+      />
 
       {hoveredEdgePresence.mounted && hoveredEdgePresence.value ? (
         <div
