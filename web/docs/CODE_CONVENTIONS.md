@@ -94,7 +94,7 @@ flowchart LR
 화면 조각은 `trend-chart-legend.tsx`, `trend-chart-crosshair-chip.tsx`, `trend-y-label-chip.tsx`, `trend-chart-y-axis.tsx`, `trend-chart-edge-labels.tsx`, `trend-chart-pinned-cards.tsx`, `trend-chart-hover-card.tsx`에 둔다. 플롯 SVG(프레임·데이터·십자선·스코프 드래프트)는 `trend-chart-plot-svg.tsx`, X축 눈금 레일은 `trend-chart-x-axis.tsx`에 둔다. 데이터 지점 히트는 `trend-chart-hit.ts`, 호버 카드에 올릴 값은 `trend-chart-hover-live.ts`에 둔다. 결측 구간과 세그먼트 빌더는 `trend-chart-geometry.ts`에 둔다. 클라이언트 좌표 변환과 포인터 핸들러는 플롯 루트에 남긴다.  
 통합 추세 순수 로직은 `unified-trend-split-y.ts`(값↔밴드), `unified-trend-split-y-overflow.ts`(이탈 스케일), `unified-trend-split-y-ticks.ts`(밴드 눈금), `unified-barn-trend-layout.ts`(밴드 기하), `unified-trend-y-bands.ts`(레이어·Y밴드 마스킹), `unified-trend-raw.ts`(집계·EMA), `unified-trend-build.ts`(시리즈 조립), `unified-trend-layers.ts`(레이어 선택·트림), `unified-trend-colors.ts`(색·이름)에 둔다. `unified-barn-trend-series.ts`는 임계 코리도와 공개 이름 재export만 남기고, 기존 `@/lib/farm/unified-barn-trend-series` import는 유지한다. 이 모듈은 차트를 그리지 않으므로 markup 스냅샷 대상이 아니다.  
 `UnifiedBarnTrendPanel`의 경보 눈금은 `unified-barn-trend-scale-edges.ts`, 제목 마크는 `unified-barn-trend-scope-marks.tsx`, 헤더는 `unified-barn-trend-panel-header.tsx`에 둔다. 표시 창 집계는 `unified-barn-trend-window.ts`, 명령 설정 오버레이는 `unified-barn-trend-command-overlay.ts`, X 스코프 인덱스·15분 구간은 `unified-barn-trend-x-scope.ts`에 둔다. 스코프 시계열 재집계는 `unified-barn-trend-scoped.ts`, 안내 제스처의 플롯 비율은 `unified-barn-trend-guided-scope.ts`, TrendChart에 넘기는 값 조립은 `unified-barn-trend-chart.tsx`에 둔다. 줌 스택 setState와 humanize 캐시는 패널에 남긴다.  
-농장 허브의 데스크톱 현장 스플릿은 `farm-field-split.tsx`, 차트 탭 슬롯은 `farm-chart-slot.tsx`에 둔다. 보기 탭은 `farm-view-toggle.tsx`에 둔다.
+농장 허브의 데스크톱 현장 스플릿은 `farm-field-split.tsx`, 차트 탭 슬롯은 `farm-chart-slot.tsx`에 둔다. 보기 탭은 `farm-view-toggle.tsx`에 둔다. 페이지의 목록 enrich·보기 상태·차트 URL은 `use-farm-page-content-state.ts`와 `use-farm-page-chart-actions.ts`에 둔다.
 
 ---
 
@@ -146,3 +146,4 @@ GitHub Actions(`.github/workflows/web-verify.yml`)와 GitLab CI가 동일 단계
 | 2026-10-12 | P2-13: 통합 추세 패널의 TrendChart 값 조립을 `unified-barn-trend-chart.tsx`로 분리. `unified-barn-trend-panel.tsx` 1376→1276줄. 줌 setState는 패널에 유지 |
 | 2026-10-12 | P2-14: `lib`가 서버 액션을 직접 부르지 않게 한다. 패널 enrich·푸시 등록은 호출측이 액션을 주입하고, 라이브 리프레시 provider는 `components/farm/farm-live-refresh.tsx`로 옮겼다. `OAuthProvider`는 `lib/auth/oauth-provider.ts`로 옮기고 액션이 재export한다 |
 | 2026-10-12 | P2-15: 유닛 러너를 vitest로 교체. `describe`/`it` 20파일은 vitest import. 나머지 `node:assert` 파일은 그대로 실행. `test:watch` · `test:coverage` |
+| 2026-10-12 | P2-16: 농장 페이지의 목록 enrich·보기 상태·차트 URL을 hook으로 분리. `farm-page-content.tsx` 753→385줄 |
