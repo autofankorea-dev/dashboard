@@ -77,7 +77,6 @@ import {
   mergeOverlappingTempHumEdgeLabels,
   nudgeEdgeLabelTops,
   stackLeftAlarmBaselineLabels,
-  parseScaleEdgeEditSeed,
   parseScaleEdgeValueUnit,
   tipPinId,
   trendChartHasRenderableContent,
@@ -106,7 +105,6 @@ import {
   handleScaleEdgeDoubleTap,
   hoverPairSlotDx,
   nearestByXView,
-  pickDraggableScaleEdgeHit,
   chartTipPresenceClass,
   chartBandGuideClass,
   type PinnedTip,
@@ -116,6 +114,7 @@ import { useTrendPlotSize } from "./use-trend-plot-size";
 import { useTrendLookbackGesture } from "./use-trend-lookback-gesture";
 import { useTrendPinWindowRemap } from "./use-trend-pin-window-remap";
 import { useTrendCrosshair } from "./use-trend-crosshair";
+import { useTrendScaleEdgeEdit } from "./use-trend-scale-edge-edit";
 import { useTrendScopeGesture } from "./use-trend-scope-gesture";
 import {
   BandGuidesLayer,
@@ -268,11 +267,6 @@ export function TrendChart({
     useTrendPinnedTips({
       resetKey: pinResetKey ?? `${period ?? ""}|${categories.length}`,
     });
-  const [edgeDragId, setEdgeDragId] = useState<string | null>(null);
-  const [edgeEdit, setEdgeEdit] = useState<{
-    id: string;
-    text: string;
-  } | null>(null);
   /** 스케일 값 칩 hover → 해당 기준선 강조 + 나머지 dim */
   const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null);
   const hoverIdxRef = useRef<number | null>(null);
@@ -296,25 +290,6 @@ export function TrendChart({
   /** 기간 변경 시만 plot wipe — 카테고리 trim/X스코프는 remount 금지 */
   const plotEnterKey = animate ? String(period ?? "p") : "static";
 
-  const edgeDragRef = useRef<{
-    id: string;
-    axis: TrendAxis;
-  } | null>(null);
-  const labelDragArmRef = useRef<{
-    id: string;
-    axis: TrendAxis;
-    value: number;
-    x: number;
-    y: number;
-    pointerId: number;
-    pointerType: string;
-  } | null>(null);
-  const scaleEdgeTapRef = useRef<{
-    id: string;
-    t: number;
-    x: number;
-    y: number;
-  } | null>(null);
   const plotEmptyTapRef = useRef<{ t: number; x: number; y: number } | null>(
     null,
   );
@@ -771,6 +746,34 @@ export function TrendChart({
     setCrosshairVisible(false);
   };
 
+  const {
+    edgeDragId,
+    setEdgeDragId,
+    edgeEdit,
+    setEdgeEdit,
+    edgeDragRef,
+    labelDragArmRef,
+    scaleEdgeTapRef,
+    domainValueFromYView,
+    hitDraggableScaleEdge,
+    emitScaleEdgeDrag,
+    beginScaleEdgeEdit,
+    cancelScaleEdgeEdit,
+    commitScaleEdgeEdit,
+    endScaleEdgeDrag,
+  } = useTrendScaleEdgeEdit({
+    scaleEdgeLabels,
+    scaleEdgeHitPx,
+    chartH,
+    innerH,
+    leftDomain: [lMin, lMax],
+    rightDomain: [rMin, rMax],
+    yFor,
+    onScaleEdgeDrag,
+    onScaleEdgeNumericCommit,
+    clearHover,
+  });
+
   const indexFromXView = (xView: number): number => {
     if (n <= 1) return 0;
     const u = (xView - padL) / innerW;
@@ -856,80 +859,6 @@ export function TrendChart({
     pinClickArmRef,
     onXScopePointerCancel,
   });
-
-  const domainValueFromYView = (yView: number, axis: TrendAxis): number => {
-    const [mn, mx] = axis === "right" ? [rMin, rMax] : [lMin, lMax];
-    if (innerH <= 0) return (mn + mx) / 2;
-    const t = 1 - (yView - PAD_TOP) / innerH;
-    return mn + Math.min(1, Math.max(0, t)) * (mx - mn);
-  };
-
-  const hitDraggableScaleEdge = (
-    clientY: number,
-    rect: DOMRect,
-  ): { id: string; axis: TrendAxis; value: number } | null => {
-    if (!onScaleEdgeDrag && !onScaleEdgeNumericCommit) return null;
-    return pickDraggableScaleEdgeHit(
-      scaleEdgeLabels,
-      clientY - rect.top,
-      yFor,
-      chartH,
-      rect.height,
-      scaleEdgeHitPx,
-    );
-  };
-
-  const emitScaleEdgeDrag = (
-    id: string,
-    value: number,
-    phase: ScaleEdgeDragEvent["phase"],
-  ) => {
-    onScaleEdgeDrag?.({ id, value, phase });
-  };
-
-  const beginScaleEdgeEdit = (guideId: string) => {
-    if (!onScaleEdgeNumericCommit) return;
-    const guide = scaleEdgeLabels.find((g) => g.id === guideId);
-    if (!guide?.draggable) return;
-    if (edgeDragRef.current) {
-      endScaleEdgeDrag("cancel");
-    }
-    labelDragArmRef.current = null;
-    scaleEdgeTapRef.current = null;
-    setEdgeEdit({
-      id: guideId,
-      text: parseScaleEdgeEditSeed(guide),
-    });
-    clearHover();
-  };
-
-  const cancelScaleEdgeEdit = () => {
-    setEdgeEdit(null);
-  };
-
-  const commitScaleEdgeEdit = () => {
-    if (!edgeEdit || !onScaleEdgeNumericCommit) {
-      setEdgeEdit(null);
-      return;
-    }
-    const parsed = Number(edgeEdit.text.trim());
-    if (!Number.isFinite(parsed)) {
-      setEdgeEdit(null);
-      return;
-    }
-    const id = edgeEdit.id;
-    setEdgeEdit(null);
-    onScaleEdgeNumericCommit({ id, value: parsed });
-  };
-
-  const endScaleEdgeDrag = (phase: "end" | "cancel") => {
-    const cur = edgeDragRef.current;
-    if (!cur) return;
-    const guide = scaleEdgeLabels.find((g) => g.id === cur.id);
-    emitScaleEdgeDrag(cur.id, guide?.value ?? 0, phase);
-    edgeDragRef.current = null;
-    setEdgeDragId(null);
-  };
 
   const onPlotPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (!isPrimaryPress(e)) return;
