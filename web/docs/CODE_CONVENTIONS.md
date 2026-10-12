@@ -130,3 +130,4 @@ GitHub Actions(`.github/workflows/web-verify.yml`)와 GitLab CI가 동일 단계
 | 2026-10-11 | P2-0: `iot-types.ts` · `barn-meta-types.ts` 분리, domain → data 타입 import 금지로 전환 |
 | 2026-10-12 | P2-2: `unified-barn-trend-series.ts` 구현을 split-y·raw·build·layers·colors로 분리. 배럴 재export로 import 경로 유지 |
 | 2026-10-12 | P2-3: 통합 추세 패널에서 경보 눈금·헤더를 분리. `unified-barn-trend-panel.tsx` 2148→1763줄 |
+| 2026-10-12 | P2-4: 농장 보기 탭을 `farm-view-toggle.tsx`로 분리 |

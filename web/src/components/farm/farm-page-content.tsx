@@ -10,8 +10,6 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { useSearchParams } from "next/navigation";
-import { Map, List, LineChart } from "lucide-react";
-import { StallUnitIcon } from "@/components/icons/stall-unit-icon";
 import type { BarnMapSnapshot } from "@/lib/data/iot";
 import type { BarnReading } from "@/lib/data/iot";
 import { normalizeStallTyCode } from "@/lib/domain/stall-type";
@@ -26,6 +24,7 @@ import {
   readingsMatchingBarn,
 } from "@/components/farm/farm-field-status-grid";
 import { FarmFeatureTour } from "@/components/onboarding/feature-tour";
+import { FarmViewToggle } from "@/components/farm/farm-view-toggle";
 import {
   currentFarmSearchParams,
   pinFarmHubViewParam,
@@ -74,11 +73,6 @@ import {
   useFarmLiveRefreshOptional,
 } from "@/lib/navigation/farm-live-refresh";
 import { useHydrationSafeDashboardCompact } from "@/components/layout/dashboard-viewport-context";
-import {
-  dashboardAffordance,
-  dashboardChroma,
-  dashboardUi,
-} from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";
 import { useFieldListFilterMotion } from "@/components/farm/use-field-list-filter-motion";
 import { motionClass } from "@/lib/ui/motion-classes";
@@ -508,11 +502,6 @@ export function FarmPageContent({
     );
   }, [view, hideViewTabs, gridCompactShell, viewportCompact, scopeToggleSlot]);
 
-  const tabNavClass =
-    gridCompactShell || viewportCompact || Boolean(scopeToggleSlot)
-      ? "text-sm font-medium md:text-sm"
-      : dashboardUi.tabNav;
-
   const panelMotionClass = (panel: FarmHubView) => {
     const active = view === panel;
     const exiting = viewSlide?.from === panel;
@@ -564,116 +553,20 @@ export function FarmPageContent({
   const awaitingScopeSlot =
     hubMode && !hideViewTabs && scopeToggleSlot === undefined;
 
-  const viewTabBtn = (active: boolean) =>
-    cn(
-      "relative z-[1] inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-lg font-medium",
-      embedInScopeHeader && viewportCompact
-        ? "min-w-0 flex-1 px-2 py-2.5"
-        : embedInScopeHeader
-          ? "shrink-0 px-2.5 py-1.5 sm:px-3"
-          : "shrink-0 gap-2 px-5 py-2.5",
-      motionClass.microInteractive,
-      tabNavClass,
-      active
-        ? dashboardChroma.chromeActiveText
-        : dashboardAffordance.choiceIdle,
-    );
-
-  const viewToggle = !hideViewTabs ? (
-    <div
-      ref={tablistRef}
-      className={cn(
-        "relative inline-flex max-w-full flex-nowrap rounded-xl border bg-muted/40 p-1",
-        embedInScopeHeader && viewportCompact
-          ? "w-full text-sm"
-          : embedInScopeHeader
-            ? "w-auto shrink-0 text-sm"
-            : gridCompactShell || viewportCompact
-              ? "text-sm md:text-sm"
-              : dashboardUi.body,
-      )}
-      role="tablist"
-      aria-label="농장 보기"
-      data-tour-id="view-toggle"
-    >
-      <span
-        aria-hidden
-        className={cn(
-          "pointer-events-none absolute top-1 bottom-1 z-0 rounded-lg",
-          dashboardChroma.viewTabPill,
-          motionClass.viewTabPill,
-          tabPill.width <= 0 && "opacity-0",
-        )}
-        style={{
-          left: tabPill.left,
-          width: tabPill.width,
-        }}
-      />
-      {fieldMerge ? (
-        <>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={fieldActive}
-            className={viewTabBtn(fieldActive)}
-            onClick={() => setView("map")}
-          >
-            <StallUnitIcon
-              className={dashboardUi.iconSm}
-              strokeWidth={dashboardUi.iconStroke}
-              aria-hidden
-            />
-            필드
-          </button>
-        </>
-      ) : (
-        <>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={view === "map"}
-            className={viewTabBtn(view === "map")}
-            onClick={() => setView("map")}
-          >
-            <Map
-              className={dashboardUi.iconSm}
-              strokeWidth={dashboardUi.iconStroke}
-              aria-hidden
-            />
-            그리드
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={view === "list"}
-            className={viewTabBtn(view === "list")}
-            onClick={() => setView("list")}
-          >
-            <List
-              className={dashboardUi.iconSm}
-              strokeWidth={dashboardUi.iconStroke}
-              aria-hidden
-            />
-            목록
-          </button>
-        </>
-      )}
-      <button
-        type="button"
-        role="tab"
-        aria-selected={view === "chart"}
-        className={viewTabBtn(view === "chart")}
-        onClick={() => setView("chart")}
-      >
-        <LineChart
-          className={dashboardUi.iconSm}
-          strokeWidth={dashboardUi.iconStroke}
-          aria-hidden
-        />
-        차트
-      </button>
-    </div>
-  ) : null;
+  const viewToggle = (
+    <FarmViewToggle
+      hideViewTabs={hideViewTabs}
+      tablistRef={tablistRef}
+      embedInScopeHeader={embedInScopeHeader}
+      viewportCompact={viewportCompact}
+      gridCompactShell={gridCompactShell}
+      tabPill={tabPill}
+      fieldMerge={fieldMerge}
+      fieldActive={fieldActive}
+      view={view}
+      onView={setView}
+    />
+  );
 
   const listFocusKey = fieldMerge
     ? fieldFocusCtrl ?? urlCtrl
