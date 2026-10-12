@@ -115,6 +115,8 @@ import {
   EventLaneSvgGuides,
 } from "./trend-chart-event-lane";
 import { TrendChartLegend } from "./trend-chart-legend";
+import { TrendChartCrosshairChip } from "./trend-chart-crosshair-chip";
+import { TrendYLabelChip } from "./trend-y-label-chip";
 import type { TrendChartProps } from "./trend-chart-props";
 
 export type {
@@ -138,39 +140,6 @@ export type {
 export type { TrendChartProps };
 
 
-
-function TrendYLabelChip({
-  text,
-  className,
-  mark,
-}: {
-  text: string;
-  className?: string;
-  mark?: "overline" | "underline";
-}) {
-  const sizer =
-    text.length > TREND_Y_LABEL_CHIP_SAMPLE.length
-      ? text
-      : TREND_Y_LABEL_CHIP_SAMPLE;
-  return (
-    <span
-      className={cn(
-        "relative inline-flex items-center justify-center rounded-sm bg-background/85 px-0.5 leading-none tabular-nums",
-        "border-y border-transparent pt-px pb-px",
-        mark === "overline" && "border-t-current",
-        mark === "underline" && "border-b-current",
-        className,
-      )}
-    >
-      <span className="invisible whitespace-nowrap" aria-hidden>
-        {sizer}
-      </span>
-      <span className="absolute inset-0 flex items-center justify-center whitespace-nowrap">
-        {text}
-      </span>
-    </span>
-  );
-}
 
 export function TrendChart({
   mode,
@@ -1664,28 +1633,14 @@ export function TrendChart({
         })()}
       </svg>
 
-      <div
-        ref={crossChipRef}
-        className={cn(
-          "pointer-events-none absolute z-[5] whitespace-nowrap rounded-sm border border-border/70 bg-background/90 px-1.5 py-0.5 farm-chart-fs-axis tabular-nums",
-          motionClass.farmChartCrosshair,
-        )}
-        style={{
-          opacity: 0,
-          left: 0,
-          top: 0,
-          transform: "translate(calc(-100% - 8px), -50%)",
-        }}
-        aria-hidden
-      >
-        <span className="inline-flex items-center gap-1.5">
-          <span ref={crossChipTimeRef} className="text-foreground" />
-          <span ref={crossChipTempRef} className="text-channel-temp" />
-          <span ref={crossChipHumRef} className="text-channel-hum" />
-          <span ref={crossChipMotorRef} className="text-channel-motor" />
-          <span ref={crossChipOtherRef} className="text-foreground" />
-        </span>
-      </div>
+      <TrendChartCrosshairChip
+        chipRef={crossChipRef}
+        timeRef={crossChipTimeRef}
+        tempRef={crossChipTempRef}
+        humRef={crossChipHumRef}
+        motorRef={crossChipMotorRef}
+        otherRef={crossChipOtherRef}
+      />
 
       {eventLane && eventLaneH > 0 ? (
         <EventLaneHtmlOverlay
