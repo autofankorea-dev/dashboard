@@ -82,9 +82,6 @@ import {
   tipPinId,
   trendChartHasRenderableContent,
   trendPlotPadPx,
-  interpolateTimelineMsFromXView,
-  formatCrosshairClock,
-  chartDomainYFromViewY,
   type EdgeBandLabel,
 } from "@/lib/farm/trend-chart-geometry";
 import {
@@ -118,6 +115,7 @@ import { useTrendPinnedTips } from "./use-trend-pinned-tips";
 import { useTrendPlotSize } from "./use-trend-plot-size";
 import { useTrendLookbackGesture } from "./use-trend-lookback-gesture";
 import { useTrendPinWindowRemap } from "./use-trend-pin-window-remap";
+import { useTrendCrosshair } from "./use-trend-crosshair";
 import { useTrendScopeGesture } from "./use-trend-scope-gesture";
 import {
   BandGuidesLayer,
@@ -280,15 +278,6 @@ export function TrendChart({
   const hoverIdxRef = useRef<number | null>(null);
   const hoverSeriesRef = useRef<string | null>(null);
   const hoverEventMarkRef = useRef<TrendEventMark | null>(null);
-  const crossVRef = useRef<SVGLineElement | null>(null);
-  const crossHRef = useRef<SVGLineElement | null>(null);
-  const crossChipRef = useRef<HTMLDivElement | null>(null);
-  const crossChipTimeRef = useRef<HTMLSpanElement | null>(null);
-  const crossChipTempRef = useRef<HTMLSpanElement | null>(null);
-  const crossChipHumRef = useRef<HTMLSpanElement | null>(null);
-  const crossChipMotorRef = useRef<HTMLSpanElement | null>(null);
-  const crossChipOtherRef = useRef<HTMLSpanElement | null>(null);
-  const lastCrosshairRef = useRef({ x: 0, y: 0, on: false });
   const tipRef = useRef<HTMLDivElement | null>(null);
   const lastAnchorRef = useRef({ x: 0, y: 0, w: 1, h: 1 });
   const pinClickArmRef = useRef<{
@@ -473,111 +462,36 @@ export function TrendChart({
     setPinnedTips,
   });
 
-  const CROSSHAIR_CHIP_GAP_PX = 8;
-
-  const setCrosshairChipVisible = (visible: boolean) => {
-    if (crossChipRef.current) {
-      crossChipRef.current.style.opacity = visible ? "1" : "0";
-    }
-  };
-
-  const setPartText = (node: HTMLSpanElement | null, text: string | null) => {
-    if (!node) return;
-    if (text) {
-      node.textContent = text;
-      node.style.display = "";
-    } else {
-      node.textContent = "";
-      node.style.display = "none";
-    }
-  };
-
-  const fillCrosshairChip = (xView: number, yView: number) => {
-    const el = crossChipRef.current;
-    if (!el) return;
-    lastCrosshairRef.current = { x: xView, y: yView, on: true };
-
-    const ms = interpolateTimelineMsFromXView(
-      xView,
-      padL,
-      innerW,
-      timeAxisMs,
-      n,
-    );
-    let timeLabel = "";
-    if (ms != null) {
-      timeLabel = formatCrosshairClock(ms, { withDate: period !== "24h" });
-    } else if (n > 0) {
-      const u = Math.min(1, Math.max(0, (xView - padL) / Math.max(innerW, 1)));
-      const i = n <= 1 ? 0 : Math.round(u * (n - 1));
-      timeLabel = categories[i] ?? "";
-    }
-    setPartText(crossChipTimeRef.current, timeLabel || null);
-
-    const chartY = chartDomainYFromViewY(yView, PAD_TOP, innerH, [lMin, lMax]);
-    let tempC: number | null = null;
-    let humidityPct: number | null = null;
-    let motorPct: number | null = null;
-    let other: string | null = null;
-    if (chartY != null) {
-      if (crosshairValues) {
-        const v = crosshairValues(chartY);
-        tempC = v?.tempC ?? null;
-        humidityPct = v?.humidityPct ?? null;
-        motorPct = v?.motorPct ?? null;
-      } else if (leftUnit === "℃") {
-        tempC = chartY;
-      } else if (leftUnit) {
-        other = formatTrendBandEdge(chartY, leftUnit);
-      }
-    }
-    setPartText(
-      crossChipTempRef.current,
-      tempC != null ? formatTrendBandEdge(tempC, "℃") : null,
-    );
-    setPartText(
-      crossChipHumRef.current,
-      humidityPct != null ? formatTrendBandEdge(humidityPct, "%") : null,
-    );
-    setPartText(
-      crossChipMotorRef.current,
-      motorPct != null ? formatTrendBandEdge(motorPct, "%") : null,
-    );
-    setPartText(crossChipOtherRef.current, other);
-
-    const plotW = plotRef.current?.getBoundingClientRect().width || plotPx.w || 1;
-    const xPx = (xView / Math.max(viewW, 1)) * plotW;
-    const padLPx = (padL / Math.max(viewW, 1)) * plotW;
-    const chipW = el.offsetWidth || 96;
-    const flip = xPx - padLPx < chipW + CROSSHAIR_CHIP_GAP_PX;
-    el.style.left = `${(xView / Math.max(viewW, 1)) * 100}%`;
-    el.style.top = `${(yView / Math.max(chartH, 1)) * 100}%`;
-    el.style.transform = flip
-      ? `translate(${CROSSHAIR_CHIP_GAP_PX}px, -50%)`
-      : `translate(calc(-100% - ${CROSSHAIR_CHIP_GAP_PX}px), -50%)`;
-  };
-
-  const setCrosshairVisible = (visible: boolean) => {
-    const op = visible ? "1" : "0";
-    if (crossVRef.current) crossVRef.current.style.opacity = op;
-    if (crossHRef.current) crossHRef.current.style.opacity = op;
-    if (!visible) {
-      lastCrosshairRef.current.on = false;
-      setCrosshairChipVisible(false);
-    }
-  };
-
-  const setCrosshairAt = (xView: number, yView: number) => {
-    if (crossVRef.current) {
-      crossVRef.current.setAttribute("x1", String(xView));
-      crossVRef.current.setAttribute("x2", String(xView));
-    }
-    if (crossHRef.current) {
-      crossHRef.current.setAttribute("y1", String(yView));
-      crossHRef.current.setAttribute("y2", String(yView));
-    }
-    setCrosshairVisible(true);
-  };
+  const {
+    crossVRef,
+    crossHRef,
+    crossChipRef,
+    crossChipTimeRef,
+    crossChipTempRef,
+    crossChipHumRef,
+    crossChipMotorRef,
+    crossChipOtherRef,
+    setCrosshairChipVisible,
+    fillCrosshairChip,
+    setCrosshairVisible,
+    setCrosshairAt,
+  } = useTrendCrosshair({
+    plotRef,
+    plotW: plotPx.w,
+    viewW,
+    chartH,
+    padL,
+    innerW,
+    innerH,
+    n,
+    timeAxisMs,
+    categories,
+    period,
+    leftDomain: [lMin, lMax],
+    leftUnit,
+    crosshairValues,
+    hoverActive: hoverIdx != null || Boolean(hoverEventMark),
+  });
 
   /** 데이터 점 근처 · 플롯 안 · 포인터/점을 가리지 않게 카드 배치 */
   const placeTipNear = (
@@ -1377,17 +1291,6 @@ export function TrendChart({
     const a = lastAnchorRef.current;
     placeTipNear(a.x, a.y, a.w, a.h);
   }, [hoverIdx, hoverEventMark]);
-
-  useLayoutEffect(() => {
-    if (hoverIdx != null || hoverEventMark) {
-      setCrosshairChipVisible(false);
-      return;
-    }
-    const last = lastCrosshairRef.current;
-    if (!last.on) return;
-    fillCrosshairChip(last.x, last.y);
-    setCrosshairChipVisible(true);
-  });
 
   const markerStride =
     markerDensity === "sparse" ? Math.max(1, Math.ceil(n / 8)) : 1;
