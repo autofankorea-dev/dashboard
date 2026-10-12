@@ -3,7 +3,7 @@ import { sensorValueForDisplay, formatSensorNumber, formatPctForDisplay, formatT
 import { formatHumidityPct, formatTempC, buildFarmSummaries } from "./farm-summaries";
 import { fmt } from "@/lib/report/build-daily-report-pdf-base";
 import { buildGaugeFillSegments } from "@/lib/farm/controller-summary-display";
-import type { BarnReading } from "@/lib/data/iot";
+import type { BarnReading } from "@/lib/domain/iot-types";
 for (const value of [NaN, Infinity, -Infinity, null, undefined]) {
   assert.equal(sensorValueForDisplay("normal", value), null);
   assert.equal(formatSensorNumber(value), null);

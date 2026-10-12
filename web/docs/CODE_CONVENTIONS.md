@@ -29,11 +29,12 @@ flowchart LR
 | `app` → `components`, `lib` | O | — |
 | `components` → `lib` | O | `components` → `@/lib/supabase/*` |
 | `lib` → `lib` | O | `lib/**` → `@/components/*` |
-| `lib/domain` → | `lib/domain` · `lib/data`의 **타입만** | `react` · `next*` · `server-only` · `@/lib/supabase/*` · `@/lib/data/*` 값 · `@/components` · `@/app` |
+| `lib/domain` → | `lib/domain` 만 | `react` · `next*` · `server-only` · `@/lib/supabase/*` · `@/lib/data/*`(타입 포함) · `@/components` · `@/app` |
+
+공유 타입은 `lib/domain/*-types.ts`에 둔다 (`iot-types.ts` · `barn-meta-types.ts`). `lib/data/iot.ts`·`barn-meta.ts`는 호환용으로 같은 이름을 재export하므로 기존 `@/lib/data/iot` 타입 import는 그대로 동작한다. **신규 코드는 `@/lib/domain/iot-types`를 직접 import**한다.
 
 알려진 예외(추후 정리 대상, §6):
 - `lib/**` → `@/app/**/actions` server action import 6건 (`lib/push`, `lib/navigation`, `lib/farm/fetch-farm-panel-enrich`, `lib/auth/native-oauth` 등). 규칙으로 막지 않았다.
-- `lib/domain` 다수가 `@/lib/data/iot`의 **타입**(`BarnReading` 등)을 import. 타입 전용이라 런타임 영향은 없으나 `iot.ts` 타입 분리 후 금지로 전환한다.
 
 ---
 
@@ -107,7 +108,7 @@ GitHub Actions(`.github/workflows/web-verify.yml`)와 GitLab CI가 동일 단계
 
 | 항목 | 이유 | 완료 조건 |
 |------|------|-----------|
-| `lib/data/iot.ts` 타입(`BarnReading`·`ControllerStatus` 등) → `lib/domain/iot-types.ts` | domain → data 타입 의존 제거 · 74 fan-in 모듈 축소 | `allowTypeImports` 제거 후 lint 통과 |
+| ~~`lib/data/iot.ts` 타입 → `lib/domain/iot-types.ts`~~ | 완료 (P2-0, 2026-10-11). `iot.ts` 446→214줄 | — |
 | `lib/**` → `@/app/**/actions` 6건 | lib가 라우팅 레이어를 모르게 | action 호출을 호출측(components/app)에서 주입하거나 `lib/actions`로 이동 |
 | 500 LOC+ 핫스팟 분해 | §4 | `trend-chart.tsx` · `unified-barn-trend-*` · `farm-page-content.tsx` |
 | vitest 도입 | coverage · watch | 패키지 추가 승인 필요 |
@@ -119,3 +120,4 @@ GitHub Actions(`.github/workflows/web-verify.yml`)와 GitLab CI가 동일 단계
 | 날짜 | 내용 |
 |------|------|
 | 2026-10-11 | 초안 — P1: `lib/domain` 분리(38+15 test) · 피처 hook `components/`로 · `lib/data/browser` · ESLint 경계 규칙 |
+| 2026-10-11 | P2-0: `iot-types.ts` · `barn-meta-types.ts` 분리, domain → data 타입 import 금지로 전환 |

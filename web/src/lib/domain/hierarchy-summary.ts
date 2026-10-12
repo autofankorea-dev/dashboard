@@ -1,5 +1,5 @@
 import type { AlarmRow } from "@/lib/domain/alarms";
-import type { BarnReading, ControllerStatus } from "@/lib/data/iot";
+import type { BarnReading, ControllerStatus } from "@/lib/domain/iot-types";
 import { sensorValueForDisplay } from "@/lib/domain/reading-display";
 
 function avg(nums: number[]): number | null {

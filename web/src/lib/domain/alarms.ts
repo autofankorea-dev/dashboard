@@ -1,5 +1,5 @@
 import { deviceAlarmThresholds } from "./device-alarm-thresholds";
-import type { BarnReading, ControllerStatus } from "@/lib/data/iot";
+import type { BarnReading, ControllerStatus } from "@/lib/domain/iot-types";
 import type { FarmKey } from "@/lib/domain/farm-key";
 import { appendFarmKeyParams } from "@/lib/domain/farm-key";
 import { buildControllerHref } from "@/lib/auth/farm-access";

@@ -1,4 +1,4 @@
-import type { ControllerStatus } from "@/lib/data/iot";
+import type { ControllerStatus } from "@/lib/domain/iot-types";
 
 /** 수신 신선도 임계(분) — 이 이하면 normal */
 export const RECV_NORMAL_MIN = 15;

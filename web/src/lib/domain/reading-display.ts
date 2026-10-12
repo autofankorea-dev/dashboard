@@ -1,4 +1,4 @@
-import type { ControllerReading, ControllerStatus } from "@/lib/data/iot";
+import type { ControllerReading, ControllerStatus } from "@/lib/domain/iot-types";
 
 export function isReadingOnline(status: ControllerStatus | undefined): boolean {
   return !!status && status !== "offline";

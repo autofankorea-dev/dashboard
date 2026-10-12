@@ -5,7 +5,7 @@ import {
   stallTyCodeSortKey,
 } from "@/lib/domain/stall-type";
 import { farmKeyId } from "@/lib/domain/farm-key";
-import type { BarnReading } from "@/lib/data/iot";
+import type { BarnReading } from "@/lib/domain/iot-types";
 
 export function stallKeyFromReading(r: {
   stallNo: string | null;
