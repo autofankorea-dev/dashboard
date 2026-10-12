@@ -208,6 +208,13 @@ export {
   paddedExtentDomain,
   finiteExtent,
   fitTempDisplayDomain,
+} from "./unified-barn-trend-layout";
+export type {
+  SplitYLayout,
+  SplitYVisibility,
+  TempBrokenAxisPlotZones,
+} from "./unified-barn-trend-layout";
+export {
   DEFAULT_UNIFIED_LAYERS,
   ALL_UNIFIED_LAYERS,
   needsHumidityBand,
@@ -233,15 +240,12 @@ export {
   visibilityForYBand,
   maskLayersForYBands,
   maskLayersForYBand,
-} from "./unified-barn-trend-layout";
+} from "./unified-trend-y-bands";
 export type {
-  SplitYLayout,
-  SplitYVisibility,
   UnifiedLayerId,
   UnifiedLayerFlags,
   UnifiedYBandId,
-  TempBrokenAxisPlotZones,
-} from "./unified-barn-trend-layout";
+} from "./unified-trend-y-bands";
 
 export {
   OVERFLOW_FIT_MIN_PAD_C,
