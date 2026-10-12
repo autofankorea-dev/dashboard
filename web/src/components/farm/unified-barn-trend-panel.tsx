@@ -29,14 +29,11 @@ import {
   DEFAULT_ALARM_SETTINGS,
 } from "@/lib/domain/alarms";
 import type { BarnReading } from "@/lib/data/iot";
-import { normalizeStallTyCode } from "@/lib/domain/stall-type";
 import {
-  emptyTrendControllerPeriodData,
   isContextControllerTrend30d,
   pickTrendCanvasPeriod,
   controllerTrendPeriodHasSeries,
   type TrendControllerPeriodData,
-  type TrendControllerSeries,
   type TrendPeriodId,
   type TrendWindow15m,
 } from "@/lib/domain/farm-trend-types";
@@ -44,13 +41,16 @@ import {
   type UplinkCoverageIndex,
 } from "@/lib/farm/trend-uplink-coverage";
 import {
-  applyCoverageToWindow,
   buildTrendBrushOverview,
   downsampleSeriesForChart,
-  mapIndexWindowToSlice,
-  sliceControllerSeries,
 } from "@/components/farm/unified-barn-trend-panel-helpers";
 import { buildUnifiedBarnTrendWindow } from "@/components/farm/unified-barn-trend-window";
+import { rebuildScopedUnifiedBarnTrend } from "@/components/farm/unified-barn-trend-scoped";
+import {
+  buildGuidedScopePlayback,
+  resolveGuidedScopePlayback,
+  type GuidedXScopeGesture,
+} from "@/components/farm/unified-barn-trend-guided-scope";
 import { buildUnifiedCommandSettingSegs } from "@/components/farm/unified-barn-trend-command-overlay";
 import {
   resolveXScopeRangeMs,
@@ -60,11 +60,7 @@ import {
 import {
   window15mCovers,
 } from "@/lib/farm/trend-brush-coverage";
-import {
-  findControllerTrendSeries,
-  formatControllerHeaderPrimary,
-  formatControllerHeaderSecondary,
-} from "@/lib/farm/controller-summary-display";
+import { findControllerTrendSeries } from "@/lib/farm/controller-summary-display";
 import { UnifiedBarnTrendPanelHeader } from "@/components/farm/unified-barn-trend-panel-header";
 import type { UnifiedBarnTrendControllerRef } from "@/components/farm/unified-barn-trend-scope-marks";
 import {
@@ -75,8 +71,6 @@ import {
   scopesEqual,
 } from "@/lib/farm/farm-chart-scope";
 import type { ControllerThermoSettings } from "@/lib/controllers/controller-settings";
-import { sliceControllerTrendByTime } from "@/lib/domain/trend-period-slice";
-import { sliceFanControlWindows } from "@/lib/farm/channel-thermo";
 import {
   DEFAULT_COMMAND_CHANNEL_FLAGS,
   toggleCommandChannelFlag,
@@ -97,7 +91,6 @@ import {
   andSplitYVisibility,
   pickUnifiedTrendLayers,
   resolveUnifiedPlotLayout,
-  sliceUnifiedTrendByIndex,
   splitYVisibilityFromLayers,
   countSplitYBands,
   hitSplitYBand,
@@ -167,18 +160,7 @@ type Props = {
    * 구간 안내 — 실제 X스코프 UI로 클릭→드래그→커밋 시연.
    * token 증가 시 재생. CSS 오버레이 아님.
    */
-  guidedXScopeGesture?: {
-    token: number;
-    startRatio: number;
-    endRatio: number;
-    startIndex?: number;
-    endIndex?: number;
-    /** plot 상단=0 · 하단=1. yStart/yEnd 미지정 시 온도 레인 직사각형 */
-    yRatio?: number;
-    yStartRatio?: number;
-    yEndRatio?: number;
-    durationMs?: number;
-  } | null;
+  guidedXScopeGesture?: GuidedXScopeGesture | null;
   onGuidedXScopeComplete?: () => void;
   /** 조회 전용(뷰어)이면 알람 편집 비활성 */
   canCommand?: boolean;
@@ -714,133 +696,23 @@ export function UnifiedBarnTrendPanel({
   }, [effectiveZoom, comparisonZoom, picked, period, bumpScopeMotion]);
 
   const scoped = useMemo(() => {
-    if (!picked) return null;
-    if (!xScope) {
-      return {
-        categories: picked.categories,
-        series: picked.series,
-        envelopes: picked.envelopes,
-        histograms: picked.histograms,
-        tempDomain: picked.tempDomain,
-        tempOverflowDomain: picked.tempOverflowDomain,
-        thermoWindows: trendRaw?.thermoWindows ?? null,
-      };
-    }
-
-    const buildScopedFromSeries = (
-      seriesList: TrendControllerSeries[],
-      cats: string[],
-    ) => {
-      if (cats.length < 2 || seriesList.length < 1) return null;
-      const down = comparisonActive ? { seriesList, categories: cats } : downsampleSeriesForChart(seriesList, cats, plotWidthPx);
-      const raw = aggregateUnifiedBarnTrendRaw(
-        down.seriesList,
-        down.categories,
-        plotThresholds,
-        { includeThermo: chartScope.level === "controller" },
-      );
-      if (!raw) return null;
-      const builtScoped = mapUnifiedBarnTrendRawToSplitY(
-        raw,
-        layout,
-        undefined,
-        overlayAlign,
-      );
-      if (!builtScoped) return null;
-      const pickLayers = maskLayersForYBands(layers, xScope.yBands);
-      const pickedScoped = pickUnifiedTrendLayers(builtScoped, pickLayers);
-      return {
-        categories: builtScoped.categories,
-        series: pickedScoped.series,
-        envelopes: pickedScoped.envelopes,
-        histograms: pickedScoped.histograms,
-        tempDomain: builtScoped.tempDomain,
-        tempOverflowDomain: builtScoped.tempOverflowDomain,
-        thermoWindows: raw.thermoWindows,
-      };
-    };
-
-    if (
-      xScopeRangeMs &&
-      window15m &&
-      window15mCovers(window15m, xScopeRangeMs.fromMs, xScopeRangeMs.toMs)
-    ) {
-      const sliced =
-        sliceControllerTrendByTime(
-          window15m.data,
-          xScopeRangeMs.fromMs,
-          xScopeRangeMs.toMs,
-        ) ?? window15m.data;
-      const fake: Record<TrendPeriodId, TrendControllerPeriodData> = {
-        "24h": emptyTrendControllerPeriodData("24h"),
-        "7d": emptyTrendControllerPeriodData("7d"),
-        "30d": emptyTrendControllerPeriodData("30d"),
-        [sliced.period]: sliced,
-      };
-      const seriesList = controllers
-        .map((c) => {
-          const r = c.reading;
-          if (!r) return null;
-          const found = findControllerTrendSeries(
-            fake,
-            sliced.period,
-            r.stallTyCode,
-            r.stallNo,
-            r.controllerKey,
-          );
-          if (!found) return null;
-          return {
-            ...found,
-            zoneLabel: formatControllerHeaderPrimary(r),
-            equipmentLabel: formatControllerHeaderSecondary(r),
-            stallTyCode: r.stallTyCode
-              ? normalizeStallTyCode(r.stallTyCode)
-              : undefined,
-          };
-        })
-        .filter((s): s is NonNullable<typeof s> => s != null);
-      const covered = applyCoverageToWindow(
-        seriesList,
-        sliced.bucketAts,
-        uplinkCoverage,
-      );
-      const from15m = buildScopedFromSeries(covered, sliced.categories);
-      if (from15m) return from15m;
-    }
-
-    if (deferredWindowBundle) {
-      const slice = mapIndexWindowToSlice(
-        picked.categories.length,
-        xScope.start,
-        xScope.end,
-        deferredWindowBundle.categories.length,
-      );
-      const cats = deferredWindowBundle.categories.slice(slice.from, slice.to);
-      if (cats.length >= 2) {
-        const series = deferredWindowBundle.seriesList.map((s) =>
-          sliceControllerSeries(s, slice.from, slice.to),
-        );
-        const fromHour = buildScopedFromSeries(series, cats);
-        if (fromHour) return fromHour;
-      }
-    }
-    return {
-      ...sliceUnifiedTrendByIndex(
-        picked.categories,
-        picked,
-        xScope.start,
-        xScope.end,
-      ),
-      tempDomain: picked.tempDomain,
-      tempOverflowDomain: picked.tempOverflowDomain,
-      thermoWindows: trendRaw?.thermoWindows
-        ? sliceFanControlWindows(
-            trendRaw.thermoWindows,
-            xScope.start,
-            xScope.end + 1,
-          )
-        : null,
-    };
+    return rebuildScopedUnifiedBarnTrend({
+      picked,
+      xScope,
+      xScopeRangeMs,
+      window15m,
+      deferredWindowBundle,
+      controllers,
+      uplinkCoverage,
+      plotThresholds,
+      layout,
+      layers,
+      plotWidthPx,
+      chartScopeLevel: chartScope.level,
+      trendRaw,
+      overlayAlign,
+      comparisonActive,
+    });
   }, [
     picked,
     xScope,
@@ -1071,66 +943,12 @@ export function UnifiedBarnTrendPanel({
 
   const guidedScopeBase = useMemo(() => {
     if (!guidedXScopeGesture || !built) return null;
-    const domain = built.leftDomain;
-    const span = domain[1] - domain[0] || 1;
-    const bandH = Math.max(0, layerLayout.tempHi - layerLayout.tempLo);
-    /** 온도 레인 안 넉넉한 직사각형 — 가장자리 ~10% 여백 */
-    const inset = Math.max(bandH * 0.1, 1);
-    let domainYTop = layerLayout.tempHi - inset;
-    let domainYBot = layerLayout.tempLo + inset;
-    if (domainYTop < domainYBot) {
-      const mid = (layerLayout.tempLo + layerLayout.tempHi) / 2;
-      domainYTop = mid + bandH * 0.35;
-      domainYBot = mid - bandH * 0.35;
-    }
-    const toPlotRatio = (domainY: number) =>
-      Math.min(1, Math.max(0, (domain[1] - domainY) / span));
-
-    let y0: number;
-    let y1: number;
-    if (
-      guidedXScopeGesture.yStartRatio != null &&
-      guidedXScopeGesture.yEndRatio != null
-    ) {
-      y0 = Math.min(
-        guidedXScopeGesture.yStartRatio,
-        guidedXScopeGesture.yEndRatio,
-      );
-      y1 = Math.max(
-        guidedXScopeGesture.yStartRatio,
-        guidedXScopeGesture.yEndRatio,
-      );
-    } else if (guidedXScopeGesture.yRatio != null) {
-      const m = guidedXScopeGesture.yRatio;
-      y0 = Math.max(0, m - 0.08);
-      y1 = Math.min(1, m + 0.08);
-    } else {
-      y0 = toPlotRatio(domainYTop);
-      y1 = toPlotRatio(domainYBot);
-    }
-    if (y1 - y0 < 0.05) {
-      const mid = (y0 + y1) / 2;
-      y0 = Math.max(0, mid - 0.04);
-      y1 = Math.min(1, mid + 0.04);
-    }
-
-    const base: GuidedScopeRect = {
-      startRatio: guidedXScopeGesture.startRatio,
-      endRatio: guidedXScopeGesture.endRatio,
-      yStartRatio: y0,
-      yEndRatio: y1,
-      durationMs: guidedXScopeGesture.durationMs,
-    };
-
-    return {
-      token: guidedXScopeGesture.token,
-      startRatio: guidedXScopeGesture.startRatio,
-      endRatio: guidedXScopeGesture.endRatio,
-      startIndex: guidedXScopeGesture.startIndex,
-      endIndex: guidedXScopeGesture.endIndex,
-      durationMs: guidedXScopeGesture.durationMs,
-      base,
-    };
+    return buildGuidedScopePlayback({
+      gesture: guidedXScopeGesture,
+      leftDomain: built.leftDomain,
+      tempLo: layerLayout.tempLo,
+      tempHi: layerLayout.tempHi,
+    });
   }, [
     guidedXScopeGesture,
     built,
@@ -1162,18 +980,10 @@ export function UnifiedBarnTrendPanel({
     ) {
       return null;
     }
-    const human = guidedJitterCache.rect;
-    /** X는 초과 인덱스 기준 비율 고정(좌표 드리프트 방지). Y만 humanize */
-    return {
-      token: guidedScopeBase.token,
-      startRatio: guidedScopeBase.startRatio,
-      endRatio: guidedScopeBase.endRatio,
-      startIndex: guidedScopeBase.startIndex,
-      endIndex: guidedScopeBase.endIndex,
-      yStartRatio: human.yStartRatio,
-      yEndRatio: human.yEndRatio,
-      durationMs: human.durationMs ?? guidedScopeBase.durationMs,
-    };
+    return resolveGuidedScopePlayback(
+      guidedScopeBase,
+      guidedJitterCache.rect,
+    );
   }, [guidedScopeBase, guidedJitterCache]);
 
   /**
