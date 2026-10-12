@@ -5,14 +5,10 @@ import {
   useMemo,
   useState,
   useRef,
-  useLayoutEffect,
   useId,
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
-  type ReactNode,
 } from "react";
-import { Check, RotateCcw } from "lucide-react";
-import { AlarmDomainIcon } from "@/components/settings/alarm-domain-icon";
 import { cn } from "@/lib/utils";
 import {
   buildTrendAxisMarks,
@@ -23,12 +19,6 @@ import { motionClass } from "@/lib/ui/motion-classes";
 import { isPrimaryPress } from "@/lib/ui/pointer-press";
 import { useClipPresence, usePresenceValue } from "@/lib/ui/use-clip-presence";
 import { motionDuration } from "@/lib/ui/motion-tokens";
-import { CHANNEL_SLOT_LABELS } from "@/lib/domain/iot-channel";
-import {
-  COMMAND_SETTING_COLOR,
-  COMMAND_SETTING_DASH,
-  COMMAND_SETTING_FILL_OPACITY,
-} from "@/lib/farm/command-hold-bands";
 
 import type {
   TrendAxis,
@@ -49,17 +39,11 @@ import type {
   TrendCommandSettingSeg,
 } from "@/lib/domain/trend-chart-types";
 import {
-  type HoverMetricGroup,
   inferHoverMetricGroup,
   isOverlayMergedHoverGroup,
   resolveBreachNavTarget,
   TREND_Y_LABEL_CHIP_SAMPLE,
 } from "@/lib/farm/trend-chart-format";
-import {
-  OverlayMergedPointCards,
-  TrendPointCardBody,
-  TrendEventCardBody,
-} from "./trend-hover-card";
 import {
   PAD_TOP,
   PAD_BOTTOM,
@@ -68,11 +52,9 @@ import {
   SCALE_EDGE_LABEL_DRAG_PX,
   buildEnvelopePaths,
   buildLineSegments,
-  computeTipPlacement,
   domainFor,
   finiteValues,
   markerRadiusInViewUnits,
-  parseScaleEdgeValueUnit,
   tipPinId,
   trendChartHasRenderableContent,
   trendPlotPadPx,
@@ -108,6 +90,8 @@ import { useTrendPinWindowRemap } from "./use-trend-pin-window-remap";
 import { useTrendCrosshair } from "./use-trend-crosshair";
 import { useTrendScaleEdgeEdit } from "./use-trend-scale-edge-edit";
 import { useTrendEdgeBandLabels } from "./use-trend-edge-band-labels";
+import { useTrendHover } from "./use-trend-hover";
+import { TrendChartHoverCard } from "./trend-chart-hover-card";
 import { useTrendScopeGesture } from "./use-trend-scope-gesture";
 import {
   BandGuidesLayer,
@@ -122,6 +106,11 @@ import {
   EventLaneHtmlOverlay,
   EventLaneSvgGuides,
 } from "./trend-chart-event-lane";
+import { TrendChartLegend } from "./trend-chart-legend";
+import { TrendChartCrosshairChip } from "./trend-chart-crosshair-chip";
+import { TrendChartYAxis } from "./trend-chart-y-axis";
+import { TrendChartEdgeLabels } from "./trend-chart-edge-labels";
+import { TrendChartPinnedCards } from "./trend-chart-pinned-cards";
 import type { TrendChartProps } from "./trend-chart-props";
 
 export type {
@@ -145,39 +134,6 @@ export type {
 export type { TrendChartProps };
 
 
-
-function TrendYLabelChip({
-  text,
-  className,
-  mark,
-}: {
-  text: string;
-  className?: string;
-  mark?: "overline" | "underline";
-}) {
-  const sizer =
-    text.length > TREND_Y_LABEL_CHIP_SAMPLE.length
-      ? text
-      : TREND_Y_LABEL_CHIP_SAMPLE;
-  return (
-    <span
-      className={cn(
-        "relative inline-flex items-center justify-center rounded-sm bg-background/85 px-0.5 leading-none tabular-nums",
-        "border-y border-transparent pt-px pb-px",
-        mark === "overline" && "border-t-current",
-        mark === "underline" && "border-b-current",
-        className,
-      )}
-    >
-      <span className="invisible whitespace-nowrap" aria-hidden>
-        {sizer}
-      </span>
-      <span className="absolute inset-0 flex items-center justify-center whitespace-nowrap">
-        {text}
-      </span>
-    </span>
-  );
-}
 
 export function TrendChart({
   mode,
@@ -245,12 +201,22 @@ export function TrendChart({
   void tickEvery;
   const clipWipeEnabled = layerClipWipe ?? animate;
   /** 호버 — 인덱스 변경 시에만 setState (mousemove 전량 리렌더 방지) */
-  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
-  const [hoverSeries, setHoverSeries] = useState<string | null>(null);
-  const [hoverEventMark, setHoverEventMark] = useState<TrendEventMark | null>(
-    null,
-  );
-  const [plotHovering, setPlotHovering] = useState(false);
+  const {
+    hoverIdx,
+    setHoverIdx,
+    hoverSeries,
+    setHoverSeries,
+    hoverEventMark,
+    setHoverEventMark,
+    plotHovering,
+    setPlotHovering,
+    hoverIdxRef,
+    hoverSeriesRef,
+    hoverEventMarkRef,
+    tipRef,
+    lastAnchorRef,
+    placeTipNear,
+  } = useTrendHover();
   /** 고정 카드 실측 크기(px) — 배치·점선 앵커 정확도용 (id별) */
   const [pinCardSizes, setPinCardSizes] = useState<
     Record<string, { w: number; h: number }>
@@ -262,11 +228,6 @@ export function TrendChart({
     });
   /** 스케일 값 칩 hover → 해당 기준선 강조 + 나머지 dim */
   const [hoveredEdgeId, setHoveredEdgeId] = useState<string | null>(null);
-  const hoverIdxRef = useRef<number | null>(null);
-  const hoverSeriesRef = useRef<string | null>(null);
-  const hoverEventMarkRef = useRef<TrendEventMark | null>(null);
-  const tipRef = useRef<HTMLDivElement | null>(null);
-  const lastAnchorRef = useRef({ x: 0, y: 0, w: 1, h: 1 });
   const pinClickArmRef = useRef<{
     x: number;
     y: number;
@@ -460,29 +421,6 @@ export function TrendChart({
     crosshairValues,
     hoverActive: hoverIdx != null || Boolean(hoverEventMark),
   });
-
-  /** 데이터 점 근처 · 플롯 안 · 포인터/점을 가리지 않게 카드 배치 */
-  const placeTipNear = (
-    anchorX: number,
-    anchorY: number,
-    plotW: number,
-    plotH: number,
-  ) => {
-    const el = tipRef.current;
-    if (!el) return;
-    const tipW = el.offsetWidth || 168;
-    const tipH = el.offsetHeight || 72;
-    const { left, top } = computeTipPlacement(
-      anchorX,
-      anchorY,
-      plotW,
-      plotH,
-      tipW,
-      tipH,
-    );
-    el.style.transform = `translate(${left}px, ${top}px)`;
-    el.style.opacity = "1";
-  };
 
   /**
    * 표시 데이터 지점(시리즈 샘플 · 막대 · 히스토그램 끝)에만 히트.
@@ -1208,12 +1146,6 @@ export function TrendChart({
     setHoverEventMark(hit.eventMark ?? null);
   };
 
-  useLayoutEffect(() => {
-    if (hoverIdx == null && !hoverEventMark) return;
-    const a = lastAnchorRef.current;
-    placeTipNear(a.x, a.y, a.w, a.h);
-  }, [hoverIdx, hoverEventMark]);
-
   const markerStride =
     markerDensity === "sparse" ? Math.max(1, Math.ceil(n / 8)) : 1;
   const shouldShowMarker = (i: number) => {
@@ -1385,283 +1317,19 @@ export function TrendChart({
       )}
       data-trend-chart-root=""
     >
-      {showLegend || legendTrailing ? (
-      <div
-        className={cn(
-          "flex flex-wrap items-center gap-x-4 gap-y-1.5",
-          fillParent && "shrink-0",
-        )}
-        data-trend-chart-legend=""
-      >
-        {showLegend ? (() => {
-          type LegendItem = {
-            key: string;
-            group: HoverMetricGroup;
-            label: string;
-            node: ReactNode;
-          };
-          const items: LegendItem[] = [];
-
-          for (const s of series) {
-            if (
-              legendDensity !== "full" &&
-              s.name !== "온도" &&
-              s.name !== "습도"
-            ) {
-              continue;
-            }
-            items.push({
-              key: `s-${s.name}`,
-              group: inferHoverMetricGroup(s.name),
-              label: s.name,
-              node: (
-                <span className="inline-flex items-center gap-1 farm-chart-fs-legend text-muted-foreground">
-                  <span
-                    className="inline-block w-3 border-t-2"
-                    style={{
-                      borderColor: s.color,
-                      borderStyle: s.strokeDasharray
-                        ? s.strokeDasharray.startsWith("2")
-                          ? "dotted"
-                          : "dashed"
-                        : "solid",
-                    }}
-                    aria-hidden
-                  />
-                  {s.name}
-                  {(s.axis ?? "left") === "right" && usesRight ? (
-                    <span className="opacity-60">(우)</span>
-                  ) : null}
-                </span>
-              ),
-            });
-          }
-
-          if (positionedCommandHits.length > 0) {
-            const seen = new Set<string>();
-            for (const hit of positionedCommandHits) {
-              const ch = hit.seg.mark.hold?.channel;
-              if (!ch || seen.has(ch)) continue;
-              seen.add(ch);
-              const label = CHANNEL_SLOT_LABELS[ch];
-              const dash = COMMAND_SETTING_DASH[ch];
-              const fillOp = COMMAND_SETTING_FILL_OPACITY[ch];
-              items.push({
-                key: `cmd-set-${ch}`,
-                group: "temp",
-                label,
-                node: (
-                  <span className="inline-flex items-center gap-1 farm-chart-fs-legend text-muted-foreground">
-                    <span
-                      className="relative inline-flex h-2 w-3 items-center"
-                      aria-hidden
-                    >
-                      {fillOp > 0 ? (
-                        <span
-                          className="absolute inset-0 rounded-sm"
-                          style={{
-                            backgroundColor: COMMAND_SETTING_COLOR,
-                            opacity: fillOp * 2,
-                          }}
-                        />
-                      ) : null}
-                      <svg
-                        width="12"
-                        height="8"
-                        viewBox="0 0 12 8"
-                        className="relative"
-                      >
-                        <line
-                          x1="0.5"
-                          y1="4"
-                          x2="11.5"
-                          y2="4"
-                          stroke={COMMAND_SETTING_COLOR}
-                          strokeWidth="1.5"
-                          strokeDasharray={dash}
-                          opacity="0.85"
-                        />
-                      </svg>
-                    </span>
-                    {label}
-                  </span>
-                ),
-              });
-            }
-          }
-
-          if (legendDensity === "full") {
-            envelopes.forEach((env, idx) => {
-              if (!env.legendLabel) return;
-              items.push({
-                key: `env-${idx}`,
-                group: inferHoverMetricGroup(env.legendLabel),
-                label: env.legendLabel,
-                node: (
-                  <span className="inline-flex items-center gap-1 farm-chart-fs-legend text-muted-foreground">
-                    <span
-                      className="inline-block h-2 w-3 rounded-sm"
-                      style={{
-                        backgroundColor: env.fill,
-                        opacity: Math.min(1, (env.fillOpacity ?? 0.22) * 2),
-                      }}
-                      aria-hidden
-                    />
-                    {env.legendLabel}
-                  </span>
-                ),
-              });
-            });
-          }
-
-          histograms.forEach((h, idx) => {
-            if (!h.legendLabel) return;
-            if (
-              legendDensity !== "full" &&
-              h.legendLabel !== "모터"
-            ) {
-              return;
-            }
-            items.push({
-              key: `hist-${idx}`,
-              group: inferHoverMetricGroup(h.legendLabel),
-              label: h.legendLabel,
-              node: (
-                <span className="inline-flex items-center gap-1 farm-chart-fs-legend text-muted-foreground">
-                  {h.style === "volume" ? (
-                    <span
-                      className="inline-block h-2 w-3 rounded-sm"
-                      style={{ backgroundColor: h.colorUp, opacity: 0.85 }}
-                      aria-hidden
-                    />
-                  ) : (
-                    <span
-                      className="inline-flex h-2 w-3 overflow-hidden rounded-sm"
-                      aria-hidden
-                    >
-                      <span
-                        className="h-full w-1/2"
-                        style={{ backgroundColor: h.colorUp }}
-                      />
-                      <span
-                        className="h-full w-1/2"
-                        style={{ backgroundColor: h.colorDown }}
-                      />
-                    </span>
-                  )}
-                  {h.legendLabel}
-                </span>
-              ),
-            });
-          });
-
-          const GROUP_ORDER: HoverMetricGroup[] = ["temp", "hum", "motor"];
-          const GROUP_ARIA: Record<HoverMetricGroup, string> = {
-            temp: "온도",
-            hum: "습도",
-            motor: "모터",
-          };
-          /** 그룹 안 표시 순서 */
-          const LABEL_RANK: Record<HoverMetricGroup, string[]> = {
-            temp: [
-              "온도",
-              CHANNEL_SLOT_LABELS.A,
-              CHANNEL_SLOT_LABELS.B,
-              CHANNEL_SLOT_LABELS.C,
-              "온도 추세",
-              "온도 산포",
-              "온도 편차",
-            ],
-            hum: [
-              "습도",
-              "습도 추세",
-              "습도 산포",
-              "습도 편차",
-              "습도 상한 접촉",
-              "습도 하한 접촉",
-            ],
-            motor: [
-              "모터",
-              CHANNEL_SLOT_LABELS.A,
-              CHANNEL_SLOT_LABELS.B,
-              CHANNEL_SLOT_LABELS.C,
-            ],
-          };
-          const rank = (group: HoverMetricGroup, label: string) => {
-            const i = LABEL_RANK[group].indexOf(label);
-            return i >= 0 ? i : 50;
-          };
-
-          const coverageLegend = [
-            { kind: "sparse" as const, label: "희소", fill: "var(--status-warn)", opacity: 0.55 },
-            { kind: "offline" as const, label: "통신두절", fill: "var(--status-danger)", opacity: 0.55 },
-            { kind: "void" as const, label: "없음", fill: "currentColor", opacity: 0.35 },
-          ].filter((item) => coverageBands.some((b) => b.kind === item.kind));
-
-          return (
-            <>
-              {GROUP_ORDER.map((group) => {
-            const groupItems = items
-              .filter((it) => it.group === group)
-              .sort(
-                (a, b) =>
-                  rank(group, a.label) - rank(group, b.label) ||
-                  a.label.localeCompare(b.label, "ko"),
-              );
-            if (groupItems.length === 0) return null;
-            return (
-              <div
-                key={group}
-                role="group"
-                aria-label={GROUP_ARIA[group]}
-                className="inline-flex flex-wrap items-center gap-x-2.5 gap-y-1"
-                data-legend-group={group}
-              >
-                {groupItems.map((it) => (
-                  <Fragment key={it.key}>{it.node}</Fragment>
-                ))}
-              </div>
-            );
-              })}
-              {eventLane?.statsLine ? (
-                <div className="basis-full w-full min-w-0">
-                  <span className="inline-flex items-center farm-chart-fs-legend tabular-nums text-muted-foreground">
-                    {eventLane.label} · {eventLane.statsLine}
-                  </span>
-                </div>
-              ) : null}
-              {coverageLegend.length > 0 ? (
-                <div
-                  role="group"
-                  aria-label="수신 상태"
-                  className="inline-flex flex-wrap items-center gap-x-2.5 gap-y-1"
-                >
-                  {coverageLegend.map((item) => (
-                    <span
-                      key={item.kind}
-                      className="inline-flex items-center gap-1 farm-chart-fs-legend text-muted-foreground"
-                    >
-                      <span
-                        className="inline-block h-2 w-3 rounded-sm"
-                        style={{
-                          backgroundColor: item.fill,
-                          opacity: item.opacity,
-                        }}
-                        aria-hidden
-                      />
-                      {item.label}
-                    </span>
-                  ))}
-                </div>
-              ) : null}
-            </>
-          );
-        })() : null}
-        {legendTrailing ? (
-          <div className="ml-auto min-w-0 shrink-0">{legendTrailing}</div>
-        ) : null}
-      </div>
-      ) : null}
+      <TrendChartLegend
+        showLegend={showLegend}
+        legendTrailing={legendTrailing}
+        fillParent={fillParent}
+        legendDensity={legendDensity}
+        series={series}
+        usesRight={usesRight}
+        positionedCommandHits={positionedCommandHits}
+        envelopes={envelopes}
+        histograms={histograms}
+        coverageBands={coverageBands}
+        eventLane={eventLane}
+      />
 
       <div
         className={cn("min-w-0", fillParent && "flex min-h-0 flex-1 flex-col")}
@@ -1935,28 +1603,14 @@ export function TrendChart({
         })()}
       </svg>
 
-      <div
-        ref={crossChipRef}
-        className={cn(
-          "pointer-events-none absolute z-[5] whitespace-nowrap rounded-sm border border-border/70 bg-background/90 px-1.5 py-0.5 farm-chart-fs-axis tabular-nums",
-          motionClass.farmChartCrosshair,
-        )}
-        style={{
-          opacity: 0,
-          left: 0,
-          top: 0,
-          transform: "translate(calc(-100% - 8px), -50%)",
-        }}
-        aria-hidden
-      >
-        <span className="inline-flex items-center gap-1.5">
-          <span ref={crossChipTimeRef} className="text-foreground" />
-          <span ref={crossChipTempRef} className="text-channel-temp" />
-          <span ref={crossChipHumRef} className="text-channel-hum" />
-          <span ref={crossChipMotorRef} className="text-channel-motor" />
-          <span ref={crossChipOtherRef} className="text-foreground" />
-        </span>
-      </div>
+      <TrendChartCrosshairChip
+        chipRef={crossChipRef}
+        timeRef={crossChipTimeRef}
+        tempRef={crossChipTempRef}
+        humRef={crossChipHumRef}
+        motorRef={crossChipMotorRef}
+        otherRef={crossChipOtherRef}
+      />
 
       {eventLane && eventLaneH > 0 ? (
         <EventLaneHtmlOverlay
@@ -2234,593 +1888,76 @@ export function TrendChart({
           })
         : null}
 
-      {yGutterStartCaption && !hideAxisChrome ? (
-        <span
-          className={cn(
-            "pointer-events-none absolute left-1 top-0.5 z-[2] farm-chart-fs-axis font-medium leading-none text-muted-foreground",
-            "transition-opacity duration-motion-fast",
-            dimPlotValues && "opacity-30",
-          )}
-        >
-          {yGutterStartCaption}
-        </span>
-      ) : null}
-      {yGutterEndCaption && !hideAxisChrome ? (
-        <span
-          className={cn(
-            "pointer-events-none absolute right-1 top-0.5 z-[2] farm-chart-fs-axis font-medium leading-none text-muted-foreground",
-            "transition-opacity duration-motion-fast",
-            dimPlotValues && "opacity-30",
-          )}
-        >
-          {yGutterEndCaption}
-        </span>
-      ) : null}
+      <TrendChartYAxis
+        yGutterStartCaption={yGutterStartCaption}
+        yGutterEndCaption={yGutterEndCaption}
+        hideAxisChrome={hideAxisChrome}
+        dimPlotValues={dimPlotValues}
+        leftAxisTicks={leftAxisTicks}
+        labelGutter={labelGutter}
+        yLabelColumn={yLabelColumn}
+      />
 
-      {leftAxisTicks.map((tick) => (
-        <span
-          key={tick.id}
-          className={cn(
-            "pointer-events-none absolute left-1 z-[1] -translate-y-1/2 leading-none text-muted-foreground",
-            labelGutter ? "farm-chart-fs-legend font-medium" : "farm-chart-fs-axis",
-            "transition-opacity duration-motion-fast",
-            dimPlotValues && "opacity-30",
-          )}
-          style={{ top: `${tick.topPct}%` }}
-          aria-hidden
-        >
-          <TrendYLabelChip
-            text={tick.text}
-            className={
-              labelGutter && !yLabelColumn
-                ? "min-h-7 px-1.5 py-1 farm-chart-fs-legend font-medium"
-                : "farm-chart-fs-axis"
-            }
-          />
-        </span>
-      ))}
+      <TrendChartEdgeLabels
+        hoveredEdgePresence={hoveredEdgePresence}
+        edgeBandLabels={edgeBandLabels}
+        edgeEdit={edgeEdit}
+        setEdgeEdit={setEdgeEdit}
+        onScaleEdgeApply={onScaleEdgeApply}
+        onScaleEdgeRevert={onScaleEdgeRevert}
+        labelGutter={labelGutter}
+        onScaleEdgeDrag={onScaleEdgeDrag}
+        yLabelColumn={yLabelColumn}
+        hoveredEdgeId={hoveredEdgeId}
+        setHoveredEdgeId={setHoveredEdgeId}
+        dimPlotValues={dimPlotValues}
+        edgeDragId={edgeDragId}
+        clearHover={clearHover}
+        scaleEdgeLabels={scaleEdgeLabels}
+        plotRef={plotRef}
+        labelDragArmRef={labelDragArmRef}
+        onScaleEdgeNumericCommit={onScaleEdgeNumericCommit}
+        beginScaleEdgeEdit={beginScaleEdgeEdit}
+        edgeValueMaxCh={edgeValueMaxCh}
+        commitScaleEdgeEdit={commitScaleEdgeEdit}
+        cancelScaleEdgeEdit={cancelScaleEdgeEdit}
+        scaleEdgeApplyBusy={scaleEdgeApplyBusy}
+        scaleEdgeApplyDisabled={scaleEdgeApplyDisabled}
+      />
 
-      {hoveredEdgePresence.mounted && hoveredEdgePresence.value ? (
-        <div
-          className={cn(
-            "pointer-events-none absolute inset-x-0 z-[4] -translate-y-1/2",
-            chartTipPresenceClass(hoveredEdgePresence.phase),
-          )}
-          style={{ top: `${hoveredEdgePresence.value.topPct}%` }}
-          aria-hidden
-        >
-          <div
-            className="h-[1.5px] w-full rounded-full"
-            style={{
-              background: hoveredEdgePresence.value.color,
-              boxShadow: `0 0 3px 0.5px ${hoveredEdgePresence.value.color}`,
-              opacity: 0.8,
-            }}
-          />
-        </div>
-      ) : null}
+      <TrendChartPinnedCards
+        pinPresence={pinPresence}
+        n={n}
+        plotPx={plotPx}
+        pinCardSizes={pinCardSizes}
+        setPinCardSizes={setPinCardSizes}
+        plotRef={plotRef}
+        bringPinToFront={bringPinToFront}
+        pinCardDragRef={pinCardDragRef}
+        setPinnedTips={setPinnedTips}
+        overlayHoverMerge={overlayHoverMerge}
+        categories={categories}
+        series={series}
+        envelopes={envelopes}
+        histograms={histograms}
+        leftUnit={leftUnit}
+        rightUnit={rightUnit}
+        onBreachEquipmentNavigate={onBreachEquipmentNavigate}
+      />
 
-      {edgeBandLabels.map((label) => {
-        const editing = edgeEdit?.id === label.id;
-        const showActions =
-          Boolean(label.showApplyActions) &&
-          (onScaleEdgeApply != null || onScaleEdgeRevert != null);
-        const alarmIconDomain =
-          label.labelIcon === "temp-alarm"
-            ? "temp"
-            : label.labelIcon === "hum-alarm"
-              ? "humidity"
-              : null;
-        const valueText = alarmIconDomain ? (
-          <AlarmDomainIcon
-            domain={alarmIconDomain}
-            sizeClass={labelGutter ? "size-4" : "size-3.5"}
-          />
-        ) : (
-          <TrendYLabelChip
-            text={label.text}
-            mark={!editing ? label.mark : undefined}
-            className={
-              labelGutter
-                ? "min-h-7 px-1.5 py-1 text-xs font-semibold"
-                : "farm-chart-fs-axis"
-            }
-          />
-        );
-        return (
-          <span
-            key={label.id}
-            className={cn(
-              "absolute z-[2] -translate-y-1/2 leading-none tabular-nums",
-              labelGutter ? "text-xs font-semibold" : "farm-chart-fs-axis",
-              showActions && "inline-flex items-center gap-0.5 pr-0",
-              (editing || Boolean(label.leadingText) || Boolean(label.labelIcon)) &&
-                "inline-flex items-center gap-1 whitespace-nowrap",
-              Boolean(label.leadingText) &&
-                !editing &&
-                "shadow-sm ring-1 ring-current/20",
-              Boolean(label.labelIcon) &&
-                !editing &&
-                "rounded-md bg-card/85 px-0.5 py-0.5",
-              label.draggable && !editing
-                ? onScaleEdgeDrag
-                  ? "pointer-events-auto cursor-ns-resize select-none"
-                  : "pointer-events-auto cursor-text select-none"
-                : "pointer-events-auto",
-              "transition-opacity duration-motion-fast",
-              hoveredEdgeId != null &&
-                hoveredEdgeId !== label.id &&
-                "opacity-45",
-              dimPlotValues && "opacity-30",
-              hoveredEdgeId === label.id && "z-[6] font-semibold",
-              label.side === "left" && "left-1 text-left",
-              /** 설정 명칭 단독(레거시) — 수치 칩 바로 왼쪽 */
-              label.side === "plotStart" &&
-                "left-1/2 z-[3] -translate-x-[calc(100%+0.35rem)] text-right font-medium",
-              /** 설정 수치 — 플롯 중앙 (leadingText 있으면 명칭+수치) */
-              label.side === "center" &&
-                "left-1/2 z-[3] -translate-x-1/2 text-center",
-              /** 모바일 거터 — 우측 단일 열(큰 칩). PC 위젯은 플롯 밖 칸 */
-              label.side === "right" &&
-                yLabelColumn &&
-                "right-1 z-[3] whitespace-nowrap",
-              label.side === "right" &&
-                labelGutter &&
-                "right-1 max-w-[6.5rem] text-center",
-              label.side === "right" &&
-                !labelGutter &&
-                !yLabelColumn &&
-                label.labelLane === "inner" &&
-                !showActions &&
-                "right-11 text-center",
-              label.side === "right" &&
-                !labelGutter &&
-                !yLabelColumn &&
-                label.labelLane === "inner" &&
-                showActions &&
-                "right-1 text-center",
-              label.side === "right" &&
-                !labelGutter &&
-                !yLabelColumn &&
-                label.labelLane !== "inner" &&
-                "right-0.5 text-center",
-              edgeDragId === label.id &&
-                (labelGutter ||
-                label.side === "center" ||
-                label.side === "plotStart"
-                  ? "min-h-9 text-sm ring-2 ring-current/45"
-                  : "ring-1 ring-current/40"),
-            )}
-            style={{ top: `${label.topPct}%`, color: label.color }}
-            title={
-              label.draggable
-                ? onScaleEdgeDrag
-                  ? `${label.title} ${label.text} · 드래그 조절 · 더블클릭(PC)·더블탭(모바일)·우클릭 숫자 입력`
-                  : `${label.title} ${label.text} · 클릭·더블클릭·우클릭으로 숫자 입력`
-                : `${label.title}${label.labelIcon ? ` ${label.text}` : ""}`
-            }
-            aria-label={
-              label.labelIcon
-                ? `${label.title} ${label.text}`
-                : undefined
-            }
-            onPointerEnter={() => {
-              clearHover();
-              setHoveredEdgeId(label.id);
-            }}
-            onPointerLeave={() =>
-              setHoveredEdgeId((cur) => (cur === label.id ? null : cur))
-            }
-            onPointerDown={
-              label.draggable && !editing
-                ? (e) => {
-                    if (!isPrimaryPress(e) || !plotRef.current) return;
-                    e.stopPropagation();
-                    const guide = scaleEdgeLabels.find((g) => g.id === label.id);
-                    if (!guide?.draggable) return;
-                    if (!onScaleEdgeDrag) return;
-                    e.preventDefault();
-                    plotRef.current.setPointerCapture(e.pointerId);
-                    labelDragArmRef.current = {
-                      id: guide.id,
-                      axis: guide.axis ?? "left",
-                      value: guide.value,
-                      x: e.clientX,
-                      y: e.clientY,
-                      pointerId: e.pointerId,
-                      pointerType: e.pointerType,
-                    };
-                    clearHover();
-                    setHoveredEdgeId(null);
-                  }
-                : undefined
-            }
-            onClick={
-              label.draggable && !editing && onScaleEdgeNumericCommit
-                ? (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    beginScaleEdgeEdit(label.id);
-                  }
-                : undefined
-            }
-            onDoubleClick={
-              label.draggable && onScaleEdgeNumericCommit
-                ? (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    beginScaleEdgeEdit(label.id);
-                  }
-                : undefined
-            }
-            onContextMenu={
-              label.draggable && onScaleEdgeNumericCommit
-                ? (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    beginScaleEdgeEdit(label.id);
-                  }
-                : undefined
-            }
-          >
-            {editing ? (
-              <>
-                {label.leadingText ? (
-                  <span className="font-medium not-italic tracking-tight">
-                    {label.leadingText}
-                  </span>
-                ) : null}
-                <input
-                  autoFocus
-                  type="text"
-                  inputMode="decimal"
-                  aria-label={`${label.title} 숫자 입력`}
-                  className={cn(
-                    "rounded-sm border border-current/40 bg-background text-center tabular-nums outline-none select-text",
-                    labelGutter
-                      ? "h-7 w-14 px-1 text-xs font-semibold"
-                      : "h-4 w-10 px-0.5 farm-chart-fs-axis",
-                  )}
-                  style={{
-                    color: label.color,
-                    minWidth: `${edgeValueMaxCh}ch`,
-                  }}
-                  value={edgeEdit.text}
-                  onChange={(e) =>
-                    setEdgeEdit({ id: label.id, text: e.target.value })
-                  }
-                  onFocus={(e) => e.currentTarget.select()}
-                  onBlur={() => commitScaleEdgeEdit()}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      commitScaleEdgeEdit();
-                    } else if (e.key === "Escape") {
-                      e.preventDefault();
-                      cancelScaleEdgeEdit();
-                    }
-                  }}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={(e) => e.stopPropagation()}
-                />
-                {parseScaleEdgeValueUnit(label.text) ? (
-                  <span className="tabular-nums">
-                    {parseScaleEdgeValueUnit(label.text)}
-                  </span>
-                ) : null}
-              </>
-            ) : label.leadingText ? (
-              <>
-                <span className="font-medium not-italic tracking-tight">
-                  {label.leadingText}
-                </span>
-                {valueText}
-              </>
-            ) : (
-              valueText
-            )}
-            {showActions ? (
-              <span
-                className="ml-0.5 inline-flex items-center gap-0.5"
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={(e) => e.stopPropagation()}
-              >
-                {onScaleEdgeApply ? (
-                  <button
-                    type="button"
-                    aria-label="설정값 적용"
-                    title="적용 (명령 전송)"
-                    disabled={scaleEdgeApplyBusy || scaleEdgeApplyDisabled}
-                    className={cn(
-                      "inline-flex size-5 items-center justify-center rounded border border-current/35 bg-background/95",
-                      "hover:bg-current/10 disabled:opacity-40",
-                    )}
-                    onPointerDown={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      if (scaleEdgeApplyBusy || scaleEdgeApplyDisabled) return;
-                      onScaleEdgeApply();
-                    }}
-                  >
-                    <Check className="size-3" strokeWidth={2.5} aria-hidden />
-                  </button>
-                ) : null}
-                {onScaleEdgeRevert ? (
-                  <button
-                    type="button"
-                    aria-label="설정값 되돌리기"
-                    title="되돌리기"
-                    disabled={scaleEdgeApplyBusy}
-                    className={cn(
-                      "inline-flex size-5 items-center justify-center rounded border border-current/35 bg-background/95",
-                      "hover:bg-current/10 disabled:opacity-40",
-                    )}
-                    onPointerDown={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      if (scaleEdgeApplyBusy) return;
-                      onScaleEdgeRevert();
-                    }}
-                  >
-                    <RotateCcw className="size-3" strokeWidth={2.5} aria-hidden />
-                  </button>
-                ) : null}
-              </span>
-            ) : null}
-          </span>
-        );
-      })}
-
-      {pinPresence.length > 0 ? (
-        <svg
-          className="pointer-events-none absolute inset-0 z-[15] h-full w-full overflow-visible"
-          aria-hidden
-        >
-          {pinPresence.map(({ item: pin, key, phase }) => {
-            if (!pin.eventMark && (pin.idx < 0 || pin.idx >= n)) return null;
-            const plotW = plotPx.w || 1;
-            const plotH = plotPx.h || 1;
-            const anchorX = pin.nx * plotW;
-            const anchorY = pin.ny * plotH;
-            const tipW = pinCardSizes[pin.id]?.w ?? 168;
-            const tipH = pinCardSizes[pin.id]?.h ?? 88;
-            const base = computeTipPlacement(
-              anchorX,
-              anchorY,
-              plotW,
-              plotH,
-              tipW,
-              tipH,
-            );
-            const left = base.left + pin.ox;
-            const top = base.top + pin.oy;
-            // 앵커에서 카드 사각형에 가장 가까운 경계점 → 배치 방향과 무관하게
-            // 점선이 항상 카드 모서리에 닿는다.
-            const attachX = Math.min(Math.max(anchorX, left), left + tipW);
-            const attachY = Math.min(Math.max(anchorY, top), top + tipH);
-            const eventStroke =
-              pin.eventMark?.tone === "ok"
-                ? "var(--status-ok)"
-                : "var(--channel-command)";
-            return (
-              <g
-                key={`pin-link-${key}`}
-                className={chartTipPresenceClass(phase)}
-              >
-                {pin.eventMark ? (
-                  <>
-                    <ellipse
-                      cx={anchorX}
-                      cy={anchorY}
-                      rx={10}
-                      ry={10}
-                      fill="none"
-                      stroke={eventStroke}
-                      strokeWidth={1.35}
-                      opacity={0.95}
-                    />
-                    <ellipse
-                      cx={anchorX}
-                      cy={anchorY}
-                      rx={5}
-                      ry={5}
-                      fill={eventStroke}
-                      opacity={0.9}
-                    />
-                  </>
-                ) : null}
-                <line
-                  x1={anchorX}
-                  y1={anchorY}
-                  x2={attachX}
-                  y2={attachY}
-                  className="stroke-foreground/55"
-                  strokeWidth={1.5}
-                  strokeDasharray="5 4"
-                />
-              </g>
-            );
-          })}
-        </svg>
-      ) : null}
-
-      {pinPresence.map(({ item: pin, key, phase }, pinOrd) => {
-        if (!pin.eventMark && (pin.idx < 0 || pin.idx >= n)) return null;
-        const plotW = plotPx.w || 1;
-        const plotH = plotPx.h || 1;
-        const anchorX = pin.nx * plotW;
-        const anchorY = pin.ny * plotH;
-        const tipW = pinCardSizes[pin.id]?.w ?? 168;
-        const tipH = pinCardSizes[pin.id]?.h ?? 88;
-        const base = computeTipPlacement(
-          anchorX,
-          anchorY,
-          plotW,
-          plotH,
-          tipW,
-          tipH,
-        );
-        const left = base.left + pin.ox;
-        const top = base.top + pin.oy;
-        return (
-          <div
-            key={key}
-            ref={(el) => {
-              if (!el) return;
-              const w = el.offsetWidth;
-              const h = el.offsetHeight;
-              if (w <= 0 || h <= 0) return;
-              setPinCardSizes((prev) => {
-                const cur = prev[pin.id];
-                if (cur && cur.w === w && cur.h === h) return prev;
-                return { ...prev, [pin.id]: { w, h } };
-              });
-            }}
-            className={cn(
-              "pointer-events-auto absolute w-max max-w-[16rem] cursor-grab touch-none select-none active:cursor-grabbing",
-              chartTipPresenceClass(phase),
-            )}
-            style={{ left, top, zIndex: 20 + pinOrd }}
-            data-tour-id="trend-chart-pinned-card"
-            data-pin-id={pin.id}
-            aria-label="데이터 카드 · 드래그로 이동, 우클릭으로 닫기"
-            title="드래그로 이동 · 우클릭으로 닫기"
-            onPointerDown={(e) => {
-              e.stopPropagation();
-              bringPinToFront(pin.id);
-              // 카드 본문 아무 곳이나 잡아 드래그(핸들바 없이). 내부 버튼/입력은 제외.
-              if (!isPrimaryPress(e) || !plotRef.current) return;
-              const target = e.target as HTMLElement | null;
-              if (target?.closest("button, a, input, select, textarea")) return;
-              e.preventDefault();
-              plotRef.current.setPointerCapture(e.pointerId);
-              pinCardDragRef.current = {
-                id: pin.id,
-                pointerId: e.pointerId,
-                startX: e.clientX,
-                startY: e.clientY,
-                origOx: pin.ox,
-                origOy: pin.oy,
-              };
-            }}
-            onContextMenu={(e) => {
-              // 카드 위 우클릭 = 닫기 (위치 이동에도 카드 자체에 붙어 따라감)
-              e.preventDefault();
-              e.stopPropagation();
-              setPinnedTips((prev) => prev.filter((p) => p.id !== pin.id));
-            }}
-          >
-            <div className="overflow-hidden rounded-md border border-border/80 bg-popover/95 text-popover-foreground shadow-lg backdrop-blur-sm">
-              <div className="px-2.5 py-1.5">
-                {pin.eventMark ? (
-                  <TrendEventCardBody mark={pin.eventMark} />
-                ) : overlayHoverMerge &&
-                  isOverlayMergedHoverGroup(
-                    inferHoverMetricGroup(pin.seriesKey),
-                  ) ? (
-                  <OverlayMergedPointCards
-                    idx={pin.idx}
-                    categories={categories}
-                    series={series}
-                    envelopes={envelopes}
-                    histograms={histograms}
-                    leftUnit={leftUnit}
-                    rightUnit={rightUnit}
-                    onBreachEquipmentNavigate={onBreachEquipmentNavigate}
-                  />
-                ) : (
-                  <TrendPointCardBody
-                    idx={pin.idx}
-                    seriesKey={pin.seriesKey}
-                    categories={categories}
-                    series={series}
-                    envelopes={envelopes}
-                    histograms={histograms}
-                    leftUnit={leftUnit}
-                    rightUnit={rightUnit}
-                    onBreachEquipmentNavigate={onBreachEquipmentNavigate}
-                  />
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      })}
-
-      {hoverCardPresence.mounted && hoverCardPresence.value ? (
-        <div
-          ref={tipRef}
-          className="pointer-events-none absolute left-0 top-0 z-10 w-max max-w-[16rem]"
-          style={{ opacity: 0, willChange: "transform" }}
-          aria-live="polite"
-          data-tour-id="trend-chart-hover-card"
-        >
-          <div
-            className={cn(
-              "rounded-md border border-border/80 bg-popover/95 px-2.5 py-1.5 text-popover-foreground shadow-lg backdrop-blur-sm",
-              chartTipPresenceClass(hoverCardPresence.phase),
-            )}
-          >
-            {hoverCardPresence.value.kind === "event" ? (
-              <TrendEventCardBody mark={hoverCardPresence.value.mark} />
-            ) : (
-              <>
-                {(() => {
-                  const idx = hoverCardPresence.value.idx;
-                  const band = coverageBands.find(
-                    (b) => idx >= b.i0 && idx <= b.i1,
-                  );
-                  return band ? (
-                    <p className="mb-1 farm-chart-fs-legend text-muted-foreground">
-                      {band.label}
-                    </p>
-                  ) : null;
-                })()}
-                {(() => {
-                  const card = hoverCardPresence.value;
-                  if (card.kind !== "point") return null;
-                  const hg = inferHoverMetricGroup(card.seriesKey);
-                  if (overlayHoverMerge && isOverlayMergedHoverGroup(hg)) {
-                    return (
-                      <OverlayMergedPointCards
-                        idx={card.idx}
-                        categories={categories}
-                        series={series}
-                        envelopes={envelopes}
-                        histograms={histograms}
-                        leftUnit={leftUnit}
-                        rightUnit={rightUnit}
-                        onBreachEquipmentNavigate={onBreachEquipmentNavigate}
-                      />
-                    );
-                  }
-                  return (
-                    <TrendPointCardBody
-                      idx={card.idx}
-                      seriesKey={card.seriesKey}
-                      categories={categories}
-                      series={series}
-                      envelopes={envelopes}
-                      histograms={histograms}
-                      leftUnit={leftUnit}
-                      rightUnit={rightUnit}
-                      onBreachEquipmentNavigate={onBreachEquipmentNavigate}
-                    />
-                  );
-                })()}
-              </>
-            )}
-          </div>
-        </div>
-      ) : null}
+      <TrendChartHoverCard
+        presence={hoverCardPresence}
+        tipRef={tipRef}
+        coverageBands={coverageBands}
+        overlayHoverMerge={overlayHoverMerge}
+        categories={categories}
+        series={series}
+        envelopes={envelopes}
+        histograms={histograms}
+        leftUnit={leftUnit}
+        rightUnit={rightUnit}
+        onBreachEquipmentNavigate={onBreachEquipmentNavigate}
+      />
       </div>
       </div>
 
