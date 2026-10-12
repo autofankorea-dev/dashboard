@@ -10,6 +10,6 @@ npm run dev                  # http://localhost:3000
 npm test && npm run verify:design && npm run build
 ```
 
-배포 기준: [`docs/CLOUD_DEPLOY.md`](docs/CLOUD_DEPLOY.md) (`commit → push → main → Vercel`)
+배포·운영: [`docs/OPS.md`](docs/OPS.md) (`commit → push → main → Vercel`)
 
-Android 푸시(Capacitor+FCM): [`docs/android-push.md`](docs/android-push.md)
+Android: [`docs/ANDROID.md`](docs/ANDROID.md)
