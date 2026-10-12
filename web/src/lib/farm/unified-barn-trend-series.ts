@@ -252,9 +252,7 @@ export {
   SPLIT_Y_TEMP_EDGE_PAD_C,
   SPLIT_Y_TEMP_OVERFLOW_MIN_C,
   alarmEdgeDomain,
-  buildSplitYBandScaleTicks,
   denormalizeFromAlarmRange,
-  fitOverflowValueDomain,
   humidityAlarmMidpoint,
   mapEnvAbsToSplitY,
   mapHumDeviationToSplitY,
@@ -263,9 +261,7 @@ export {
   mapTempCToSplitY,
   mapTempDeviationToSplitY,
   normalizeToAlarmRange,
-  overflowExtentAbove,
   paddedAlarmDomain,
-  resolveTempOverflowFitDomain,
   resolveUnifiedPlotLayout,
   tempAlarmMidpoint,
   unmapHumPctFromSplitY,
@@ -273,10 +269,18 @@ export {
   unmapTempCFromSplitY,
 } from "./unified-trend-split-y";
 export type {
-  SplitYBandScaleTick,
   TempBandAnchor,
   UnifiedPlotLayoutSpec,
 } from "./unified-trend-split-y";
+export {
+  fitOverflowValueDomain,
+  overflowExtentAbove,
+  resolveTempOverflowFitDomain,
+} from "./unified-trend-split-y-overflow";
+export {
+  buildSplitYBandScaleTicks,
+} from "./unified-trend-split-y-ticks";
+export type { SplitYBandScaleTick } from "./unified-trend-split-y-ticks";
 
 export {
   aggregateUnifiedBarnTrendRaw,

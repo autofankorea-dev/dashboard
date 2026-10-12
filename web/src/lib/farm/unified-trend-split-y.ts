@@ -3,6 +3,8 @@
  *
  * `unified-barn-trend-series.ts`에서 분리(동작 보존).
  * 레이아웃 기하와 집계·시리즈 조립을 모른다.
+ * 이탈 스케일은 `unified-trend-split-y-overflow.ts`, 밴드 눈금은
+ * `unified-trend-split-y-ticks.ts`에 둔다.
  * 공개 이름은 배럴이 다시 내보내 기존 import 경로를 유지한다.
  */
 import type { AlarmThresholds } from "@/lib/domain/alarms";
@@ -373,7 +375,7 @@ function tempBrokenMappingActive(
   return domain[1] > linearHi + 1e-6;
 }
 
-function resolveTempBrokenMappingDomain(
+export function resolveTempBrokenMappingDomain(
   tempLow: number,
   tempHigh: number,
   dataHi: number,
@@ -386,62 +388,6 @@ function resolveTempBrokenMappingDomain(
   return [linear[0], overflowHi];
 }
 
-/** 기준(선형) 밖 실측 min–max + 여유. 위칸만 이 폭으로 채움. */
-export function fitOverflowValueDomain(
-  min: number,
-  max: number,
-): [number, number] {
-  const lo = Math.min(min, max);
-  const hi = Math.max(min, max);
-  const span = Math.max(hi - lo, OVERFLOW_FIT_MIN_PAD_C * 2);
-  const pad = Math.max(OVERFLOW_FIT_MIN_PAD_C, span * OVERFLOW_FIT_PAD_RATIO);
-  return [lo - pad, hi + pad];
-}
-
-export function overflowExtentAbove(
-  columns: readonly (readonly (number | null | undefined)[])[],
-  linearHi: number,
-): { min: number; max: number } | null {
-  let min = Infinity;
-  let max = -Infinity;
-  for (const col of columns) {
-    for (const v of col) {
-      if (v == null || !Number.isFinite(v) || !(v > linearHi)) continue;
-      if (v < min) min = v;
-      if (v > max) max = v;
-    }
-  }
-  if (!Number.isFinite(min) || !Number.isFinite(max)) return null;
-  return { min, max };
-}
-
-export function resolveTempOverflowFitDomain(
-  tempLow: number,
-  tempHigh: number,
-  columns: readonly (readonly (number | null | undefined)[])[],
-): [number, number] | null {
-  const [, linearHi] = tempBrokenLinearEdge(tempLow, tempHigh);
-  const ext = overflowExtentAbove(columns, linearHi);
-  if (!ext) return null;
-  return fitOverflowValueDomain(ext.min, ext.max);
-}
-
-/** 온도 실측 열. 집계 타입에 묶지 않아 모듈 순환을 피한다. */
-export function tempRawOverflowColumns(raw: {
-  tempAvg: readonly (number | null | undefined)[];
-  tempMin: readonly (number | null | undefined)[];
-  tempMax: readonly (number | null | undefined)[];
-  emaShortRaw: readonly (number | null | undefined)[];
-  emaLongRaw: readonly (number | null | undefined)[];
-}): (readonly (number | null | undefined)[])[] {
-  return [
-    raw.tempAvg,
-    raw.tempMin,
-    raw.tempMax,
-    raw.emaShortRaw,
-    raw.emaLongRaw,
-  ];
-}
 
 /** 온도 밴드 Y → ℃ (드래그 시작 시 고정 도메인 기준) */
 export function unmapTempCFromSplitY(
@@ -538,106 +484,6 @@ export function unmapMotorPctFromSplitY(
   return unmapFromValueBand(splitY, 0, 100, layout.motorLo, layout.motorHi);
 }
 
-function alarmMidValue(lo: number, hi: number): number | null {
-  if (!(Number.isFinite(lo) && Number.isFinite(hi))) return null;
-  return (lo + hi) / 2;
-}
-
-export type SplitYBandScaleTick = {
-  id: string;
-  chartY: number;
-  value: number;
-  unit: "℃" | "%";
-};
-
-/**
- * 분리 밴드 왼쪽 눈금 — 기본은 온·습·모터 상·하한의 중간값.
- * 기준 띠가 있는 패널은 온·습 기준 중간값을 건너뛰고 현장 알람 평균을 둔다.
- * 오버레이에서는 왼쪽 눈금을 그리지 않는다.
- */
-export function buildSplitYBandScaleTicks(opts: {
-  layout: SplitYLayout;
-  showTemp: boolean;
-  showHum: boolean;
-  showMotors: boolean;
-  overlay?: boolean;
-  tempLow: number;
-  tempHigh: number;
-  humidityLow: number;
-  humidityHigh: number;
-}): SplitYBandScaleTick[] {
-  if (opts.overlay) return [];
-  const out: SplitYBandScaleTick[] = [];
-  const { layout } = opts;
-  if (opts.showTemp && layout.tempHi > layout.tempLo) {
-    const mid = alarmMidValue(opts.tempLow, opts.tempHigh);
-    const domain = tempBrokenAxisPlotZones(layout)
-      ? resolveTempBrokenMappingDomain(
-          opts.tempLow,
-          opts.tempHigh,
-          opts.tempHigh + SPLIT_Y_TEMP_EDGE_PAD_C,
-        )
-      : alarmEdgeDomain(
-          opts.tempLow,
-          opts.tempHigh,
-          SPLIT_Y_TEMP_EDGE_PAD_C,
-        );
-    if (mid != null && domain[1] > domain[0]) {
-      const y = mapTempCToSplitY(
-        mid,
-        opts.tempLow,
-        opts.tempHigh,
-        layout,
-        domain,
-      );
-      if (y != null && Number.isFinite(y)) {
-        out.push({
-          id: "band-tick-temp-mid",
-          chartY: y,
-          value: mid,
-          unit: "℃",
-        });
-      }
-    }
-  }
-  if (opts.showHum && layout.humHi > layout.humLo) {
-    const mid = alarmMidValue(opts.humidityLow, opts.humidityHigh);
-    const domain = alarmEdgeDomain(
-      opts.humidityLow,
-      opts.humidityHigh,
-      SPLIT_Y_HUM_EDGE_PAD_PCT,
-    );
-    if (mid != null && domain[1] > domain[0]) {
-      const y = mapHumPctToSplitY(
-        mid,
-        opts.humidityLow,
-        opts.humidityHigh,
-        layout,
-        domain,
-      );
-      if (y != null && Number.isFinite(y)) {
-        out.push({
-          id: "band-tick-hum-mid",
-          chartY: y,
-          value: mid,
-          unit: "%",
-        });
-      }
-    }
-  }
-  if (opts.showMotors && layout.motorHi > layout.motorLo) {
-    const y = mapMotorPctToSplitY(50, layout);
-    if (y != null && Number.isFinite(y)) {
-      out.push({
-        id: "band-tick-motor-mid",
-        chartY: y,
-        value: 50,
-        unit: "%",
-      });
-    }
-  }
-  return out;
-}
 
 /** 습도% → 습도 밴드 (알람±여유 또는 오버레이 정렬 앵커) */
 export function mapHumPctToSplitY(

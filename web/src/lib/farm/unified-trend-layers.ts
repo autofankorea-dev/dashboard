@@ -20,7 +20,7 @@ import type {
 import {
   resolveTempOverflowFitDomain,
   tempRawOverflowColumns,
-} from "./unified-trend-split-y";
+} from "./unified-trend-split-y-overflow";
 import type { TempBandAnchor } from "./unified-trend-split-y";
 import { aggregateUnifiedBarnTrendRaw } from "./unified-trend-raw";
 import type { UnifiedBarnTrendRaw } from "./unified-trend-raw";

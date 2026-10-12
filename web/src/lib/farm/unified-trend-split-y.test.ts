@@ -5,8 +5,8 @@
  */
 import assert from "node:assert/strict";
 import { resolveSplitYLayout } from "./unified-barn-trend-layout";
+import { fitOverflowValueDomain } from "./unified-trend-split-y-overflow";
 import {
-  fitOverflowValueDomain,
   mapHumPctToSplitY,
   mapMotorPctToSplitY,
   mapTempCToSplitY,
