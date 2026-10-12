@@ -1,14 +1,10 @@
 "use client";
 
 import { useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
-import { PanelRight } from "lucide-react";
 import {
   TrendChart,
   type TrendCommandSettingSeg,
-  type TrendRangeBand,
-  type TrendScaleEdgeLabel,
 } from "@/components/trends/trend-chart";
-import { formatTrendBandEdge } from "@/lib/farm/trend-chart-format";
 import {
   BRUSH_PERIOD_WINDOW,
   UnifiedTrendPeriodBrush,
@@ -58,10 +54,6 @@ import {
   buildTrendBrushOverview,
   controllerWindowHasValues,
   downsampleSeriesForChart,
-  FARM_ALARM_RANGE_FILL,
-  FARM_ALARM_RANGE_FILL_OPACITY,
-  FARM_ALARM_RANGE_TEMP_OVERLAY_OPACITY,
-  farmAlarmMidValue,
   mapIndexWindowToSlice,
   sliceControllerSeries,
 } from "@/components/farm/unified-barn-trend-panel-helpers";
@@ -72,12 +64,9 @@ import {
   findControllerTrendSeries,
   formatControllerHeaderPrimary,
   formatControllerHeaderSecondary,
-  formatControllerHeaderStallType,
 } from "@/lib/farm/controller-summary-display";
-import {
-  ControllerAffiliationMarks,
-  StallUnitNoMark,
-} from "@/components/farm/controller-summary-parts";
+import { UnifiedBarnTrendPanelHeader } from "@/components/farm/unified-barn-trend-panel-header";
+import type { UnifiedBarnTrendControllerRef } from "@/components/farm/unified-barn-trend-scope-marks";
 import {
   alarmScopeKeyFromFarmChartScope,
   chartScopeEntryToZoomHint,
@@ -97,24 +86,22 @@ import {
   toggleCommandChannelFlag,
   type CommandChannelFlags,
 } from "@/lib/farm/command-hold-bands";
+import { buildFarmTrendScaleEdges } from "@/components/farm/unified-barn-trend-scale-edges";
 import {
   tickEveryForDisplayBars,
   formatTrendScopeRangeLabel,
   parseCategoryTimelineMs,
 } from "@/lib/farm/trend-display-buckets";
-import { TREND_CHART_COLORS } from "@/lib/farm/trend-chart-series";
 import {
   aggregateUnifiedBarnTrendRaw,
   DEFAULT_UNIFIED_LAYERS,
   mapMotorPctToSplitY,
   mapTempCToSplitY,
-  tempBrokenAxisPlotZones,
   mapUnifiedBarnTrendRawToSplitY,
   overlayControllerMetricSeries,
   replaceAverageMetricSeries,
   metricAvailabilityFromSeriesList,
   andSplitYVisibility,
-  buildSplitYBandScaleTicks,
   pickUnifiedTrendLayers,
   resolveUnifiedPlotLayout,
   sliceUnifiedTrendByIndex,
@@ -141,7 +128,7 @@ import {
   humanizeGuidedScopeRect,
   type GuidedScopeRect,
 } from "@/lib/ui/guided-scope-jitter";
-import { dashboardChroma, dashboardControlFill, dashboardUi } from "@/lib/ui/dashboard-page-ui";
+import { dashboardChroma, dashboardUi } from "@/lib/ui/dashboard-page-ui";
 import {
   chartUiPx,
   farmChartUi,
@@ -151,10 +138,7 @@ import { cn } from "@/lib/utils";
 
 const emptySubscribe = () => () => {};
 
-export type UnifiedBarnTrendControllerRef = {
-  key: string;
-  reading: BarnReading | null;
-};
+export type { UnifiedBarnTrendControllerRef };
 
 type ScopeEntry = {
   start: number;
@@ -162,61 +146,6 @@ type ScopeEntry = {
   /** null = Y필터 없음 · ["temp","hum"] = 걸린 밴드만 */
   yBands: UnifiedYBandId[] | null;
 };
-
-/** 모바일 차트 대상 — 축사유형 + 축사/컨트롤러 아이콘·번호 */
-function ChartScopeTargetMarks({
-  chartScope,
-  controllers,
-  fallbackLabel,
-  typeClassName,
-}: {
-  chartScope: FarmChartScope;
-  controllers: UnifiedBarnTrendControllerRef[];
-  fallbackLabel: string;
-  typeClassName?: string;
-}) {
-  if (chartScope.level === "farm") {
-    return fallbackLabel;
-  }
-
-  const typeLabel = formatControllerHeaderStallType({
-    stallTyCode: chartScope.stallTyCode,
-  });
-
-  if (chartScope.level === "sp") {
-    return <span className={cn("break-keep", typeClassName)}>{typeLabel}</span>;
-  }
-
-  const stallNo = chartScope.stallNo.startsWith("__")
-    ? null
-    : chartScope.stallNo;
-
-  const controllerReading =
-    chartScope.level === "controller"
-      ? (controllers.find((c) => c.key === chartScope.controllerKey)?.reading ??
-        controllers[0]?.reading)
-      : controllers.length === 1
-        ? controllers[0]?.reading
-        : null;
-
-  if (controllerReading) {
-    return (
-      <ControllerAffiliationMarks
-        stallTyCode={chartScope.stallTyCode}
-        stallNo={stallNo ?? controllerReading.stallNo}
-        eqpmnNo={controllerReading.eqpmnNo}
-        typeClassName={typeClassName}
-      />
-    );
-  }
-
-  return (
-    <span className="inline-flex min-w-0 items-center gap-1.5">
-      <span className={cn("break-keep", typeClassName)}>{typeLabel}</span>
-      <StallUnitNoMark stallNo={stallNo} />
-    </span>
-  );
-}
 
 const EMPTY_CHART_CATEGORIES: string[] = [];
 
@@ -1456,258 +1385,41 @@ export function UnifiedBarnTrendPanel({
       : null;
 
   /** 현재 장비 경보 상·하한과 실측 축 눈금. */
-  const { scaleEdgeLabels, alarmRangeBands } = useMemo((): {
-    scaleEdgeLabels: TrendScaleEdgeLabel[];
-    alarmRangeBands: TrendRangeBand[];
-  } => {
-    if (!built) return { scaleEdgeLabels: [], alarmRangeBands: [] };
-    const out: TrendScaleEdgeLabel[] = [];
-    const rangeBands: TrendRangeBand[] = [];
-    const mapLo = plotThresholds.tempLow;
-    const mapHi = plotThresholds.tempHigh;
-    const mapHumLo = plotThresholds.humidityLow;
-    const mapHumHi = plotThresholds.humidityHigh;
-    const guideEditEnabled = alarmEditEnabled;
-    const farmAlarmEditEnabled = alarmEditEnabled;
-    const tempHiTitle = "현재 장비 고온 경보";
-    const tempLoTitle = "현재 장비 저온 경보";
-    const push = (
-      id: string,
-      chartY: number | null,
-      text: string,
-      color: string,
-      mark: "overline" | "underline" | undefined,
-      title: string,
-      showLine: boolean,
-      draggable = false,
-      editValue?: number,
-      opts?: {
-        side?: "left" | "right" | "center" | "plotStart";
-        leadingText?: string;
-        labelLane?: "outer" | "inner";
-        lineStrokeWidth?: number;
-        lineDasharray?: string;
-        lineHighlight?: boolean;
-        showApplyActions?: boolean;
-        hideLabel?: boolean;
-        labelIcon?: "temp-alarm" | "hum-alarm";
-      },
-    ) => {
-      if (chartY == null || !Number.isFinite(chartY)) return;
-      out.push({
-        id,
-        value: chartY,
-        axis: "left",
-        side: opts?.side ?? "right",
-        text,
-        leadingText: opts?.leadingText,
-        color,
-        mark,
-        title,
-        showLine,
-        draggable,
-        editValue,
-        labelLane: opts?.labelLane,
-        lineStrokeWidth: opts?.lineStrokeWidth,
-        lineDasharray: opts?.lineDasharray,
-        lineHighlight: opts?.lineHighlight,
-        showApplyActions: opts?.showApplyActions,
-        hideLabel: opts?.hideLabel,
-        labelIcon: opts?.labelIcon,
-      });
-    };
-
-    if (Number.isFinite(mappingThresholds.tempLow) && scopeVisibility.showTemp && layers.temp && built.available.temp) {
-      push(
-        "temp-hi",
-        mapTempCToSplitY(
-          plotThresholds.tempHigh,
-          mapLo,
-          mapHi,
-          tempMapLayout,
-          overlayAlign ? undefined : tempMapDomain,
-          overlayAlign,
-          tempMapOverflow,
-        ),
-        formatTrendBandEdge(plotThresholds.tempHigh, "℃"),
-        TREND_CHART_COLORS.temp,
-        "overline",
-        tempHiTitle,
-        true,
-        guideEditEnabled,
-        plotThresholds.tempHigh,
-        {
-          lineStrokeWidth: 1.45,
-          lineDasharray: "2 2",
-          lineHighlight: true,
-        },
-      );
-      push(
-        "temp-lo",
-        mapTempCToSplitY(
-          plotThresholds.tempLow,
-          mapLo,
-          mapHi,
-          tempMapLayout,
-          overlayAlign ? undefined : tempMapDomain,
-          overlayAlign,
-          tempMapOverflow,
-        ),
-        formatTrendBandEdge(plotThresholds.tempLow, "℃"),
-        TREND_CHART_COLORS.temp,
-        "underline",
-        tempLoTitle,
-        true,
-        guideEditEnabled,
-        plotThresholds.tempLow,
-        {
-          lineStrokeWidth: 1.45,
-          lineDasharray: "2 2",
-          lineHighlight: true,
-        },
-      );
-      const breakZones = tempBrokenAxisPlotZones(tempMapLayout);
-      if (breakZones) {
-        push(
-          "temp-break",
-          breakZones.breakY,
-          "",
-          "var(--border)",
-          undefined,
-          "경보 구간 위",
-          true,
-          false,
-          undefined,
-          {
-            hideLabel: true,
-            lineStrokeWidth: 1,
-            lineDasharray: "2 4",
-          },
-        );
-      }
-    }
-    {
-      const tempFarmLayout = overlayAlign ? layout : tempMapLayout;
-      const tempFarmDomain = overlayAlign ? undefined : tempMapDomain;
-      if (
-        alarmRangeOn.temp &&
-        scopeVisibility.showTemp &&
-        layers.temp &&
-        built.available.temp
-      ) {
-        const tempFarmHiY = mapTempCToSplitY(
-          mappingThresholds.tempHigh,
-          mapLo,
-          mapHi,
-          tempFarmLayout,
-          tempFarmDomain,
-          overlayAlign,
-          tempMapOverflow,
-        );
-        const tempFarmLoY = mapTempCToSplitY(
-          mappingThresholds.tempLow,
-          mapLo,
-          mapHi,
-          tempFarmLayout,
-          tempFarmDomain,
-          overlayAlign,
-          tempMapOverflow,
-        );
-        const tempFarmMid = farmAlarmMidValue(
-          mappingThresholds.tempLow,
-          mappingThresholds.tempHigh,
-        );
-        if (tempFarmMid != null) {
-          push(
-            "temp-farm-mid",
-            mapTempCToSplitY(
-              tempFarmMid,
-              mapLo,
-              mapHi,
-              tempFarmLayout,
-              tempFarmDomain,
-              overlayAlign,
-              tempMapOverflow,
-            ),
-            formatTrendBandEdge(tempFarmMid, "℃"),
-            TREND_CHART_COLORS.temp,
-            undefined,
-            "현재 장비 경보 기준",
-            false,
-            farmAlarmEditEnabled,
-            tempFarmMid,
-            { side: "left", labelIcon: "temp-alarm" },
-          );
-        }
-        if (
-          tempFarmHiY != null &&
-          Number.isFinite(tempFarmHiY) &&
-          tempFarmLoY != null &&
-          Number.isFinite(tempFarmLoY)
-        ) {
-          rangeBands.push({
-            id: "temp-farm-range",
-            lo: tempFarmLoY,
-            hi: tempFarmHiY,
-            axis: "left",
-            color: overlayAlign
-              ? TREND_CHART_COLORS.temp
-              : FARM_ALARM_RANGE_FILL,
-            fillOpacity: overlayAlign
-              ? FARM_ALARM_RANGE_TEMP_OVERLAY_OPACITY
-              : FARM_ALARM_RANGE_FILL_OPACITY,
-          });
-        }
-      }
-    }
-    if (!chartLeftUnit) {
-      const ticks = buildSplitYBandScaleTicks({
+  const { scaleEdgeLabels, alarmRangeBands } = useMemo(
+    () =>
+      buildFarmTrendScaleEdges({
+        built,
+        layers,
+        plotThresholds,
+        mappingThresholds,
         layout,
-        showTemp: Boolean(
-          scopeVisibility.showTemp && layers.temp && built.available.temp,
-        ),
-        showHum: Boolean(
-          scopeVisibility.showHum &&
-            (layers.hum || layers.humDev || layers.humBand || layers.humEma),
-        ),
-        showMotors: Boolean(
-          scopeVisibility.showMotors && (layers.motors || layers.motorCh),
-        ),
-        overlay: overlayActive,
-        tempLow: mapLo,
-        tempHigh: mapHi,
-        humidityLow: mapHumLo,
-        humidityHigh: mapHumHi,
-      });
-      for (const tick of ticks) {
-        // The device midpoint is already labeled by temp-farm-mid. Other ticks are measured-axis labels.
-        if (tick.id === "band-tick-temp-mid" && alarmRangeOn.temp &&
-            Number.isFinite(mappingThresholds.tempLow) && Number.isFinite(mappingThresholds.tempHigh)) continue;
-        push(
-          tick.id, tick.chartY, formatTrendBandEdge(tick.value, tick.unit),
-          "var(--muted-foreground)", undefined, "눈금", true, false, undefined,
-          { side: "left", lineStrokeWidth: 0.35, lineDasharray: "solid", lineHighlight: false },
-        );
-      }
-    }
-    return { scaleEdgeLabels: out, alarmRangeBands: rangeBands };
-  }, [
-    built,
-    layers,
-    plotThresholds,
-    mappingThresholds,
-    layout,
-    scopeVisibility,
-    alarmEditEnabled,
-    tempMapLayout,
-    tempMapDomain,
-    tempMapOverflow,
-    chartLeftUnit,
-    overlayActive,
-    overlayAlign,
-    alarmRangeOn,
-  ]);
-
+        scopeVisibility,
+        alarmEditEnabled,
+        tempMapLayout,
+        tempMapDomain,
+        tempMapOverflow,
+        chartLeftUnit,
+        overlayActive,
+        overlayAlign,
+        alarmRangeOn,
+      }),
+    [
+      built,
+      layers,
+      plotThresholds,
+      mappingThresholds,
+      layout,
+      scopeVisibility,
+      alarmEditEnabled,
+      tempMapLayout,
+      tempMapDomain,
+      tempMapOverflow,
+      chartLeftUnit,
+      overlayActive,
+      overlayAlign,
+      alarmRangeOn,
+    ],
+  );
   const cycleGroupLayers = (group: "temp" | "hum" | "motor") => {
     if (!built || sharedLayers) return;
     setOwnedLayers((prev) => {
@@ -1762,44 +1474,6 @@ export function UnifiedBarnTrendPanel({
       </div>
     ) : null;
 
-  const renderHeaderTrailing = (opts?: { spacer?: boolean }) => (
-    <div
-      className={cn(
-        "flex shrink-0 items-center justify-end gap-1",
-        opts?.spacer && "invisible pointer-events-none",
-      )}
-      aria-hidden={opts?.spacer || undefined}
-    >
-      {isMobileStack && mobileScopeHandle ? (
-        <button
-          type="button"
-          tabIndex={opts?.spacer ? -1 : undefined}
-          className={cn(
-            "inline-flex shrink-0 items-center justify-center rounded-md border px-2.5 py-1.5",
-            farmChartUi.fsBody,
-            dashboardControlFill.idle,
-            motionClass.microHover,
-          )}
-          data-tour-id={opts?.spacer ? undefined : "farm-chart-scope-handle"}
-          aria-label={`집계 범위 열기 · ${label}`}
-          title={label}
-          aria-expanded={mobileScopeHandle.open}
-          onClick={opts?.spacer ? undefined : mobileScopeHandle.onOpen}
-        >
-          <PanelRight className="size-[1em] shrink-0" aria-hidden />
-        </button>
-      ) : null}
-      {opts?.spacer ? (
-        headerActions ? <div className="size-8" /> : null
-      ) : (
-        headerActions
-      )}
-    </div>
-  );
-  const hasHeaderTrailing = Boolean(
-    headerActions || (isMobileStack && mobileScopeHandle),
-  );
-
   const focusBandActive = isSingleYBandFocus(xScope?.yBands)
     ? xScope.yBands[0]
     : null;
@@ -1845,77 +1519,18 @@ export function UnifiedBarnTrendPanel({
           : "false"
       }
     >
-      {headingMode === "overview" ? (
-        <div className="flex h-7 min-w-0 shrink-0 items-center px-2">
-          <span
-            className="inline-flex min-w-0 items-center truncate text-xs font-medium"
-            title={label}
-          >
-            <ChartScopeTargetMarks
-              chartScope={chartScope}
-              controllers={controllers}
-              fallbackLabel={label}
-              typeClassName="text-xs font-medium"
-            />
-          </span>
-        </div>
-      ) : headingMode === "widget" ? (
-        <div
-          className={cn(
-            "grid w-full min-w-0 shrink-0 grid-cols-[auto_minmax(0,1fr)_auto] items-center",
-            isMobileStack ? "min-h-11 px-3 pt-2.5 pb-1" : "h-11 px-2",
-          )}
-        >
-          <div className="invisible pointer-events-none" aria-hidden>
-            {hasHeaderTrailing ? renderHeaderTrailing({ spacer: true }) : null}
-          </div>
-          <div className="flex min-w-0 items-center justify-center gap-2">
-            <div
-              className="flex min-w-0 items-center gap-2 overflow-hidden"
-              title={label}
-            >
-              <span
-                className={cn(
-                  "inline-flex min-w-0 items-center truncate font-semibold",
-                  farmChartUi.fsTitle,
-                )}
-              >
-                <ChartScopeTargetMarks
-                  chartScope={chartScope}
-                  controllers={controllers}
-                  fallbackLabel={label}
-                  typeClassName={cn("font-semibold", farmChartUi.fsTitle)}
-                />
-              </span>
-            </div>
-            {layerToolbar}
-          </div>
-          {hasHeaderTrailing ? renderHeaderTrailing() : <span />}
-        </div>
-      ) : (
-        <div className="flex w-full shrink-0 flex-col items-stretch gap-1 sm:flex-row sm:items-center sm:gap-2">
-          <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-2">
-            <span className={cn("shrink-0 font-semibold", farmChartUi.fsTitle)}>
-              통합 추이
-            </span>
-            <span
-              className={cn(
-                "leading-snug text-muted-foreground",
-                farmChartUi.fsMeta,
-              )}
-            >
-              {label} · 집계 {built?.controllerCount ?? 0}대
-              {picked?.trimmed ? " · 실데이터 구간" : ""}
-            </span>
-          </div>
-          {layerToolbar || hasHeaderTrailing ? (
-            <div className="flex shrink-0 items-center gap-1">
-              {layerToolbar}
-              {hasHeaderTrailing ? renderHeaderTrailing() : null}
-            </div>
-          ) : null}
-        </div>
-      )}
+      <UnifiedBarnTrendPanelHeader
+        headingMode={headingMode}
+        label={label}
+        chartScope={chartScope}
+        controllers={controllers}
+        isMobileStack={isMobileStack}
+        mobileScopeHandle={mobileScopeHandle}
+        headerActions={headerActions}
+        layerToolbar={layerToolbar}
+        controllerCount={built?.controllerCount ?? 0}
+        trimmed={Boolean(picked?.trimmed)}
+      />
 
       {overview ? null : trendExtending || window15mLoading ? (
         <p
