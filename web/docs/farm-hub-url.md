@@ -198,11 +198,150 @@ flowchart LR
 ## 관련 문서
 
 - 사용설명서 IA: [user-manual/10-메뉴구조도.md](./user-manual/10-메뉴구조도.md)
-- 환경 상태: [ENVIRONMENT_STATUS_POLICY.md](./ENVIRONMENT_STATUS_POLICY.md) (**정본**. DELIN 문서는 폐기 스텁)
+- 환경 상태: 이 문서의 「환경 상태 정책」. DELIN 문서는 폐기 스텁
 - 문서 진입점: [README.md](./README.md)
 - Preview 게이트 절차: [VERCEL_PREVIEW_GATE.md](./VERCEL_PREVIEW_GATE.md)
-- 허브 안정화 P0: [HUB_STABILITY_P0.md](./HUB_STABILITY_P0.md) (`npm run verify:hub` · `npm run smoke:hub-url`)
+- 허브 안정화 P0: 이 문서의 「허브 본체 안정화」 (`npm run verify:hub` · `npm run smoke:hub-url`)
 - 로그인 후 브라우저 스모크: `npm run smoke:hub-url` (dev 또는 Vercel)
   - 로컬: 기본 `http://localhost:3000`
   - 배포본: `UI_VERIFY_BASE=https://<preview-or-prod>.vercel.app npm run smoke:hub-url`
   - 전제: 배포 env의 Supabase와 로컬 `.env.local`이 **동일 프로젝트** (테스트 계정)
+
+---
+
+## 환경 상태 정책
+
+DELIN 및 축사유형·일령별 환경 권장 정책을 제거했습니다.
+
+- 환경 판단: RAW의 컨트롤러 공통 저온·고온 경보값.
+- 경보값 미수신 또는 유효하지 않은 값: 확인 필요/미판정. 유형별 권장값으로 대체하지 않습니다.
+- 습도: 실측값과 추이는 표시하지만 권장값·사용자 습도 알림으로 판정하지 않습니다.
+- 이상상황: 모듈 오류, 통신 두절, 장비 온도 경보값 초과.
+- 차트: 권장선은 제거. 공통 장비 경보값이 있으면 현재 경보선을 표시하며, 서로 다르거나 미수신이면 숨깁니다. 축 계산용 기본 범위는 경보 기준이 아닙니다.
+- PDF: 농장 표지와 축사유형별 실측 추이·수신 현황. 권장 통계와 최장 이탈 페이지는 제거. 현재 공통 장비 경보선은 참고선이며 과거 경보 발생시간을 계산하지 않습니다.
+- 기존 RAW, DB, AWS 전송/ACK 및 0x0D·0x0E 명령 프로토콜은 변경하지 않습니다.
+
+DELIN 전용 UI·정책표·출시 게이트 및 `NEXT_PUBLIC_DELIN_ENABLED` 코드 의존성은 제거했습니다.
+### 센서값 미수신 표시 (2026-10-08)
+
+NaN·Infinity·null·undefined 측정값은 숫자로 표시하지 않고 `—`로 표시하며 단위도 붙이지 않습니다. 0은 유효한 측정값으로 유지합니다. 상세·접근성 안내는 ‘습도값 미수신’처럼 센서 종류를 명시합니다. 유효한 값만 농장 평균에 포함합니다. 삭제되었거나 수신하지 못한 경보 기준의 게이지·임계값 배지는 표시하지 않습니다. 실제 측정값은 경보 기준 유무와 독립적으로 표시합니다. PDF·브리핑도 미수신값에 단위를 붙이지 않습니다. 통신 상태·수신 시각 표시와 기존 오프라인 수치 숨김 정책은 유지합니다.
+
+---
+
+## 허브 본체 안정화 — P0 (관측·재현 게이트)
+
+> 정본 URL 계약: [`farm-hub-url.md`](./farm-hub-url.md)  
+> P0 범위: **앱 동작 변경 없이** 회귀 게이트·체크리스트·관측 절차만 고정.
+
+---
+
+### 자동 게이트 (서버 불필요)
+
+```bash
+cd dashboard/web
+npm run verify:hub
+```
+
+| 파일 | 커버 |
+|------|------|
+| `src/lib/farm/farm-hub-url-smoke.test.ts` | 차트 딥링크 · soft home · 기간+탭 유지 · 탭 URL 왕복 · 농장 전환 drill 클리어 |
+| `src/lib/farm/farm-hub-keepalive.test.ts` | TTL · 슬라이드 중 언마운트 금지 · 농장 flush 플래그 |
+
+`npm test`에도 포함됨. 허브 작업 중에는 `verify:hub`만 먼저 돌려도 된다.
+
+---
+
+### 브라우저 스모크 (dev 또는 배포)
+
+```bash
+# 로컬: npm run dev 실행 중
+npm run smoke:hub-url
+
+# 배포본
+UI_VERIFY_BASE=https://<preview-or-prod>.vercel.app npm run smoke:hub-url
+```
+
+스크립트: `scripts/farm-hub-url-manual-smoke.mjs`  
+전제: `.env.local` Supabase = 배포 env · 테스트 계정.
+
+| # | 시나리오 | 자동화 |
+|---|----------|--------|
+| 1 | 차트 딥링크 · 새로고침 | ✓ |
+| 2 | 로고 soft home | ✓ |
+| 3 | 기간 변경 시 차트 유지 | ✓ |
+| 4 | `listMode=channel` → graph | ✓ |
+| 5 | 탭 왕복 그리드↔목록↔차트↔ARIA | ✓ |
+
+---
+
+### 수동 관측 체크리스트 (P0)
+
+허브 작업 전·후 한 번씩. 실패 시 URL·네트워크·콘솔을 기록하고 **P1에서 수정**.
+
+| # | 항목 | 확인 |
+|---|------|------|
+| M1 | 탭×4 왕복 후 URL·활성 패널 일치 | `smoke:hub-url` #5 또는 수동 |
+| M2 | soft home (로고 / 모바일 모니터링) | #2 |
+| M3 | 기간만 변경 — 탭·chart 범위 유지 | #3 |
+| M4 | 차트 딥링크 새로고침 | #1 |
+| M5 | 농장 전환(admin) — drill/탭 초기화·기간 유지 | **PASS** (2026-07-30 수동 · 이상 없음) |
+| M6 | 탭 숨김 → 복귀 — LIVE 폴링 폭주 없음 | **PASS** (2026-07-30 수동 · 이상 없음) |
+| M7 | 목록·차트·ARIA 방문 후 그리드만 — 메모리/네트워크 이상 없음 | **PASS** (2026-07-30 수동 · 이상 없음) |
+
+#### M6 · M7 관측 방법
+
+1. Chrome DevTools → Network (Fetch/XHR) · Performance/Memory  
+2. `/farm` 로그인 → 목록·차트 각 1회 진입 후 그리드로 복귀  
+3. 다른 앱 탭으로 전환(숨김) 30초 → 복귀  
+4. 숨김 중·복귀 직후 `live` / Supabase 요청이 **활성 탭 수준**인지 기록  
+5. (선택) 출고 당시 폴링 스모크 재실행:
+
+```bash
+node scripts/archive/ship-p0-visibility-poll-smoke.mjs
+```
+
+결과를 이 문서 또는 이슈에 p50/p95·maxInFlight로 남긴다. 기준 참고: [`PERF_BASELINE.md`](./PERF_BASELINE.md) · [`SHIP_CHECKLIST.md`](./SHIP_CHECKLIST.md).
+
+---
+
+### P1 — 비활성 패널 LIVE pause (구현됨)
+
+| 대상 | pause 조건 |
+|------|------------|
+| 목록 `BarnTable` 추이 fetch | `panelLiveActive` = `view===list` |
+| ARIA metrics 로드·폴링 | `panelLiveActive` = `view===aria` |
+| 셸 controller trend 훅 | `view` ∈ map\|list\|chart (ARIA에서 off) |
+| list enrich / idle prefetch enrich | `view===list`만 · ARIA에선 idle prefetch 전체 skip |
+
+헬퍼: `isFarmHubPanelLiveActive` (`farm-hub-keepalive.ts`).  
+공유 LIVE slice(맵 적용 후 readings)는 유지 — 명령 ACK 경로와 무관.
+
+#### P1 수동 확인 (M6·M7)
+
+1. 목록·ARIA 각 1회 진입 후 그리드로 복귀  
+2. Network에서 목록 추이·ARIA metrics 요청이 **비활성 중 중단**되는지 확인  
+3. 목록/ARIA 재진입 시 캐시로 즉시 표시되는지 확인  
+
+---
+
+### 변경 이력
+
+| 일시 | 내용 |
+|------|------|
+| 2026-07-30 | P0 게이트 `verify:hub` · 유닛/수동 스모크 확장 · 본 문서 |
+| 2026-07-30 | 스모크 #4로 `normalizeLegacyListModeParam`이 UI에 미연결임을 발견 → `FarmPageContent.syncViewFromUrl`에 배선 |
+| 2026-07-30 | P1: keep-alive 비활성 패널 LIVE/enrich/ARIA poll pause |
+| 2026-07-30 | P2: view sync·keep-alive TTL → `use-farm-hub-view-shell` (동작 동일) |
+| 2026-07-30 | M5 농장 전환(admin) 수동 관측 PASS · 이상 없음 |
+| 2026-07-30 | M6 탭 숨김→복귀 수동 관측 PASS · 이상 없음 |
+| 2026-07-30 | M7 keep-alive 후 그리드 백그라운드 부하 수동 관측 PASS · 이상 없음 |
+
+### 로컬 실행 기록 (2026-07-30)
+
+| 게이트 | 결과 |
+|--------|------|
+| `npm run verify:hub` | PASS |
+| `npm run smoke:hub-url` (localhost) | PASS (#1–#5). 중간: #4 미연결 재현→배선, #5 투어 오버레이→스모크에서 건너뛰기 |
+| M5 농장 전환 (admin 수동) | PASS · 이상 없음 |
+| M6 탭 숨김→복귀 | PASS · 이상 없음 |
+| M7 목록·차트·ARIA 후 그리드 | PASS · 이상 없음 |
