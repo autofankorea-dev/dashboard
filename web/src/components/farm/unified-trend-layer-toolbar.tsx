@@ -23,7 +23,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { CHANNEL_SLOT_LABELS, type ChannelSlot } from "@/lib/data/iot-channel";
+import { CHANNEL_SLOT_LABELS, type ChannelSlot } from "@/lib/domain/iot-channel";
 import {
   COMMAND_HOLD_CHANNELS,
   type CommandChannelFlags,

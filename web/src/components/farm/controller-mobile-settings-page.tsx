@@ -1,7 +1,7 @@
 "use client";
 
 import type { ControllerThermoSettings } from "@/lib/controllers/controller-settings";
-import type { AlarmSettings } from "@/lib/data/alarms";
+import type { AlarmSettings } from "@/lib/domain/alarms";
 import type { BarnReading } from "@/lib/data/iot";
 import { LineChart } from "lucide-react";
 import { BarnListAccordionPanel } from "@/components/farm/barn-list-accordion-panel";

@@ -35,15 +35,15 @@ import {
   railOffset,
 } from "@/components/layout/hub-rail-layout";
 import { Badge } from "@/components/ui/badge";
-import type { AlarmRow } from "@/lib/data/alarms";
+import type { AlarmRow } from "@/lib/domain/alarms";
 import {
   alarmChartHref,
   isModuleAlarmRow,
   isSituationLiveStateRow,
   situationAlarmMetaLine,
-} from "@/lib/data/alarms";
+} from "@/lib/domain/alarms";
 import { useShellAlarms } from "@/lib/navigation/shell-live-alarms-store";
-import type { FarmKey } from "@/lib/data/farm-key";
+import type { FarmKey } from "@/lib/domain/farm-key";
 import type { FarmOverview } from "@/lib/data/iot";
 import { formatKst } from "@/lib/datetime/kst";
 import { isAdminOpsNavPath } from "@/lib/dashboard-sections";

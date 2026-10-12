@@ -3,7 +3,7 @@ import {
   parseFarmKeyFromQuery,
   parseFarmKeyId,
   parseFarmKeyUrlSlug,
-} from "@/lib/data/farm-key";
+} from "@/lib/domain/farm-key";
 import { adminOpsHealthHref, parseHealthNodeId } from "@/lib/admin/health/health-routes";
 
 /** Legacy `/admin/health/farm/:slug` segment → `FARM01/P00` farm query value */

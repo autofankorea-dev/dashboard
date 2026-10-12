@@ -5,7 +5,7 @@ import {
   LIVE_CACHE_REVALIDATE_SECONDS,
   LIVE_CACHE_TAG,
   liveCacheTagForFarm,
-} from "@/lib/data/live-config";
+} from "@/lib/domain/live-config";
 
 export function revalidateLiveCache(farmScopeKey?: string): void {
   revalidateTag(LIVE_CACHE_TAG, "max");

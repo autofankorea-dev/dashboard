@@ -1,6 +1,6 @@
-import { compareFarmKey, farmKeyId, type FarmKey } from "@/lib/data/farm-key";
-import type { FarmLocationRow } from "@/lib/data/farm-location-shared";
-import type { FarmSummaryRow } from "@/lib/data/farm-summaries";
+import { compareFarmKey, farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
+import type { FarmLocationRow } from "@/lib/domain/farm-location-shared";
+import type { FarmSummaryRow } from "@/lib/domain/farm-summaries";
 import { isValidMapCoord } from "@/lib/geo/map-coords";
 
 export type AdminHubFarmTone = "alert" | "offline" | "live" | "location";

@@ -16,7 +16,7 @@ import { useApplyQueueStripPresence } from "@/components/farm/use-apply-queue-st
 import {
   CHANNEL_SLOT_LABELS,
   type ChannelSlot,
-} from "@/lib/data/iot-channel";
+} from "@/lib/domain/iot-channel";
 import { dashboardReadout } from "@/lib/ui/dashboard-page-ui";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { cn } from "@/lib/utils";

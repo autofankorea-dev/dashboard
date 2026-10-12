@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { saveAlarmSettings } from "@/lib/data/alarm-settings";
-import { validateAlarmThresholds, type AlarmSettings } from "@/lib/data/alarms";
+import { validateAlarmThresholds, type AlarmSettings } from "@/lib/domain/alarms";
 import {
   saveFarmLocation,
   saveFarmLocationsBatch,

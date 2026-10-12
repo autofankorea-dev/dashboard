@@ -8,7 +8,7 @@ import {
   type TrendRangeBand,
   type TrendScaleEdgeLabel,
 } from "@/components/trends/trend-chart";
-import { formatTrendBandEdge } from "@/components/trends/trend-chart-format";
+import { formatTrendBandEdge } from "@/lib/farm/trend-chart-format";
 import {
   BRUSH_PERIOD_WINDOW,
   UnifiedTrendPeriodBrush,
@@ -27,13 +27,13 @@ import {
 
 import {
   resolveThresholdsForChartScope,
-} from "@/lib/data/alarm-scope";
-import type { AlarmSettings, AlarmThresholds } from "@/lib/data/alarms";
+} from "@/lib/domain/alarm-scope";
+import type { AlarmSettings, AlarmThresholds } from "@/lib/domain/alarms";
 import {
   DEFAULT_ALARM_SETTINGS,
-} from "@/lib/data/alarms";
+} from "@/lib/domain/alarms";
 import type { BarnReading } from "@/lib/data/iot";
-import { normalizeStallTyCode } from "@/lib/data/stall-type";
+import { normalizeStallTyCode } from "@/lib/domain/stall-type";
 import {
   emptyTrendControllerPeriodData,
   isContextControllerTrend30d,
@@ -46,7 +46,7 @@ import {
   type TrendControllerSeries,
   type TrendPeriodId,
   type TrendWindow15m,
-} from "@/lib/data/farm-trend-types";
+} from "@/lib/domain/farm-trend-types";
 import {
   type UplinkCoverageIndex,
 } from "@/lib/farm/trend-uplink-coverage";
@@ -86,7 +86,7 @@ import {
   scopesEqual,
 } from "@/lib/farm/farm-chart-scope";
 import type { ControllerThermoSettings } from "@/lib/controllers/controller-settings";
-import { sliceControllerTrendByTime } from "@/lib/data/trend-period-slice";
+import { sliceControllerTrendByTime } from "@/lib/domain/trend-period-slice";
 import { buildDecodedSettingHoldSegments, sliceFanControlWindows } from "@/lib/farm/channel-thermo";
 import {
   clipCommandSettingY,
@@ -134,7 +134,7 @@ import {
   type UnifiedYBandId,
 } from "@/lib/farm/unified-barn-trend-series";
 import { invertSplitYCrosshairValues } from "@/lib/farm/farm-crosshair-readout";
-import { useUnifiedChartBandTransition } from "@/lib/farm/use-split-y-layout-transition";
+import { useUnifiedChartBandTransition } from "@/components/farm/use-split-y-layout-transition";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { motionDuration } from "@/lib/ui/motion-tokens";
 import {

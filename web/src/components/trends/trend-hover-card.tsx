@@ -14,7 +14,7 @@ import type {
   TrendEventMark,
   TrendHistogram,
   TrendSeries,
-} from "@/lib/data/trend-chart-types";
+} from "@/lib/domain/trend-chart-types";
 import {
   HOVER_GROUP_LABEL,
   formatHistHoverDisplay,
@@ -24,7 +24,7 @@ import {
   inferHoverMetricGroup,
   splitSpreadZoneLabel,
   spreadControllerNo,
-} from "./trend-chart-format";
+} from "@/lib/farm/trend-chart-format";
 
 function MiniSpark({
   values,

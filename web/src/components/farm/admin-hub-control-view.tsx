@@ -15,15 +15,15 @@ import {
   WifiOff,
 } from "lucide-react";
 import { NavContentReadyMarker } from "@/components/layout/nav-content-ready-marker";
-import { appendFarmKeyParams, farmKeyId, type FarmKey } from "@/lib/data/farm-key";
-import type { FarmLocationRow } from "@/lib/data/farm-location-shared";
+import { appendFarmKeyParams, farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
+import type { FarmLocationRow } from "@/lib/domain/farm-location-shared";
 import {
   farmDisplayLabel,
   formatHumidityPct,
   formatReceivedAgo,
   formatTempC,
   type FarmSummaryRow,
-} from "@/lib/data/farm-summaries";
+} from "@/lib/domain/farm-summaries";
 import {
   collectAdminHubFarmRows,
   filterAdminHubFarmRowsByTone,

@@ -21,10 +21,10 @@ import {
 } from "@/app/(dashboard)/farm/actions";
 import { fetchFarmPanelEnrichShared } from "@/lib/farm/fetch-farm-panel-enrich";
 import type { ControllerGridData } from "@/lib/farm/controller-grid-data";
-import type { AlarmSettings, AlarmRow } from "@/lib/data/alarms";
-import { mergeSituationAlarms } from "@/lib/data/alarms";
+import type { AlarmSettings, AlarmRow } from "@/lib/domain/alarms";
+import { mergeSituationAlarms } from "@/lib/domain/alarms";
 import type { ThermoCommand } from "@/lib/data/commands";
-import { farmKeyId, type FarmKey } from "@/lib/data/farm-key";
+import { farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
 import {
   buildThermoSettingsFromReadings,
   mergeThermoSettingsMaps,
@@ -52,8 +52,8 @@ import type {
   FarmScopedPanelData,
 } from "@/lib/farm/load-farm-scoped-panel-data";
 import type { BarnMapSnapshot, BarnReading } from "@/lib/data/iot";
-import type { TrendPeriodData, TrendPeriodId } from "@/lib/data/farm-trend-types";
-import { hasStallTrendByPeriod } from "@/lib/data/farm-trend-types";
+import type { TrendPeriodData, TrendPeriodId } from "@/lib/domain/farm-trend-types";
+import { hasStallTrendByPeriod } from "@/lib/domain/farm-trend-types";
 import { useFarmTourActive } from "@/lib/onboarding/use-farm-tour-active";
 import { registerFarmLiveRefreshHandler } from "@/lib/navigation/farm-live-refresh-bridge";
 import { scheduleSafeRouterRefresh } from "@/lib/navigation/safe-router-refresh";

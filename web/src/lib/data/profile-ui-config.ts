@@ -1,6 +1,6 @@
 import "server-only";
 
-import { omitRetiredProfileUiConfigKeys } from "@/lib/data/profile-ui-retired";
+import { omitRetiredProfileUiConfigKeys } from "@/lib/domain/profile-ui-retired";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/supabase/database.types";
 

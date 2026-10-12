@@ -1,18 +1,18 @@
 import "server-only";
 
 import { createClient } from "@/lib/supabase/server";
-import type { AlarmRow } from "@/lib/data/alarms";
-import type { FarmKey } from "@/lib/data/farm-key";
+import type { AlarmRow } from "@/lib/domain/alarms";
+import type { FarmKey } from "@/lib/domain/farm-key";
 import {
   moduleAlarmToAlarmRow,
   type ModuleAlarmDbRow,
-} from "@/lib/data/module-alarms-map";
+} from "@/lib/domain/module-alarms-map";
 
 export {
   moduleAlarmToAlarmRow,
   severityForModuleErrCode,
   type ModuleAlarmDbRow,
-} from "@/lib/data/module-alarms-map";
+} from "@/lib/domain/module-alarms-map";
 
 const VIEW_COLS =
   "id, created_at, raw_id, lsind_regist_no, item_code, farm_name, module_uid, topic, wire_ver, err_code, err_label, stall_ty_code, stall_no, eqpmn_no, controller_key, channel, status, received_at";

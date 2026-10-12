@@ -1,12 +1,12 @@
 import { commandChannelViews, type CommandChannelValues } from "@/lib/controllers/combined-channel-command";
 import type { ThermoCommandStatus } from "@/lib/data/commands";
 import { formatOrdinalNo } from "@/lib/farm/command-confirm";
-import { formatStallTypeLabel } from "@/lib/data/stall-type";
+import { formatStallTypeLabel } from "@/lib/domain/stall-type";
 import {
   CHANNEL_SLOT_LABELS,
   type ChannelSlot,
-} from "@/lib/data/iot-channel";
-import { farmKeyId, type FarmKey } from "@/lib/data/farm-key";
+} from "@/lib/domain/iot-channel";
+import { farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
 
 /** 적용 큐가 보여주는 최근 창. 통합 추이는 최근 ~1시간을 점으로 읽기 어렵다. */
 export const APPLY_QUEUE_WINDOW_MS = 60 * 60 * 1000;

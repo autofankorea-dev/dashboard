@@ -24,16 +24,16 @@ import {
   type LayerGroupId,
   type SharedChartLayerDisplay,
 } from "@/components/farm/unified-trend-layer-toolbar";
-import type { AlarmSettings } from "@/lib/data/alarms";
+import type { AlarmSettings } from "@/lib/domain/alarms";
 import type { ControllerThermoSettings } from "@/lib/controllers/controller-settings";
 import type { BarnReading } from "@/lib/data/iot";
 import {
   type TrendControllerPeriodData,
   type TrendPeriodId,
   type TrendWindow15m,
-} from "@/lib/data/farm-trend-types";
-import type { FarmKey } from "@/lib/data/farm-key";
-import { normalizeStallTyCode } from "@/lib/data/stall-type";
+} from "@/lib/domain/farm-trend-types";
+import type { FarmKey } from "@/lib/domain/farm-key";
+import { normalizeStallTyCode } from "@/lib/domain/stall-type";
 import {
   EMPTY_FARM_CHART_LAB_SELECTION,
   toggleFarmChartComparisonKey,
@@ -55,7 +55,7 @@ import {
   type FarmChartLabSelection,
   type FarmChartScope,
 } from "@/lib/farm/farm-chart-scope";
-import { useFarmTrendUplinkCoverage } from "@/lib/farm/use-farm-trend-uplink-coverage";
+import { useFarmTrendUplinkCoverage } from "@/components/farm/use-farm-trend-uplink-coverage";
 import type { UplinkCoverageIndex } from "@/lib/farm/trend-uplink-coverage";
 import {
   DEFAULT_UNIFIED_LAYERS,

@@ -3,7 +3,7 @@
  * 샘플(decoded)은 측정 시각, 업링크 유무는 수신 시각 버킷.
  */
 
-import type { TrendControllerSeries } from "@/lib/data/farm-trend-types";
+import type { TrendControllerSeries } from "@/lib/domain/farm-trend-types";
 
 export type UplinkSlotKind = "sample" | "sparse" | "offline" | "void";
 

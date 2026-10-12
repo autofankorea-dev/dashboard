@@ -2,8 +2,8 @@ import type { ControllerThermoSettings } from "@/lib/controllers/controller-sett
 import type { ControllerGridData } from "@/lib/farm/controller-grid-data";
 import type { FarmScopedPanelData } from "@/lib/farm/load-farm-scoped-panel-data";
 import type { BarnMapSnapshot, BarnReading } from "@/lib/data/iot";
-import type { TrendPeriodData, TrendPeriodId } from "@/lib/data/farm-trend-types";
-import type { FarmKey } from "@/lib/data/farm-key";
+import type { TrendPeriodData, TrendPeriodId } from "@/lib/domain/farm-trend-types";
+import type { FarmKey } from "@/lib/domain/farm-key";
 
 export type FarmPanelSliceLike = {
   readings: BarnReading[];

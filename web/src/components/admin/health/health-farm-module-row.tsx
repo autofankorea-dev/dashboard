@@ -6,7 +6,7 @@ import { HEALTH_STATUS_LABEL } from "@/lib/admin/health/types";
 import { adminOpsHealthHref } from "@/lib/admin/health/health-routes";
 import { classifyHealthError } from "@/lib/admin/health/d11-map";
 import { formatHealthAgeMin } from "@/lib/admin/health/format-health-time";
-import { farmKeyUrlSlug } from "@/lib/data/farm-key";
+import { farmKeyUrlSlug } from "@/lib/domain/farm-key";
 import { dashboardReadout, dashboardUi } from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";
 

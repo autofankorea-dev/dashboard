@@ -13,7 +13,7 @@ import { cn } from "@/lib/utils";
 import type { Band } from "@/lib/farm/severity-score";
 import { SEV_COLOR } from "@/lib/farm/severity-score";
 import type { UplinkCoverageBand } from "@/lib/farm/trend-uplink-coverage";
-import type { TrendAxis, TrendReferenceLine } from "@/lib/data/trend-chart-types";
+import type { TrendAxis, TrendReferenceLine } from "@/lib/domain/trend-chart-types";
 import { PAD_TOP } from "./trend-chart-geometry";
 
 /** 렌더 시점 기하 매퍼·치수 — 컴포넌트에서 주입 */

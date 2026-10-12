@@ -6,7 +6,7 @@ import type { ChannelGlanceRow, PanelThermoValues } from "@/lib/controllers/cont
 import {
   CHANNEL_SLOT_LABELS,
   type ChannelSlot,
-} from "@/lib/data/iot-channel";
+} from "@/lib/domain/iot-channel";
 
 export function SettingsAllChannelGrid({ rows, currentBySlot, disabled, onChange }: {
   rows: ChannelGlanceRow[];

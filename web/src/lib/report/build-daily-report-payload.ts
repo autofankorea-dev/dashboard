@@ -1,19 +1,19 @@
 import "server-only";
 
-import { type FarmKey } from "@/lib/data/farm-key";
+import { type FarmKey } from "@/lib/domain/farm-key";
 import { getFarmControllerTrendAllPeriods } from "@/lib/data/farm-trend-history";
 import type {
   TrendControllerPeriodData,
   TrendControllerSeries,
   TrendPeriodId,
-} from "@/lib/data/farm-trend-types";
+} from "@/lib/domain/farm-trend-types";
 import { fetchLiveReadings } from "@/lib/data/iot-live-fetch";
-import { mergeSituationAlarms } from "@/lib/data/alarms";
-import { commonDeviceAlarmThresholds } from "@/lib/data/device-alarm-thresholds";
+import { mergeSituationAlarms } from "@/lib/domain/alarms";
+import { commonDeviceAlarmThresholds } from "@/lib/domain/device-alarm-thresholds";
 import { fetchActiveModuleAlarms } from "@/lib/data/module-alarms";
 import { getFarmLocation } from "@/lib/data/farm-location";
-import { farmDisplayLabel } from "@/lib/data/farm-summaries";
-import { getStallTypeName } from "@/lib/data/stall-type";
+import { farmDisplayLabel } from "@/lib/domain/farm-summaries";
+import { getStallTypeName } from "@/lib/domain/stall-type";
 import {
   barnJudgeFromControllerStatuses,
   toDailyReportAlarmRows,

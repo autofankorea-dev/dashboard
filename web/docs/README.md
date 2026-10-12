@@ -14,6 +14,7 @@
 | 문서 | 내용 |
 |------|------|
 | [`CLOUD_DEPLOY.md`](./CLOUD_DEPLOY.md) | 배포 정본 |
+| [`CODE_CONVENTIONS.md`](./CODE_CONVENTIONS.md) | **폴더 책임·레이어 경계·네이밍** (ESLint로 강제) · 새 파일 위치 판단 기준 |
 | [`VERCEL_PREVIEW_GATE.md`](./VERCEL_PREVIEW_GATE.md) | push 전 게이트 |
 | [`QA_PRE_RELEASE.md`](./QA_PRE_RELEASE.md) | 출고 전 전수 품질 검수 체계(0~14) |
 | [`QA_SHIP_GATE.md`](./QA_SHIP_GATE.md) | 출고마다·메이저·분기 실행 축소판 |

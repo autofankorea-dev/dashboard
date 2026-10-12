@@ -1,5 +1,5 @@
 import { Droplets, Thermometer } from "lucide-react";
-import { CHANNEL_SLOT_LABELS } from "@/lib/data/iot-channel";
+import { CHANNEL_SLOT_LABELS } from "@/lib/domain/iot-channel";
 import { cn } from "@/lib/utils";
 
 const METRIC_ARIA: Record<string, string> = {

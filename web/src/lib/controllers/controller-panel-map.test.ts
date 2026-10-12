@@ -3,7 +3,7 @@ import {
   clampMenuValue,
   snapToStep,
 } from "@/lib/controllers/controller-panel-map";
-import { formatTrendBandEdge } from "@/components/trends/trend-chart-format";
+import { formatTrendBandEdge } from "@/lib/farm/trend-chart-format";
 
 // snapToStep: 0.1 격자에서 FP 꼬리 제거
 assert.equal(snapToStep(26.200000000000003, 0.1), 26.2);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { appendFarmKeyParams } from "@/lib/data/farm-key";
+import { appendFarmKeyParams } from "@/lib/domain/farm-key";
 import type { ControllerReading } from "@/lib/data/iot";
 import { useDeferredLoading } from "@/lib/ui/use-deferred-loading";
 

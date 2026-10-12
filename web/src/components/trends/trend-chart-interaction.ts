@@ -7,7 +7,7 @@
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { motionClass } from "@/lib/ui/motion-classes";
 import type { ClipPhase } from "@/lib/ui/use-clip-presence";
-import type { TrendEventMark } from "@/lib/data/trend-chart-types";
+import type { TrendEventMark } from "@/lib/domain/trend-chart-types";
 
 export const MAX_PINNED_TIPS = 5;
 export const PIN_CLICK_SLOP_PX = 10;

@@ -37,7 +37,7 @@ import {
 import {
   CHANNEL_SLOT_LABELS,
   type ChannelSlot,
-} from "@/lib/data/iot-channel";
+} from "@/lib/domain/iot-channel";
 import { formatUserError } from "@/lib/ui/controller-labels";
 import {
   clampCommandPresetDraft,

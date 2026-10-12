@@ -1,6 +1,6 @@
-import type { FarmKey } from "@/lib/data/farm-key";
+import type { FarmKey } from "@/lib/domain/farm-key";
 
-import { appendFarmKeyParams } from "@/lib/data/farm-key";
+import { appendFarmKeyParams } from "@/lib/domain/farm-key";
 
 function buildDevicesPanelSearch(
   params?: URLSearchParams | Record<string, string | undefined | null>,

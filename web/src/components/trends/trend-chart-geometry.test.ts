@@ -29,11 +29,11 @@ import {
   crosshairChipFlipsRight,
   type EdgeBandLabel,
 } from "./trend-chart-geometry";
-import { inferHoverMetricGroup } from "./trend-chart-format";
+import { inferHoverMetricGroup } from "@/lib/farm/trend-chart-format";
 import type {
   TrendEnvelope,
   TrendSeries,
-} from "@/lib/data/trend-chart-types";
+} from "@/lib/domain/trend-chart-types";
 
 // 좌표 매퍼 스텁 — 인덱스=x, 값=y (axis 무시).
 const xForId = (i: number) => i;

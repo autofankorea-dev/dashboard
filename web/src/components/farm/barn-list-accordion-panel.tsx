@@ -50,9 +50,9 @@ import {
   thermoSettingsKey,
 } from "@/lib/controllers/controller-settings";
 import { resolveReadingThermo } from "@/lib/farm/controller-summary-display";
-import { DEFAULT_ALARM_SETTINGS, type AlarmSettings } from "@/lib/data/alarms";
-import { channelBySlot, type ChannelSlot } from "@/lib/data/iot-channel";
-import { farmKeyId } from "@/lib/data/farm-key";
+import { DEFAULT_ALARM_SETTINGS, type AlarmSettings } from "@/lib/domain/alarms";
+import { channelBySlot, type ChannelSlot } from "@/lib/domain/iot-channel";
+import { farmKeyId } from "@/lib/domain/farm-key";
 import { applyQueueChannelStripForReading } from "@/lib/farm/apply-queue";
 import {
   snapshotCommandPresetChannels,
@@ -60,9 +60,9 @@ import {
   type CommandPresetScope,
 } from "@/lib/farm/command-presets";
 import { mergePresetStripItems } from "@/lib/farm/shared-command-presets";
-import { normalizeStallTyCode } from "@/lib/data/stall-type";
-import { stallKeyFromReading } from "@/lib/data/reading-hierarchy";
-import { isReadingOnline } from "@/lib/data/reading-display";
+import { normalizeStallTyCode } from "@/lib/domain/stall-type";
+import { stallKeyFromReading } from "@/lib/domain/reading-hierarchy";
+import { isReadingOnline } from "@/lib/domain/reading-display";
 import { cn } from "@/lib/utils";
 import { dashboardAffordance } from "@/lib/ui/dashboard-page-ui";
 

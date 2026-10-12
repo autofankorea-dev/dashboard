@@ -4,7 +4,7 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { findAuthUserByEmail } from "@/lib/admin/auth-users";
 import { MANAGED_USERS_CACHE_TAG } from "@/lib/admin/list-users";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
-import type { FarmKey } from "@/lib/data/farm-key";
+import type { FarmKey } from "@/lib/domain/farm-key";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { adminOpsPath } from "@/lib/admin/ops-tabs";
 

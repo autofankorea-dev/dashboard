@@ -1,4 +1,4 @@
-import { CHANNEL_SLOT_LABELS } from "@/lib/data/iot-channel";
+import { CHANNEL_SLOT_LABELS } from "@/lib/domain/iot-channel";
 import { TREND_CHART_COLORS_PRINT } from "@/lib/farm/trend-chart-series";
 import {
   averageBarnsSeries,
@@ -8,7 +8,7 @@ import {
   type DailyReportSeries,
 } from "@/lib/report/daily-report-payload";
 import { DAILY_REPORT_PDF_THEME } from "@/lib/report/daily-report-pdf-theme";
-import type { TrendPeriodId } from "@/lib/data/farm-trend-types";
+import type { TrendPeriodId } from "@/lib/domain/farm-trend-types";
 
 /**
  * 일일 리포트 PDF 빌더의 순수 상수·포매터·집계·가이드 로직.

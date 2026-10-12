@@ -48,9 +48,9 @@
 | **fallback** | `iot_room_state_decoded` last-known | 2h hot 0건 · farm-scoped만 |
 | **overview** | `v_iot_farm_overview` | admin hub batch |
 
-설정: [`live-config.ts`](../src/lib/data/live-config.ts) · env `NEXT_PUBLIC_LIVE_READ_TIER`  
-SELECT 계약: [`live-read-select.ts`](../src/lib/data/live-read-select.ts)  
-신선도: [`live-status.ts`](../src/lib/data/live-status.ts) — received+mesure → caution
+설정: [`live-config.ts`](../src/lib/domain/live-config.ts) · env `NEXT_PUBLIC_LIVE_READ_TIER`  
+SELECT 계약: [`live-read-select.ts`](../src/lib/domain/live-read-select.ts)  
+신선도: [`live-status.ts`](../src/lib/domain/live-status.ts) — received+mesure → caution
 
 | limit / cache | 값 |
 |---------------|-----|
@@ -188,7 +188,7 @@ SELECT 계약: [`live-read-select.ts`](../src/lib/data/live-read-select.ts)
 
 | 훅 | 역할 |
 |----|------|
-| [`warm-post-login-farm-hub.ts`](../src/lib/farm/warm-post-login-farm-hub.ts) | 로그인 후 panel + 24h 추이 |
+| [`warm-post-login-farm-hub.ts`](../src/components/farm/warm-post-login-farm-hub.ts) | 로그인 후 panel + 24h 추이 |
 | admin warm | `warmAdminHubOverviewCache` (`SKIP_ADMIN_HUB_WARM=1`로 off) |
 | 스플래시 | 필드 LIVE bootstrap + 1프레임 paint (`NavContentReadyMarker`) |
 

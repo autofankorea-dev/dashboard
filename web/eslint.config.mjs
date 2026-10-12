@@ -46,9 +46,81 @@ const colorRestrictedSyntax = [
   },
 ];
 
+/**
+ * 레이어 경계 (docs/CODE_CONVENTIONS.md)
+ * app → components → lib. lib는 components/app를 모른다.
+ * lib/domain은 순수(React·Next·Supabase·server-only 금지). Supabase 접근은 lib/data·lib/auth·lib/supabase만.
+ */
+const layerBoundaries = [
+  {
+    files: ["src/lib/**/*.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/components/*"],
+              message:
+                "lib → components 금지. 컴포넌트를 쓰는 hook/헬퍼는 components/<feature>/ 로 옮긴다 (docs/CODE_CONVENTIONS.md)",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/lib/domain/**/*.ts"],
+    rules: {
+      "@typescript-eslint/no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            { name: "react", message: "lib/domain은 React 없음 — hook은 components/, cache는 lib/data" },
+            { name: "react-dom", message: "lib/domain은 React 없음" },
+            { name: "server-only", message: "lib/domain은 서버/클라 공용 — server-only는 lib/data" },
+          ],
+          patterns: [
+            { group: ["next", "next/*"], message: "lib/domain은 Next 런타임 의존 금지" },
+            {
+              group: ["@/lib/supabase/*"],
+              message: "Supabase 접근은 lib/data 에서만",
+            },
+            {
+              group: ["@/lib/data/*"],
+              allowTypeImports: true,
+              message:
+                "lib/domain → lib/data 값 import 금지 (타입만 허용 — iot.ts 타입 분리는 P2)",
+            },
+            { group: ["@/components/*", "@/app/*"], message: "lib/domain은 UI·라우팅을 모른다" },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/components/**/*.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/lib/supabase/*"],
+              message:
+                "컴포넌트에서 Supabase 직접 호출 금지 — lib/data/browser/* (클라) 또는 server action/lib/data (서버) 사용",
+            },
+          ],
+        },
+      ],
+    },
+  },
+];
+
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  ...layerBoundaries,
   {
     files: ["**/*.{ts,tsx,js,jsx}"],
     ignores: [".next/**", "out/**", "build/**", "node_modules/**", "scripts/**"],

@@ -1,10 +1,10 @@
 "use client";
 
 import { useMemo } from "react";
-import type { AlarmSettings } from "@/lib/data/alarms";
+import type { AlarmSettings } from "@/lib/domain/alarms";
 import type { BarnMapSnapshot, BarnReading } from "@/lib/data/iot";
-import { parseBarnCatalogKey } from "@/lib/data/barn-catalog";
-import { normalizeStallTyCode } from "@/lib/data/stall-type";
+import { parseBarnCatalogKey } from "@/lib/domain/barn-catalog";
+import { normalizeStallTyCode } from "@/lib/domain/stall-type";
 import { FarmMapCard } from "@/components/farm/farm-map-card";
 import { worstControllerEnvCoverLevel } from "@/lib/farm/controller-env-cover";
 import { cn } from "@/lib/utils";

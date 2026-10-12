@@ -73,7 +73,7 @@ flowchart LR
 | **측정** | `mesure_at` / `mesure_dt` | 차트 · PDF · 히트맵 버킷 |
 | **clock 보정** | `iot_decode_config.clock_kst_farm_keys` | KST-stuffed firmware → decode 시 −9h ([`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md)) |
 
-수신은 최신인데 측정이 정체면 **주의(caution)** — 버퍼 replay·장비 시계 정지와 구분 ([`live-status.ts`](../src/lib/data/live-status.ts)).
+수신은 최신인데 측정이 정체면 **주의(caution)** — 버퍼 replay·장비 시계 정지와 구분 ([`live-status.ts`](../src/lib/domain/live-status.ts)).
 
 ### 1.6 권한·보안 경계
 
@@ -94,7 +94,7 @@ flowchart LR
 | **해석(decode)을 DB Edge** | raw 옆 **~10초 cron** · batch cursor · sparse/clock이 `iot_decoded_last_value`·`iot_decode_config`와 같은 트랜잭션·스키마 필요 | RS에서 wire decode(Phase3+ 폐기) · Next API batch decode · 농장별 decode 서버 | [`DECODED_ROWCOUNT_PLAN.md`](./DECODED_ROWCOUNT_PLAN.md) · `supabase/functions/decode-batch/` |
 | **명령·uplink 동일 DB** | INSERT 감사·RLS·pending queue · uplink thermo와 command payload **ACK diff** · C.py **단일 downlink 소비자** | 대시보드→MQTT 직접 publish · 명령 전용 DB/Redis 분리 | [`CTRL_THERMO_COMMAND_PHASE_A.md`](./CTRL_THERMO_COMMAND_PHASE_A.md) · [`protocol/데이터폼_정책문서.md`](./protocol/데이터폼_정책문서.md) §4.3 |
 | **운영 단일 Supabase 프로젝트** (`fkkrjljeqxpbmazfnync`) | Auth·RLS·JOIN view·Edge cron·명령 ACK를 **한 Postgres**에서 | multi-DB COLD(E) · 농장별 Supabase · **폐기된 `iot-cloud`(`ompufme…`) 재사용** | [`SYSTEM_DB.md`](./SYSTEM_DB.md) · [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) |
-| **LIVE vs 추이 시간축 분리** | `received_at`=신선도(2h hot) · `mesure_at`=차트/PDF. **버퍼 replay**와 live stream 구분 | REPLAY 전용 UI/DB 모드 · received만 LIVE 표시 | [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md) · [`live-status.ts`](../src/lib/data/live-status.ts) |
+| **LIVE vs 추이 시간축 분리** | `received_at`=신선도(2h hot) · `mesure_at`=차트/PDF. **버퍼 replay**와 live stream 구분 | REPLAY 전용 UI/DB 모드 · received만 LIVE 표시 | [`PROJECT_CONTEXT.md`](./PROJECT_CONTEXT.md) · [`live-status.ts`](../src/lib/domain/live-status.ts) |
 
 **Instance를 농장별로 쪼개지 않은 이유 (요약):** MQTT 브릿지·키·systemd 운영을 **1벌**로 유지. 다농장 topic multiplex. blast radius는 RS=raw-only·decode=DB로 이미 분리.
 
@@ -190,7 +190,7 @@ flowchart LR
 |------|-----------|------|
 | Middleware | `src/proxy.ts` | 세션 · `/login` 리다이렉트 |
 | LIVE | `lib/data/iot-live-fetch.ts` | list/detail/overview |
-| 신선도 | `lib/data/live-status.ts` | received+mesure → caution |
+| 신선도 | `lib/domain/live-status.ts` | received+mesure → caution |
 | 명령 | `app/(dashboard)/farm/actions.ts` · `controllers/actions.ts` | `ctrl_thermo_command` insert |
 | API | `api/live/controller` · `api/farm-plan/sat-overlay` | bulk LIVE · 위성 |
 | Admin | `lib/admin/health/*` | service_role 헬스 |
@@ -307,7 +307,7 @@ flowchart LR
 
 ```
 web/src/lib/data/iot-live-fetch.ts   # LIVE read
-web/src/lib/data/live-status.ts      # 카드 신선도
+web/src/lib/domain/live-status.ts      # 카드 신선도
 web/supabase/functions/decode-batch/ # Edge decode
 web/supabase/migrations/               # DDL 정본
 web/src/app/(dashboard)/farm/          # 허브 UI

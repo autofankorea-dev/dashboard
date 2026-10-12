@@ -1,5 +1,5 @@
-import { CHANNEL_SLOT_LABELS } from "@/lib/data/iot-channel";
-import type { TrendEventMark } from "@/lib/data/trend-chart-types";
+import { CHANNEL_SLOT_LABELS } from "@/lib/domain/iot-channel";
+import type { TrendEventMark } from "@/lib/domain/trend-chart-types";
 import { formatKst } from "@/lib/datetime/kst";
 import { formatTempDisplay, formatVentDisplay } from "@/lib/farm/command-confirm";
 import { commandHoldRowIndex } from "@/lib/farm/command-hold-bands";

@@ -54,7 +54,7 @@ RS-DB-C: EC2는 raw INSERT, **decode·LIVE UI는 이 앱**. 배포 요약: [`CLO
 | Overview | `v_iot_farm_overview` (list 집계 · 최근 2시간 최신 1행) |
 | 레거시 롤백 | `NEXT_PUBLIC_LIVE_READ_TIER=legacy` → decoded_latest + decoded_json 중심 |
 
-구현: `web/src/lib/data/iot-live-fetch.ts`, `live-config.ts`, `iot-raw-live.ts`.
+구현: `web/src/lib/data/iot-live-fetch.ts`, `lib/domain/live-config.ts`, `lib/domain/iot-raw-live.ts`.
 
 ### 도메인 계층 (현장)
 
@@ -81,7 +81,7 @@ flowchart TB
 
 - 디코드 결과의 컨트롤러 배열 · 시계열 → UI 현재값은 보통 **마지막 원소**
 - 축사유형 바이트가 1~10 밖이면 Edge가 `iot_room_state_decoded`에 쓰지 않고 `iot_room_state_decode_failed.error_code=INVALID_STALL_TY`로 남김 (관측 쿼리: [`SPARSE_OBSERVATION.md`](./SPARSE_OBSERVATION.md))
-- 통신상태 ≈ **수신 시각(`received_at`) + 측정 시각(`mesure_dt`)** 신선도 (`lib/data/live-status.ts`). 수신 ≤15분=정상 · ≤60분=주의 · 그 외=통신두절. 수신이 정상이어도 측정이 60분 넘게 정체하면(버퍼 replay·장비 시계정지) **주의로 강등**.
+- 통신상태 ≈ **수신 시각(`received_at`) + 측정 시각(`mesure_dt`)** 신선도 (`lib/domain/live-status.ts`). 수신 ≤15분=정상 · ≤60분=주의 · 그 외=통신두절. 수신이 정상이어도 측정이 60분 넘게 정체하면(버퍼 replay·장비 시계정지) **주의로 강등**.
 - 추이 차트·리포트 시계열 ≈ **측정 시각(`mesure_at`)** — 재연결 시 컨트롤러 버퍼를 짧은 주기로 올려도 샘플 자체는 기존 5분 측정 간격. 패킷 unix가 서울 벽시계를 UTC처럼 넣은 경우 Edge가 9시간을 빼 실제 UTC로 맞춤. LIVE/REPLAY 플래그 구분 없이 `farm_trend_history*`에 포함 (`live`/`history`/`replay`)
   - **clock 보정 모드** (`decode-batch`, `iot_decode_config.clock_kst_farm_keys`): 목록에 오른 소스(`FARM02`·`FARM03`)는 **live/replay 무관하게 항상 -9h**. 지연 재전송(패킷 epoch가 수신보다 과거) burst도 실제 측정 시각에 정확히 안착. 목록 밖(파일럿 `FARM01` 시뮬레이터=정직한 UTC)은 기존 **future-only 휴리스틱**(수신보다 미래인 epoch만 -9h) 유지. 분류 근거=14일 raw `epoch−received` 분포(허용목록 소스는 +9h에 집중, 파일럿은 ≈0). HEALTH 등 신규 실장비 재가동 시 허용목록 추가 검토.
 - **추이 차트 커버리지** (차트 탭만): 측정 시각 버킷 RPC `farm_trend_uplink_coverage_json` (migration `20260901003000`, 구 `iot-cloud` 적용 · 운영 `fkkrjljeqxpbmazfnync`). 희소=유효 업링크·디코드 생략 → 직전 값 유지. 통신두절=해당 슬롯에 raw 없음 → 선 단절. 없음=잘못된 축사유형·폐기 패킷 → 유지 금지. `clock_kst_farm_keys`와 동일하게 epoch를 보정한다. **색면·구간 라벨·범례는 그리지 않음.** 목록 카드·LIVE·PDF는 기존 null 갭.
@@ -91,17 +91,19 @@ flowchart TB
 
 ### 데이터 모듈
 
+`lib/data` = 서버 전용 데이터 접근 · `lib/domain` = 순수 규칙·타입 (경계 규칙: [`CODE_CONVENTIONS.md`](./CODE_CONVENTIONS.md)).
+
 | 파일 | 용도 |
 | --- | --- |
 | `lib/data/iot.ts` | LIVE readings 진입 |
 | `lib/data/iot-live-fetch.ts` | list/detail/overview + cache |
-| `lib/data/live-status.ts` | 카드 신선도 (수신+측정) |
-| `lib/data/iot-live-merge.ts` | LIVE 병합 |
-| `lib/data/iot-chart.ts` | 차트 집계 |
-| `lib/data/iot-firmware.ts` | 48 ctrl 상수 |
+| `lib/domain/live-status.ts` | 카드 신선도 (수신+측정) |
+| `lib/domain/iot-live-merge.ts` | LIVE 병합 |
+| `lib/domain/iot-chart.ts` | 차트 집계 |
+| `lib/domain/iot-firmware.ts` | 48 ctrl 상수 |
 | `lib/data/barn-meta.ts` | 축사 메타 |
 | `lib/data/controller-meta.ts` | 컨트롤러 표시명 |
-| `lib/data/alarms.ts` | 파생 알람 |
+| `lib/domain/alarms.ts` | 파생 알람 |
 
 
 ## 6. 인증 / 권한 (RLS)

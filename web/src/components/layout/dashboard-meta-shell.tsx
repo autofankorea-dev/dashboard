@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { ControllerMetaProvider } from "@/components/controllers/controller-meta-provider";
-import type { ControllerMetaEntry } from "@/lib/data/controller-meta-shared";
+import type { ControllerMetaEntry } from "@/lib/domain/controller-meta-shared";
 
 type Props = {
   metas: ControllerMetaEntry[];

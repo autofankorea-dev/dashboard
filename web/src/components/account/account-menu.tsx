@@ -11,14 +11,14 @@ import type { EditableFarmOption } from "@/lib/data/farm-location";
 import {
   farmShortLabel,
   type FarmSummaryRow,
-} from "@/lib/data/farm-summaries";
+} from "@/lib/domain/farm-summaries";
 import {
   appendFarmKeyParams,
   farmKeyId,
   type FarmKey,
-} from "@/lib/data/farm-key";
+} from "@/lib/domain/farm-key";
 import type { ModuleReceipt, FarmOverview } from "@/lib/data/iot";
-import type { AlarmRow } from "@/lib/data/alarms";
+import type { AlarmRow } from "@/lib/domain/alarms";
 import { setProfileAccountMenuOpen } from "@/lib/ui/profile-pin-tools-store";
 import { signOut } from "@/app/auth/actions";
 import { useAppNavigate } from "@/components/layout/use-app-navigate";

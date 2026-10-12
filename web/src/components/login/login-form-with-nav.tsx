@@ -2,7 +2,7 @@
 
 import { LoginForm } from "@/components/login/login-form";
 import { useAppNavigate } from "@/components/layout/use-app-navigate";
-import { warmPostLoginFarmHub } from "@/lib/farm/warm-post-login-farm-hub";
+import { warmPostLoginFarmHub } from "@/components/farm/warm-post-login-farm-hub";
 
 type LoginFormWithNavProps = {
   initialError?: string | null;

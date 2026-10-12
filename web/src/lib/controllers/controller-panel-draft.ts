@@ -1,5 +1,5 @@
 import { commandChannelViews } from "@/lib/controllers/combined-channel-command";
-import type { ChannelSlot } from "@/lib/data/iot-channel";
+import type { ChannelSlot } from "@/lib/domain/iot-channel";
 import type { ThermoCommand } from "@/lib/data/commands";
 import {
   thermoValuesMatch,

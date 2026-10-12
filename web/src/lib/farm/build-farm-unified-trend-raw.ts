@@ -2,13 +2,13 @@
  * 차트 공통 — 컨트롤러 목록으로 UnifiedBarnTrendRaw 집계.
  * 알람 초과 X구간 계산과 패널 집계가 같은 다운샘플을 쓰도록 한다.
  */
-import type { AlarmThresholds } from "@/lib/data/alarms";
+import type { AlarmThresholds } from "@/lib/domain/alarms";
 import type { BarnReading } from "@/lib/data/iot";
 import type {
   TrendControllerPeriodData,
   TrendPeriodId,
-} from "@/lib/data/farm-trend-types";
-import { normalizeStallTyCode } from "@/lib/data/stall-type";
+} from "@/lib/domain/farm-trend-types";
+import { normalizeStallTyCode } from "@/lib/domain/stall-type";
 import {
   findControllerTrendSeries,
   formatControllerHeaderPrimary,

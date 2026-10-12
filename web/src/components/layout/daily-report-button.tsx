@@ -8,7 +8,7 @@ import {
   InlineStatusToast,
   type InlineStatusTone,
 } from "@/components/common/inline-status-toast";
-import { parseFarmKeyFromQuery, type FarmKey } from "@/lib/data/farm-key";
+import { parseFarmKeyFromQuery, type FarmKey } from "@/lib/domain/farm-key";
 import { dailyReportPdfFilename } from "@/lib/report/daily-report-payload";
 import {
   currentFarmSearchParams,

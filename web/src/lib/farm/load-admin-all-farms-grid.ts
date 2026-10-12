@@ -7,8 +7,8 @@ import {
   buildAutoBarnMap,
   filterBarnLayoutPrefsForFarm,
   gridDimensionsForBarnMap,
-} from "@/lib/data/barn-map";
-import type { FarmKey } from "@/lib/data/farm-key";
+} from "@/lib/domain/barn-map";
+import type { FarmKey } from "@/lib/domain/farm-key";
 import { getLiveReadings } from "@/lib/data/iot";
 import type { AdminFarmGridPanel } from "@/lib/farm/admin-all-farms-grid-shared";
 import { ADMIN_HUB_GRID_BATCH_SIZE } from "@/lib/farm/admin-all-farms-grid-shared";

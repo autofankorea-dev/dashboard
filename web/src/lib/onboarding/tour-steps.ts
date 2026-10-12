@@ -12,7 +12,7 @@
 import {
   appendFarmKeyParams,
   type FarmKey,
-} from "@/lib/data/farm-key";
+} from "@/lib/domain/farm-key";
 import {
   buildFarmPath,
   type FarmHubView,

@@ -9,11 +9,11 @@ import {
 } from "@/components/common/loading-skeletons";
 import { StaleWhileRevalidateShell } from "@/components/common/stale-while-revalidate-shell";
 import { NavContentReadyMarker } from "@/components/layout/nav-content-ready-marker";
-import { parseFarmKeyFromQuery, type FarmKey } from "@/lib/data/farm-key";
-import type { FarmLocationRow } from "@/lib/data/farm-location-shared";
-import type { FarmSummaryRow } from "@/lib/data/farm-summaries";
+import { parseFarmKeyFromQuery, type FarmKey } from "@/lib/domain/farm-key";
+import type { FarmLocationRow } from "@/lib/domain/farm-location-shared";
+import type { FarmSummaryRow } from "@/lib/domain/farm-summaries";
 import type { BarnMapSnapshot, BarnReading } from "@/lib/data/iot";
-import type { TrendPeriodData, TrendPeriodId } from "@/lib/data/farm-trend-types";
+import type { TrendPeriodData, TrendPeriodId } from "@/lib/domain/farm-trend-types";
 import type { ControllerGridData } from "@/lib/farm/controller-grid-data";
 import type { AdminFarmGridPanel } from "@/lib/farm/admin-all-farms-grid-shared";
 import type { BarnLayoutsToPersist } from "@/lib/farm/load-farm-scoped-panel-data";

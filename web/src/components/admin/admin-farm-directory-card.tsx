@@ -8,8 +8,8 @@ import {
 import { saveFarmLocationInlineAction } from "@/lib/actions/app-settings-actions";
 import { PageActionButton } from "@/components/common/page-action-button";
 import { Input } from "@/components/ui/input";
-import type { FarmKey } from "@/lib/data/farm-key";
-import { farmKeyId } from "@/lib/data/farm-key";
+import type { FarmKey } from "@/lib/domain/farm-key";
+import { farmKeyId } from "@/lib/domain/farm-key";
 import type { EditableFarmOption } from "@/lib/data/farm-location";
 import { opsControl, opsTypography } from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";

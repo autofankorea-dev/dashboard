@@ -8,8 +8,8 @@ import {
   TREND_PERIODS,
   type TrendControllerPeriodData,
   type TrendPeriodId,
-} from "@/lib/data/farm-trend-types";
-import { formatTrendBucketLabel } from "@/lib/data/farm-trend-compact";
+} from "@/lib/domain/farm-trend-types";
+import { formatTrendBucketLabel } from "@/lib/domain/farm-trend-compact";
 import {
   applyFarmChartLabSelectionParams,
   resolveFarmChartLabSelection,

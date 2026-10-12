@@ -12,7 +12,7 @@ import { saveControllerDisplayNameAction } from "@/app/(dashboard)/controllers/a
 import {
   controllerDisplayName,
   type ControllerMetaEntry,
-} from "@/lib/data/controller-meta-shared";
+} from "@/lib/domain/controller-meta-shared";
 
 type ControllerMetaContextValue = {
   resolveName: (controllerKey: string, eqpmnNo: string) => string | null;

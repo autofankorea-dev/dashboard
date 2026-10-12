@@ -18,7 +18,7 @@ import type { BarnReading } from "@/lib/data/iot";
 import {
   channelBySlot,
   type ChannelSlot,
-} from "@/lib/data/iot-channel";
+} from "@/lib/domain/iot-channel";
 import {
   APPLY_QUEUE_START_GRACE_MS,
   applyQueueNeedsLiveRefresh,
@@ -29,7 +29,7 @@ import {
   isApplyQueueWatchStatus,
   selectApplyQueueCommands,
 } from "@/lib/farm/apply-queue";
-import type { FarmKey } from "@/lib/data/farm-key";
+import type { FarmKey } from "@/lib/domain/farm-key";
 
 const PENDING_POLL_MS = 2000;
 const SENT_POLL_MS = 4000;

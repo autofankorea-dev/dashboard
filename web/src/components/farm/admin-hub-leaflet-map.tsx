@@ -4,8 +4,8 @@ import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./admin-hub-leaflet-map.css";
-import { type FarmKey } from "@/lib/data/farm-key";
-import { farmDisplayLabel } from "@/lib/data/farm-summaries";
+import { type FarmKey } from "@/lib/domain/farm-key";
+import { farmDisplayLabel } from "@/lib/domain/farm-summaries";
 import { type AdminHubFarmRow } from "@/lib/farm/admin-hub-farm-status";
 import {
   HUB_MAP_PAN_NE,

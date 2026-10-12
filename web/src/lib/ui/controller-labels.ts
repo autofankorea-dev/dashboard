@@ -1,8 +1,8 @@
 import type { ControllerThermoSettings } from "@/lib/controllers/controller-settings";
 import type { ThermoCommand } from "@/lib/data/commands";
-import type { FarmKey } from "@/lib/data/farm-key";
-import { getItemCodeName } from "@/lib/data/item-code";
-import { formatStallTypeLabel } from "@/lib/data/stall-type";
+import type { FarmKey } from "@/lib/domain/farm-key";
+import { getItemCodeName } from "@/lib/domain/item-code";
+import { formatStallTypeLabel } from "@/lib/domain/stall-type";
 
 import { dashboardUi } from "@/lib/ui/dashboard-page-ui";
 

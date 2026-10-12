@@ -8,22 +8,22 @@ import {
 } from "@/lib/auth/farm-access";
 import { getCurrentUser, canCommand } from "@/lib/auth/get-current-user";
 import { fetchActiveModuleAlarms } from "@/lib/data/module-alarms";
-import { mergeSituationAlarms, type AlarmRow } from "@/lib/data/alarms";
+import { mergeSituationAlarms, type AlarmRow } from "@/lib/domain/alarms";
 import { getAlarmSettings } from "@/lib/data/alarm-settings";
 import {
   summarizeControllers,
   toFarmOverview,
-} from "@/lib/data/dashboard-summary";
+} from "@/lib/domain/dashboard-summary";
 import { getAdminHubOverviewContext } from "@/lib/data/admin-hub-shell-data";
-import { FIRMWARE_CTRL_COUNT } from "@/lib/data/iot-firmware";
-import { farmKeyEq, type FarmKey } from "@/lib/data/farm-key";
-import type { FarmLocationRow } from "@/lib/data/farm-location-shared";
-import type { FarmSummaryRow } from "@/lib/data/farm-summaries";
+import { FIRMWARE_CTRL_COUNT } from "@/lib/domain/iot-firmware";
+import { farmKeyEq, type FarmKey } from "@/lib/domain/farm-key";
+import type { FarmLocationRow } from "@/lib/domain/farm-location-shared";
+import type { FarmSummaryRow } from "@/lib/domain/farm-summaries";
 import type { BarnReading, FarmOverview } from "@/lib/data/iot";
 import {
   fetchLiveReadings,
 } from "@/lib/data/iot-live-fetch";
-import { editableFarmOptionsFromKnownFarms } from "@/lib/data/editable-farm-options";
+import { editableFarmOptionsFromKnownFarms } from "@/lib/domain/editable-farm-options";
 import {
   getEditableFarmLocationOptions,
   type EditableFarmOption,

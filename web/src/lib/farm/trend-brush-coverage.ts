@@ -1,4 +1,4 @@
-import { TREND_ZOOM_15M_MAX_DAYS } from "@/lib/data/farm-trend-types";
+import { TREND_ZOOM_15M_MAX_DAYS } from "@/lib/domain/farm-trend-types";
 
 /** 30일 브러시 창 (0~1). 차트 컴포넌트 BrushWindow와 동일. */
 export type TrendBrushWindow = { start: number; width: number };

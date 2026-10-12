@@ -1,4 +1,4 @@
-import type { ChannelSlot } from "@/lib/data/iot-channel";
+import type { ChannelSlot } from "@/lib/domain/iot-channel";
 
 export const COMBINED_CHANNEL_ACTION = "SET_CHANNELS_THERMO";
 export const COMBINED_WIRE_VERSION = 0x0d;

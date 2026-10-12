@@ -9,8 +9,8 @@ import {
 } from "@/app/(dashboard)/farm/actions";
 import { Badge } from "@/components/ui/badge";
 import { useAppNavigate } from "@/components/layout/use-app-navigate";
-import type { AlarmRow } from "@/lib/data/alarms";
-import { alarmChartHref, isModuleAlarmRow, isSituationLiveStateRow, situationAlarmMetaLine } from "@/lib/data/alarms";
+import type { AlarmRow } from "@/lib/domain/alarms";
+import { alarmChartHref, isModuleAlarmRow, isSituationLiveStateRow, situationAlarmMetaLine } from "@/lib/domain/alarms";
 import { formatKst } from "@/lib/datetime/kst";
 import type { FarmOverview } from "@/lib/data/iot";
 import {

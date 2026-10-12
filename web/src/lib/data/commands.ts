@@ -6,9 +6,9 @@ import {
   controllerKeyFromParts,
   legacyControllerKey,
   normalizeEqpmnNo,
-} from "@/lib/data/controller-key";
-import { parseFarmKeyId, type FarmKey } from "@/lib/data/farm-key";
-import { TREND_PERIODS } from "@/lib/data/farm-trend-types";
+} from "@/lib/domain/controller-key";
+import { parseFarmKeyId, type FarmKey } from "@/lib/domain/farm-key";
+import { TREND_PERIODS } from "@/lib/domain/farm-trend-types";
 import { normalizeCommandWireHex } from "@/lib/farm/command-wire";
 
 export type ThermoCommandStatus =
@@ -38,7 +38,7 @@ export type ThermoCommand = {
   status: ThermoCommandStatus;
   note: string | null;
   errorMsg: string | null;
-  channel?: import("@/lib/data/iot-channel").ChannelSlot;
+  channel?: import("@/lib/domain/iot-channel").ChannelSlot;
   eqpmnCode?: string;
   /** DB generated · ACK target (`controller|CHANNEL|CODE`); SET_CTRL는 없음 */
   channelKey?: string;

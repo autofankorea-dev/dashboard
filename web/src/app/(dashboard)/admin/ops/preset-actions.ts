@@ -12,7 +12,7 @@ import {
 } from "@/lib/farm/command-presets";
 import { channelsPayloadForDb } from "@/lib/farm/shared-command-presets";
 import { panelDraftFromCommandDefaults } from "@/lib/farm/command-defaults";
-import { normalizeStallTyCode } from "@/lib/data/stall-type";
+import { normalizeStallTyCode } from "@/lib/domain/stall-type";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/lib/supabase/database.types";
 

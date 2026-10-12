@@ -2,12 +2,12 @@
 
 import { useMemo, useState } from "react";
 import type { ControllerThermoSettings } from "@/lib/controllers/controller-settings";
-import type { AlarmSettings } from "@/lib/data/alarms";
+import type { AlarmSettings } from "@/lib/domain/alarms";
 import type { BarnReading } from "@/lib/data/iot";
 import type {
   TrendControllerPeriodData,
   TrendPeriodId,
-} from "@/lib/data/farm-trend-types";
+} from "@/lib/domain/farm-trend-types";
 import { BarnControllerMobileSheet } from "@/components/farm/barn-controller-mobile-sheet";
 import { ControllerMobileSettingsPage } from "@/components/farm/controller-mobile-settings-page";
 

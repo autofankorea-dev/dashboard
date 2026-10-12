@@ -1,11 +1,11 @@
-import type { TrendReferenceLine, TrendSeries } from "@/lib/data/trend-chart-types";
+import type { TrendReferenceLine, TrendSeries } from "@/lib/domain/trend-chart-types";
 import {
   DEFAULT_ALARM_THRESHOLDS,
   type AlarmThresholds,
-} from "@/lib/data/alarms";
-import type { TrendStallSeries } from "@/lib/data/farm-trend-types";
+} from "@/lib/domain/alarms";
+import type { TrendStallSeries } from "@/lib/domain/farm-trend-types";
 import type { ControllerThermoSettings } from "@/lib/controllers/controller-settings";
-import { CHANNEL_SLOT_LABELS, type ChannelSlot } from "@/lib/data/iot-channel";
+import { CHANNEL_SLOT_LABELS, type ChannelSlot } from "@/lib/domain/iot-channel";
 import {
   type Band,
   fanBand,

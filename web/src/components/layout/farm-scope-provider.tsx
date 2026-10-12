@@ -10,7 +10,7 @@ import { useSearchParams } from "next/navigation";
 import {
   parseFarmKeyFromQuery,
   type FarmKey,
-} from "@/lib/data/farm-key";
+} from "@/lib/domain/farm-key";
 
 type FarmScopeContextValue = {
   isAdmin: boolean;

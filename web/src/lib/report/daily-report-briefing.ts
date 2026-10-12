@@ -7,8 +7,8 @@ import {
   getStallTypeName,
   normalizeStallTyCode,
   stallTyCodeSortKey,
-} from "@/lib/data/stall-type";
-import type { TrendPeriodId } from "@/lib/data/farm-trend-types";
+} from "@/lib/domain/stall-type";
+import type { TrendPeriodId } from "@/lib/domain/farm-trend-types";
 import type {
   DailyReportBarn,
   DailyReportPayload,

@@ -6,8 +6,8 @@ import type {
   ChannelGlanceRow,
   PanelDraft,
 } from "@/lib/controllers/controller-panel-draft";
-import type { ChannelSlot } from "@/lib/data/iot-channel";
-import { farmKeyId, type FarmKey } from "@/lib/data/farm-key";
+import type { ChannelSlot } from "@/lib/domain/iot-channel";
+import { farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
 import { motionDuration } from "@/lib/ui/motion-tokens";
 
 export const COMMAND_PRESET_STORAGE_PREFIX = "dashboard.command-presets.v1";

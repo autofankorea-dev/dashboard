@@ -12,17 +12,17 @@ import {
 import { AccountMenuPins } from "@/components/account/account-menu-pins";
 import { FarmAddressInput } from "@/components/settings/farm-address-input";
 import { FarmSwitcher } from "@/components/layout/farm-switcher";
-import { isValidFarmKey } from "@/lib/data/barn-catalog";
-import { farmKeyId, type FarmKey } from "@/lib/data/farm-key";
+import { isValidFarmKey } from "@/lib/domain/barn-catalog";
+import { farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
 import {
   collectAdminHubFarmRows,
   summarizeAdminHubTones,
   type AdminHubFarmTone,
 } from "@/lib/farm/admin-hub-farm-status";
 import type { EditableFarmOption } from "@/lib/data/farm-location";
-import type { FarmSummaryRow } from "@/lib/data/farm-summaries";
+import type { FarmSummaryRow } from "@/lib/domain/farm-summaries";
 import { formatKst } from "@/lib/datetime/kst";
-import type { AlarmRow } from "@/lib/data/alarms";
+import type { AlarmRow } from "@/lib/domain/alarms";
 import type { ModuleReceipt, FarmOverview } from "@/lib/data/iot";
 import {
   accountMenuLayout,

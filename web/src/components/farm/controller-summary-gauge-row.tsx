@@ -2,13 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ControllerThermoSettings } from "@/lib/controllers/controller-settings";
-import type { AlarmSettings } from "@/lib/data/alarms";
+import type { AlarmSettings } from "@/lib/domain/alarms";
 import type { BarnReading } from "@/lib/data/iot";
 import {
   DEFAULT_TREND_PERIOD,
   type TrendControllerPeriodData,
   type TrendPeriodId,
-} from "@/lib/data/farm-trend-types";
+} from "@/lib/domain/farm-trend-types";
 import type { BarnListViewMode } from "@/lib/farm/farm-view-url";
 import { BarnListPanelShell } from "@/components/farm/barn-list-panel-shell";
 import { BarnControllerMobileSheet } from "@/components/farm/barn-controller-mobile-sheet";

@@ -12,7 +12,7 @@ import { PageActionButton } from "@/components/common/page-action-button";
 import { Input } from "@/components/ui/input";
 import type { ManagedUser } from "@/lib/admin/list-users";
 import type { GrantFarmOption } from "@/components/admin/grant-farm-types";
-import { farmKeyId, type FarmKey } from "@/lib/data/farm-key";
+import { farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
 import type { EditableFarmOption } from "@/lib/data/farm-location";
 import { useMobileLayout } from "@/lib/ui/use-mobile-layout";
 import { opsControl, opsLayout, opsStatus, opsTypography } from "@/lib/ui/dashboard-page-ui";

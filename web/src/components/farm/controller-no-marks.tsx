@@ -5,9 +5,9 @@ import {
   formatControllerHeaderStallUnit,
   formatControllerNoLabel,
 } from "@/lib/farm/controller-summary-display";
-import { normalizeEqpmnNo } from "@/lib/data/controller-key";
-import { formatStallTypeLabelCompact } from "@/lib/data/stall-type";
-import { stallKeyFromReading } from "@/lib/data/reading-hierarchy";
+import { normalizeEqpmnNo } from "@/lib/domain/controller-key";
+import { formatStallTypeLabelCompact } from "@/lib/domain/stall-type";
+import { stallKeyFromReading } from "@/lib/domain/reading-hierarchy";
 import { useHydrationSafeDashboardCompact } from "@/components/layout/dashboard-viewport-context";
 import { cn } from "@/lib/utils";
 import { ControllerDeviceIcon } from "@/components/icons/controller-device-icon";

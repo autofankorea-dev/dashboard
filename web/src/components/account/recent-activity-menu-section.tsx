@@ -3,9 +3,9 @@
 import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import type { ModuleReceipt } from "@/lib/data/iot";
-import { isValidFarmKey } from "@/lib/data/barn-catalog";
-import { farmKeyId, type FarmKey } from "@/lib/data/farm-key";
-import { farmShortLabel } from "@/lib/data/farm-summaries";
+import { isValidFarmKey } from "@/lib/domain/barn-catalog";
+import { farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
+import { farmShortLabel } from "@/lib/domain/farm-summaries";
 import { formatKst } from "@/lib/datetime/kst";
 import { accountMenuLayout } from "@/lib/ui/account-menu-layout";
 import { cn } from "@/lib/utils";

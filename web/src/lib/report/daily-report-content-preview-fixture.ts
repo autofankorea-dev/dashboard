@@ -1,7 +1,7 @@
 /**
  * 일보 콘텐츠 시안용 더미 페이로드 — 화면 표시명만 사용.
  */
-import { DEFAULT_ALARM_THRESHOLDS } from "@/lib/data/alarms";
+import { DEFAULT_ALARM_THRESHOLDS } from "@/lib/domain/alarms";
 import type {
   DailyReportPayload,
   DailyReportSeries,

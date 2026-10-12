@@ -7,20 +7,20 @@ import type { BarnReading } from "@/lib/data/iot";
 import {
   channelBySlot,
   type ChannelSlot,
-} from "@/lib/data/iot-channel";
-import { normalizeEqpmnNo } from "@/lib/data/controller-key";
-import { stallKeyFromReading } from "@/lib/data/reading-hierarchy";
+} from "@/lib/domain/iot-channel";
+import { normalizeEqpmnNo } from "@/lib/domain/controller-key";
+import { stallKeyFromReading } from "@/lib/domain/reading-hierarchy";
 import {
   formatStallTypeLabel,
   normalizeStallTyCode,
-} from "@/lib/data/stall-type";
-import type { TrendPeriodData, TrendPeriodId, TrendStallSeries, TrendControllerPeriodData, TrendControllerSeries } from "@/lib/data/farm-trend-types";
-import { resolveThresholdsForReading } from "@/lib/data/alarm-scope";
+} from "@/lib/domain/stall-type";
+import type { TrendPeriodData, TrendPeriodId, TrendStallSeries, TrendControllerPeriodData, TrendControllerSeries } from "@/lib/domain/farm-trend-types";
+import { resolveThresholdsForReading } from "@/lib/domain/alarm-scope";
 import {
   DEFAULT_ALARM_SETTINGS,
   type AlarmSettings,
   type AlarmThresholds,
-} from "@/lib/data/alarms";
+} from "@/lib/domain/alarms";
 
 export type ListDisplayMode = "gauge";
 

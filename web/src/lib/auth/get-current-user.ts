@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   parseControllerMeta,
   type ControllerMetaEntry,
-} from "@/lib/data/controller-meta-shared";
+} from "@/lib/domain/controller-meta-shared";
 
 export type Role = "admin" | "operator" | "viewer";
 

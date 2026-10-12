@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import { fetchLiveReadingDetail } from "@/lib/data/iot-live-fetch";
-import type { FarmKey } from "@/lib/data/farm-key";
+import type { FarmKey } from "@/lib/domain/farm-key";
 
 export async function GET(request: Request) {
   const user = await getCurrentUser();

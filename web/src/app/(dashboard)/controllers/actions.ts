@@ -15,11 +15,11 @@ import {
   type ThermoCommand,
   type ThermoCommandRow,
 } from "@/lib/data/commands";
-import { normalizeEqpmnNo } from "@/lib/data/controller-key";
+import { normalizeEqpmnNo } from "@/lib/domain/controller-key";
 import { revalidateLiveCache } from "@/lib/data/live-cache";
-import { farmScopeCacheKey } from "@/lib/data/live-config";
+import { farmScopeCacheKey } from "@/lib/domain/live-config";
 import { MENU_STEPS } from "@/lib/controllers/controller-panel-map";
-import { isValidEqpmnCode } from "@/lib/data/eqpmn-code";
+import { isValidEqpmnCode } from "@/lib/domain/eqpmn-code";
 
 export type SendThermoCommandResult =
   | { ok: true; id: string; command: ThermoCommand }

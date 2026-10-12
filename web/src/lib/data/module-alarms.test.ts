@@ -6,7 +6,7 @@ import {
   moduleAlarmToAlarmRow,
   severityForModuleErrCode,
   type ModuleAlarmDbRow,
-} from "./module-alarms-map";
+} from "@/lib/domain/module-alarms-map";
 
 function sample(partial: Partial<ModuleAlarmDbRow> = {}): ModuleAlarmDbRow {
   return {

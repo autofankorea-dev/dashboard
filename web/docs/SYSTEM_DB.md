@@ -112,7 +112,7 @@ erDiagram
 | `v_iot_farm_overview` | admin hub 집계 | list 위 집계 |
 | `v_iot_raw_live` | 레거시 TS decode 경로 | RS-DB-C 전환 잔재 |
 
-**list vs latest tier:** list=경량 · latest=channels 필요 시 ([`live-read-select.ts`](../src/lib/data/live-read-select.ts)).
+**list vs latest tier:** list=경량 · latest=channels 필요 시 ([`live-read-select.ts`](../src/lib/domain/live-read-select.ts)).
 
 PR 체크: `LIVE_LIST_FORBIDDEN_TOKENS` · `npm run measure:live` p95<300ms ([`LIVE_HOT_VIEW_RULES.md`](./LIVE_HOT_VIEW_RULES.md)).
 
@@ -181,7 +181,7 @@ PR 체크: `LIVE_LIST_FORBIDDEN_TOKENS` · `npm run measure:live` p95<300ms ([`L
 | `mesure_at` | 장비 **측정** | 차트 · PDF · 파티션 키 |
 | clock_kst | firmware KST stuff | decode −9h |
 
-수신 최신 + 측정 정체 = **replay/장비 시계** — 앱 [`live-status.ts`](../src/lib/data/live-status.ts).
+수신 최신 + 측정 정체 = **replay/장비 시계** — 앱 [`live-status.ts`](../src/lib/domain/live-status.ts).
 
 ### 3.2 모니터링
 

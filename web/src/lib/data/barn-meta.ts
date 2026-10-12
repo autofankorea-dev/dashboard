@@ -8,9 +8,9 @@ import {
   PROFILE_UI_META_TAG,
   revalidateProfileUiMetaCache,
 } from "@/lib/data/profile-ui-meta-cache";
-import { omitRetiredProfileUiConfigKeys } from "@/lib/data/profile-ui-retired";
+import { omitRetiredProfileUiConfigKeys } from "@/lib/domain/profile-ui-retired";
 
-import { type FarmKey } from "@/lib/data/farm-key";
+import { type FarmKey } from "@/lib/domain/farm-key";
 
 export type BarnMetaType = "barn" | "office";
 

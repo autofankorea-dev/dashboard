@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import type { CommandPreset } from "@/lib/farm/command-presets";
-import { sharedPresetFromRow } from "@/lib/farm/shared-command-presets";
-import { normalizeStallTyCode } from "@/lib/data/stall-type";
-import { createClient } from "@/lib/supabase/browser";
+import { fetchSharedCommandPresetsBrowser } from "@/lib/data/browser/command-presets";
+import { normalizeStallTyCode } from "@/lib/domain/stall-type";
 
 /** 참조 안정 빈 배열 — 소비자 useMemo/useEffect deps가 매 렌더 변하지 않도록 */
 const EMPTY_PRESETS: CommandPreset[] = [];
@@ -22,31 +21,9 @@ export function useSharedCommandPresets(
   useEffect(() => {
     if (code === "UNK") return;
     let cancelled = false;
-    void (async () => {
-      try {
-        const supabase = createClient();
-        const { data, error } = await supabase
-          .from("command_presets")
-          .select("id, stall_ty_code, name, channels, sort_order")
-          .eq("stall_ty_code", code)
-          .order("sort_order", { ascending: true })
-          .order("name", { ascending: true });
-        if (cancelled) return;
-        if (error || !data) {
-          setLoaded({ code, items: [] });
-          return;
-        }
-        setLoaded({
-          code,
-          items: data
-            .map((row) => sharedPresetFromRow(row))
-            .filter((row): row is NonNullable<typeof row> => row != null)
-            .map(({ id, name, channels }) => ({ id, name, channels })),
-        });
-      } catch {
-        if (!cancelled) setLoaded({ code, items: [] });
-      }
-    })();
+    void fetchSharedCommandPresetsBrowser(code).then((items) => {
+      if (!cancelled) setLoaded({ code, items });
+    });
     return () => {
       cancelled = true;
     };

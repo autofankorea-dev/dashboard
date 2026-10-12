@@ -2,15 +2,15 @@
 
 import type { ControllerThermoSettings } from "@/lib/controllers/controller-settings";
 import type { BarnReading } from "@/lib/data/iot";
-import type { AlarmSettings } from "@/lib/data/alarms";
+import type { AlarmSettings } from "@/lib/domain/alarms";
 import {
   CHANNEL_SLOT_LABELS,
   type ChannelSlot,
-} from "@/lib/data/iot-channel";
+} from "@/lib/domain/iot-channel";
 import type {
   TrendControllerPeriodData,
   TrendPeriodId,
-} from "@/lib/data/farm-trend-types";
+} from "@/lib/domain/farm-trend-types";
 import {
   CHANNELS,
   channelPercentsFromReading,
@@ -24,7 +24,7 @@ import {
   resolveReadingThermo,
   tempAlarmBreached,
 } from "@/lib/farm/controller-summary-display";
-import { formatSensorNumberForDisplay } from "@/lib/data/reading-display";
+import { formatSensorNumberForDisplay } from "@/lib/domain/reading-display";
 import { BarnChannelTrendPanel } from "@/components/farm/barn-channel-trend-panel";
 import { BarnListPanelShell } from "@/components/farm/barn-list-panel-shell";
 import { VentGaugeV1 } from "@/components/farm/controller-summary-gauge-parts";

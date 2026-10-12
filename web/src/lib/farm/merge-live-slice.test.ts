@@ -3,7 +3,7 @@
  */
 import assert from "node:assert/strict";
 import type { BarnMapSnapshot, BarnReading } from "@/lib/data/iot";
-import type { FarmKey } from "@/lib/data/farm-key";
+import type { FarmKey } from "@/lib/domain/farm-key";
 import {
   mergeLiveBarnSnapshots,
   mergeLiveReadings,

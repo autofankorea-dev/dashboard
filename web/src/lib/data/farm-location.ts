@@ -11,8 +11,8 @@ import {
   compareFarmKey,
   farmKeyId,
   type FarmKey,
-} from "@/lib/data/farm-key";
-import { farmDisplayLabel } from "@/lib/data/farm-summaries";
+} from "@/lib/domain/farm-key";
+import { farmDisplayLabel } from "@/lib/domain/farm-summaries";
 import { isValidMapCoord } from "@/lib/geo/map-coords";
 import {
   findRegion,
@@ -28,7 +28,7 @@ import {
   type FarmLocationBatchResult,
   type FarmLocationRow,
   type SaveFarmLocationInput,
-} from "@/lib/data/farm-location-shared";
+} from "@/lib/domain/farm-location-shared";
 
 export {
   FARM_NAME_MAX_CHARS,
@@ -37,9 +37,9 @@ export {
   type FarmLocationRow,
   type FarmLocationSaveResult,
   type SaveFarmLocationInput,
-} from "@/lib/data/farm-location-shared";
+} from "@/lib/domain/farm-location-shared";
 
-export { editableFarmOptionsFromKnownFarms } from "@/lib/data/editable-farm-options";
+export { editableFarmOptionsFromKnownFarms } from "@/lib/domain/editable-farm-options";
 
 type DbRow = {
   lsind_regist_no: string;

@@ -6,9 +6,9 @@ import {
   type ControllerThermoSettings,
 } from "@/lib/controllers/controller-settings";
 import type { ThermoCommandStatus } from "@/lib/data/commands";
-import { farmKeyId, type FarmKey } from "@/lib/data/farm-key";
-import { CHANNEL_SLOT_LABELS, type ChannelSlot } from "@/lib/data/iot-channel";
-import { normalizeStallTyCode } from "@/lib/data/stall-type";
+import { farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
+import { CHANNEL_SLOT_LABELS, type ChannelSlot } from "@/lib/domain/iot-channel";
+import { normalizeStallTyCode } from "@/lib/domain/stall-type";
 import {
   applyQueueStage,
   formatApplyQueueTargetLine,
@@ -18,7 +18,7 @@ import { formatKst } from "@/lib/datetime/kst";
 import { formatTempDisplay, formatVentDisplay } from "@/lib/farm/command-confirm";
 import type { FarmChartScope } from "@/lib/farm/farm-chart-scope";
 import { parseCategoryTimelineMs } from "@/lib/farm/trend-display-buckets";
-import type { TrendEventLane, TrendEventMark } from "@/lib/data/trend-chart-types";
+import type { TrendEventLane, TrendEventMark } from "@/lib/domain/trend-chart-types";
 import { commandHoldRowIndex } from "@/lib/farm/command-hold-bands";
 
 /** 차트 레인에 남기는 단계. 적용(`applied`=확인)만 그린다. */

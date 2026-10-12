@@ -6,13 +6,13 @@ import type { BarnMapSnapshot, BarnReading } from "@/lib/data/iot";
 import {
   farmGridEmptyCopy,
   resolveFarmGridEmptyReason,
-} from "@/lib/data/farm-grid-empty";
-import type { FarmKey } from "@/lib/data/farm-key";
+} from "@/lib/domain/farm-grid-empty";
+import type { FarmKey } from "@/lib/domain/farm-key";
 import type {
   TrendControllerPeriodData,
   TrendPeriodData,
   TrendPeriodId,
-} from "@/lib/data/farm-trend-types";
+} from "@/lib/domain/farm-trend-types";
 import type { ControllerGridData } from "@/lib/farm/controller-grid-data";
 import { useHydrationSafeDashboardCompact } from "@/components/layout/dashboard-viewport-context";
 

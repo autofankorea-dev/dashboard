@@ -12,7 +12,7 @@ import {
   pickSharedBrushOverviewKind,
   SCALE_EDGE_ALARM_KEY,
 } from "./unified-barn-trend-panel-helpers";
-import { TREND_MINI_STRIDE_MS, type TrendControllerSeries } from "@/lib/data/farm-trend-types";
+import { TREND_MINI_STRIDE_MS, type TrendControllerSeries } from "@/lib/domain/farm-trend-types";
 
 {
   assert.equal(pickSharedBrushOverviewKind(true, false), "top");

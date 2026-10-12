@@ -31,7 +31,7 @@ import type {
   TrendCommandSettingSeg,
   TrendEventLane,
   TrendEventMark,
-} from "@/lib/data/trend-chart-types";
+} from "@/lib/domain/trend-chart-types";
 import { X_SCOPE_DRAG_PX } from "./trend-chart-geometry";
 
 export type PositionedEventMark = {

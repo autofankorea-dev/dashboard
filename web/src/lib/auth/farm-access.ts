@@ -6,10 +6,10 @@ import {
   farmKeyId,
   parseFarmKeyFromQuery,
   type FarmKey,
-} from "@/lib/data/farm-key";
-import { normalizeStallTyCode } from "@/lib/data/stall-type";
+} from "@/lib/domain/farm-key";
+import { normalizeStallTyCode } from "@/lib/domain/stall-type";
 import { setMonitoringTabParam } from "@/lib/monitoring/monitoring-tabs";
-import type { TrendPeriodId } from "@/lib/data/farm-trend-types";
+import type { TrendPeriodId } from "@/lib/domain/farm-trend-types";
 import { setTrendPeriodParam } from "@/lib/farm/farm-view-url";
 
 export type FarmQueryParams = {

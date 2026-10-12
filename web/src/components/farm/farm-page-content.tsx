@@ -14,9 +14,9 @@ import { Map, List, LineChart } from "lucide-react";
 import { StallUnitIcon } from "@/components/icons/stall-unit-icon";
 import type { BarnMapSnapshot } from "@/lib/data/iot";
 import type { BarnReading } from "@/lib/data/iot";
-import { normalizeStallTyCode } from "@/lib/data/stall-type";
-import { stallKeyFromReading } from "@/lib/data/reading-hierarchy";
-import type { TrendPeriodData, TrendPeriodId } from "@/lib/data/farm-trend-types";
+import { normalizeStallTyCode } from "@/lib/domain/stall-type";
+import { stallKeyFromReading } from "@/lib/domain/reading-hierarchy";
+import type { TrendPeriodData, TrendPeriodId } from "@/lib/domain/farm-trend-types";
 import { FarmMapView } from "@/components/farm/farm-map-view";
 import { FarmChartLabView } from "@/components/farm/farm-chart-lab-view";
 import { BarnTable } from "@/components/farm/barn-table";
@@ -50,7 +50,7 @@ import {
   type FarmChartScope,
 } from "@/lib/farm/farm-chart-scope";
 import { isFarmHubPanelLiveActive } from "@/lib/farm/farm-hub-keepalive";
-import { useFarmHubViewShell } from "@/lib/farm/use-farm-hub-view-shell";
+import { useFarmHubViewShell } from "@/components/farm/use-farm-hub-view-shell";
 import { farmFieldMergeEnabled } from "@/lib/farm/farm-field-merge-enabled";
 import { isScopedControllerEnriched } from "@/lib/farm/farm-scoped-panel-utils";
 import type { ControllerGridData } from "@/lib/farm/controller-grid-data";
@@ -58,16 +58,16 @@ import {
   farmKeyId,
   parseFarmKeyId,
   type FarmKey,
-} from "@/lib/data/farm-key";
+} from "@/lib/domain/farm-key";
 import {
   invalidateFarmControllerTrendCache,
   prefetchFarmControllerTrend,
   useFarmControllerTrend,
-} from "@/lib/farm/use-farm-controller-trend";
+} from "@/components/farm/use-farm-controller-trend";
 import {
   invalidateFarmStallTrendCache,
   prefetchFarmStallTrend,
-} from "@/lib/farm/use-farm-stall-trend";
+} from "@/components/farm/use-farm-stall-trend";
 import { fetchFarmPanelEnrichShared } from "@/lib/farm/fetch-farm-panel-enrich";
 import {
   readFarmPanelCache,

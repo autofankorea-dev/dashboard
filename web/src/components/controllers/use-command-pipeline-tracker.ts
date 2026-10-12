@@ -10,8 +10,8 @@ import {
   type ControllerThermoSettings,
 } from "@/lib/controllers/controller-settings";
 import type { ThermoCommand, ThermoCommandStatus } from "@/lib/data/commands";
-import type { ChannelSlot } from "@/lib/data/iot-channel";
-import { farmKeyId } from "@/lib/data/farm-key";
+import type { ChannelSlot } from "@/lib/domain/iot-channel";
+import { farmKeyId } from "@/lib/domain/farm-key";
 import { pipelineDetailMessage } from "@/lib/ui/controller-labels";
 import {
   addTimedId,
