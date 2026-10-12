@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import assert from "node:assert/strict";
 import {
   clampMenuValue,
@@ -25,3 +26,7 @@ assert.equal(formatTrendBandEdge(22, "℃"), "22℃");
 assert.equal(formatTrendBandEdge(65, "%"), "65%");
 
 console.log("controller-panel-map snap/format: ok");
+
+test("module asserts", () => {
+  // node:assert 호출은 이 파일을 불러올 때 이미 실행된다.
+});

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { describe, it } from "vitest";
 import type { FarmKey } from "@/lib/domain/farm-key";
 import type { FarmLocationRow } from "@/lib/domain/farm-location-shared";
 import type { FarmSummaryRow } from "@/lib/domain/farm-summaries";

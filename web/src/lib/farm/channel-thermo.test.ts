@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import assert from "node:assert/strict";
 import {
   absFanWindows,
@@ -112,3 +113,7 @@ import {
 }
 
 console.log("channel-thermo.test.ts ok");
+
+test("module asserts", () => {
+  // node:assert 호출은 이 파일을 불러올 때 이미 실행된다.
+});

@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { describe, it } from "vitest";
 import { buildModuleActionPath, classifyHealthError } from "./d11-map";
 import { formatHealthAgeMin } from "./format-health-time";
 

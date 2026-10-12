@@ -1,5 +1,6 @@
+import { test } from "vitest";
 /**
- * 실행: npx tsx src/lib/onboarding/tour-steps.test.ts
+ * 실행: npx vitest run src/lib/onboarding/tour-steps.test.ts
  */
 import assert from "node:assert/strict";
 import { getTourStepsForScope } from "./tour-steps";
@@ -29,3 +30,7 @@ import { getTourStepsForScope } from "./tour-steps";
   assert.match(control?.body ?? "", /장비 경보/);
   console.log("tour-steps.test.ts: ok");
 }
+
+test("module asserts", () => {
+  // node:assert 호출은 이 파일을 불러올 때 이미 실행된다.
+});

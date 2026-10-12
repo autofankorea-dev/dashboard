@@ -1,5 +1,6 @@
+import { test } from "vitest";
 /**
- * 실행: npx tsx src/lib/farm/trend-chart-layout.test.ts
+ * 실행: npx vitest run src/lib/farm/trend-chart-layout.test.ts
  * trend-chart.tsx에서 추출한 레이아웃 순수 함수의 characterization 테스트.
  */
 import assert from "node:assert/strict";
@@ -251,3 +252,7 @@ const mark = (id: string, atMs: number, row: number): TrendEventMark =>
 }
 
 console.log("trend-chart-layout.test.ts: ok");
+
+test("module asserts", () => {
+  // node:assert 호출은 이 파일을 불러올 때 이미 실행된다.
+});

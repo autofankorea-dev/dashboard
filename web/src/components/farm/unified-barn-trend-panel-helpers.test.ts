@@ -1,5 +1,6 @@
+import { test } from "vitest";
 /**
- * 실행: npx tsx src/components/farm/unified-barn-trend-panel-helpers.test.ts
+ * 실행: npx vitest run src/components/farm/unified-barn-trend-panel-helpers.test.ts
  */
 import assert from "node:assert/strict";
 import {
@@ -127,3 +128,7 @@ import { TREND_MINI_STRIDE_MS, type TrendControllerSeries } from "@/lib/domain/f
 }
 
 console.log("unified-barn-trend-panel-helpers.test.ts: ok");
+
+test("module asserts", () => {
+  // node:assert 호출은 이 파일을 불러올 때 이미 실행된다.
+});

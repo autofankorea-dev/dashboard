@@ -1,6 +1,7 @@
+import { test } from "vitest";
 /**
  * 이상상황 종 = 모듈 + 통신두절 + 알람값 초과
- * 실행: npx tsx src/lib/data/situation-alarms.test.ts
+ * 실행: npx vitest run src/lib/data/situation-alarms.test.ts
  */
 import assert from "node:assert/strict";
 import {
@@ -158,3 +159,7 @@ console.log("situation-alarms.test.ts: all ok");
   r.alarmHighTempC = 35;
   assert.equal(mergeSituationAlarms([], [r])[0]?.alarmType, SITUATION_FIELD_ALARM_TYPE);
 }
+
+test("module asserts", () => {
+  // node:assert 호출은 이 파일을 불러올 때 이미 실행된다.
+});

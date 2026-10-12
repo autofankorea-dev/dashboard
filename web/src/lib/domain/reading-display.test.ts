@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import assert from "node:assert/strict";
 import { sensorValueForDisplay, formatSensorNumber, formatPctForDisplay, formatTempForDisplay, operationPctForDisplay } from "./reading-display";
 import { formatHumidityPct, formatTempC, buildFarmSummaries } from "./farm-summaries";
@@ -21,3 +22,7 @@ assert.equal(operationPctForDisplay({status:"normal", fanSupply:NaN,fanExhaust:5
 assert.deepEqual(buildGaugeFillSegments(NaN, 10, 35, false),{span:25,cur:0,rest:25,pct:null});
 const reading = { farmKey:{lsindRegistNo:"TEST",itemCode:"P00"},status:"normal",receivedAt:"2026-10-08T00:00:00Z",tempC:24,humidityPct:NaN } as BarnReading;
 assert.equal(buildFarmSummaries([reading,{...reading,humidityPct:60}],[])[0]?.avgHumidityPct,60, "missing readings must not corrupt valid averages");
+
+test("module asserts", () => {
+  // node:assert 호출은 이 파일을 불러올 때 이미 실행된다.
+});

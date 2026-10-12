@@ -1,3 +1,4 @@
+import { test } from "vitest";
 import assert from "node:assert/strict";
 import { clipCommandSettingY } from "./decoded-setting-hold";
 import { mapMotorPctToSplitY } from "./unified-barn-trend-series";
@@ -28,3 +29,7 @@ assert.equal(clipCommandSettingY(10, 20, 50, 80), null);
 }
 
 console.log("decoded-setting-hold.test.ts ok");
+
+test("module asserts", () => {
+  // node:assert 호출은 이 파일을 불러올 때 이미 실행된다.
+});

@@ -1,5 +1,6 @@
+import { test } from "vitest";
 /**
- * 실행: npx tsx src/lib/domain/editable-farm-options.test.ts
+ * 실행: npx vitest run src/lib/domain/editable-farm-options.test.ts
  */
 import assert from "node:assert/strict";
 import { editableFarmOptionsFromKnownFarms } from "./editable-farm-options";
@@ -41,3 +42,7 @@ assert.equal(emptyDraft.location, null);
 assert.equal(emptyDraft.hasLiveData, false);
 
 console.log("editable-farm-options.test.ts: ok");
+
+test("module asserts", () => {
+  // node:assert 호출은 이 파일을 불러올 때 이미 실행된다.
+});
