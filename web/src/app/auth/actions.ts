@@ -6,6 +6,7 @@ import { resolvePostLoginPath } from "@/lib/auth/resolve-post-login-path";
 import { resolveFixedFarmKey } from "@/lib/auth/farm-access";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import type { FarmKey } from "@/lib/domain/farm-key";
+import type { OAuthProvider } from "@/lib/auth/oauth-provider";
 import { createClient } from "@/lib/supabase/server";
 
 export type SignInErrorCode = "missing" | "credentials" | "auth";
@@ -14,7 +15,7 @@ export type SignInResult =
   | { ok: true; nextPath: "/farm" | "/pending"; farmKey: FarmKey | null }
   | { ok: false; error: SignInErrorCode };
 
-export type OAuthProvider = "google" | "kakao";
+export type { OAuthProvider } from "@/lib/auth/oauth-provider";
 
 /** Admin hub cold TTFB — 로그인 직후 overview 캐시를 미리 채운다. */
 async function warmAdminHubOverviewCache(): Promise<void> {

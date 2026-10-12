@@ -60,7 +60,7 @@ import {
   CHANNEL_SLOT_LABELS,
   type ChannelSlot,
 } from "@/lib/domain/iot-channel";
-import { useFarmLiveRefreshOptional } from "@/lib/navigation/farm-live-refresh";
+import { useFarmLiveRefreshOptional } from "@/components/farm/farm-live-refresh";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { useMobileLayout } from "@/lib/ui/use-mobile-layout";
 import { cn } from "@/lib/utils";

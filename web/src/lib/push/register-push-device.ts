@@ -1,5 +1,11 @@
 import { Capacitor } from "@capacitor/core";
-import { upsertPushDeviceAction } from "@/app/(dashboard)/push-actions";
+
+type UpsertPushDevice = (input: {
+  fcmToken: string;
+  platform: "android" | "ios";
+  appId?: string | null;
+  deviceLabel?: string | null;
+}) => Promise<unknown>;
 
 const APP_ID = "com.autofankorea.dashboard";
 
@@ -24,7 +30,9 @@ function resolveHrefFromNotificationData(
 }
 
 /** Capacitor Android에서만 FCM 권한·토큰 등록. 브라우저/iOS 웹은 no-op. */
-export async function registerPushDeviceIfNative(): Promise<void> {
+export async function registerPushDeviceIfNative(
+  upsertPushDevice: UpsertPushDevice,
+): Promise<void> {
   if (!Capacitor.isNativePlatform()) return;
   if (Capacitor.getPlatform() !== "android") return;
 
@@ -47,7 +55,7 @@ export async function registerPushDeviceIfNative(): Promise<void> {
     };
 
     void PushNotifications.addListener("registration", (token) => {
-      void upsertPushDeviceAction({
+      void upsertPushDevice({
         fcmToken: token.value,
         platform: "android",
         appId: APP_ID,

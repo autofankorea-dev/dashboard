@@ -29,7 +29,7 @@ import {
   InlineStatusToast,
   type InlineStatusTone,
 } from "@/components/common/inline-status-toast";
-import { useFarmLiveRefreshOptional } from "@/lib/navigation/farm-live-refresh";
+import { useFarmLiveRefreshOptional } from "@/components/farm/farm-live-refresh";
 import { scheduleSafeRouterRefresh } from "@/lib/navigation/safe-router-refresh";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { cn } from "@/lib/utils";

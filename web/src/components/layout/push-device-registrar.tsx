@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { upsertPushDeviceAction } from "@/app/(dashboard)/push-actions";
 import {
   bindPushNotificationNavigation,
   registerPushDeviceIfNative,
@@ -19,7 +20,7 @@ export function PushDeviceRegistrar() {
     let unbind: (() => void) | undefined;
 
     void (async () => {
-      await registerPushDeviceIfNative();
+      await registerPushDeviceIfNative(upsertPushDeviceAction);
       if (cancelled) return;
       unbind = await bindPushNotificationNavigation((href) => {
         router.push(href);

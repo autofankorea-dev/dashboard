@@ -28,7 +28,7 @@ import {
   type InlineStatusTone,
 } from "@/components/common/inline-status-toast";
 import { useFarmTourGridAction } from "@/components/onboarding/use-farm-tour-grid-action";
-import { useFarmLiveRefreshOptional } from "@/lib/navigation/farm-live-refresh";
+import { useFarmLiveRefreshOptional } from "@/components/farm/farm-live-refresh";
 import { scheduleSafeRouterRefresh } from "@/lib/navigation/safe-router-refresh";
 import { FARM_TOUR_ACTION_EVENT } from "@/lib/onboarding/tour-steps";
 import type { TourGridAction } from "@/lib/onboarding/tour-grid-actions";

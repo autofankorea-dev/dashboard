@@ -1,5 +1,6 @@
 "use client";
 
+import { fetchFarmScopedPanelDataAction } from "@/app/(dashboard)/farm/actions";
 import { farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
 import { fetchFarmPanelEnrichShared } from "@/lib/farm/fetch-farm-panel-enrich";
 import { setFarmPanelCache } from "@/lib/farm/farm-panel-cache";
@@ -10,7 +11,7 @@ import { prefetchFarmControllerTrend } from "@/components/farm/use-farm-controll
  * 실패해도 /farm SSR·bootstrap이 이어 받는다.
  */
 export function warmPostLoginFarmHub(farmKey: FarmKey): void {
-  void fetchFarmPanelEnrichShared(farmKey)
+  void fetchFarmPanelEnrichShared(farmKey, fetchFarmScopedPanelDataAction)
     .then((data) => {
       setFarmPanelCache(farmKeyId(farmKey), data);
     })

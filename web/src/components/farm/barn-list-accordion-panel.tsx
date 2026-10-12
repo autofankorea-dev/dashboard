@@ -39,7 +39,7 @@ import {
 } from "@/components/farm/settings-glance-strip";
 import { type PanelDraft, type PanelThermoValues } from "@/lib/controllers/controller-panel-draft";
 import { BusyButtonLabel } from "@/components/common/busy-button-label";
-import { useFarmLiveRefreshOptional } from "@/lib/navigation/farm-live-refresh";
+import { useFarmLiveRefreshOptional } from "@/components/farm/farm-live-refresh";
 import type { BarnReading } from "@/lib/data/iot";
 import type { ThermoCommand } from "@/lib/data/commands";
 import { latestFailedCommand, commandFailureExplanation } from "@/lib/controllers/command-failure-recovery";
