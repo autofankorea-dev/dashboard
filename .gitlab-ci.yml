@@ -2,7 +2,7 @@ stages:
   - verify
 
 default:
-  image: node:20-bookworm
+  image: node:22-bookworm
   cache:
     key: "${CI_COMMIT_REF_SLUG}-web"
     paths:
