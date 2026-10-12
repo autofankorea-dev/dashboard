@@ -28,17 +28,14 @@ import {
   commandSettingHasWindow,
 } from "@/lib/farm/command-hold-bands";
 import type {
-  TrendCommandSettingSeg,
   TrendEventLane,
   TrendEventMark,
 } from "@/lib/domain/trend-chart-types";
 import { X_SCOPE_DRAG_PX } from "@/lib/farm/trend-chart-geometry";
-
-export type PositionedEventMark = {
-  mark: TrendEventMark;
-  xView: number;
-  yView: number;
-};
+import type {
+  PositionedCommandSettingHit,
+  PositionedEventMark,
+} from "@/lib/farm/trend-chart-layout";
 
 export function EventLaneSvgGuides({
   padL,
@@ -475,14 +472,6 @@ export function EventLaneHtmlOverlay({
     </div>
   );
 }
-
-export type PositionedCommandSettingHit = {
-  seg: TrendCommandSettingSeg;
-  x0: number;
-  x1: number;
-  y: number;
-  h: number;
-};
 
 export function CommandSettingBandsSvg({
   hits,

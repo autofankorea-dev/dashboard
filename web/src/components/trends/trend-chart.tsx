@@ -17,14 +17,10 @@ import { AlarmDomainIcon } from "@/components/settings/alarm-domain-icon";
 import { cn } from "@/lib/utils";
 import {
   buildTrendAxisMarks,
-  formatTrendAxisTickParts,
   parseCategoryTimelineMs,
   trendChartTickTargetForWidth,
 } from "@/lib/farm/trend-display-buckets";
-import {
-  type Band,
-  SEV_COLOR,
-} from "@/lib/farm/severity-score";
+import { SEV_COLOR } from "@/lib/farm/severity-score";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { isPrimaryPress } from "@/lib/ui/pointer-press";
 import { useClipPresence, usePresenceValue } from "@/lib/ui/use-clip-presence";
@@ -86,13 +82,26 @@ import {
   parseScaleEdgeValueUnit,
   tipPinId,
   trendChartHasRenderableContent,
-  trendMsToPlotX,
   trendPlotPadPx,
   interpolateTimelineMsFromXView,
   formatCrosshairClock,
   chartDomainYFromViewY,
   type EdgeBandLabel,
 } from "@/lib/farm/trend-chart-geometry";
+import {
+  buildAxisTickViews,
+  buildLeftAxisTicks,
+  collectUniqueAlarmBands,
+  computeBarLayout,
+  dedupeReferenceLines,
+  plotXForBar,
+  plotXForIndex,
+  plotXForMs,
+  plotYForValue,
+  positionCommandSettingHits,
+  positionEventMarks,
+  type TrendPlotXScale,
+} from "@/lib/farm/trend-chart-layout";
 import {
   MAX_PINNED_TIPS,
   PIN_CLICK_SLOP_PX,
@@ -121,8 +130,6 @@ import {
   CommandSettingHitOverlay,
   EventLaneHtmlOverlay,
   EventLaneSvgGuides,
-  type PositionedCommandSettingHit,
-  type PositionedEventMark,
 } from "./trend-chart-event-lane";
 import type { TrendChartProps } from "./trend-chart-props";
 
@@ -439,125 +446,50 @@ export function TrendChart({
   const [lMin, lMax] = domainFor(finiteValues(series, "left"), leftDomain);
   const [rMin, rMax] = domainFor(finiteValues(series, "right"), rightDomain);
 
-  const yFor = (value: number, axis: TrendAxis): number => {
-    const [mn, mx] = axis === "right" ? [rMin, rMax] : [lMin, lMax];
-    if (
-      !Number.isFinite(value) ||
-      !Number.isFinite(mn) ||
-      !Number.isFinite(mx)
-    ) {
-      return PAD_TOP + innerH;
-    }
-    const t = (value - mn) / (mx - mn || 1);
-    return PAD_TOP + innerH - t * innerH;
-  };
-
-  const leftAxisTicks =
-    !hideAxisChrome &&
-    showNativeLeftAxis && Number.isFinite(lMin) && Number.isFinite(lMax) && lMax > lMin
-      ? (yAxisTicks === "ends"
-          ? [0, 1]
-          : yAxisTicks === "thirds"
-            ? [0, 1, 2]
-            : [0, 1, 2, 3, 4]
-        ).map((i, _, steps) => {
-          const denom = Math.max(1, steps.length - 1);
-          const value = lMin + ((lMax - lMin) * i) / denom;
-          const y = yFor(value, "left");
-          return {
-            id: `left-axis-${i}`,
-            topPct: (y / chartH) * 100,
-            text: formatTrendBandEdge(value, leftUnit),
-          };
-        })
-      : [];
-
-  const xFor = (i: number): number => {
-    if (n <= 1) return padL + innerW / 2;
-    if (timeAxisMs && timeAxisMs.length === n) {
-      const t0 = timeAxisMs[0]!;
-      const ti = timeAxisMs[i];
-      const span = timeAxisMs[n - 1]! - t0;
-      if (span > 0 && ti != null && Number.isFinite(ti) && Number.isFinite(t0)) {
-        const t = (ti - t0) / span;
-        return padL + Math.min(1, Math.max(0, t)) * innerW;
-      }
-    }
-    return padL + (i / (n - 1)) * innerW;
-  };
-
-  const xForMs = (ms: number): number | null => {
-    if (n <= 1) return padL + innerW / 2;
-    if (timeAxisMs && timeAxisMs.length === n) {
-      return trendMsToPlotX(
-        ms,
-        timeAxisMs[0]!,
-        timeAxisMs[n - 1]!,
-        padL,
-        innerW,
-      );
-    }
-    return null;
-  };
-
-  const positionedEventMarks: PositionedEventMark[] = (() => {
-    if (!eventLane || eventLaneH <= 0) return [];
-    const rows = Math.max(1, eventLane.rowLabels.length);
-    const out: PositionedEventMark[] = [];
-    for (const mark of eventLane.marks) {
-      const xView = xForMs(mark.atMs);
-      if (xView == null) continue;
-      const row = Math.min(rows - 1, Math.max(0, mark.row));
-      const yView = eventLaneTop + ((row + 0.5) / rows) * eventLaneH;
-      out.push({ mark, xView, yView });
-    }
-    return out;
-  })();
-
-  const positionedCommandHits: PositionedCommandSettingHit[] = (() => {
-    if (commandSettingSegs.length === 0) return [];
-    const xMin = padL;
-    const xMax = viewW - padR;
-    const out: PositionedCommandSettingHit[] = [];
-    for (const seg of commandSettingSegs) {
-      const raw0 = xForMs(seg.x0Ms);
-      const raw1 = xForMs(seg.x1Ms);
-      const x0 = raw0 ?? xMin;
-      const x1 = raw1 ?? xMax;
-      const xa = Math.max(xMin, Math.min(xMax, Math.min(x0, x1)));
-      const xb = Math.max(xMin, Math.min(xMax, Math.max(x0, x1)));
-      if (!(xb - xa > 0.3)) continue;
-      const yA = yFor(seg.yLo, "left");
-      const yB = yFor(seg.yHi, "left");
-      if (!Number.isFinite(yA) || !Number.isFinite(yB)) continue;
-      const y = Math.min(yA, yB);
-      const h = Math.max(2, Math.abs(yB - yA));
-      out.push({ seg, x0: xa, x1: xb, y, h });
-    }
-    return out;
-  })();
-
-  const barGroupW = n > 0 ? innerW / n : innerW;
-  const rawBarW =
-    series.length > 0 ? (barGroupW * 0.7) / series.length : barGroupW * 0.7;
-  const barW =
-    barWidthCapPct != null ? Math.min(rawBarW, barWidthCapPct) : rawBarW;
-  const barSlotW = barW * Math.max(1, series.length);
-
-  /** 팬 1~4개 — 차트 중앙 기준 클러스터(1=중앙, 2=중앙 좌·우). 5개 이상은 전폭 분산. */
-  const barCenterCluster = mode === "bar" && n > 0 && n <= 4;
-
-  const xForBar = (i: number): number => {
-    const center = padL + innerW / 2;
-    if (n <= 1) return center;
-    if (!barCenterCluster) return xFor(i);
-    const spacing = Math.min(
-      Math.max(barSlotW * 1.25, innerW / (n + 2)),
-      n > 1 ? innerW / (n - 1) : innerW,
+  const yFor = (value: number, axis: TrendAxis): number =>
+    plotYForValue(
+      value,
+      axis === "right" ? [rMin, rMax] : [lMin, lMax],
+      innerH,
     );
-    const span = (n - 1) * spacing;
-    return center - span / 2 + i * spacing;
-  };
+
+  const leftAxisTicks = buildLeftAxisTicks({
+    show: !hideAxisChrome && showNativeLeftAxis,
+    domain: [lMin, lMax],
+    mode: yAxisTicks,
+    chartH,
+    innerH,
+    unit: leftUnit,
+  });
+
+  const xScale: TrendPlotXScale = { n, timeAxisMs, padL, innerW };
+  const xFor = (i: number): number => plotXForIndex(i, xScale);
+  const xForMs = (ms: number): number | null => plotXForMs(ms, xScale);
+
+  const positionedEventMarks = positionEventMarks(
+    eventLane,
+    { eventLaneH, eventLaneTop },
+    xForMs,
+  );
+
+  const positionedCommandHits = positionCommandSettingHits(
+    commandSettingSegs,
+    { xMin: padL, xMax: viewW - padR },
+    xForMs,
+    (value) => yFor(value, "left"),
+  );
+
+  const barLayout = computeBarLayout({
+    mode,
+    n,
+    innerW,
+    seriesCount: series.length,
+    barWidthCapPct,
+  });
+  const { barW, barSlotW } = barLayout;
+
+  const xForBar = (i: number): number =>
+    plotXForBar(i, barLayout, xScale, xFor);
 
   const xAtIndex = (i: number): number =>
     mode === "bar" ? xForBar(i) : xFor(i);
@@ -1663,60 +1595,16 @@ export function TrendChart({
   );
   const axisTicks = axisMarks.majors;
 
-  const axisTickViews = useMemo(() => {
-    const last = axisTicks.length - 1;
-    return axisTicks.map((mark, tickOrd) => {
-      const prevLabel =
-        tickOrd > 0 ? (axisTicks[tickOrd - 1]?.fullLabel ?? null) : null;
-      const parts = period
-        ? formatTrendAxisTickParts(period, mark.fullLabel, {
-            endpoint: tickOrd === 0 || tickOrd === last,
-            prevLabel,
-            stacked: true,
-          })
-        : { date: null, time: mark.fullLabel };
-      const xView = padL + mark.t * innerW;
-      return {
-        key: `${tickOrd}-${mark.fullLabel}`,
-        fullLabel: mark.fullLabel,
-        parts,
-        leftPct: viewW > 0 ? (xView / viewW) * 100 : 0,
-      };
-    });
-  }, [axisTicks, innerW, padL, period, viewW]);
+  const axisTickViews = useMemo(
+    () => buildAxisTickViews(axisTicks, { period, padL, innerW, viewW }),
+    [axisTicks, innerW, padL, period, viewW],
+  );
 
   /** 알람/한계 점선 — 동일 axis·밴드 1회. */
-  const uniqueAlarmBands = useMemo(() => {
-    const seen = new Set<string>();
-    const out: {
-      band: Band;
-      axis: TrendAxis;
-      color?: string;
-      fillWindow?: boolean;
-      fillOpacity?: number;
-      id?: string;
-    }[] = [];
-    for (const s of series) {
-      if (!s.band) continue;
-      const axis = s.axis ?? "left";
-      const key = `${axis}:${s.band.lo}:${s.band.hi}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      const fillWindow = false;
-      out.push({ band: s.band, axis, color: s.color, fillWindow });
-    }
-    for (const range of rangeBands) {
-      out.push({
-        id: range.id,
-        band: { lo: range.lo, hi: range.hi },
-        axis: range.axis ?? "left",
-        color: range.color,
-        fillWindow: true,
-        fillOpacity: range.fillOpacity,
-      });
-    }
-    return out;
-  }, [series, rangeBands]);
+  const uniqueAlarmBands = useMemo(
+    () => collectUniqueAlarmBands(series, rangeBands),
+    [series, rangeBands],
+  );
 
   const alarmFillBands = useMemo(
     () => uniqueAlarmBands.filter((b) => b.fillWindow !== false),
@@ -1731,18 +1619,10 @@ export function TrendChart({
   );
 
   /** referenceLines 중 알람 band 모서리와 중복되는 점선 제거. */
-  const dedupedReferenceLines = useMemo(() => {
-    if (uniqueAlarmBands.length === 0) return referenceLines;
-    return referenceLines.filter((ref) => {
-      const axis = ref.axis ?? "left";
-      return !uniqueAlarmBands.some(
-        ({ band, axis: bandAxis }) =>
-          bandAxis === axis &&
-          (Math.abs(band.lo - ref.value) < 1e-6 ||
-            Math.abs(band.hi - ref.value) < 1e-6),
-      );
-    });
-  }, [referenceLines, uniqueAlarmBands]);
+  const dedupedReferenceLines = useMemo(
+    () => dedupeReferenceLines(referenceLines, uniqueAlarmBands),
+    [referenceLines, uniqueAlarmBands],
+  );
 
   const unitForAxis = (axis: TrendAxis) =>
     axis === "right" ? rightUnit : leftUnit;
