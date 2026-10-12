@@ -117,6 +117,7 @@ import {
   type PinnedTip,
 } from "./trend-chart-interaction";
 import { useTrendPinnedTips } from "./use-trend-pinned-tips";
+import { useTrendPlotSize } from "./use-trend-plot-size";
 import { useTrendScopeGesture } from "./use-trend-scope-gesture";
 import {
   BandGuidesLayer,
@@ -290,7 +291,6 @@ export function TrendChart({
   const lastCrosshairRef = useRef({ x: 0, y: 0, on: false });
   const tipRef = useRef<HTMLDivElement | null>(null);
   const lastAnchorRef = useRef({ x: 0, y: 0, w: 1, h: 1 });
-  const plotRef = useRef<HTMLDivElement | null>(null);
   const pinClickArmRef = useRef<{
     x: number;
     y: number;
@@ -298,8 +298,13 @@ export function TrendChart({
   } | null>(null);
   /** 2손가락 룩백 핀치 중 — X스코프 draft 재진입·커밋 방지 */
   const lookbackPinchActiveRef = useRef(false);
-  const [plotPx, setPlotPx] = useState({ w: 1, h: 1 });
-  const plotWidthNotifyRef = useRef(0);
+  const { plotRef, plotPx } = useTrendPlotSize({
+    fillParent,
+    height,
+    categoriesLength: categories.length,
+    seriesLength: series.length,
+    onPlotWidthChange,
+  });
   const glowFilterId = `tc-glow-${useId().replace(/:/g, "")}`;
   /** 기간 변경 시만 plot wipe — 카테고리 trim/X스코프는 remount 금지 */
   const plotEnterKey = animate ? String(period ?? "p") : "static";
@@ -361,47 +366,6 @@ export function TrendChart({
     (g) => String(g.i),
     { enabled: clipWipeEnabled },
   );
-
-  useLayoutEffect(() => {
-    const el = plotRef.current;
-    if (!el || typeof ResizeObserver === "undefined") return;
-    let tid = 0;
-    const apply = (size?: { width: number; height: number }) => {
-      const run = () => {
-        // SVG coordinates use layout pixels. Ancestor expand transforms affect
-        // getBoundingClientRect(), but must not affect the viewBox or dot size.
-        const rect = size ?? { width: el.clientWidth, height: el.clientHeight };
-        if (rect.width > 0 && rect.height > 0) {
-          setPlotPx((prev) =>
-            Math.abs(prev.w - rect.width) < 0.5 &&
-            Math.abs(prev.h - rect.height) < 0.5
-              ? prev
-              : { w: rect.width, h: rect.height },
-          );
-          if (Math.abs(plotWidthNotifyRef.current - rect.width) >= 4) {
-            plotWidthNotifyRef.current = rect.width;
-            onPlotWidthChange?.(rect.width);
-          }
-        }
-      };
-      if (fillParent) {
-        run();
-        return;
-      }
-      window.clearTimeout(tid);
-      tid = window.setTimeout(run, 100);
-    };
-    apply();
-    const ro = new ResizeObserver((entries) => {
-      const entry = entries.find((item) => item.target === el);
-      if (entry) apply(entry.contentRect);
-    });
-    ro.observe(el);
-    return () => {
-      window.clearTimeout(tid);
-      ro.disconnect();
-    };
-  }, [fillParent, height, categories.length, series.length, onPlotWidthChange]);
 
   const hasAny = trendChartHasRenderableContent({
     series,
