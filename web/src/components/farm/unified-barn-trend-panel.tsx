@@ -1,130 +1,45 @@
 "use client";
 
-import { useCallback, useDeferredValue, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
-import type { TrendCommandSettingSeg } from "@/components/trends/trend-chart";
-import { UnifiedBarnTrendChart } from "@/components/farm/unified-barn-trend-chart";
-import {
-  BRUSH_PERIOD_WINDOW,
-  UnifiedTrendPeriodBrush,
-  displayPeriodFromBrushWindow,
-  zoomBrushLookback,
-  type BrushWindow,
-} from "@/components/farm/unified-trend-period-brush";
-import {
-  UnifiedTrendLayerToolbar,
-  CommandChannelLayerToolbar,
-  applyLayerGroupMode,
-  detectLayerGroupMode,
-  nextLayerGroupMode,
-  type SharedChartLayerDisplay,
-} from "@/components/farm/unified-trend-layer-toolbar";
-
-import {
-  resolveThresholdsForChartScope,
-} from "@/lib/domain/alarm-scope";
-import type { AlarmSettings, AlarmThresholds } from "@/lib/domain/alarms";
-import {
-  DEFAULT_ALARM_SETTINGS,
-} from "@/lib/domain/alarms";
-import type { BarnReading } from "@/lib/data/iot";
-import {
-  isContextControllerTrend30d,
-  pickTrendCanvasPeriod,
-  controllerTrendPeriodHasSeries,
-  type TrendControllerPeriodData,
-  type TrendPeriodId,
-  type TrendWindow15m,
-} from "@/lib/domain/farm-trend-types";
-import {
-  type UplinkCoverageIndex,
-} from "@/lib/farm/trend-uplink-coverage";
-import {
-  buildTrendBrushOverview,
-  downsampleSeriesForChart,
-} from "@/components/farm/unified-barn-trend-panel-helpers";
-import { buildUnifiedBarnTrendWindow } from "@/components/farm/unified-barn-trend-window";
-import { rebuildScopedUnifiedBarnTrend } from "@/components/farm/unified-barn-trend-scoped";
-import {
-  buildGuidedScopePlayback,
-  resolveGuidedScopePlayback,
-  type GuidedXScopeGesture,
-} from "@/components/farm/unified-barn-trend-guided-scope";
-import { buildUnifiedCommandSettingSegs } from "@/components/farm/unified-barn-trend-command-overlay";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import type { GuidedXScopeGesture } from "@/components/farm/unified-barn-trend-guided-scope";
+import { buildGuidedScopePlayback } from "@/components/farm/unified-barn-trend-guided-scope";
+import { UnifiedBarnTrendPanelFrame } from "@/components/farm/unified-barn-trend-panel-frame";
+import type { UnifiedBarnTrendControllerRef } from "@/components/farm/unified-barn-trend-scope-marks";
 import {
   resolveXScopeRangeMs,
   scopeEntryFromZoomHint,
   xScopeEntryOutOfRange,
+  type PanelXScopeEntry,
 } from "@/components/farm/unified-barn-trend-x-scope";
+import type { SharedChartLayerDisplay } from "@/components/farm/unified-trend-layer-toolbar";
 import {
-  window15mCovers,
-} from "@/lib/farm/trend-brush-coverage";
-import { findControllerTrendSeries } from "@/lib/farm/controller-summary-display";
-import { UnifiedBarnTrendPanelHeader } from "@/components/farm/unified-barn-trend-panel-header";
-import type { UnifiedBarnTrendControllerRef } from "@/components/farm/unified-barn-trend-scope-marks";
-import {
-  alarmScopeKeyFromFarmChartScope,
-  chartScopeEntryToZoomHint,
-  type ChartTrendZoomHint,
-  type FarmChartScope,
+  BRUSH_PERIOD_WINDOW,
+  type BrushWindow,
+} from "@/components/farm/unified-trend-period-brush";
+import { useUnifiedBarnTrendChrome } from "@/components/farm/use-unified-barn-trend-chrome";
+import { useUnifiedBarnTrendScopeActions } from "@/components/farm/use-unified-barn-trend-scope-actions";
+import { useUnifiedBarnTrendSeries } from "@/components/farm/use-unified-barn-trend-series";
+import { useUnifiedBarnTrendView } from "@/components/farm/use-unified-barn-trend-view";
+import type { AlarmSettings } from "@/lib/domain/alarms";
+import type { UnifiedMetricAvailability } from "@/lib/farm/unified-barn-trend-series";
+import type {
+  TrendControllerPeriodData,
+  TrendPeriodId,
+  TrendWindow15m,
+} from "@/lib/domain/farm-trend-types";
+import type { UplinkCoverageIndex } from "@/lib/farm/trend-uplink-coverage";
+import type {
+  ChartTrendZoomHint,
+  FarmChartScope,
 } from "@/lib/farm/farm-chart-scope";
 import type { ControllerThermoSettings } from "@/lib/controllers/controller-settings";
-import {
-  DEFAULT_COMMAND_CHANNEL_FLAGS,
-  toggleCommandChannelFlag,
-  type CommandChannelFlags,
-} from "@/lib/farm/command-hold-bands";
-import { buildFarmTrendScaleEdges } from "@/components/farm/unified-barn-trend-scale-edges";
-import {
-  aggregateUnifiedBarnTrendRaw,
-  DEFAULT_UNIFIED_LAYERS,
-  mapUnifiedBarnTrendRawToSplitY,
-  overlayControllerMetricSeries,
-  replaceAverageMetricSeries,
-  metricAvailabilityFromSeriesList,
-  andSplitYVisibility,
-  pickUnifiedTrendLayers,
-  resolveUnifiedPlotLayout,
-  splitYVisibilityFromLayers,
-  countSplitYBands,
-  hitSplitYBand,
-  resolveYScopeBands,
-  domainYFromViewRatio,
-  visibilityForYBands,
-  maskLayersForYBands,
-  allocateUnifiedChartBandHeights,
-  OVERLAY_ALIGN_ANCHOR,
-  type UnifiedLayerFlags,
-  type UnifiedMetricAvailability,
-  type UnifiedYBandId,
-} from "@/lib/farm/unified-barn-trend-series";
-import { invertSplitYCrosshairValues } from "@/lib/farm/farm-crosshair-readout";
-import { useUnifiedChartBandTransition } from "@/components/farm/use-split-y-layout-transition";
-import { motionClass } from "@/lib/ui/motion-classes";
-import { motionDuration } from "@/lib/ui/motion-tokens";
+import { window15mCovers } from "@/lib/farm/trend-brush-coverage";
 import {
   humanizeGuidedScopeRect,
   type GuidedScopeRect,
 } from "@/lib/ui/guided-scope-jitter";
-import { dashboardChroma } from "@/lib/ui/dashboard-page-ui";
-import {
-  chartUiPx,
-  farmChartUi,
-  FARM_CHART_UI_SCALE,
-} from "@/lib/ui/farm-chart-ui-scale";
-import { cn } from "@/lib/utils";
-
-const emptySubscribe = () => () => {};
 
 export type { UnifiedBarnTrendControllerRef };
-
-type ScopeEntry = {
-  start: number;
-  end: number;
-  /** null = Y필터 없음 · ["temp","hum"] = 걸린 밴드만 */
-  yBands: UnifiedYBandId[] | null;
-};
-
-const EMPTY_CHART_CATEGORIES: string[] = [];
 
 type Props = {
   label: string;
@@ -238,75 +153,50 @@ export function UnifiedBarnTrendPanel({
   controllerSelectEmpty = false,
   className,
 }: Props) {
-  const comparisonActive = comparisonZoom !== undefined;
-  const [ownedLayers, setOwnedLayers] =
-    useState<UnifiedLayerFlags>(DEFAULT_UNIFIED_LAYERS);
-  const [ownedAlarmRangeOn, setOwnedAlarmRangeOn] = useState({
-    temp: true,
-    hum: true,
-  });
-  const layers = sharedLayers?.layers ?? ownedLayers;
-  const alarmRangeOn = sharedLayers?.alarmRangeOn ?? ownedAlarmRangeOn;
-  const overview = headingMode === "overview";
-  const chartUiScale = overview ? 1 : FARM_CHART_UI_SCALE;
-  const [commandChannels, setCommandChannels] = useState<CommandChannelFlags>(
-    DEFAULT_COMMAND_CHANNEL_FLAGS,
-  );
-  const [commandPaneSeen, setCommandPaneSeen] = useState(commandPaneOpen);
-  const [toolbarActiveSeen, setToolbarActiveSeen] = useState(layersToolbarActive);
-  const [layersToolbarMounted, setLayersToolbarMounted] = useState(
+
+  const chrome = useUnifiedBarnTrendChrome({
+    comparisonZoom,
+    sharedLayers,
+    headingMode,
+    commandPaneOpen,
     layersToolbarActive,
-  );
-  const [layersToolbarPhase, setLayersToolbarPhase] = useState<
-    "enter" | "exit"
-  >(layersToolbarActive ? "enter" : "exit");
-  const [layersAnimKey, setLayersAnimKey] = useState(0);
-  /** P1/P2 스코프 스택 — X + 선택 Y밴드 */
-  const [xScopeStack, setXScopeStack] = useState<ScopeEntry[]>([]);
+    brushWindowProp,
+    onBrushWindowChange,
+  });
+  const {
+    brushSyncKey,
+    brushControlled,
+    brushWindow,
+    applyBrushWindow,
+    overview,
+  } = chrome;
+
+  const [xScopeStack, setXScopeStack] = useState<PanelXScopeEntry[]>([]);
   const xScope =
     xScopeStack.length > 0 ? xScopeStack[xScopeStack.length - 1]! : null;
-  const brushControlled =
-    brushWindowProp != null && onBrushWindowChange != null;
-  const [innerBrushWindow, setInnerBrushWindow] = useState<BrushWindow>(
-    () => BRUSH_PERIOD_WINDOW["24h"],
-  );
-  const brushWindow = brushControlled ? brushWindowProp : innerBrushWindow;
-  const lookbackPeriod = displayPeriodFromBrushWindow(brushWindow);
-  const applyBrushWindow = (next: BrushWindow) => {
-    if (brushControlled) onBrushWindowChange(next);
-    else setInnerBrushWindow(next);
-  };
-  const lookbackWinRef = useRef(brushWindow);
-  useLayoutEffect(() => {
-    lookbackWinRef.current = brushWindow;
-  }, [brushWindow]);
-  const onLookbackWheel = useCallback(
-    (dir: 1 | -1) => {
-      const cur = lookbackWinRef.current;
-      const next = zoomBrushLookback(cur, dir);
-      if (
-        Math.abs(next.width - cur.width) < 1e-12 &&
-        Math.abs(next.start - cur.start) < 1e-12
-      ) {
-        return;
-      }
-      lookbackWinRef.current = next;
-      if (onBrushWindowChange) onBrushWindowChange(next);
-      else setInnerBrushWindow(next);
-    },
-    [onBrushWindowChange],
-  );
-  const brushSyncKey = `${brushWindow.start.toFixed(4)}:${brushWindow.width.toFixed(4)}`;
   const [seenBrushKey, setSeenBrushKey] = useState(brushSyncKey);
   if (brushControlled && brushSyncKey !== seenBrushKey) {
     setSeenBrushKey(brushSyncKey);
     if (xScopeStack.length > 0) setXScopeStack([]);
   }
-  const [chartPlotWidth, setChartPlotWidth] = useState(0);
-  const onChartPlotWidth = useCallback((w: number) => {
-    setChartPlotWidth((prev) => (Math.abs(prev - w) < 8 ? prev : w));
-  }, []);
-  const plotWidthPx = chartPlotWidth > 32 ? chartPlotWidth : 800;
+
+  const series = useUnifiedBarnTrendSeries({
+    controllers,
+    chartScope,
+    alarmSettings,
+    chrome,
+    controllerTrendByPeriod,
+    period,
+    hidePeriodBrush,
+    uplinkCoverage,
+    onMetricAvailable,
+    isMobileStack,
+    chartHeight,
+    xScope,
+    overlayControllers,
+  });
+  const { picked, windowBundle, built, layerLayout } = series;
+
   const [scopeMotionKey, setScopeMotionKey] = useState(0);
   const [scopeMotionDir, setScopeMotionDir] = useState<"in" | "out">("in");
   const bumpScopeMotion = useCallback((dir: "in" | "out") => {
@@ -314,301 +204,6 @@ export function UnifiedBarnTrendPanel({
     setScopeMotionKey((k) => k + 1);
   }, []);
   const initialZoomKeyRef = useRef<string>("");
-
-  if (layersToolbarActive !== toolbarActiveSeen) {
-    setToolbarActiveSeen(layersToolbarActive);
-    if (layersToolbarActive) {
-      setLayersToolbarMounted(true);
-      setLayersToolbarPhase("enter");
-      setLayersAnimKey((k) => k + 1);
-    } else {
-      setLayersToolbarPhase("exit");
-    }
-  }
-  if (commandPaneSeen !== commandPaneOpen) {
-    setCommandPaneSeen(commandPaneOpen);
-    if (!commandPaneOpen) {
-      setCommandChannels(DEFAULT_COMMAND_CHANNEL_FLAGS);
-    }
-  }
-
-  const scopedReadings = useMemo(
-    () =>
-      controllers
-        .map((c) => c.reading)
-        .filter((r): r is BarnReading => r != null),
-    [controllers],
-  );
-
-  const alarmScopeKey = useMemo(
-    () => alarmScopeKeyFromFarmChartScope(scopedReadings, chartScope),
-    [scopedReadings, chartScope],
-  );
-
-  const baseThresholds = useMemo(() => {
-    const settings = alarmSettings ?? DEFAULT_ALARM_SETTINGS;
-    return resolveThresholdsForChartScope(
-      settings,
-      alarmScopeKey,
-      scopedReadings,
-    );
-  }, [alarmSettings, alarmScopeKey, scopedReadings]);
-
-  const mappingThresholds = baseThresholds;
-  const plotThresholds: AlarmThresholds = useMemo(
-    () => ({
-      tempLow: Number.isFinite(mappingThresholds.tempLow) ? mappingThresholds.tempLow : 0,
-      tempHigh: Number.isFinite(mappingThresholds.tempHigh) ? mappingThresholds.tempHigh : 50,
-      humidityLow: 0,
-      humidityHigh: 100,
-    }),
-    [mappingThresholds],
-  );
-
-  const layerVisibility = useMemo(
-    () => splitYVisibilityFromLayers(layers),
-    [layers],
-  );
-  const metricAvailable = useMemo(() => {
-    const periodId = overview
-      ? "24h"
-      : pickTrendCanvasPeriod(
-          controllerTrendByPeriod,
-          period,
-        );
-    const periodData = controllerTrendByPeriod?.[periodId];
-    if (!periodData) {
-      return { temp: false, hum: false, motors: false };
-    }
-    const list = controllers
-      .map((c) => {
-        const r = c.reading;
-        if (!r) return null;
-        return findControllerTrendSeries(
-          controllerTrendByPeriod,
-          periodId,
-          r.stallTyCode,
-          r.stallNo,
-          r.controllerKey,
-        );
-      })
-      .filter((s): s is NonNullable<typeof s> => s != null);
-    if (!list.length) {
-      return { temp: false, hum: false, motors: false };
-    }
-    return metricAvailabilityFromSeriesList(list);
-  }, [controllers, controllerTrendByPeriod, period, overview]);
-  useEffect(() => {
-    onMetricAvailable?.(metricAvailable);
-  }, [metricAvailable, onMetricAvailable]);
-  const dataVisibility = useMemo(
-    () => andSplitYVisibility(layerVisibility, metricAvailable),
-    [layerVisibility, metricAvailable],
-  );
-  /** 켜진 플롯 밴드가 2개 이상이면 오버레이(분할 보기 없음) */
-  const overlayAvailable = countSplitYBands(dataVisibility) >= 2;
-  const overlayActive = overlayAvailable;
-  const overlayAlign = overlayActive ? OVERLAY_ALIGN_ANCHOR : undefined;
-  const scopeVisibility = useMemo(() => {
-    const bandVis = visibilityForYBands(xScope?.yBands ?? null);
-    if (!bandVis) return dataVisibility;
-    return {
-      showTemp: dataVisibility.showTemp && bandVis.showTemp,
-      showHum: dataVisibility.showHum && bandVis.showHum,
-      showMotors: dataVisibility.showMotors && bandVis.showMotors,
-      showCommand: dataVisibility.showCommand && bandVis.showCommand,
-    };
-  }, [dataVisibility, xScope]);
-  const targetPlot = useMemo(
-    () => resolveUnifiedPlotLayout(scopeVisibility, plotThresholds, overlayActive),
-    [scopeVisibility, plotThresholds, overlayActive],
-  );
-  const chartLeftUnit = targetPlot.leftUnit;
-  /** 브러시 캔버스 여부 — 높이 풀·레이아웃 보간을 같은 훅에서 맞추기 위해 조기 계산 */
-  /** 펼친 카드: 30일 트랙 + 24시간 창. 휠이 왼쪽(과거)을 바로 연다. 일괄 칸은 24시간만. */
-  const useBrushCanvas =
-    !overview &&
-    isContextControllerTrend30d(controllerTrendByPeriod?.["30d"]) &&
-    controllerTrendPeriodHasSeries(controllerTrendByPeriod?.["30d"]);
-  const baseChartPlotH =
-    chartHeight ?? (isMobileStack ? chartUiPx(320) : chartUiPx(340));
-  const targetBandHeights = useMemo(
-    () =>
-      allocateUnifiedChartBandHeights({
-        totalContentPx: baseChartPlotH,
-        visibility: {
-          showTemp: scopeVisibility.showTemp,
-          showHum: scopeVisibility.showHum,
-          showMotors: scopeVisibility.showMotors,
-          showCommand: false,
-        },
-        minCommandPx: chartUiPx(90),
-        minPlotPx: chartUiPx(48),
-        commandOnlyPlotGutterPx: chartUiPx(72),
-      }),
-    [
-      baseChartPlotH,
-      scopeVisibility.showTemp,
-      scopeVisibility.showHum,
-      scopeVisibility.showMotors,
-    ],
-  );
-  const { layout, heights: bandHeights } = useUnifiedChartBandTransition(
-    targetPlot.layout,
-    targetBandHeights,
-  );
-  const chartPlotHeight = bandHeights.plotPx;
-  /** 드래그 hit/미리보기 — 레이어 기준(스코프 전) */
-  const layerLayout = useMemo(
-    () =>
-      resolveUnifiedPlotLayout(layerVisibility, plotThresholds, overlayActive)
-        .layout,
-    [layerVisibility, plotThresholds, overlayActive],
-  );
-
-  /** 브러시 — 30일 1시간 양호도 */
-  const brushOverview = useMemo(
-    () =>
-      hidePeriodBrush
-        ? []
-        : buildTrendBrushOverview(
-            controllers,
-            controllerTrendByPeriod,
-            alarmSettings,
-          ),
-    [hidePeriodBrush, controllers, controllerTrendByPeriod, alarmSettings],
-  );
-
-  const splitBandGuides = useMemo(() => {
-    const guides: number[] = [];
-    const motorH = layout.motorHi - layout.motorLo;
-    const humH = layout.humHi - layout.humLo;
-    const tempH = layout.tempHi - layout.tempLo;
-    /** 모터↔환경 구분만. 온도·습도 사이 점선은 표시하지 않음 */
-    if (motorH > 0.5 && (humH > 0.5 || tempH > 0.5)) {
-      guides.push(layout.motorHi);
-    }
-    return guides;
-  }, [layout]);
-
-  const canvasPeriod: TrendPeriodId = overview
-    ? "24h"
-    : pickTrendCanvasPeriod(controllerTrendByPeriod, period);
-  const context30d = useBrushCanvas;
-  const displayPeriod = overview
-    ? "24h"
-    : useBrushCanvas
-      ? lookbackPeriod
-      : canvasPeriod;
-
-  /** 펼친 기본·휠 = 30일 1시간 슬라이스. 미니 = 24시간 2시간 평균. 15분은 드래그 줌만. */
-  const windowBundle = useMemo(
-    () =>
-      buildUnifiedBarnTrendWindow({
-        controllers,
-        controllerTrendByPeriod,
-        canvasPeriod,
-        useBrushCanvas,
-        context30d,
-        brushWindow,
-        uplinkCoverage,
-        overview,
-        comparisonActive,
-      }),
-    [
-      controllers,
-      controllerTrendByPeriod,
-      canvasPeriod,
-      useBrushCanvas,
-      context30d,
-      brushWindow,
-      uplinkCoverage,
-      overview,
-      comparisonActive,
-    ],
-  );
-  /** SSR/첫 hydration은 셸만 맞추고 SVG용 집계는 background render에서 계산한다. */
-  const clientReady = useSyncExternalStore(
-    emptySubscribe,
-    () => true,
-    () => false,
-  );
-  const deferredWindowBundle = useDeferredValue(
-    clientReady ? windowBundle : null,
-  );
-  const renderPending =
-    windowBundle !== null && deferredWindowBundle !== windowBundle;
-
-  /** M1 — 다운샘플+집계는 layout 무관 1회, 보간은 Y매핑만 */
-  const downsampledWindow = useMemo(() => {
-    if (!deferredWindowBundle) return null;
-    // A comparison uses the shared hourly grid (at most 720 buckets). Independent
-    // LTTB sampling would give the same zoom ratios different timestamps.
-    if (comparisonActive) return deferredWindowBundle;
-    return downsampleSeriesForChart(
-      deferredWindowBundle.seriesList,
-      deferredWindowBundle.categories,
-      plotWidthPx,
-    );
-  }, [deferredWindowBundle, plotWidthPx, comparisonActive]);
-
-  const trendRaw = useMemo(() => {
-    if (!downsampledWindow) return null;
-    return aggregateUnifiedBarnTrendRaw(
-      downsampledWindow.seriesList,
-      downsampledWindow.categories,
-      plotThresholds,
-      { includeThermo: chartScope.level === "controller" },
-    );
-  }, [downsampledWindow, plotThresholds, chartScope.level]);
-
-  const built = useMemo(() => {
-    if (!trendRaw) return null;
-    return mapUnifiedBarnTrendRawToSplitY(
-      trendRaw,
-      layout,
-      undefined,
-      overlayAlign,
-    );
-  }, [trendRaw, layout, overlayAlign]);
-
-  const picked = useMemo(() => {
-    if (!built) return null;
-    const pickLayers = maskLayersForYBands(layers, xScope?.yBands ?? null);
-    const raw = pickUnifiedTrendLayers(built, pickLayers);
-    const overlayPack =
-      overlayControllers && downsampledWindow
-        ? overlayControllerMetricSeries({
-            seriesList: downsampledWindow.seriesList,
-            categories: downsampledWindow.categories,
-            thresholds: plotThresholds,
-            layout,
-            overlayAlign,
-            layers: pickLayers,
-          })
-        : { series: [], tempOverflowDomain: null };
-    /** 스코프 인덱스 안정 — 자동 trim과 X/Y 줌 충돌 방지 */
-    return {
-      categories: built.categories,
-      series: replaceAverageMetricSeries(raw.series, overlayPack.series),
-      envelopes: raw.envelopes,
-      histograms: raw.histograms,
-      trimmed: false as const,
-      tempDomain: built.tempDomain,
-      tempOverflowDomain: overlayPack.series.length
-        ? overlayPack.tempOverflowDomain
-        : built.tempOverflowDomain,
-    };
-  }, [
-    built,
-    layers,
-    xScope?.yBands,
-    overlayControllers,
-    downsampledWindow,
-    plotThresholds,
-    layout,
-    overlayAlign,
-  ]);
 
   /** 농장 기간 변경 시 브러시 창·스코프 시드 (render-time sync — 값이 바뀔 때만) */
   const [scopePeriod, setScopePeriod] = useState(period);
@@ -686,224 +281,15 @@ export function UnifiedBarnTrendPanel({
     bumpScopeMotion("in");
   }, [effectiveZoom, comparisonZoom, picked, period, bumpScopeMotion]);
 
-  const scoped = useMemo(() => {
-    return rebuildScopedUnifiedBarnTrend({
-      picked,
-      xScope,
-      xScopeRangeMs,
-      window15m,
-      deferredWindowBundle,
-      controllers,
-      uplinkCoverage,
-      plotThresholds,
-      layout,
-      layers,
-      plotWidthPx,
-      chartScopeLevel: chartScope.level,
-      trendRaw,
-      overlayAlign,
-      comparisonActive,
-    });
-  }, [
-    picked,
+  const { commitXScope, popXScope, clearXScope } = useUnifiedBarnTrendScopeActions({
+    series,
     xScope,
-    xScopeRangeMs,
-    window15m,
-    deferredWindowBundle,
-    controllers,
-    uplinkCoverage,
-    plotThresholds,
-    layout,
-    layers,
-    plotWidthPx,
-    chartScope.level,
-    trendRaw,
-    overlayAlign,
-    comparisonActive,
-  ]);
-
-  const chartCategories = scoped?.categories ?? EMPTY_CHART_CATEGORIES;
-  const tempMapDomain = scoped?.tempDomain ?? built?.tempDomain;
-  const tempMapOverflow =
-    scoped?.tempOverflowDomain ?? built?.tempOverflowDomain ?? null;
-  const crosshairValues = useCallback(
-    (chartY: number) =>
-      invertSplitYCrosshairValues(chartY, {
-        layout,
-        visibility: scopeVisibility,
-        overlay: overlayActive,
-        overlayAlign,
-        tempLow: plotThresholds.tempLow,
-        tempHigh: plotThresholds.tempHigh,
-        humidityLow: plotThresholds.humidityLow,
-        humidityHigh: plotThresholds.humidityHigh,
-        tempDomain: overlayAlign ? undefined : tempMapDomain,
-        tempOverflowDomain: tempMapOverflow,
-      }),
-    [
-      layout,
-      scopeVisibility,
-      overlayActive,
-      overlayAlign,
-      plotThresholds.tempLow,
-      plotThresholds.tempHigh,
-      plotThresholds.humidityLow,
-      plotThresholds.humidityHigh,
-      tempMapDomain,
-      tempMapOverflow,
-    ],
-  );
-  const tempMapLayout = built?.layout ?? layout;
-  const commandOverlayBase =
-    commandPaneOpen &&
-    chartScope.level === "controller" &&
-    useBrushCanvas;
-  const showTempCommandOverlay = commandOverlayBase && Boolean(layers.temp);
-  const showMotorCommandOverlay =
-    commandOverlayBase &&
-    !overlayActive &&
-    Boolean(layers.motors || layers.motorCh) &&
-    layout.motorHi > layout.motorLo;
-  const showCommandOverlay = showTempCommandOverlay || showMotorCommandOverlay;
-  const commandSettingSegs = useMemo(
-    (): TrendCommandSettingSeg[] =>
-      buildUnifiedCommandSettingSegs({
-        showCommandOverlay,
-        showTempCommandOverlay,
-        showMotorCommandOverlay,
-        hasBuilt: Boolean(built),
-        windows: scoped?.thermoWindows,
-        categories: scoped?.categories ?? [],
-        tempLow: plotThresholds.tempLow,
-        tempHigh: plotThresholds.tempHigh,
-        tempBandLo: layout.tempLo,
-        tempBandHi: layout.tempHi,
-        layout: tempMapLayout,
-        tempDomain: tempMapDomain,
-        tempOverflowDomain: tempMapOverflow,
-        overlayAlign,
-        commandChannels,
-      }),
-    [
-      showCommandOverlay,
-      showTempCommandOverlay,
-      showMotorCommandOverlay,
-      built,
-      scoped?.thermoWindows,
-      scoped?.categories,
-      plotThresholds.tempLow,
-      plotThresholds.tempHigh,
-      layout.tempLo,
-      layout.tempHi,
-      tempMapLayout,
-      tempMapDomain,
-      tempMapOverflow,
-      overlayAlign,
-      commandChannels,
-    ],
-  );
-  const chartPlotHeightForChart = chartPlotHeight;
-
-  const emitZoom = useCallback(
-    (entry: ScopeEntry | null) => {
-      if (!onZoomChange) return;
-      const n = picked?.categories.length ?? 0;
-      if (comparisonZoom !== undefined && entry && n > 1) {
-        // Transfer the common time window without per-panel absolute indices.
-        onZoomChange({ yBands: entry.yBands ?? [], startRatio: entry.start / (n - 1), endRatio: entry.end / (n - 1) });
-      } else {
-        onZoomChange(chartScopeEntryToZoomHint(entry, n));
-      }
-    },
-    [onZoomChange, picked?.categories.length, comparisonZoom],
-  );
-
-  /** 부모 URL 동기화 — 렌더/updater 중 setState 금지 */
-  const deferEmitZoom = useCallback(
-    (entry: ScopeEntry | null) => {
-      queueMicrotask(() => emitZoom(entry));
-    },
-    [emitZoom],
-  );
-
-  const commitXScope = (
-    range: {
-      start: number;
-      end: number;
-      yStartRatio: number;
-      yEndRatio: number;
-    },
-    mode: "push" | "replace" = "push",
-    opts?: { timeOnly?: boolean },
-  ) => {
-    if (!picked) return;
-    const domain = built?.leftDomain ?? ([0, 100] as [number, number]);
-    const timeOnly = Boolean(opts?.timeOnly);
-    const domainY0 = domainYFromViewRatio(range.yStartRatio, domain);
-    const domainY1 = domainYFromViewRatio(range.yEndRatio, domain);
-    const multiPlot = countSplitYBands(layerVisibility) > 1;
-    const detected =
-      timeOnly || mode === "replace" || xScope?.yBands != null
-        ? null
-        : multiPlot
-          ? resolveYScopeBands(domainY0, domainY1, layerLayout, layerVisibility)
-          : null;
-    let yBands: UnifiedYBandId[] | null =
-      mode === "replace"
-        ? ((overlayActive ? ["overlay"] : ["temp"]) as UnifiedYBandId[])
-        : (xScope?.yBands ?? detected);
-    if (timeOnly) {
-      yBands = xScope?.yBands ?? null;
-    } else if (mode !== "replace" && xScope?.yBands == null) {
-      if (detected == null && multiPlot) {
-        const centerY = (domainY0 + domainY1) / 2;
-        const hit = hitSplitYBand(centerY, layerLayout, layerVisibility);
-        if (hit === "overlay") {
-          if (layerVisibility.showHum) yBands = ["overlay"];
-        } else if (hit === "temp") yBands = ["temp"];
-        else if (hit === "hum") yBands = ["hum"];
-        else if (hit === "motor") yBands = ["motor"];
-      }
-    }
-    if (yBands?.includes("command")) {
-      yBands = yBands.filter((b) => b !== "command");
-      if (yBands.length === 0) yBands = null;
-    }
-    /** replace=가이드 시연 — 전체 축 절대 인덱스(중첩 금지) */
-    const next: ScopeEntry = {
-      start:
-        mode === "replace" || xScope == null
-          ? range.start
-          : xScope.start + range.start,
-      end:
-        mode === "replace" || xScope == null
-          ? range.end
-          : xScope.start + range.end,
-      yBands,
-    };
-    if (mode === "replace") {
-      setXScopeStack([next]);
-    } else {
-      setXScopeStack((stack) => [...stack, next]);
-    }
-    bumpScopeMotion("in");
-    deferEmitZoom(next);
-  };
-
-  const popXScope = useCallback(() => {
-    if (xScopeStack.length === 0) return;
-    const nextStack = xScopeStack.slice(0, -1);
-    const entry = nextStack.length > 0 ? nextStack[nextStack.length - 1]! : null;
-    setXScopeStack(nextStack);
-    bumpScopeMotion(xScopeStack.length <= 1 ? "out" : "in");
-    deferEmitZoom(entry);
-  }, [xScopeStack, bumpScopeMotion, deferEmitZoom]);
-
-  const clearXScope = () => {
-    if (xScopeStack.length > 0) bumpScopeMotion("out");
-    setXScopeStack([]);
-    deferEmitZoom(null);
-  };
+    xScopeStack,
+    setXScopeStack,
+    bumpScopeMotion,
+    onZoomChange,
+    comparisonZoom,
+  });
 
   useEffect(() => {
     if (xScopeStack.length === 0) return;
@@ -914,7 +300,6 @@ export function UnifiedBarnTrendPanel({
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [xScopeStack.length, popXScope]);
-
   const alarmEditEnabled =
     false;
 
@@ -963,314 +348,59 @@ export function UnifiedBarnTrendPanel({
     setGuidedJitterCache(null);
   }
 
-  const resolvedGuidedXScope = useMemo(() => {
-    if (
-      !guidedScopeBase ||
-      !guidedJitterCache ||
-      guidedJitterCache.token !== guidedScopeBase.token
-    ) {
-      return null;
-    }
-    return resolveGuidedScopePlayback(
-      guidedScopeBase,
-      guidedJitterCache.rect,
-    );
-  }, [guidedScopeBase, guidedJitterCache]);
-
-  /**
-   * 스택이 비워진 뒤에만 시연 — 기존 X스코프 위에서 비율을 쓰면
-   * 잘린 카테고리 기준으로 엉뚱한 구간이 커밋됨.
-   */
-  const activeGuidedXScope =
-    resolvedGuidedXScope &&
-    guideReadyToken === resolvedGuidedXScope.token &&
-    xScopeStack.length === 0
-      ? resolvedGuidedXScope
-      : null;
-
-  /** 현재 장비 경보 상·하한과 실측 축 눈금. */
-  const { scaleEdgeLabels, alarmRangeBands } = useMemo(
-    () =>
-      buildFarmTrendScaleEdges({
-        built,
-        layers,
-        plotThresholds,
-        mappingThresholds,
-        layout,
-        scopeVisibility,
-        alarmEditEnabled,
-        tempMapLayout,
-        tempMapDomain,
-        tempMapOverflow,
-        chartLeftUnit,
-        overlayActive,
-        overlayAlign,
-        alarmRangeOn,
-      }),
-    [
-      built,
-      layers,
-      plotThresholds,
-      mappingThresholds,
-      layout,
-      scopeVisibility,
-      alarmEditEnabled,
-      tempMapLayout,
-      tempMapDomain,
-      tempMapOverflow,
-      chartLeftUnit,
-      overlayActive,
-      overlayAlign,
-      alarmRangeOn,
-    ],
-  );
-  const cycleGroupLayers = (group: "temp" | "hum" | "motor") => {
-    if (!built || sharedLayers) return;
-    setOwnedLayers((prev) => {
-      const mode = detectLayerGroupMode(prev, built.available, group);
-      const nextMode = nextLayerGroupMode(mode);
-      return applyLayerGroupMode(prev, group, nextMode, built.available);
-    });
-  };
-
-  useEffect(() => {
-    if (layersToolbarActive || layersToolbarPhase !== "exit") return;
-    const t = window.setTimeout(() => {
-      setLayersToolbarMounted(false);
-    }, motionDuration.exit);
-    return () => window.clearTimeout(t);
-  }, [layersToolbarActive, layersToolbarPhase, layersAnimKey]);
-
-  const layerToolbar =
-    !sharedLayers && !overview && built != null && layersToolbarMounted ? (
-      <div
-        key={layersAnimKey}
-        className={cn(
-          "farm-chart-toolbar-fit flex w-full min-w-0 shrink-0 items-center overflow-visible",
-          layersToolbarPhase === "enter"
-            ? motionClass.farmChartLayersEnter
-            : motionClass.farmChartLayersExit,
-        )}
-        data-farm-chart-layers-shell=""
-        data-farm-chart-layers-placement="inline"
-        aria-hidden={layersToolbarPhase === "exit"}
-      >
-        <UnifiedTrendLayerToolbar
-          layers={layers}
-          available={built.available}
-          metricsPending={Boolean(
-            renderPending ||
-              trendLoading ||
-              (!controllerTrendByPeriod && !trendError),
-          )}
-          onCycleGroup={cycleGroupLayers}
-          placement="inline"
-          tempAlarmOn={alarmRangeOn.temp}
-          humAlarmOn={alarmRangeOn.hum}
-          tempAlarmAvailable={Boolean(
-            scopeVisibility.showTemp && layers.temp && built.available.temp,
-          )}
-          humAlarmAvailable={false}
-          onToggleTempAlarm={() =>
-            setOwnedAlarmRangeOn((prev) => ({ ...prev, temp: !prev.temp }))
-          }
-        />
-      </div>
-    ) : null;
+  const view = useUnifiedBarnTrendView({
+    series,
+    chrome,
+    xScope,
+    xScopeStack,
+    xScopeRangeMs,
+    guidedScopeBase,
+    guidedJitterCache,
+    guideReadyToken,
+    alarmEditEnabled,
+    window15m,
+    controllers,
+    uplinkCoverage,
+    chartScope,
+    commandPaneOpen,
+    sharedLayers,
+    layersToolbarActive,
+    trendLoading,
+    trendError,
+    controllerTrendByPeriod,
+  });
 
   return (
-    <div
-      className={cn(
-        "select-none",
-        farmChartUi.root,
-        (isMobileStack || overview) && farmChartUi.yGutterCompact,
-        plotFill
-          ? "relative flex min-h-0 flex-1 flex-col gap-2"
-          : overview
-            ? "mt-0 flex min-h-0 flex-1 flex-col"
-            : "mt-2 space-y-2",
-        className,
-      )}
-      style={
-        {
-          ["--farm-chart-ui-scale"]: String(chartUiScale),
-          ...(overview
-            ? { ["--farm-chart-y-gutter-width"]: "0px" }
-            : {}),
-        } as CSSProperties
-      }
-      data-tour-id="farm-chart-unified-trend"
-      data-farm-chart-ui-scale={String(chartUiScale)}
-      data-farm-chart-y-bands={
-        xScope?.yBands?.length ? xScope.yBands.join("+") : "all"
-      }
-      data-farm-chart-temp-focus={
-        xScope?.yBands?.length === 1 && xScope.yBands[0] === "temp"
-          ? "true"
-          : "false"
-      }
-    >
-      <UnifiedBarnTrendPanelHeader
-        headingMode={headingMode}
-        label={label}
-        chartScope={chartScope}
-        controllers={controllers}
-        isMobileStack={isMobileStack}
-        mobileScopeHandle={mobileScopeHandle}
-        headerActions={headerActions}
-        layerToolbar={layerToolbar}
-        controllerCount={built?.controllerCount ?? 0}
-        trimmed={Boolean(picked?.trimmed)}
-      />
-
-      {overview ? null : trendExtending || window15mLoading ? (
-        <p
-          className={cn("text-muted-foreground", farmChartUi.fsMeta)}
-          role="status"
-        >
-          {window15mLoading
-            ? "선택한 구간을 자세히 불러오는 중."
-            : "최근 이력을 이어 받는 중."}
-        </p>
-      ) : null}
-
-      {built &&
-      scoped &&
-      picked &&
-      (scoped.series.length > 0 ||
-        scoped.histograms.length > 0 ||
-        showCommandOverlay) ? (
-        <div
-          className={cn(
-            plotFill
-              ? cn(
-                  "flex min-h-0 flex-1 flex-col",
-                  headingMode === "widget" ? "gap-1.5" : "gap-3",
-                )
-              : "space-y-3",
-          )}
-        >
-        <div
-          data-tour-id="chart-control-plot"
-          data-chart-mode="view"
-          className={plotFill ? "flex min-h-0 flex-1 flex-col" : undefined}
-        >
-        <div
-          className={
-            plotFill ? "flex h-full min-h-0 flex-1 flex-col" : undefined
-          }
-        >
-        <UnifiedBarnTrendChart
-          plotFill={plotFill}
-          headingMode={headingMode}
-          overview={overview}
-          isMobileStack={isMobileStack}
-          categories={chartCategories}
-          series={scoped.series}
-          envelopes={scoped.envelopes}
-          histograms={scoped.histograms}
-          chartPlotHeight={chartPlotHeightForChart}
-          commandSettingSegs={commandSettingSegs}
-          chartLeftUnit={chartLeftUnit}
-          leftDomain={built.leftDomain}
-          displayPeriod={displayPeriod}
-          alarmScopeKey={alarmScopeKey}
-          period={period}
-          layers={layers}
-          xScope={xScope}
-          scopeCategories={picked.categories}
-          xScopeStackLength={xScopeStack.length}
-          scopeMotionKey={scopeMotionKey}
-          clearXScope={clearXScope}
-          onPlotWidthChange={onChartPlotWidth}
-          splitBandGuides={splitBandGuides}
-          scaleEdgeLabels={scaleEdgeLabels}
-          alarmRangeBands={alarmRangeBands}
-          onLookbackWheel={onLookbackWheel}
-          commitXScope={commitXScope}
-          activeGuidedXScope={activeGuidedXScope}
-          comparisonActive={comparisonActive}
-          onGuidedXScopeComplete={onGuidedXScopeComplete}
-          popXScope={popXScope}
-          scopeMotionDir={scopeMotionDir}
-          chartScope={chartScope}
-          onScopeChange={onScopeChange}
-          overlayActive={overlayActive}
-          crosshairValues={crosshairValues}
-        />
-        </div>
-        {showCommandOverlay ? (
-          <div
-            className={cn(
-              headingMode === "widget"
-                ? "pointer-events-none absolute bottom-[calc(1.6rem*var(--farm-chart-ui-scale,1)+0.35rem)] left-2 z-[3]"
-                : "mt-2 flex shrink-0 justify-start overflow-visible",
-            )}
-          >
-            <div
-              className={
-                headingMode === "widget" ? "pointer-events-auto" : undefined
-              }
-            >
-            <CommandChannelLayerToolbar
-              channels={commandChannels}
-              onToggle={(channel) =>
-                setCommandChannels((prev) =>
-                  toggleCommandChannelFlag(prev, channel),
-                )
-              }
-            />
-            </div>
-          </div>
-        ) : null}
-        </div>
-        </div>
-      ) : overview &&
-        (trendLoading ||
-          (!controllerTrendByPeriod && !trendError) ||
-          (trendExtending && !built)) ? (
-        <div
-          className={cn(
-            dashboardChroma.skeletonBone,
-            "mx-2 mb-2 min-h-16 flex-1",
-          )}
-          role="status"
-          aria-label="통합 추이를 불러오는 중."
-        />
-      ) : (
-        <p className="py-6 text-center text-xs text-muted-foreground">
-          {built
-            ? "표시할 레이어를 선택하세요."
-            : renderPending ||
-                trendLoading ||
-                (!controllerTrendByPeriod && !trendError)
-              ? "통합 추이를 불러오는 중."
-                : trendExtending
-                ? "최근 이력을 이어 받는 중."
-                : window15mLoading
-                  ? "선택한 구간을 자세히 불러오는 중."
-                  : trendError
-                    ? "통합 추이를 불러오지 못했습니다."
-                    : controllerSelectEmpty
-                      ? "표시할 컨트롤러를 선택하세요."
-                    : "통합 추이 데이터가 없습니다."}
-        </p>
-      )}
-
-      {useBrushCanvas && !hidePeriodBrush ? (
-        <div className="shrink-0">
-        <UnifiedTrendPeriodBrush
-          window={brushWindow}
-          onWindowChange={(next) => {
-            clearXScope();
-            applyBrushWindow(next);
-          }}
-          overviewValues={brushOverview}
-          xScope={xScope}
-          chartPointCount={picked?.categories.length ?? 0}
-        />
-        </div>
-      ) : null}
-    </div>
+    <UnifiedBarnTrendPanelFrame
+      {...chrome}
+      {...series}
+      {...view}
+      label={label}
+      className={className}
+      plotFill={plotFill}
+      headingMode={headingMode}
+      isMobileStack={isMobileStack}
+      xScope={xScope}
+      xScopeStack={xScopeStack}
+      chartScope={chartScope}
+      controllers={controllers}
+      mobileScopeHandle={mobileScopeHandle}
+      headerActions={headerActions}
+      period={period}
+      onScopeChange={onScopeChange}
+      onGuidedXScopeComplete={onGuidedXScopeComplete}
+      trendExtending={trendExtending}
+      window15mLoading={window15mLoading}
+      trendLoading={trendLoading}
+      trendError={trendError}
+      controllerTrendByPeriod={controllerTrendByPeriod}
+      controllerSelectEmpty={controllerSelectEmpty}
+      hidePeriodBrush={hidePeriodBrush}
+      scopeMotionKey={scopeMotionKey}
+      scopeMotionDir={scopeMotionDir}
+      clearXScope={clearXScope}
+      commitXScope={commitXScope}
+      popXScope={popXScope}
+    />
   );
 }
