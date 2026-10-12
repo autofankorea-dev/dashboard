@@ -287,12 +287,12 @@ controllerEnvMetricTextClass(warn|danger) → status-*-ink (검정 혼합)
 | 2 | 그리드/목록 | 크롬 채도 낮음 · 숫자·알람만 선명 | |
 | 3 | 차트 | spring/과한 scale 없음 · 채널색 일관 | |
 | 4 | 컨트롤러 카드 | 온도=`channel-temp` · 설정밴드=`channel-info` · warn=`amber/status` | |
-| 5 | ARIA 탭 | idle 호흡 · think=`channel-info` · **스테이지/도크가 모니터링과 구분** | |
+| 5 | 옛 `view=aria` | 필드로 열림. 뱃지·스테이지·도크 없음 | |
 | 7 | **다크** 필드 컴팩트 | 주의·위험 숫자가 카드에서 읽힘 (on-canvas, 덮개 ink 아님) | |
 | 8 | **다크** 끊김 덮개 | 우물에 안 녹음 · 글자 foreground | |
 | 9 | **다크** 격자 경계 | border/ring으로 칸이 나뉨 | |
 | 10 | **다크** 차트 EMA·밴드 | 장기 추세가 배경에 붙지 않음 · 설정밴드가 창백하지 않음 | |
-| 11 | **다크** 알림·델린 뱃지 | 솔리드+숫자 대비 유지 | |
+| 11 | **다크** 알림 | 솔리드+숫자 대비 유지. 델린 뱃지는 없음 | |
 | 12 | **다크** 지도 타일 | 타일 img 밝기↓ · 핀은 primary/status (카카오 다크 맵타입 없음) | |
 | 13 | **라이트/다크 · PC/모바일** 온·습 칩 | 테두리 없는 우물. 아웃라인 버튼처럼 안 보임 | |
 | 14 | **라이트/다크 · PC/모바일** 환경 덮개 | 상태색 유지 · 코너 셰브론으로 열기 힌트. 다크 정상=세이지가 창백 섬이 아님 · 주의가 형광으로 안 뜸 | |
@@ -307,7 +307,7 @@ controllerEnvMetricTextClass(warn|danger) → status-*-ink (검정 혼합)
 1. **면·여백** — **갭1 적용** (`dashboardHubSurface`: well → tile → metricPocket · 그리드/목록 간격↑).
 2. **타이포 리듬** — **갭2 적용** (`dashboardReadout` · 숫자/단위/라벨 분리). **맵 카드는 `--density-map-value*` 고정** (readout 재사용 회귀 금지 · `verify:ui-density`).
 3. **채도 잔향** — violet/온도 orange는 제거·가드됨. 구역별 톤이 다시 섞이면 재스캔.
-4. **DELIN 뱃지** — 필드 우측 하단(차트에서는 숨김). 오브·스테이지는 폐기.
+4. **DELIN 뱃지** — 제거됨. 필드에 뱃지·오브·스테이지를 두지 않음.
 5. **다크/라이트 비대칭** — **갭5 적용** (`--surface-*`). **P0–P6 적용** 2026-09-09: 타일 on-canvas 잉크 · 끊김 면 · border/ring · mix-lift/shade · 크롬 잔여 · 지도 타일 필터. **다크 상태 명도** · **Label 3·4단** · **muted≠secondary** · **destructive=status-danger** 2026-09-09. 정본 [`UI_QA.md`](./UI_QA.md).
 
 6. **면 종류** — [UI.md](./UI.md#면). 덮개는 Status film(E). 유리 테 적용. Overlay(F) frost와 섞지 않음.

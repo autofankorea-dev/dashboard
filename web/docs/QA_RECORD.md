@@ -1224,7 +1224,7 @@ decoded: index DROP 비권장. D1·retention **적용 완료**. 잔여 용량 RO
 
 | 항목 | 상태 |
 |------|------|
-| 에이전트 | 단일 (`SI1/.cursor/rules/single-agent.mdc`) |
+| 에이전트 | 단일. 배포는 `commit → push → main → Vercel` |
 | 배포 | `commit → push → main → Vercel 자동` |
 | Production | `https://smart.autofankorea.com` — **2026-08-28 제품 패키징 종료 (GO)** |
 | CLI / Redeploy | 특수 케이스만 |

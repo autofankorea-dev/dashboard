@@ -2,7 +2,7 @@
 
 > **앱(제품) 문서는 전부 이 폴더에만 둔다.**  
 > `web/` 루트·`scripts/`·`dashboard/docs/` 에 md를 새로 만들지 말 것.  
-> 배포: `commit → push → main → Vercel` · 규칙: `SI1/.cursor/rules/single-agent.mdc`  
+> 배포: `commit → push → main → Vercel`
 > 코드 반영: **`git status` / `origin/main`이 문서보다 우선**
 
 목차는 시스템 계층이고, 각 항목은 정본 하나다. 품질만 출고 게이트와 기준·기록으로 나뉜다.

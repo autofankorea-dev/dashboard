@@ -1019,7 +1019,7 @@ AVR-2000 / AUTOFAN **실물 패널 레이아웃**은 추후. 브로슈어·홈�
 
 ### 13. Git / 브랜치
 
-- 원격: `github.com/SIJackLee/dashboard`
+- 원격: `github.com/autofankorea-dev/dashboard`
 - 작업 브랜치(스택): `feature/auth-access-gate` → `feature/admin-user-access`
   - `feature/admin-user-access`에 관리자·실데이터·명령·축사 차트 커밋 누적
 - 최근 커밋 예: `3374425` 축사 차트, `386537a` 원격 명령

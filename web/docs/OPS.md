@@ -117,8 +117,7 @@ npm run lint
 
 ## Vercel Preview 게이트 (Git→배포 검증)
 
-> **배포 실행:** 단일 에이전트 (`SI1/.cursor/rules/single-agent.mdc`).  
-> **배포 기준 정본:** [`OPS.md`](#배포) — `commit → push → main → Vercel 자동배포`  
+> **배포 기준 정본:** [`OPS.md`](#배포) — `commit → push → main → Vercel 자동배포`
 > 허브 URL: [`farm-hub-url.md`](./farm-hub-url.md) · 운영 메모: [`QA_RECORD.md`](./QA_RECORD.md)
 
 Git에 push되면 Vercel이 **그 커밋만** 빌드·배포한다.  
@@ -350,7 +349,7 @@ GitLab(`.gitlab-ci.yml`)과 GitHub(`.github/workflows/web-verify.yml`) 모두 `l
 
 | 항목 | 값 |
 |------|-----|
-| Repo | `github.com/SIJackLee/dashboard` |
+| Repo | `github.com/autofankorea-dev/dashboard` |
 | Root | `web` |
 | Functions | `icn1` |
 
@@ -511,7 +510,7 @@ FARM02 사례: sent만 · applied 0 — 장비/펌웨어 triage.
 | 복구 | commit · restart · config |
 | 후속 | migration · rsd · 문서 |
 
-저장: `docs/incidents/YYYYMMDD-*.md` (승인 후). 열린 체크는 이 런북에 둔다. [`QA_RECORD.md`](./QA_RECORD.md)는 스냅샷만.
+별도 `docs/incidents/` 폴더는 두지 않는다. 원인과 재발 방지는 [`SYSTEM_INSTANCE.md`](./SYSTEM_INSTANCE.md)와 이 런북에 둔다. [`QA_RECORD.md`](./QA_RECORD.md)는 스냅샷만.
 
 ---
 

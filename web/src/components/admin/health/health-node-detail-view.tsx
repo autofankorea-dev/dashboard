@@ -150,7 +150,7 @@ function NodeDetailTechList({ nodeId, snapshot }: NodeDetailSectionsProps) {
       {nodeId === "collector-ekape" && (
         <>
           <li>상태: 비활성화 (Ekape 미구현)</li>
-          <li>설계 참고: Diagrams/D10-external-ekape.md</li>
+          <li>연계 설계 문서는 이 저장소에 없음</li>
         </>
       )}
       {nodeId === "collector-ftp" && (
@@ -161,7 +161,7 @@ function NodeDetailTechList({ nodeId, snapshot }: NodeDetailSectionsProps) {
       {nodeId === "external" && (
         <>
           <li>상태: 비활성화 (Ekape 미구현)</li>
-          <li>설계 참고: Diagrams/D10-external-ekape.md</li>
+          <li>연계 설계 문서는 이 저장소에 없음</li>
         </>
       )}
       {nodeId === "field-module" && (
