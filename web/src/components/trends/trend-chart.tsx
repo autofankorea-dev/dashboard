@@ -10,8 +10,6 @@ import {
   type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { Check, RotateCcw } from "lucide-react";
-import { AlarmDomainIcon } from "@/components/settings/alarm-domain-icon";
 import { cn } from "@/lib/utils";
 import {
   buildTrendAxisMarks,
@@ -64,7 +62,6 @@ import {
   domainFor,
   finiteValues,
   markerRadiusInViewUnits,
-  parseScaleEdgeValueUnit,
   tipPinId,
   trendChartHasRenderableContent,
   trendPlotPadPx,
@@ -117,7 +114,7 @@ import {
 import { TrendChartLegend } from "./trend-chart-legend";
 import { TrendChartCrosshairChip } from "./trend-chart-crosshair-chip";
 import { TrendChartYAxis } from "./trend-chart-y-axis";
-import { TrendYLabelChip } from "./trend-y-label-chip";
+import { TrendChartEdgeLabels } from "./trend-chart-edge-labels";
 import type { TrendChartProps } from "./trend-chart-props";
 
 export type {
@@ -1929,304 +1926,32 @@ export function TrendChart({
         yLabelColumn={yLabelColumn}
       />
 
-      {hoveredEdgePresence.mounted && hoveredEdgePresence.value ? (
-        <div
-          className={cn(
-            "pointer-events-none absolute inset-x-0 z-[4] -translate-y-1/2",
-            chartTipPresenceClass(hoveredEdgePresence.phase),
-          )}
-          style={{ top: `${hoveredEdgePresence.value.topPct}%` }}
-          aria-hidden
-        >
-          <div
-            className="h-[1.5px] w-full rounded-full"
-            style={{
-              background: hoveredEdgePresence.value.color,
-              boxShadow: `0 0 3px 0.5px ${hoveredEdgePresence.value.color}`,
-              opacity: 0.8,
-            }}
-          />
-        </div>
-      ) : null}
-
-      {edgeBandLabels.map((label) => {
-        const editing = edgeEdit?.id === label.id;
-        const showActions =
-          Boolean(label.showApplyActions) &&
-          (onScaleEdgeApply != null || onScaleEdgeRevert != null);
-        const alarmIconDomain =
-          label.labelIcon === "temp-alarm"
-            ? "temp"
-            : label.labelIcon === "hum-alarm"
-              ? "humidity"
-              : null;
-        const valueText = alarmIconDomain ? (
-          <AlarmDomainIcon
-            domain={alarmIconDomain}
-            sizeClass={labelGutter ? "size-4" : "size-3.5"}
-          />
-        ) : (
-          <TrendYLabelChip
-            text={label.text}
-            mark={!editing ? label.mark : undefined}
-            className={
-              labelGutter
-                ? "min-h-7 px-1.5 py-1 text-xs font-semibold"
-                : "farm-chart-fs-axis"
-            }
-          />
-        );
-        return (
-          <span
-            key={label.id}
-            className={cn(
-              "absolute z-[2] -translate-y-1/2 leading-none tabular-nums",
-              labelGutter ? "text-xs font-semibold" : "farm-chart-fs-axis",
-              showActions && "inline-flex items-center gap-0.5 pr-0",
-              (editing || Boolean(label.leadingText) || Boolean(label.labelIcon)) &&
-                "inline-flex items-center gap-1 whitespace-nowrap",
-              Boolean(label.leadingText) &&
-                !editing &&
-                "shadow-sm ring-1 ring-current/20",
-              Boolean(label.labelIcon) &&
-                !editing &&
-                "rounded-md bg-card/85 px-0.5 py-0.5",
-              label.draggable && !editing
-                ? onScaleEdgeDrag
-                  ? "pointer-events-auto cursor-ns-resize select-none"
-                  : "pointer-events-auto cursor-text select-none"
-                : "pointer-events-auto",
-              "transition-opacity duration-motion-fast",
-              hoveredEdgeId != null &&
-                hoveredEdgeId !== label.id &&
-                "opacity-45",
-              dimPlotValues && "opacity-30",
-              hoveredEdgeId === label.id && "z-[6] font-semibold",
-              label.side === "left" && "left-1 text-left",
-              /** 설정 명칭 단독(레거시) — 수치 칩 바로 왼쪽 */
-              label.side === "plotStart" &&
-                "left-1/2 z-[3] -translate-x-[calc(100%+0.35rem)] text-right font-medium",
-              /** 설정 수치 — 플롯 중앙 (leadingText 있으면 명칭+수치) */
-              label.side === "center" &&
-                "left-1/2 z-[3] -translate-x-1/2 text-center",
-              /** 모바일 거터 — 우측 단일 열(큰 칩). PC 위젯은 플롯 밖 칸 */
-              label.side === "right" &&
-                yLabelColumn &&
-                "right-1 z-[3] whitespace-nowrap",
-              label.side === "right" &&
-                labelGutter &&
-                "right-1 max-w-[6.5rem] text-center",
-              label.side === "right" &&
-                !labelGutter &&
-                !yLabelColumn &&
-                label.labelLane === "inner" &&
-                !showActions &&
-                "right-11 text-center",
-              label.side === "right" &&
-                !labelGutter &&
-                !yLabelColumn &&
-                label.labelLane === "inner" &&
-                showActions &&
-                "right-1 text-center",
-              label.side === "right" &&
-                !labelGutter &&
-                !yLabelColumn &&
-                label.labelLane !== "inner" &&
-                "right-0.5 text-center",
-              edgeDragId === label.id &&
-                (labelGutter ||
-                label.side === "center" ||
-                label.side === "plotStart"
-                  ? "min-h-9 text-sm ring-2 ring-current/45"
-                  : "ring-1 ring-current/40"),
-            )}
-            style={{ top: `${label.topPct}%`, color: label.color }}
-            title={
-              label.draggable
-                ? onScaleEdgeDrag
-                  ? `${label.title} ${label.text} · 드래그 조절 · 더블클릭(PC)·더블탭(모바일)·우클릭 숫자 입력`
-                  : `${label.title} ${label.text} · 클릭·더블클릭·우클릭으로 숫자 입력`
-                : `${label.title}${label.labelIcon ? ` ${label.text}` : ""}`
-            }
-            aria-label={
-              label.labelIcon
-                ? `${label.title} ${label.text}`
-                : undefined
-            }
-            onPointerEnter={() => {
-              clearHover();
-              setHoveredEdgeId(label.id);
-            }}
-            onPointerLeave={() =>
-              setHoveredEdgeId((cur) => (cur === label.id ? null : cur))
-            }
-            onPointerDown={
-              label.draggable && !editing
-                ? (e) => {
-                    if (!isPrimaryPress(e) || !plotRef.current) return;
-                    e.stopPropagation();
-                    const guide = scaleEdgeLabels.find((g) => g.id === label.id);
-                    if (!guide?.draggable) return;
-                    if (!onScaleEdgeDrag) return;
-                    e.preventDefault();
-                    plotRef.current.setPointerCapture(e.pointerId);
-                    labelDragArmRef.current = {
-                      id: guide.id,
-                      axis: guide.axis ?? "left",
-                      value: guide.value,
-                      x: e.clientX,
-                      y: e.clientY,
-                      pointerId: e.pointerId,
-                      pointerType: e.pointerType,
-                    };
-                    clearHover();
-                    setHoveredEdgeId(null);
-                  }
-                : undefined
-            }
-            onClick={
-              label.draggable && !editing && onScaleEdgeNumericCommit
-                ? (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    beginScaleEdgeEdit(label.id);
-                  }
-                : undefined
-            }
-            onDoubleClick={
-              label.draggable && onScaleEdgeNumericCommit
-                ? (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    beginScaleEdgeEdit(label.id);
-                  }
-                : undefined
-            }
-            onContextMenu={
-              label.draggable && onScaleEdgeNumericCommit
-                ? (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    beginScaleEdgeEdit(label.id);
-                  }
-                : undefined
-            }
-          >
-            {editing ? (
-              <>
-                {label.leadingText ? (
-                  <span className="font-medium not-italic tracking-tight">
-                    {label.leadingText}
-                  </span>
-                ) : null}
-                <input
-                  autoFocus
-                  type="text"
-                  inputMode="decimal"
-                  aria-label={`${label.title} 숫자 입력`}
-                  className={cn(
-                    "rounded-sm border border-current/40 bg-background text-center tabular-nums outline-none select-text",
-                    labelGutter
-                      ? "h-7 w-14 px-1 text-xs font-semibold"
-                      : "h-4 w-10 px-0.5 farm-chart-fs-axis",
-                  )}
-                  style={{
-                    color: label.color,
-                    minWidth: `${edgeValueMaxCh}ch`,
-                  }}
-                  value={edgeEdit.text}
-                  onChange={(e) =>
-                    setEdgeEdit({ id: label.id, text: e.target.value })
-                  }
-                  onFocus={(e) => e.currentTarget.select()}
-                  onBlur={() => commitScaleEdgeEdit()}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      commitScaleEdgeEdit();
-                    } else if (e.key === "Escape") {
-                      e.preventDefault();
-                      cancelScaleEdgeEdit();
-                    }
-                  }}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  onClick={(e) => e.stopPropagation()}
-                />
-                {parseScaleEdgeValueUnit(label.text) ? (
-                  <span className="tabular-nums">
-                    {parseScaleEdgeValueUnit(label.text)}
-                  </span>
-                ) : null}
-              </>
-            ) : label.leadingText ? (
-              <>
-                <span className="font-medium not-italic tracking-tight">
-                  {label.leadingText}
-                </span>
-                {valueText}
-              </>
-            ) : (
-              valueText
-            )}
-            {showActions ? (
-              <span
-                className="ml-0.5 inline-flex items-center gap-0.5"
-                onPointerDown={(e) => e.stopPropagation()}
-                onClick={(e) => e.stopPropagation()}
-              >
-                {onScaleEdgeApply ? (
-                  <button
-                    type="button"
-                    aria-label="설정값 적용"
-                    title="적용 (명령 전송)"
-                    disabled={scaleEdgeApplyBusy || scaleEdgeApplyDisabled}
-                    className={cn(
-                      "inline-flex size-5 items-center justify-center rounded border border-current/35 bg-background/95",
-                      "hover:bg-current/10 disabled:opacity-40",
-                    )}
-                    onPointerDown={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      if (scaleEdgeApplyBusy || scaleEdgeApplyDisabled) return;
-                      onScaleEdgeApply();
-                    }}
-                  >
-                    <Check className="size-3" strokeWidth={2.5} aria-hidden />
-                  </button>
-                ) : null}
-                {onScaleEdgeRevert ? (
-                  <button
-                    type="button"
-                    aria-label="설정값 되돌리기"
-                    title="되돌리기"
-                    disabled={scaleEdgeApplyBusy}
-                    className={cn(
-                      "inline-flex size-5 items-center justify-center rounded border border-current/35 bg-background/95",
-                      "hover:bg-current/10 disabled:opacity-40",
-                    )}
-                    onPointerDown={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                    }}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      if (scaleEdgeApplyBusy) return;
-                      onScaleEdgeRevert();
-                    }}
-                  >
-                    <RotateCcw className="size-3" strokeWidth={2.5} aria-hidden />
-                  </button>
-                ) : null}
-              </span>
-            ) : null}
-          </span>
-        );
-      })}
+      <TrendChartEdgeLabels
+        hoveredEdgePresence={hoveredEdgePresence}
+        edgeBandLabels={edgeBandLabels}
+        edgeEdit={edgeEdit}
+        setEdgeEdit={setEdgeEdit}
+        onScaleEdgeApply={onScaleEdgeApply}
+        onScaleEdgeRevert={onScaleEdgeRevert}
+        labelGutter={labelGutter}
+        onScaleEdgeDrag={onScaleEdgeDrag}
+        yLabelColumn={yLabelColumn}
+        hoveredEdgeId={hoveredEdgeId}
+        setHoveredEdgeId={setHoveredEdgeId}
+        dimPlotValues={dimPlotValues}
+        edgeDragId={edgeDragId}
+        clearHover={clearHover}
+        scaleEdgeLabels={scaleEdgeLabels}
+        plotRef={plotRef}
+        labelDragArmRef={labelDragArmRef}
+        onScaleEdgeNumericCommit={onScaleEdgeNumericCommit}
+        beginScaleEdgeEdit={beginScaleEdgeEdit}
+        edgeValueMaxCh={edgeValueMaxCh}
+        commitScaleEdgeEdit={commitScaleEdgeEdit}
+        cancelScaleEdgeEdit={cancelScaleEdgeEdit}
+        scaleEdgeApplyBusy={scaleEdgeApplyBusy}
+        scaleEdgeApplyDisabled={scaleEdgeApplyDisabled}
+      />
 
       {pinPresence.length > 0 ? (
         <svg
