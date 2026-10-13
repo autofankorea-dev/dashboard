@@ -179,12 +179,14 @@ export function ControllerEnvCover({
                   <StallUnitNoMark
                     stallNo={reading.stallNo}
                     onFill={onFill}
-                    className={cn(dashboardTypography.cardDesc, "text-current")}
+                    fitText
+                    className={cn(dashboardTypography.cardTitle, "text-current")}
                   />
                   <ControllerNoMark
                     eqpmnNo={reading.eqpmnNo}
                     onFill={onFill}
-                    className={cn(dashboardTypography.cardDesc, "text-current")}
+                    fitText
+                    className={cn(dashboardTypography.cardTitle, "text-current")}
                   />
                 </span>
               </>
@@ -193,6 +195,7 @@ export function ControllerEnvCover({
                 <ControllerNoMark
                   eqpmnNo={reading.eqpmnNo}
                   onFill={onFill}
+                  fitText
                   className={cn(dashboardTypography.cardTitle, "text-current")}
                 />
               </span>

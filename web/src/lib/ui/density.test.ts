@@ -48,12 +48,15 @@ test("header has no density toggle and the controller card uses the md scale", (
   const summaryHeader = readRepoFile("src/components/farm/controller-summary-parts.tsx");
   assert.match(cover, /absolute inset-0/);
   assert.match(cover, /dashboardTypography\.cardTitle/);
-  assert.match(cover, /dashboardTypography\.cardDesc/);
+  assert.equal(cover.includes("cardDesc"), false);
+  assert.match(cover, /fitText/);
   assert.match(cover, /mt-1\.5 size-2\.5 shrink-0 rounded-sm/);
   assert.match(summaryHeader, /mt-1\.5 size-2\.5 shrink-0 rounded-sm/);
+  assert.match(summaryHeader, /fitText/);
+  assert.match(summaryHeader, /dashboardTypography\.cardTitle/);
+  assert.equal(summaryHeader.includes("cardDesc"), false);
   assert.match(cover, /StallUnitNoMark/);
   assert.match(cover, /ControllerNoMark/);
-  assert.equal(cover.includes("fitText"), false);
   assert.equal(cover.includes("data-cover-environment-status"), false);
   assert.equal(cover.includes('data-cover-morph="band"'), false);
   assert.equal(cover.includes("md:min-h-24"), false);
