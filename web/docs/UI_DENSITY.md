@@ -40,7 +40,7 @@ CSS: `--density-readout*` · `--tracking-readout*` (`globals.css`).
 
 ### 필드 덮개 (컨트롤러 카드)
 
-닫힌 덮개의 이름과 번호·아이콘은 `--density-cover-identity`(PC 1.5rem, 굵기 600)이고 아이콘은 그 글자의 1em입니다. 온도는 `--density-cover-value`(PC 2rem, 굵기 600)입니다. 경보 범위와 환경·통신 판정은 덮개에 적지 않습니다.  
+닫힌 덮개의 축사유형은 열린 패널과 같은 `cardTitle`(`--density-card-title`, PC 2rem, 굵기 600)이다. 축사·컨트롤러 번호도 열린 패널과 같이 `cardDesc` 위에 아이콘과 숫자를 1.35em·굵기 700으로 두고, 상태 점만큼 같은 왼쪽에서 시작한다. 온도는 축사유형과 같은 크기이고 그 글자 열의 왼쪽에 맞춘다. 경보 범위와 환경·통신 판정은 덮개에 적지 않는다.  
 
 ### 맵 카드 수치 (회귀 금지)
 

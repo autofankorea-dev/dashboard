@@ -40,25 +40,20 @@ test("header has no density toggle and the controller card uses the md scale", (
   );
   assert.match(
     pageUi,
-    /envCoverIdentity:[\s\S]*md:text-\[length:var\(--density-cover-identity-md\)\]/,
+    /envCoverValue:[\s\S]*font-semibold[\s\S]*md:text-\[length:var\(--density-card-title-md\)\]/,
   );
-  assert.match(
-    pageUi,
-    /envCoverValue:[\s\S]*font-semibold[\s\S]*md:text-\[length:var\(--density-cover-value-md\)\]/,
-  );
-  assert.match(
-    readRepoFile("src/app/globals.css"),
-    /--density-cover-identity-md:\s*1\.5rem/,
-  );
-  assert.match(
-    readRepoFile("src/app/globals.css"),
-    /--density-cover-value-md:\s*2rem/,
-  );
+  assert.equal(pageUi.includes("envCoverIdentity"), false);
+  assert.equal(readRepoFile("src/app/globals.css").includes("--density-cover-"), false);
   const cover = readRepoFile("src/components/farm/controller-env-cover.tsx");
+  const summaryHeader = readRepoFile("src/components/farm/controller-summary-parts.tsx");
   assert.match(cover, /absolute inset-0/);
+  assert.match(cover, /dashboardTypography\.cardTitle/);
+  assert.match(cover, /dashboardTypography\.cardDesc/);
+  assert.match(cover, /mt-1\.5 size-2\.5 shrink-0 rounded-sm/);
+  assert.match(summaryHeader, /mt-1\.5 size-2\.5 shrink-0 rounded-sm/);
   assert.match(cover, /StallUnitNoMark/);
   assert.match(cover, /ControllerNoMark/);
-  assert.match(cover, /fitText/);
+  assert.equal(cover.includes("fitText"), false);
   assert.equal(cover.includes("data-cover-environment-status"), false);
   assert.equal(cover.includes('data-cover-morph="band"'), false);
   assert.equal(cover.includes("md:min-h-24"), false);
