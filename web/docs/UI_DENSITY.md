@@ -40,7 +40,7 @@ CSS: `--density-readout*` · `--tracking-readout*` (`globals.css`).
 
 ### 필드 덮개 (컨트롤러 카드)
 
-지금 값만 `valueLg`입니다. 명칭·번호는 헤더와 같은 `cardTitle` / `cardDesc`·자리(상태점·액션 칸)를 써서 걷힐 때 크기 변환 없이 이어집니다. 판정만 `envCoverStatus`입니다.  
+닫힌 덮개의 이름·온도·판정은 걷힌 헤더와 같은 `md` 스케일입니다. 이름은 `cardTitle`, 온도는 `valueLg`, 판정·번호는 `cardDesc` 크기입니다.  
 
 ### 맵 카드 수치 (회귀 금지)
 

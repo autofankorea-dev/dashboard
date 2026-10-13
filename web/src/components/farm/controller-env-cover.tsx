@@ -138,7 +138,7 @@ export function ControllerEnvCover({
       }}
       data-cover-layout="row"
       className={cn(
-        "relative z-10 flex min-h-11 w-full min-w-0 items-center gap-2 px-2.5 py-1.5 text-left sm:px-3",
+        "relative z-10 flex min-h-11 w-full min-w-0 items-center gap-2 px-2.5 py-1.5 text-left sm:px-3 md:min-h-24 md:gap-3 md:px-4 md:py-3",
         dashboardAffordance.hitSurface,
         COVER_FILL[displayLevel],
         dashboardChroma.statusFilmGlassRim,
