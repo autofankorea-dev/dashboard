@@ -132,7 +132,7 @@ export function buildModuleActionPath(
 }
 
 export function d11HintFromId(id: string): D11Hint {
-  const meta = D11_CATALOG[id] ?? { title: id, summary: "D11 incident-quickref 참조" };
+  const meta = D11_CATALOG[id] ?? { title: id, summary: "목록에 없는 점검 항목" };
   return { id, title: meta.title, summary: meta.summary };
 }
 

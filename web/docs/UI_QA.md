@@ -1,14 +1,23 @@
-# 다크모드 가시성 — 현황 · 개선 계획
+# UI 검증
+
+다크 가시성, 수동 시각 QA, Health 스모크 기록, 모바일 audit.
+
+
+---
+
+## 다크 가시성
+
+## 다크모드 가시성 — 현황 · 개선 계획
 
 > **역할:** 유지보수 계획 (H6 아님). 구현은 **사용자 승인 후**.  
-> **관련:** [`UI_SURFACES.md`](./UI_SURFACES.md) · [`UI_ELEVATION.md`](./UI_ELEVATION.md) · [`UI_CHROMA.md`](./UI_CHROMA.md) · [`UI_VISUAL_QA.md`](./UI_VISUAL_QA.md)  
+> **관련:** [`UI.md`](./UI.md#면) · [`UI.md`](./UI.md#단) · [`UI.md`](./UI.md#채도) · [`UI_QA.md`](./UI_QA.md)  
 > **조사일:** 2026-09-09 · **구현:** P0–P6 적용 (같은 날) · 라이브 다크 스크린샷은 검증 단계에서 보완
 
 다크모드는 갭5로 **면(바탕·카드·우물)** 은 나눴다. 글자·테두리·끊김·데이터 혼합은 라이트 공식(검정 잉크, 흰 혼합, 동일 상태 hex)이 남아 대비가 무너진다.
 
 ---
 
-## 1. 목표
+### 1. 목표
 
 1. **데이터가 먼저 읽힌다.** 주의·위험·끊김 숫자와 덮개 판정이 다크에서도 본문만큼 보인다.
 2. **칸이 보인다.** 격자 타일·우물이 서로 구분된다.
@@ -19,9 +28,9 @@
 
 ---
 
-## 2. 현황 (조사)
+### 2. 현황 (조사)
 
-### 2.1 토큰 — 갭5가 한 일 / 안 한 일
+#### 2.1 토큰 — 갭5가 한 일 / 안 한 일
 
 | 토큰 | 라이트 | 다크 | 가시성 |
 |------|--------|------|--------|
@@ -46,7 +55,7 @@
 
 `verify:ui-colors`는 sky/rose hex 회귀만 본다. **대비 가드는 없다.** `UI_VISUAL_QA` 체크리스트 다크 칸은 비어 있다.
 
-### 2.2 핵심 실패 — 잉크를 깔개와 반대로 씀
+#### 2.2 핵심 실패 — 잉크를 깔개와 반대로 씀
 
 `--status-*-ink`는 덮개(E)용이다. “면과 같은 색상각, 더 진함. 흰/검정 잉크 없음.” (`controller-env-cover.ts`)
 
@@ -68,7 +77,7 @@ controllerEnvMetricTextClass(warn|danger) → status-*-ink (검정 혼합)
 
 단위 `℃` `%`에 `opacity-70`이 한 겹 더 있어 컴팩트 칸은 더 죽는다.
 
-### 2.3 화면별
+#### 2.3 화면별
 
 **필드**
 
@@ -107,7 +116,7 @@ controllerEnvMetricTextClass(warn|danger) → status-*-ink (검정 혼합)
 - 로그인 오류/안내: amber/red 950 틴트는 다크 대응됨.
 - body: `dark:bg-background` (라이트는 `muted/30`).
 
-### 2.4 잘 되는 것 (건드리지 않음)
+#### 2.4 잘 되는 것 (건드리지 않음)
 
 - 본문·제목 `foreground`
 - 보조 설명 `muted-foreground` (메타·축 숫자 — 커버리지 라벨 제외)
@@ -115,14 +124,14 @@ controllerEnvMetricTextClass(warn|danger) → status-*-ink (검정 혼합)
 - 브랜드 `primary` (다크 L 0.723)
 - 델린/알림 **솔리드 뱃지 + 흰 숫자**
 
-### 2.5 조사 한계
+#### 2.5 조사 한계
 
 - Production 다크 **로그인 후 스크린샷 없음.** 대비 수치는 oklch L 근사.
 - EC2/현장과 무관. 테마는 기기 로컬(`dashboard-theme.ts`).
 
 ---
 
-## 3. 설계 결정 (구현 전 고정)
+### 3. 설계 결정 (구현 전 고정)
 
 | 결정 | 내용 | 하지 않는 것 |
 |------|------|----------------|
@@ -135,9 +144,9 @@ controllerEnvMetricTextClass(warn|danger) → status-*-ink (검정 혼합)
 
 ---
 
-## 4. 단계 계획
+### 4. 단계 계획
 
-### P0 — 타일·차트 잉크 (필수)
+#### P0 — 타일·차트 잉크 (필수)
 
 **목적:** 주의·위험 숫자가 다크 카드에서 읽히게.
 
@@ -151,7 +160,7 @@ controllerEnvMetricTextClass(warn|danger) → status-*-ink (검정 혼합)
 | 테스트 | 단위: 클래스 문자열이 on-canvas. `verify:design`. 수동: 다크 필드 주의 칸 숫자 |
 | 롤백 | 토큰·클래스 매핑 되돌리기 |
 
-### P1 — 끊김 면
+#### P1 — 끊김 면
 
 **목적:** 통신 두절 덮개·컴팩트 칸이 우물에 안 녹게.
 
@@ -163,7 +172,7 @@ controllerEnvMetricTextClass(warn|danger) → status-*-ink (검정 혼합)
 | 테스트 | 덮개 라벨 「연결 끊김」 대비. 라이트 회귀 |
 | 롤백 | `bg-muted` 복귀 |
 
-### P2 — 칸 경계
+#### P2 — 칸 경계
 
 **목적:** 격자·우물이 손으로 세지 않아도 나뉘게.
 
@@ -174,7 +183,7 @@ controllerEnvMetricTextClass(warn|danger) → status-*-ink (검정 혼합)
 | 테스트 | `verify:ui-elevation`. 다크 필드 격자 스크린 |
 | 롤백 | 기존 L 0.275 / 8% |
 
-### P3 — 흰·검 혼합 데이터
+#### P3 — 흰·검 혼합 데이터
 
 **목적:** 게이지 밴드·EMA가 다크에서 창백/소멸하지 않게.
 
@@ -186,7 +195,7 @@ controllerEnvMetricTextClass(warn|danger) → status-*-ink (검정 혼합)
 | 테스트 | 차트 장기 추세선이 본선과 구분·소멸하지 않음 |
 | 롤백 | 리터럴 white/black 혼합 복귀 |
 
-### P4 — 크롬 잔여 색 (가시성 + 문법)
+#### P4 — 크롬 잔여 색 (가시성 + 문법)
 
 **목적:** `emerald`/`red` 유틸을 status/primary로. 다크 분기가 한곳으로.
 
@@ -197,21 +206,21 @@ controllerEnvMetricTextClass(warn|danger) → status-*-ink (검정 혼합)
 | 제외 | 카카오 브랜드 `#FEE500` allowlist |
 | 테스트 | `verify:ui-colors` |
 
-### P5 — 지도 (후순위 · 별도 승인)
+#### P5 — 지도 (후순위 · 별도 승인)
 
 카카오 다크 맵타입·오버레이 대비. 핀 `#10b981` → `--primary` 또는 `--status-ok`. P0–P3과 묶지 않음.
 
-### P6 — 검증을 문에 넣기
+#### P6 — 검증을 문에 넣기
 
 | 항목 | 내용 |
 |------|------|
-| `UI_VISUAL_QA.md` | 다크 행: 컴팩트 주의 숫자, 끊김 덮개, 차트 EMA, 격자 경계 |
+| `UI_QA.md` | 다크 행: 컴팩트 주의 숫자, 끊김 덮개, 차트 EMA, 격자 경계 |
 | (선택) | 토큰 L 최소차 스크립트 — 신규 의존 없이 `globals.css` 파싱만 |
 | 수동 | 필드 / 차트 / 알림·델린 / 로그인 · compact+comfortable |
 
 ---
 
-## 5. 영향 · 하지 말 것
+### 5. 영향 · 하지 말 것
 
 | 영향 | 내용 |
 |------|------|
@@ -224,7 +233,7 @@ controllerEnvMetricTextClass(warn|danger) → status-*-ink (검정 혼합)
 
 ---
 
-## 6. 승인 후 진행 순서
+### 6. 승인 후 진행 순서
 
 1. P0만 브랜치 `fix/dark-status-on-canvas`
 2. `npm test` (cover 단위) · `npm run verify:design` · 다크 필드 수동
@@ -236,7 +245,7 @@ controllerEnvMetricTextClass(warn|danger) → status-*-ink (검정 혼합)
 
 ---
 
-## 7. 적용 현황 (2026-09-09)
+### 7. 적용 현황 (2026-09-09)
 
 | 단계 | 상태 |
 |------|------|
@@ -255,3 +264,157 @@ controllerEnvMetricTextClass(warn|danger) → status-*-ink (검정 혼합)
 | control tinted | 적용. 대기 `--control` 12% · 켜짐 `--control-active` 22%. `.dark` oklch 복제 없음 |
 
 가드: `node scripts/verify-ui-colors.mjs` 가 `.dark`의 on-canvas·offline·mix·heatmap 토큰, 상태색 oklch(비-hex), Label 3·4단, `--secondary`≠`--muted`, `--destructive`=`--status-danger`, `--control` tinted 믹스를 확인한다.
+
+
+---
+
+## 시각 QA
+
+## UI Visual QA (수동)
+
+기준일: 2026-07-30 · 대상: `dashboard/web` 농장 허브
+
+### 판정
+
+**아직 고급스럽지 않음.**  
+토큰·가드·H1–H5는 “시스템 1.0”이지만, 화면 인상은 운영 도구에 가깝고 브랜드·면·리듬의 고급감은 부족하다.
+
+### 체크리스트 (로컬)
+
+| # | 화면 | 확인 | 결과 |
+|---|------|------|------|
+| 1 | 로그인 brand 스플래시 | presence(~1.2s)로 과도하게 길지 않은지 | |
+| 2 | 그리드/목록 | 크롬 채도 낮음 · 숫자·알람만 선명 | |
+| 3 | 차트 | spring/과한 scale 없음 · 채널색 일관 | |
+| 4 | 컨트롤러 카드 | 온도=`channel-temp` · 설정밴드=`channel-info` · warn=`amber/status` | |
+| 5 | 옛 `view=aria` | 필드로 열림. 뱃지·스테이지·도크 없음 | |
+| 7 | **다크** 필드 컴팩트 | 주의·위험 숫자가 카드에서 읽힘 (on-canvas, 덮개 ink 아님) | |
+| 8 | **다크** 끊김 덮개 | 우물에 안 녹음 · 글자 foreground | |
+| 9 | **다크** 격자 경계 | border/ring으로 칸이 나뉨 | |
+| 10 | **다크** 차트 EMA·밴드 | 장기 추세가 배경에 붙지 않음 · 설정밴드가 창백하지 않음 | |
+| 11 | **다크** 알림 | 솔리드+숫자 대비 유지. 델린 뱃지는 없음 | |
+| 12 | **다크** 지도 타일 | 타일 img 밝기↓ · 핀은 primary/status (카카오 다크 맵타입 없음) | |
+| 13 | **라이트/다크 · PC/모바일** 온·습 칩 | 테두리 없는 우물. 아웃라인 버튼처럼 안 보임 | |
+| 14 | **라이트/다크 · PC/모바일** 환경 덮개 | 상태색 유지 · 코너 셰브론으로 열기 힌트. 다크 정상=세이지가 창백 섬이 아님 · 주의가 형광으로 안 뜸 | |
+| 15 | **라이트/다크 · PC/모바일** 뷰 탭 비활성 | 설명 글자가 아님. 필은 활성만 | |
+| 16 | **라이트/다크** 차트 레이어 꺼짐 | 테두리 유지. 장식 아이콘 아님 | |
+| 17 | **라이트/다크 · PC/모바일** 적용/확인 | primary 채움. 취소는 테두리 | |
+| 18 | **모바일** 히트 | 덮개·현황·탭 최소 높이가 손가락 히트에 맞음 | |
+| 19 | **라이트/다크** 입력 힌트 | 플레이스홀더가 본문·보조 설명보다 한 단 약함 (tertiary). 빈 상태 문구는 muted 유지 | |
+
+### 고급감 갭 (후속 후보)
+
+1. **면·여백** — **갭1 적용** (`dashboardHubSurface`: well → tile → metricPocket · 그리드/목록 간격↑).
+2. **타이포 리듬** — **갭2 적용** (`dashboardReadout` · 숫자/단위/라벨 분리). **맵 카드는 `--density-map-value*` 고정** (readout 재사용 회귀 금지 · `verify:ui-density`).
+3. **채도 잔향** — violet/온도 orange는 제거·가드됨. 구역별 톤이 다시 섞이면 재스캔.
+4. **DELIN 뱃지** — 제거됨. 필드에 뱃지·오브·스테이지를 두지 않음.
+5. **다크/라이트 비대칭** — **갭5 적용** (`--surface-*`). **P0–P6 적용** 2026-09-09: 타일 on-canvas 잉크 · 끊김 면 · border/ring · mix-lift/shade · 크롬 잔여 · 지도 타일 필터. **다크 상태 명도** · **Label 3·4단** · **muted≠secondary** · **destructive=status-danger** 2026-09-09. 정본 [`UI_QA.md`](./UI_QA.md).
+
+6. **면 종류** — [UI.md](./UI.md#면). 덮개는 Status film(E). 유리 테 적용. Overlay(F) frost와 섞지 않음.
+7. **어포던스** — [UI.md](./UI.md#어포던스) A–G 적용(2026-09-09). 표시 칩=우물 · 덮개 셰브론 · 탭 choiceIdle · CTA primary.
+
+→ 신규 H6는 **승인 전 착수 금지**. 갭은 이 문서에만 누적.
+
+### 동결과의 관계
+
+시스템 토큰·가드는 동결(`UI_MOTION` · design-animation-agent).  
+고급화는 “새 이펙트 추가”가 아니라 위 갭을 **승인된 소단위**로만 줄인다.
+
+
+---
+
+## Health·명령 스모크
+
+## UI 스모크 — Health C / 명령 이력 (2026-08-06)
+
+> **환경:** `localhost:3000` (로그인된 관리자 세션) · DB는 당시 구 `iot-cloud`  
+> **현재 운영 DB:** `fkkrjljeqxpbmazfnync` · 구 `iot-cloud` **폐기**  
+> **Prod URL:** 별도 로그인 미실시 · Vercel이 `main`(`8eb322a`) 배포 후 동일 기대
+
+### 체크 결과
+
+| # | 항목 | 결과 |
+|---|------|------|
+| 1 | 명령 이력 최상단 | **11:30 · 적용 완료** · `FARM01 · 자돈사 · 축사 01 · 06번 · A` (스모크 `farm01_ops_smoke_20260806`) |
+| 2 | 채널 라벨 | 대상에 **· A** 표시 (J6 `formatCommandTarget`) |
+| 3 | Health C | DAG **C 명령 · 정상** · `24h 실패 0` · checkpoint 0 |
+| 4 | sent stuck | UI상 실패/stuck 없음 (DB sent=0과 정합) |
+| 5 | 외부 연계 | **미구현** (EKAPE WAITING과 정합) |
+| 6 | FARM02 모듈 | S1 장애(수신 정지) — **HW 테스트용 · 조치 범위 밖** |
+
+### 비고
+
+- 로컬 Next hydration: `HealthRefreshBar` ARIA/title 시계·카운트다운을 마운트 후로 지연 · `formatKst`를 formatToParts 고정 조립으로 맞춤 (2026-08-06)
+- Health lane에 raw `channel_key` 문자열(`SP05:01:06|A|EC03`)은 사용자 표시명 대신 정식 명칭 경로를 씀 (의도)
+
+
+---
+
+## 모바일 audit
+
+## 모바일 UI Audit (`mobile-ui-audit.mjs`)
+
+375×812 뷰포트에서 **admin / operator / viewer** 주요 경로의 레이아웃·터치 타겟을 자동 검수합니다.
+
+### 실행
+
+```bash
+cd dashboard/web
+npm run dev   # http://localhost:3000
+node scripts/mobile-ui-audit.mjs
+```
+
+환경 변수:
+
+| 변수 | 기본값 | 설명 |
+|------|--------|------|
+| `UI_VERIFY_BASE` | `http://localhost:3000` | 대시보드 베이스 URL |
+
+테스트 계정 비밀번호 (`scripts/test-accounts.mjs`):
+
+| 역할 | 이메일 | 비밀번호 |
+|------|--------|----------|
+| admin | `admin@test.com` | `admin1` |
+| operator | `farmer@test.com` | `farmer` |
+| viewer | `viewer@test.com` | `viewer` |
+
+audit 실행 전 `npm run set:test-passwords`로 Supabase에 반영할 수 있습니다 (service role 필요).
+
+### 산출물
+
+`scripts/mobile-audit-output/`
+
+- `report.json` — 페이지별 이슈·메트릭
+- `*.png` — 역할·경로별 스크린샷
+
+### 검수 기준 (휴리스틱)
+
+| 코드 | 심각도 | 조건 | 허용 기준 |
+|------|--------|------|-----------|
+| `HORIZONTAL_OVERFLOW` | high | 문서 가로 스크롤 > viewport | **0건** |
+| `TEXT_CLIPPED` | medium | 버튼·라벨 등 3건+ 잘림 | **0건** (또는 2건 이하) |
+| `TABLE_OVERFLOW` | medium | 테이블이 viewport보다 넓음 | **0건** |
+| `OVERSIZED_TEXT` | medium | 24px+ 텍스트 노드 8건 초과 | 역할·페이지별 문맥 검토 |
+| `OVERSIZED_BUTTONS` | low | 본문 버튼 높이 ≥56px **또는** 글자 ≥20px, 라벨 1~24자, **4건 이상** | **0건** (clean 목표) |
+
+#### 제외 영역 (오탐 방지)
+
+- **Shell**: `header`, `운영 탭`, `모니터링 탭` 등 — 44px+ 터치 타겟 허용
+- **지도**: Leaflet 컨트롤 (`.leaflet-control`, `.leaflet-bar`)
+- **Farm map 리스트**: `[data-audit-region="farm-map-list"]`
+
+#### 모바일 compact 대상 (참고)
+
+- 알람 strip (`ops-mobile-alarm-strip`, `density=compact`)
+- Health DAG 리스트 (`health-dag-mobile-list`, `HealthStatusBadge compact`)
+- 채널 설정 3버튼 (`ChannelSettingsBar compact`)
+- Admin 축사유형 그리드 (`ops-mobile-sp-overview`)
+
+### 합격 판정
+
+- **Release gate**: `issueCount === 0` 인 페이지 비율 = **100%** (현재 25경로)
+- `low` 이슈는 터치 UX 개선용; high/medium은 배포 전 해소 권장
+
+### 관련 스크립트
+
+- `ui-route-verify.mjs` — 데스크톱·라우트 HTTP/렌더 스모크 (모바일 레이아웃 미포함)

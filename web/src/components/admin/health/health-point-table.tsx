@@ -63,7 +63,7 @@ export function HealthD11Panel({ hints }: HealthD11PanelProps) {
         </div>
       ))}
       <p className={dashboardTypography.meta}>
-        상세: Diagrams/deploy/incident-quickref.md · D11-incident.md
+        상세: docs/OPS.md · docs/SYSTEM_INSTANCE.md
       </p>
     </div>
   );
