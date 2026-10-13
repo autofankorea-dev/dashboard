@@ -140,7 +140,7 @@ export default function ControllerStateFixture() {
     <PanelProbe key={mount} stage={stage} slot={slot} />
     <div className="flex flex-wrap gap-4">
       {covers.map(([id, reading]) => <div key={id} data-fixture-cover={id}
-        className="w-full max-w-xl overflow-hidden rounded-xl border">
+        className="relative min-h-72 w-full max-w-xl overflow-hidden rounded-xl border">
         <ControllerEnvCover reading={reading} level={controllerEnvCoverLevel(reading)} onOpen={() => {}} />
       </div>)}
     </div>
