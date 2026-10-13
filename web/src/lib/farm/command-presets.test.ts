@@ -13,8 +13,10 @@ import {
   parseCommandPresetList,
   removeCommandPreset,
   snapshotCommandPresetChannels,
+  bulkPresetButtons,
   upsertCommandPreset,
   type CommandPreset,
+  type CommandPresetScope,
 } from "./command-presets";
 import type { ChannelGlanceRow, PanelDraft } from "@/lib/controllers/controller-panel-draft";
 
@@ -156,6 +158,44 @@ const sample: CommandPreset[] = [
 {
   assert.equal(PRESET_STEPPER_HOLD_DELAY_MS, 360);
   assert.equal(PRESET_STEPPER_HOLD_INTERVAL_MS, 120);
+}
+
+{
+  const scopeA: CommandPresetScope = {
+    farmKey: { lsindRegistNo: "FARM01", itemCode: "P00" },
+    moduleUid: 1,
+    controllerKey: "SP01:01:1",
+  };
+  const scopeB: CommandPresetScope = {
+    ...scopeA,
+    controllerKey: "SP01:02:2",
+  };
+  const buttons = bulkPresetButtons([
+    {
+      scope: scopeA,
+      mark: "1번",
+      items: [
+        { id: "a", name: "주간", channels: { A: draft(19) } },
+        { id: "b", name: "야간", channels: { A: draft(16) } },
+      ],
+    },
+    {
+      scope: scopeB,
+      mark: "2번",
+      items: [
+        { id: "a", name: "주간", channels: { A: draft(19) } },
+        { id: "c", name: "야간", channels: { B: draft(15) } },
+      ],
+    },
+  ]);
+  assert.deepEqual(
+    buttons.map((item) => item.name),
+    ["주간", "야간 · 1번", "야간 · 2번"],
+  );
+  assert.equal(buttons[0]?.channels.A?.setpointTemp, 19);
+  assert.equal(buttons[1]?.scope.controllerKey, "SP01:01:1");
+  assert.equal(buttons[2]?.sourceId, "c");
+  assert.equal(buttons[2]?.channels.B?.setpointTemp, 15);
 }
 
 console.log("command-presets.test.ts ok");

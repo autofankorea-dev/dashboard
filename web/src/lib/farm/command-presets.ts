@@ -248,6 +248,79 @@ export function snapshotCommandPresetStorage(scope: CommandPresetScope | null): 
   }
 }
 
+export function commandPresetChannelSignature(
+  channels: CommandPresetChannels,
+): string {
+  return SLOTS.map((slot) => {
+    const draft = channels[slot];
+    if (!draft) return `${slot}:`;
+    return `${slot}:${draft.setpointTemp},${draft.tempDeviation},${draft.minVentPct},${draft.maxVentPct}`;
+  }).join("|");
+}
+
+export type BulkPresetButton = CommandPreset & {
+  sourceId: string;
+  scope: CommandPresetScope;
+  title: string;
+};
+
+export type ControllerPresetGroup = {
+  scope: CommandPresetScope;
+  mark: string;
+  items: readonly CommandPreset[];
+};
+
+/** 선택한 컨트롤러의 개인 프리셋. 같은 이름·같은 값은 하나, 값이 다르면 기기 표시를 붙인다. */
+export function bulkPresetButtons(
+  groups: readonly ControllerPresetGroup[],
+): BulkPresetButton[] {
+  const entries: {
+    scope: CommandPresetScope;
+    mark: string;
+    item: CommandPreset;
+    signature: string;
+  }[] = [];
+  const signaturesByName = new Map<string, Set<string>>();
+  for (const group of groups) {
+    for (const item of group.items) {
+      const signature = commandPresetChannelSignature(item.channels);
+      entries.push({
+        scope: group.scope,
+        mark: group.mark,
+        item,
+        signature,
+      });
+      const signatures = signaturesByName.get(item.name) ?? new Set<string>();
+      signatures.add(signature);
+      signaturesByName.set(item.name, signatures);
+    }
+  }
+
+  const seen = new Set<string>();
+  const usedLabels = new Set<string>();
+  const out: BulkPresetButton[] = [];
+  for (const entry of entries) {
+    const dedupeKey = `${entry.item.name}|${entry.signature}`;
+    if (seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
+    const ambiguous = (signaturesByName.get(entry.item.name)?.size ?? 0) > 1;
+    let name = ambiguous ? `${entry.item.name} · ${entry.mark}` : entry.item.name;
+    if (usedLabels.has(name)) {
+      name = `${name} · ${entry.scope.controllerKey}`;
+    }
+    usedLabels.add(name);
+    out.push({
+      id: `${commandPresetStorageKey(entry.scope)}:${entry.item.id}`,
+      sourceId: entry.item.id,
+      scope: entry.scope,
+      name,
+      channels: entry.item.channels,
+      title: `${entry.mark}에 저장한 설정값`,
+    });
+  }
+  return out;
+}
+
 export function writeCommandPresets(
   scope: CommandPresetScope | null,
   items: readonly CommandPreset[],

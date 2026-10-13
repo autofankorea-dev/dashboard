@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 type StripItem = CommandPreset & {
   source?: "shared" | "personal";
   removable?: boolean;
+  title?: string;
 };
 
 type Props = {
@@ -32,6 +33,8 @@ type Props = {
     name: string,
     channels: CommandPresetChannels,
   ) => "ok" | "empty-name" | "empty-channels" | "full";
+  /** 일괄 카드는 이미 저장한 칩만 고른다. */
+  showCreate?: boolean;
 };
 
 const chipClass =
@@ -46,6 +49,7 @@ export function SettingsCommandPresetStrip({
   onPick,
   onDelete,
   onCreate,
+  showCreate = true,
 }: Props) {
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
@@ -80,28 +84,30 @@ export function SettingsCommandPresetStrip({
 
   return (
     <div className="flex flex-col gap-1">
-      <button
-        type="button"
-        disabled={!canOpenCreate}
-        aria-label="프리셋 생성"
-        title={atCap ? "카드당 8개까지" : "이름과 채널 값으로 칩 만들기"}
-        onClick={() => {
-          setDrafts(seedPresetCreateChannels(seedChannels));
-          setName(`${personalCount + 1}번`);
-          setError(null);
-          setCreating(true);
-        }}
-        className={cn(
-          chipClass,
-          "w-fit gap-0.5",
-          motionClass.microHover,
-          dashboardAffordance.chipToggleIdle,
-          !canOpenCreate && "opacity-60",
-        )}
-      >
-        <Plus className="size-3" strokeWidth={2.25} aria-hidden />
-        생성
-      </button>
+      {showCreate ? (
+        <button
+          type="button"
+          disabled={!canOpenCreate}
+          aria-label="프리셋 생성"
+          title={atCap ? "카드당 8개까지" : "이름과 채널 값으로 칩 만들기"}
+          onClick={() => {
+            setDrafts(seedPresetCreateChannels(seedChannels));
+            setName(`${personalCount + 1}번`);
+            setError(null);
+            setCreating(true);
+          }}
+          className={cn(
+            chipClass,
+            "w-fit gap-0.5",
+            motionClass.microHover,
+            dashboardAffordance.chipToggleIdle,
+            !canOpenCreate && "opacity-60",
+          )}
+        >
+          <Plus className="size-3" strokeWidth={2.25} aria-hidden />
+          생성
+        </button>
+      ) : null}
       {items.length > 0 ? (
         <div
           className="flex flex-wrap items-center gap-1"
@@ -127,7 +133,10 @@ export function SettingsCommandPresetStrip({
                   type="button"
                   disabled={locked}
                   aria-pressed={on}
-                  title={shared ? "축사유형 공용 프리셋" : "이 기기 프리셋"}
+                  title={
+                    item.title ??
+                    (shared ? "축사유형 공용 프리셋" : "이 기기 프리셋")
+                  }
                   onClick={() => onPick(item.id)}
                   className={cn(
                     "h-full min-w-0 pl-2 pr-1 text-[11px] font-medium outline-none",
@@ -168,6 +177,7 @@ export function SettingsCommandPresetStrip({
           })}
         </div>
       ) : null}
+      {showCreate ? (
       <SettingsEditOverlay
         open={creating}
         wide
@@ -190,6 +200,7 @@ export function SettingsCommandPresetStrip({
           />
         ) : null}
       </SettingsEditOverlay>
+      ) : null}
       <SettingsEditOverlay
         open={pendingDelete != null}
         title="삭제하시겠습니까?"

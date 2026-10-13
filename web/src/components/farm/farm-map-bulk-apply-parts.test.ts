@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import {
   buildBulkThermoCommands,
   bulkDirtyChannelSlots,
+  bulkDraftsFromPreset,
+  bulkSendSlots,
   emptyBulkChannelDrafts,
   resolveBulkSendChannels,
   type BulkChannelThermo,
@@ -114,6 +116,37 @@ assert.equal(cmds[0]?.eqpmnCode, "EC01");
 assert.equal(cmds[1]?.channel, "B");
 assert.equal(cmds[1]?.setpointTemp, 26.1);
 assert.equal(cmds[1]?.eqpmnCode, "EC02");
+
+{
+  const applied = bulkDraftsFromPreset(seeds, {
+    A: {
+      setpointTemp: 21,
+      tempDeviation: 1.5,
+      minVentPct: 20,
+      maxVentPct: 80,
+    },
+  });
+  assert.deepEqual(applied.slots, ["A"]);
+  assert.equal(applied.drafts.A.setpoint, 21);
+  assert.equal(applied.drafts.A.minVent, 20);
+  assert.equal(applied.drafts.B.setpoint, seeds.B.setpoint);
+  const sameAsSeed = bulkDraftsFromPreset(seeds, {
+    B: {
+      setpointTemp: seeds.B.setpoint,
+      tempDeviation: seeds.B.deviation,
+      minVentPct: seeds.B.minVent,
+      maxVentPct: seeds.B.maxVent,
+    },
+  });
+  assert.deepEqual(
+    bulkSendSlots(sameAsSeed.drafts, seeds, true, true, sameAsSeed.slots),
+    ["B"],
+  );
+  assert.deepEqual(
+    bulkSendSlots(applied.drafts, seeds, true, true, ["A"]),
+    ["A"],
+  );
+}
 
 console.log("farm-map-bulk-apply-parts.test.ts: ok");
 

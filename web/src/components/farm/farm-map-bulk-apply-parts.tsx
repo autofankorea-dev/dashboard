@@ -15,6 +15,7 @@ import { type ChannelSlot } from "@/lib/domain/iot-channel";
 import { isReadingOnline } from "@/lib/domain/reading-display";
 import { normalizeStallTyCode } from "@/lib/domain/stall-type";
 import { resolveReadingChannelThermo } from "@/lib/farm/controller-summary-display";
+import type { CommandPresetChannels } from "@/lib/farm/command-presets";
 
 /** 일괄적용 툴바 버튼 — 카드 본문은 채널·알람 설정 카드와 같은 크기 */
 export const bulkModalBtn =
@@ -99,6 +100,47 @@ export function bulkDirtyChannelSlots(
   return BULK_CHANNEL_OPTIONS.filter((slot) =>
     bulkChannelThermoDirty(drafts[slot], seeds[slot], applyTemp, applyVent),
   );
+}
+
+/** 프리셋에 있는 채널만 초안에 덮어쓴다. */
+export function bulkDraftsFromPreset(
+  drafts: Record<ChannelSlot, BulkChannelThermo>,
+  channels: CommandPresetChannels,
+): { drafts: Record<ChannelSlot, BulkChannelThermo>; slots: ChannelSlot[] } {
+  const next: Record<ChannelSlot, BulkChannelThermo> = {
+    A: { ...drafts.A },
+    B: { ...drafts.B },
+    C: { ...drafts.C },
+  };
+  const slots: ChannelSlot[] = [];
+  for (const slot of BULK_CHANNEL_OPTIONS) {
+    const raw = channels[slot];
+    if (!raw) continue;
+    next[slot] = {
+      setpoint: raw.setpointTemp,
+      deviation: raw.tempDeviation,
+      minVent: raw.minVentPct,
+      maxVent: raw.maxVentPct,
+    };
+    slots.push(slot);
+  }
+  return { drafts: next, slots };
+}
+
+/** 핀으로 고정한 채널과 값이 바뀐 채널. 둘 다 없으면 기존 전송 채널 규칙. */
+export function bulkSendSlots(
+  drafts: Record<ChannelSlot, BulkChannelThermo>,
+  seeds: Record<ChannelSlot, BulkChannelThermo>,
+  applyTemp: boolean,
+  applyVent: boolean,
+  pinned: readonly ChannelSlot[],
+): ChannelSlot[] {
+  const dirty = bulkDirtyChannelSlots(drafts, seeds, applyTemp, applyVent);
+  const chosen = new Set<ChannelSlot>([...pinned, ...dirty]);
+  if (chosen.size > 0) {
+    return BULK_CHANNEL_OPTIONS.filter((slot) => chosen.has(slot));
+  }
+  return resolveBulkSendChannels(drafts, seeds, applyTemp, applyVent);
 }
 
 /** 값을 바꾼 채널만. 아무 채널도 안 바꿨으면 A·B·C 모두(현재 값 복사). */

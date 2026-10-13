@@ -28,7 +28,9 @@ import {
   EMPTY_APPLY_PROGRESS,
   useApplyQueueOptional,
 } from "@/components/farm/apply-queue-context";
+import { SettingsCommandPresetStrip } from "@/components/farm/settings-command-preset-strip";
 import { SettingsEditOverlay } from "@/components/farm/settings-edit-overlay";
+import { useSelectedControllerPresets } from "@/components/farm/use-command-presets";
 import {
   SharedSettingsStepper,
   UnifiedSettingsTable,
@@ -39,15 +41,20 @@ import {
   BULK_CHANNEL_OPTIONS,
   buildBulkThermoCommands,
   bulkAlarmDraftSeed,
-  bulkDirtyChannelSlots,
+  bulkDraftsFromPreset,
+  bulkSendSlots,
   bulkThermoDraftSeedByChannel,
   emptyBulkChannelDrafts,
-  resolveBulkSendChannels,
   bulkModalBtn,
   readingNeedsChannelsHydration,
 } from "@/components/farm/farm-map-bulk-apply-parts";
 import { type ChannelSlot } from "@/lib/domain/iot-channel";
 import type { PanelThermoValues } from "@/lib/controllers/controller-panel-draft";
+import {
+  readCommandPresets,
+  removeCommandPreset,
+  writeCommandPresets,
+} from "@/lib/farm/command-presets";
 import { useFarmLiveRefreshOptional } from "@/components/farm/farm-live-refresh";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { cn } from "@/lib/utils";
@@ -264,6 +271,8 @@ export function FarmMapBulkApply({
     slot: "A",
     field: "setpoint",
   });
+  const [pinnedSlots, setPinnedSlots] = useState<ChannelSlot[]>([]);
+  const [activePresetId, setActivePresetId] = useState<string | null>(null);
 
   useEffect(() => {
     if (open) applyQueue?.setDockOpen(false);
@@ -278,6 +287,7 @@ export function FarmMapBulkApply({
       ),
     [controller.readings, spSet]
   );
+  const presetButtons = useSelectedControllerPresets(targets);
   const onlineTargets = useMemo(
     () => targets.filter((r) => isReadingOnline(r.status)),
     [targets]
@@ -318,6 +328,8 @@ export function FarmMapBulkApply({
     setAlarm(seededAlarm);
     setAlarmSeed(seededAlarm);
     setSelectedCell({ slot: "A", field: "setpoint" });
+    setPinnedSlots([]);
+    setActivePresetId(null);
     setError(
       needsHydration
         ? "채널 정보를 불러오는 중입니다. 잠시 후 다시 적용하세요."
@@ -333,42 +345,57 @@ export function FarmMapBulkApply({
     liveRefresh,
   ]);
 
+  const handlePickPreset = (id: string) => {
+    const button = presetButtons.find((item) => item.id === id);
+    if (!button) return;
+    const applied = bulkDraftsFromPreset(channelDrafts, button.channels);
+    if (applied.slots.length === 0) return;
+    setChannelDrafts(applied.drafts);
+    setPinnedSlots(applied.slots);
+    setActivePresetId(id);
+    setError(null);
+  };
+
+  const handleDeletePreset = (id: string) => {
+    const button = presetButtons.find((item) => item.id === id);
+    if (!button) return;
+    writeCommandPresets(
+      button.scope,
+      removeCommandPreset(readCommandPresets(button.scope), button.sourceId),
+    );
+    if (activePresetId === id) setActivePresetId(null);
+  };
+
   const valueChanged = (left: number, right: number) =>
     Math.abs(left - right) > 0.05;
-  const applyTemp = BULK_CHANNEL_OPTIONS.some(
+  const draftTempChanged = BULK_CHANNEL_OPTIONS.some(
     (slot) =>
       valueChanged(channelDrafts[slot].setpoint, channelSeeds[slot].setpoint) ||
       valueChanged(channelDrafts[slot].deviation, channelSeeds[slot].deviation),
   );
-  const applyVent = BULK_CHANNEL_OPTIONS.some(
+  const draftVentChanged = BULK_CHANNEL_OPTIONS.some(
     (slot) =>
       channelDrafts[slot].minVent !== channelSeeds[slot].minVent ||
       channelDrafts[slot].maxVent !== channelSeeds[slot].maxVent,
   );
+  const presetPinned = pinnedSlots.length > 0;
+  const applyTemp = draftTempChanged || presetPinned;
+  const applyVent = draftVentChanged || presetPinned;
   const applyAlarm =
     valueChanged(alarm.tempLow, alarmSeed.tempLow) ||
     valueChanged(alarm.tempHigh, alarmSeed.tempHigh);
   const nothingSelected = !applyTemp && !applyVent && !applyAlarm;
   const wantedControl = applyTemp || applyVent;
-  const dirtyChannelSlots = useMemo(
-    () =>
-      bulkDirtyChannelSlots(
-        channelDrafts,
-        channelSeeds,
-        applyTemp,
-        applyVent,
-      ),
-    [channelDrafts, channelSeeds, applyTemp, applyVent],
-  );
   const selectedChannels = useMemo(
     () =>
-      resolveBulkSendChannels(
+      bulkSendSlots(
         channelDrafts,
         channelSeeds,
         applyTemp,
         applyVent,
+        pinnedSlots,
       ),
-    [channelDrafts, channelSeeds, applyTemp, applyVent],
+    [channelDrafts, channelSeeds, applyTemp, applyVent, pinnedSlots],
   );
   /** 온라인 대상이 전부 채널형일 때만 채널 선택이 필수 */
   const allChannelTargets = useMemo(
@@ -716,6 +743,33 @@ export function FarmMapBulkApply({
       </div>
     ) : (
       <div className="space-y-3" data-unified-controller-settings>
+        <div data-bulk-preset-strip>
+          <p className="px-0.5 text-xs font-semibold">현장 명령</p>
+          {presetButtons.length > 0 ? (
+            <SettingsCommandPresetStrip
+              items={presetButtons.map((button) => ({
+                id: button.id,
+                name: button.name,
+                channels: button.channels,
+                source: "personal" as const,
+                removable: true,
+                title: button.title,
+              }))}
+              activeId={activePresetId}
+              disabled={running}
+              canStore
+              showCreate={false}
+              seedChannels={{}}
+              onPick={handlePickPreset}
+              onDelete={handleDeletePreset}
+              onCreate={() => "empty-channels"}
+            />
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              선택한 컨트롤러에 저장된 설정값이 없습니다.
+            </p>
+          )}
+        </div>
         <p className="text-xs text-muted-foreground">
           유형 {selectedSps.length} · 컨트롤러 {targets.length}
           {offlineCount > 0 ? ` · 온라인 ${onlineTargets.length}` : ""}
@@ -739,7 +793,7 @@ export function FarmMapBulkApply({
           </p>
         ) : null}
         <p className="text-xs text-muted-foreground">
-          채널 {dirtyChannelSlots.length}개 변경 · 알람{" "}
+          채널 {(applyTemp || applyVent) ? selectedChannels.length : 0}개 변경 · 알람{" "}
           {applyAlarm ? "변경됨" : "변경 없음"}
         </p>
       </div>
