@@ -292,6 +292,7 @@ export function ControllerSummaryGaugeRow({
       alarmSettings={alarmSettings}
       animateEnter={coverOpenedOnce && coverEnterFromFade}
       morphReveal
+      showAffiliation={showAffiliation}
       onOpen={handleCoverOpen}
     />
   ) : null;

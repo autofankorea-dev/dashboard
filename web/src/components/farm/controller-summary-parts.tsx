@@ -196,13 +196,15 @@ export function ControllerSummaryHeader({
       </span>
     </>
   ) : (
-    <ControllerNoMark
-      eqpmnNo={reading.eqpmnNo}
-      className={cn(
-        "text-foreground",
-        dashboardTypography.cardTitle,
-      )}
-    />
+    <span data-cover-morph-target="identity" className="min-w-0">
+      <ControllerNoMark
+        eqpmnNo={reading.eqpmnNo}
+        className={cn(
+          "text-foreground",
+          dashboardTypography.cardTitle,
+        )}
+      />
+    </span>
   );
 
   const identity = onConcealDetail ? (

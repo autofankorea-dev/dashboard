@@ -424,9 +424,9 @@ export function parseMapDrillLevel(
   return raw === "stalls" ? "stalls" : "sp";
 }
 
-/** 목록 탭 — flat(기본) / group(그룹별) */
+/** 목록 탭 — group(기본, 축사 이름은 묶음 헤더) / flat(카드마다 소속) */
 export type ListLayout = "group" | "flat";
 
 export function resolveListLayoutParam(params: URLSearchParams): ListLayout {
-  return params.get("listLayout") === "group" ? "group" : "flat";
+  return params.get("listLayout") === "flat" ? "flat" : "group";
 }
