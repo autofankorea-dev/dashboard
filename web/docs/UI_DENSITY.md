@@ -8,13 +8,13 @@
 
 | 값 | 의미 |
 |----|------|
-| `comfortable` (기본) | PC `md`에서 타이포·컨트롤 ≈ 기존 2× 스케일 |
-| `compact` | PC에서도 모바일급 조밀 스케일 (`--density-*-md` 축소) |
+| `comfortable` (기본) | 1280px 이상은 `md` ≈ 2×. 768–1279px PC는 조밀 토큰 |
+| `compact` | 모든 너비에서 조밀 스케일 (`--density-*-md` 및 비-md 토큰 축소) |
 
 - 저장: `localStorage.dashboard-density` (`DENSITY_STORAGE_KEY`)
 - DOM: `html[data-density="comfortable"|"compact"]`
 - 초기화: `src/app/layout.tsx` beforeInteractive 스크립트
-- 헤더 밀도 토글은 현재 연결되지 않음 (값은 저장된 compact가 있으면 유지)
+- 헤더 토글: 테마 옆 `header-density`. comfortable은 너비 스케일을 따르고, compact는 넓은 PC에서도 조밀 토큰을 유지한다. 프로필 핀 대상이 아니다.
 
 ## 토큰
 
