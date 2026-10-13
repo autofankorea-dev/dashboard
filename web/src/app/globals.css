@@ -4,28 +4,38 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* ?????? ???? ???????? ????? ?????? Tailwind breakpoint ?? */
+/* Desktop preview: breakpoints follow the window.
+   Mobile preview stays on the frame, so sm–2xl do not apply there.
+   max-* stays mobile-preview only (safe-area, touch targets). */
 @variant sm {
   html[data-viewport-preview="desktop"] & {
-    @slot;
+    @media (min-width: 640px) {
+      @slot;
+    }
   }
 }
 
 @variant md {
   html[data-viewport-preview="desktop"] & {
-    @slot;
+    @media (min-width: 768px) {
+      @slot;
+    }
   }
 }
 
 @variant lg {
   html[data-viewport-preview="desktop"] & {
-    @slot;
+    @media (min-width: 1024px) {
+      @slot;
+    }
   }
 }
 
 @variant xl {
   html[data-viewport-preview="desktop"] & {
-    @slot;
+    @media (min-width: 1280px) {
+      @slot;
+    }
   }
 }
 
@@ -55,7 +65,9 @@
 
 @variant 2xl {
   html[data-viewport-preview="desktop"] & {
-    @slot;
+    @media (min-width: 1536px) {
+      @slot;
+    }
   }
 }
 
@@ -379,6 +391,57 @@ html[data-density="compact"] {
   --density-refresh: 0.875rem;
   --density-icon-sm-md: 1.25rem;
   --density-icon-md-md: 1.5rem;
+}
+
+/* Before hydration, a narrow PC keeps the field rail collapsed.
+   A user toggle sets data-field-rail-user=1 and this rule steps aside. */
+html[data-pc-band="narrow"]:not([data-field-rail-user="1"]) [data-field-split] {
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+}
+html[data-pc-band="narrow"]:not([data-field-rail-user="1"]) [data-field-rail] {
+  width: 2.5rem;
+  max-width: 2.5rem;
+}
+
+/* Narrow PC (768–1279): comfortable keeps compact type. 1280+ stays 2×. */
+@media (max-width: 1279px) {
+  html[data-viewport-preview="desktop"][data-density="comfortable"] {
+    --density-page-title-md: 1.5rem;
+    --density-card-title-md: 1.25rem;
+    --density-section-md: 1.125rem;
+    --density-body-md: 1rem;
+    --density-meta-md: 0.875rem;
+    --density-badge-md: 0.875rem;
+    --density-value-lg-md: 1.5rem;
+    --density-readout-md: 1.25rem;
+    --density-readout-lg-md: 1.5rem;
+    --density-map-value-md: 1.5rem;
+    --density-map-value-compact-md: 1.375rem;
+    --density-readout-unit-md: 0.75rem;
+    --density-readout-label-md: 0.6875rem;
+    --density-control-text-md: 0.875rem;
+    --density-control-h-md: 2.5rem;
+    --density-control-h-sm-md: 2.25rem;
+    --density-nav: 0.9375rem;
+    --density-alarm: 0.875rem;
+    --density-alarm-meta: 0.8125rem;
+    --density-alarm-time: 0.75rem;
+    --density-stat-label: 0.875rem;
+    --density-stat-value: 1.5rem;
+    --density-stat-unit: 0.875rem;
+    --density-stat-sub: 0.875rem;
+    --density-stat-compact-label-md: 0.875rem;
+    --density-stat-compact-value-md: 1.25rem;
+    --density-scope-chip: 0.875rem;
+    --density-scope-label: 0.875rem;
+    --density-chart-label: 0.875rem;
+    --density-chart-legend: 0.8125rem;
+    --density-chart-value: 1.5rem;
+    --density-sp-chip: 0.875rem;
+    --density-refresh: 0.875rem;
+    --density-icon-sm-md: 1.25rem;
+    --density-icon-md-md: 1.5rem;
+  }
 }
 
 .dark {

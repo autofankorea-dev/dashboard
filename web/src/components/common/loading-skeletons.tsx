@@ -1,3 +1,7 @@
+import {
+  CONTROLLER_GRID_FLAT,
+  FIELD_LIST_CONTAINER,
+} from "@/lib/farm/controller-grid-layout";
 import { dashboardUi } from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";
 
@@ -84,9 +88,6 @@ export function GraphPanelSkeleton({ className }: { className?: string }) {
   );
 }
 
-const LIST_CARD_GRID =
-  "grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5";
-
 type FarmListSkeletonProps = {
   count?: number;
   className?: string;
@@ -121,10 +122,12 @@ export function FarmListSkeleton({
         </div>
       </div>
       <div className={cn("p-4 md:p-6", dashboardUi.cardContentLg)}>
-        <div className={LIST_CARD_GRID}>
-          {Array.from({ length: count }, (_, i) => (
-            <ControllerCardSkeleton key={i} />
-          ))}
+        <div className={cn(FIELD_LIST_CONTAINER, "min-w-0")}>
+          <div className={CONTROLLER_GRID_FLAT}>
+            {Array.from({ length: count }, (_, i) => (
+              <ControllerCardSkeleton key={i} />
+            ))}
+          </div>
         </div>
       </div>
     </div>

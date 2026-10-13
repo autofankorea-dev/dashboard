@@ -59,7 +59,7 @@ export default function RootLayout({
           {`try{var d=localStorage.getItem("${DENSITY_STORAGE_KEY}");document.documentElement.dataset.density=(d==="compact"||d==="comfortable")?d:"comfortable"}catch(e){document.documentElement.dataset.density="comfortable"}`}
         </Script>
         <Script id="dashboard-viewport-init" strategy="beforeInteractive">
-          {`try{var k="dashboard-viewport-preview";var v=localStorage.getItem(k);var pref=(v==="mobile"||v==="desktop")?v:"auto";var mobile=window.matchMedia("(max-width: 767px)").matches;var mode=pref==="auto"?(mobile?"mobile":"desktop"):pref;document.documentElement.dataset.viewportPreview=mode}catch(e){document.documentElement.dataset.viewportPreview=window.matchMedia("(max-width: 767px)").matches?"mobile":"desktop"}`}
+          {`try{var k="dashboard-viewport-preview";var v=localStorage.getItem(k);var pref=(v==="mobile"||v==="desktop")?v:"auto";var mobile=window.matchMedia("(max-width: 767px)").matches;var mode=pref==="auto"?(mobile?"mobile":"desktop"):pref;document.documentElement.dataset.viewportPreview=mode}catch(e){document.documentElement.dataset.viewportPreview=window.matchMedia("(max-width: 767px)").matches?"mobile":"desktop"}try{var w=window.innerWidth;document.documentElement.dataset.pcBand=w>=1920?"wide":w>=1280?"desk":"narrow"}catch(e){}`}
         </Script>
         <ViewportPreviewBootstrap />
         <TooltipProvider>
