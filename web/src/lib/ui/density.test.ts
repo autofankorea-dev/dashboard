@@ -58,3 +58,17 @@ test("header has no density toggle and the controller card uses the md scale", (
   assert.equal(doc.includes("header-density"), false);
   assert.equal(doc.includes("조밀"), false);
 });
+
+test("screen text uses one Pretendard family", () => {
+  const css = readRepoFile("src/app/globals.css");
+  const layout = readRepoFile("src/app/layout.tsx");
+  assert.match(css, /--font-pretendard:\s*"Pretendard Variable"/);
+  assert.match(css, /--font-sans:\s*var\(--font-pretendard\)/);
+  assert.match(css, /--font-mono:\s*var\(--font-pretendard\)/);
+  assert.match(css, /font-variant-numeric:\s*tabular-nums/);
+  assert.equal(css.includes("--font-geist"), false);
+  assert.equal(layout.includes("next/font/google"), false);
+  assert.match(layout, /pretendard\.css/);
+  const pdf = readRepoFile("src/lib/report/build-daily-report-pdf-base.ts");
+  assert.match(pdf, /"Pretendard Variable"/);
+});

@@ -25,7 +25,7 @@ export const MUTED = "#6B7280";
 export const RULE = "#E5E7EB";
 export const DEFAULT_THEME = DAILY_REPORT_PDF_THEME;
 export const FONT =
-  '"Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", sans-serif';
+  '"Pretendard Variable", "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif';
 /** 본문 하단(푸터 위) */
 export const CONTENT_BOTTOM = PAGE_H - 36;
 
