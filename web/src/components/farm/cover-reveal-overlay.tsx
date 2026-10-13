@@ -1,10 +1,6 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from "react";
-import {
-  ControllerNoMark,
-  StallUnitNoMark,
-} from "@/components/farm/controller-no-marks";
 import { dashboardTypography } from "@/lib/ui/dashboard-page-ui";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { cn } from "@/lib/utils";
@@ -18,8 +14,6 @@ import {
   controllerEnvCoverInkClass,
   type ControllerEnvCoverLevel,
 } from "@/lib/farm/controller-env-cover";
-import type { BarnReading } from "@/lib/data/iot";
-
 export const COVER_REVEAL_STATUS_VAR: Record<ControllerEnvCoverLevel, string> = {
   ok: "var(--status-ok)",
   warn: "var(--status-warn)",
@@ -84,7 +78,7 @@ function ValueGlyphs({
       aria-hidden
       className={cn(
         "pointer-events-none absolute z-20 flex items-baseline",
-        dashboardTypography.valueLg,
+        dashboardTypography.envCoverValue,
         controllerEnvCoverInkClass(level),
       )}
       style={{
@@ -138,14 +132,11 @@ export type CoverRevealDirection = "open" | "close";
 
 function CoverIdentityHold({
   snapshot,
-  reading,
   level,
 }: {
   snapshot: CoverMorphSnapshot;
-  reading: BarnReading;
   level: ControllerEnvCoverLevel;
 }) {
-  const onFill = level !== "offline";
   const textClass = controllerEnvCoverInkClass(level);
   return (
     <>
@@ -153,8 +144,8 @@ function CoverIdentityHold({
         <span
           aria-hidden
           className={cn(
-            "pointer-events-none absolute z-30 break-keep",
-            dashboardTypography.cardTitle,
+            "pointer-events-none absolute z-30 truncate break-keep",
+            dashboardTypography.envCoverIdentity,
             textClass,
           )}
           style={{
@@ -171,7 +162,8 @@ function CoverIdentityHold({
         <span
           aria-hidden
           className={cn(
-            "pointer-events-none absolute z-30 flex min-w-0 items-center gap-2",
+            "pointer-events-none absolute z-30 truncate",
+            dashboardTypography.envCoverMeta,
             textClass,
           )}
           style={{
@@ -181,22 +173,7 @@ function CoverIdentityHold({
             height: snapshot.marks.height,
           }}
         >
-          <StallUnitNoMark
-            stallNo={reading.stallNo}
-            onFill={onFill}
-            className={cn(
-              dashboardTypography.cardDesc,
-              onFill && "text-current",
-            )}
-          />
-          <ControllerNoMark
-            eqpmnNo={reading.eqpmnNo}
-            onFill={onFill}
-            className={cn(
-              dashboardTypography.cardDesc,
-              onFill && "text-current",
-            )}
-          />
+          {snapshot.marksText}
         </span>
       ) : null}
     </>
@@ -206,7 +183,6 @@ function CoverIdentityHold({
 type Props = {
   snapshot: CoverMorphSnapshot;
   level: ControllerEnvCoverLevel;
-  reading: BarnReading;
   direction?: CoverRevealDirection;
   onDone: () => void;
 };
@@ -214,7 +190,6 @@ type Props = {
 export function CoverRevealOverlay({
   snapshot,
   level,
-  reading,
   direction = "open",
   onDone,
 }: Props) {
@@ -270,11 +245,7 @@ export function CoverRevealOverlay({
         )}
       />
       {reverse ? (
-        <CoverIdentityHold
-          snapshot={snapshot}
-          reading={reading}
-          level={level}
-        />
+        <CoverIdentityHold snapshot={snapshot} level={level} />
       ) : null}
       {snapshot.value ? (
         <ValueGlyphs

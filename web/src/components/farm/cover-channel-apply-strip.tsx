@@ -60,11 +60,48 @@ function CoverApplyGauge({ filled }: { filled: number }) {
 
 export function CoverChannelApplyStrip({
   items,
+  layout = "stack",
 }: {
   items: ApplyQueueChannelStripItem[];
+  /** inline — 닫힌 한 줄 덮개. stack — 값 아래 채널 행. */
+  layout?: "stack" | "inline";
 }) {
   const { visible, leaving } = useApplyQueueStripPresence(items);
   if (visible.length === 0) return null;
+
+  if (layout === "inline") {
+    return (
+      <span className="flex shrink-0 items-center gap-1.5" aria-hidden>
+        {visible.map((item) => {
+          const confirmed = item.stage === "확인";
+          return (
+            <span
+              key={item.id}
+              className={cn(
+                "inline-flex items-center gap-0.5",
+                leaving.has(item.id) && motionClass.exitFade,
+              )}
+            >
+              <span
+                className={cn(
+                  "font-semibold leading-none",
+                  dashboardTypography.envCoverMeta,
+                  "text-current",
+                )}
+              >
+                {item.slot ? CHANNEL_SLOT_LABELS[item.slot] : "알람"}
+              </span>
+              {confirmed ? (
+                <CoverApplyCheck />
+              ) : (
+                <CoverApplyDonut spinning={item.stage !== "실패"} />
+              )}
+            </span>
+          );
+        })}
+      </span>
+    );
+  }
 
   return (
     <span className="mt-2 flex w-full flex-col gap-1.5" aria-hidden>
