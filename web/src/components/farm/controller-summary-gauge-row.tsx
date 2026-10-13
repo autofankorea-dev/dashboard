@@ -271,7 +271,7 @@ export function ControllerSummaryGaugeRow({
   );
 
   const cardClass = cn(
-    "relative flex h-full min-w-0 flex-col rounded-xl border bg-card overflow-hidden",
+    "relative flex min-w-0 flex-col rounded-xl border bg-card overflow-hidden",
     !toolbarSheetSelected && controllerEnvCoverRingClass(envCoverLevel),
     toolbarSheetSelected && "ring-2 ring-primary/70",
     !toolbarSheetSelected && settingsExpanded && "ring-2 ring-primary/40",
@@ -284,6 +284,7 @@ export function ControllerSummaryGaugeRow({
 
   const showEnvCover =
     envCoverEnabled && !envCoverOpen && !settingsExpanded;
+  const resolvedCardClass = cn(cardClass, showEnvCover ? "h-auto self-start" : "h-full");
   const envCover = showEnvCover ? (
     <ControllerEnvCover
       reading={reading}
@@ -291,11 +292,6 @@ export function ControllerSummaryGaugeRow({
       alarmSettings={alarmSettings}
       animateEnter={coverOpenedOnce && coverEnterFromFade}
       morphReveal
-      headerActionSlots={
-        hideGraphToggle
-          ? 0
-          : Number(Boolean(onOpenChart)) + Number(Boolean(onToggleSettings))
-      }
       onOpen={handleCoverOpen}
     />
   ) : null;
@@ -303,7 +299,6 @@ export function ControllerSummaryGaugeRow({
     <CoverRevealOverlay
       snapshot={coverReveal.snapshot}
       level={envCoverLevel}
-      reading={reading}
       direction={coverReveal.direction}
       onDone={handleMorphDone}
     />
@@ -503,21 +498,21 @@ export function ControllerSummaryGaugeRow({
         >
           <div
             ref={cardRef}
-            className={cardClass}
+            className={resolvedCardClass}
             style={{ gridColumn: `span ${cardSpan}` }}
             {...cardRevealProps}
             data-tour-id="controller-card"
             data-controller-card-key={reading.key}
             data-controller-key={reading.controllerKey}
             data-list-mode={listMode}
-            data-card-body="expanded"
+            data-card-body={showEnvCover ? "row" : "expanded"}
             data-panel-layout="grid"
             onClick={cardSurfaceClick}
           >
             {envCover}
             {coverRevealLayer}
-            {cardBody}
-            {channelTrendBottom ? (
+            {showEnvCover ? null : cardBody}
+            {!showEnvCover && channelTrendBottom ? (
               <div className="mt-auto flex min-h-0 flex-1 flex-col">{channelTrendBottom}</div>
             ) : null}
           </div>
@@ -537,20 +532,20 @@ export function ControllerSummaryGaugeRow({
       <>
         <div
           ref={cardRef}
-          className={cn(cardClass, "w-full")}
+          className={cn(resolvedCardClass, "w-full")}
           {...cardRevealProps}
           data-tour-id="controller-card"
           data-controller-card-key={reading.key}
           data-controller-key={reading.controllerKey}
           data-list-mode={listMode}
-          data-card-body="expanded"
+          data-card-body={showEnvCover ? "row" : "expanded"}
           data-panel-layout="stack"
           onClick={cardSurfaceClick}
         >
           {envCover}
           {coverRevealLayer}
-          {cardBody}
-          {channelTrendBottom}
+          {showEnvCover ? null : cardBody}
+          {showEnvCover ? null : channelTrendBottom}
         </div>
         {settingsExpanded && suppressPerCardMobileSheet ? (
           <div className="mt-2 flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border bg-card">
@@ -567,13 +562,13 @@ export function ControllerSummaryGaugeRow({
       <>
         <div
           ref={cardRef}
-          className={cardClass}
+          className={resolvedCardClass}
           {...cardRevealProps}
           data-tour-id="controller-card"
           data-controller-card-key={reading.key}
           data-controller-key={reading.controllerKey}
           data-list-mode={listMode}
-          data-card-body="expanded"
+          data-card-body={showEnvCover ? "row" : "expanded"}
           data-panel-layout="stack"
           onClick={cardSurfaceClick}
           onKeyDown={
@@ -591,8 +586,8 @@ export function ControllerSummaryGaugeRow({
         >
           {envCover}
           {coverRevealLayer}
-          {cardBody}
-          {showInlineSettingsOnMobile ? settingsPanel : null}
+          {showEnvCover ? null : cardBody}
+          {showEnvCover || !showInlineSettingsOnMobile ? null : settingsPanel}
         </div>
         {mobileSheet}
       </>
@@ -602,19 +597,19 @@ export function ControllerSummaryGaugeRow({
   return (
     <div
       ref={cardRef}
-      className={cardClass}
+      className={resolvedCardClass}
       {...cardRevealProps}
       data-tour-id="controller-card"
       data-controller-card-key={reading.key}
       data-controller-key={reading.controllerKey}
       data-list-mode={listMode}
-      data-card-body="expanded"
+      data-card-body={showEnvCover ? "row" : "expanded"}
       onClick={cardSurfaceClick}
     >
       {envCover}
       {coverRevealLayer}
-      {cardBody}
-      {settingsPanel}
+      {showEnvCover ? null : cardBody}
+      {showEnvCover ? null : settingsPanel}
     </div>
   );
 }
