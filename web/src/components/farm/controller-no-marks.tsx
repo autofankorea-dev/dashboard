@@ -33,7 +33,7 @@ function NoMarkFrame({
   dense?: boolean;
   /** 상태색 면 위 — currentColor, 카드 스트로크 없음 */
   onFill?: boolean;
-  /** 부모 글자와 같은 1em·굵기 600. 덮개 번호에 쓴다. */
+  /** 부모 글자와 같은 1em·굵기 600. 덮개와 열린 패널 헤더 번호에 쓴다. */
   fitText?: boolean;
 }) {
   const compact = useHydrationSafeDashboardCompact();
@@ -44,7 +44,7 @@ function NoMarkFrame({
       : compact
         ? "size-6"
         : "size-[1.35em]";
-  // 글자 크기 = 아이콘 높이. 카드 헤더는 부모보다 1.35em, 덮개는 부모 1em.
+  // 글자 크기 = 아이콘 높이. 패널 헤더·덮개는 부모 1em, 그 외 카드는 1.35em.
   const digitSize = dense
     ? "text-[0.875rem]"
     : fitText

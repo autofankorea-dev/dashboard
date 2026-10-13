@@ -145,7 +145,7 @@ function CoverIdentityHold({
           aria-hidden
           className={cn(
             "pointer-events-none absolute z-30 truncate break-keep",
-            dashboardTypography.envCoverIdentity,
+            dashboardTypography.cardTitle,
             textClass,
           )}
           style={{

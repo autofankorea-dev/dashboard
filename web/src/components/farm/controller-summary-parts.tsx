@@ -181,16 +181,18 @@ export function ControllerSummaryHeader({
       >
         <StallUnitNoMark
           stallNo={reading.stallNo}
+          fitText
           className={cn(
             "text-muted-foreground",
-            dashboardTypography.cardDesc,
+            dashboardTypography.cardTitle,
           )}
         />
         <ControllerNoMark
           eqpmnNo={reading.eqpmnNo}
+          fitText
           className={cn(
             "text-muted-foreground",
-            dashboardTypography.cardDesc,
+            dashboardTypography.cardTitle,
           )}
         />
       </span>
@@ -199,6 +201,7 @@ export function ControllerSummaryHeader({
     <span data-cover-morph-target="identity" className="min-w-0">
       <ControllerNoMark
         eqpmnNo={reading.eqpmnNo}
+        fitText
         className={cn(
           "text-foreground",
           dashboardTypography.cardTitle,

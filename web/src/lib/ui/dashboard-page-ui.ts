@@ -35,15 +35,13 @@ export const dashboardTypography = {
     "text-[length:var(--density-value-lg)] font-mono font-bold tabular-nums tracking-[var(--tracking-readout)] leading-none md:text-[length:var(--density-value-lg-md)]",
   tabNav:
     "text-[length:var(--density-meta)] font-medium md:text-[length:var(--density-meta-md)]",
-  /** 닫힌 덮개 — 이름·번호 24px(PC), 온도 32px. 둘 다 굵기 600. */
-  envCoverIdentity:
-    "text-[length:var(--density-cover-identity)] font-semibold leading-tight md:text-[length:var(--density-cover-identity-md)]",
   envCoverMeta:
     "text-[length:var(--density-meta)] leading-tight md:text-[length:var(--density-meta-md)]",
   envCoverStatus:
     "text-[length:var(--density-meta)] font-medium leading-tight md:text-[length:var(--density-meta-md)]",
+  /** 닫힌 덮개 온도 — 열린 패널 축사유형(cardTitle)과 같은 크기. */
   envCoverValue:
-    "font-mono font-semibold tabular-nums tracking-[var(--tracking-readout)] leading-none text-[length:var(--density-cover-value)] md:text-[length:var(--density-cover-value-md)]",
+    "font-mono font-semibold tabular-nums tracking-[var(--tracking-readout)] leading-none text-[length:var(--density-card-title)] md:text-[length:var(--density-card-title-md)]",
 } as const;
 
 /**

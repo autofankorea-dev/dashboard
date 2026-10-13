@@ -314,11 +314,6 @@ html[data-viewport-preview="mobile"] [data-viewport-preview="mobile"] {
   --density-badge-md: 1.25rem;
   --density-value-lg: 1.5rem;
   --density-value-lg-md: 2.25rem;
-  /* Closed cover — name and numbers share one size. Temperature is one step larger. */
-  --density-cover-identity: 1.125rem;
-  --density-cover-identity-md: 1.5rem;
-  --density-cover-value: 1.5rem;
-  --density-cover-value-md: 2rem;
   /* Gap2 ? hub readout (instrument) vs meta */
   --density-readout: 1.25rem;
   --density-readout-md: 1.875rem;

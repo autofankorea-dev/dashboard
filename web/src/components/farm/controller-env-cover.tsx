@@ -9,6 +9,7 @@ import {
   formatControllerNoLabel,
 } from "@/lib/farm/controller-summary-display";
 import {
+  controllerEnvCoverFillClass,
   controllerEnvCoverInkClass,
   controllerEnvCoverStatus,
   controllerEnvCoverReceivedLabel,
@@ -70,7 +71,7 @@ function coverExitDurationMs(): number {
   return Number.isFinite(ms) ? ms : 0;
 }
 
-/** 닫힌 덮개. 이름과 번호는 같은 왼쪽·같은 크기, 가운데는 온도. 경보·판정 문구는 두지 않는다. */
+/** 닫힌 덮개. 축사유형·번호는 열린 패널 헤더와 같은 크기·왼쪽. 온도는 축사유형 크기. 경보·판정 문구는 두지 않는다. */
 export function ControllerEnvCover({
   reading,
   level,
@@ -151,6 +152,13 @@ export function ControllerEnvCover({
       )}
     >
       <span className="flex min-w-0 flex-nowrap items-start gap-2">
+        <span
+          className={cn(
+            "mt-1.5 size-2.5 shrink-0 rounded-sm",
+            controllerEnvCoverFillClass(displayLevel),
+          )}
+          aria-hidden
+        />
         <span className="flex min-w-0 flex-1 flex-nowrap items-start gap-2">
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
             {showAffiliation ? (
@@ -158,36 +166,27 @@ export function ControllerEnvCover({
                 <span
                   data-cover-morph="identity"
                   className={cn(
-                    "break-keep",
-                    dashboardTypography.envCoverIdentity,
-                    onFill && "text-current",
+                    "break-keep text-current",
+                    dashboardTypography.cardTitle,
                   )}
                 >
                   {typeLabel}
                 </span>
                 <span
                   data-cover-morph="marks"
-                  className="mt-0.5 flex min-w-0 items-center gap-2 leading-none"
+                  className="mt-0.5 flex min-w-0 items-center gap-2"
                 >
                   <StallUnitNoMark
                     stallNo={reading.stallNo}
                     onFill={onFill}
                     fitText
-                    className={cn(
-                      dashboardTypography.envCoverIdentity,
-                      "leading-none",
-                      onFill && "text-current",
-                    )}
+                    className={cn(dashboardTypography.cardTitle, "text-current")}
                   />
                   <ControllerNoMark
                     eqpmnNo={reading.eqpmnNo}
                     onFill={onFill}
                     fitText
-                    className={cn(
-                      dashboardTypography.envCoverIdentity,
-                      "leading-none",
-                      onFill && "text-current",
-                    )}
+                    className={cn(dashboardTypography.cardTitle, "text-current")}
                   />
                 </span>
               </>
@@ -197,11 +196,7 @@ export function ControllerEnvCover({
                   eqpmnNo={reading.eqpmnNo}
                   onFill={onFill}
                   fitText
-                  className={cn(
-                    dashboardTypography.envCoverIdentity,
-                    "leading-none",
-                    onFill && "text-current",
-                  )}
+                  className={cn(dashboardTypography.cardTitle, "text-current")}
                 />
               </span>
             )}
@@ -218,35 +213,34 @@ export function ControllerEnvCover({
           ) : null}
         </span>
       </span>
-      <span className="flex min-h-0 flex-1 flex-col justify-center gap-1">
-        {status.stale ? (
+      <span className="flex min-h-0 flex-1 items-center gap-2">
+        <span className="size-2.5 shrink-0" aria-hidden />
+        <span className="flex min-w-0 flex-1 flex-col justify-center gap-1">
+          {status.stale ? (
+            <span
+              className={cn(
+                dashboardTypography.envCoverMeta,
+                "font-medium text-current",
+              )}
+            >
+              {reason.valueLabel ? "마지막 측정 · " : ""}
+              {receivedLabel}
+            </span>
+          ) : null}
           <span
-            className={cn(
-              dashboardTypography.envCoverIdentity,
-              "font-medium",
-              onFill && "text-current",
-            )}
+            data-cover-morph="value"
+            className={cn(dashboardTypography.envCoverValue, "text-current")}
           >
-            {reason.valueLabel ? "마지막 측정 · " : ""}
-            {receivedLabel}
+            {reason.valueLabel ?? "—"}
           </span>
-        ) : null}
-        <span
-          data-cover-morph="value"
-          className={cn(
-            dashboardTypography.envCoverValue,
-            onFill && "text-current",
-          )}
-        >
-          {reason.valueLabel ?? "—"}
+          {applyStrip.length > 0 ? (
+            <CoverChannelApplyStrip items={applyStrip} />
+          ) : null}
         </span>
-        {applyStrip.length > 0 ? (
-          <CoverChannelApplyStrip items={applyStrip} />
-        ) : null}
       </span>
       <ChevronRight
         className={cn(
-          "absolute right-3 bottom-3 size-[length:var(--density-cover-identity)] md:size-[length:var(--density-cover-identity-md)]",
+          "absolute right-3 bottom-3 size-[length:var(--density-section)] md:size-[length:var(--density-section-md)]",
           onFill && "text-current",
         )}
         strokeWidth={1.75}
