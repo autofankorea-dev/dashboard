@@ -35,13 +35,15 @@ export const dashboardTypography = {
     "text-[length:var(--density-value-lg)] font-mono font-bold tabular-nums tracking-[var(--tracking-readout)] leading-none md:text-[length:var(--density-value-lg-md)]",
   tabNav:
     "text-[length:var(--density-meta)] font-medium md:text-[length:var(--density-meta-md)]",
-  /** 닫힌 덮개 — 걷힌 헤더와 같은 md 스케일. 이름은 cardTitle, 온도는 valueLg. */
+  /** 닫힌 덮개 — 이름 cardTitle, 온도 valueLg, 번호·경보·판정은 한 단계 작은 cover-mark. */
   envCoverIdentity:
     "text-[length:var(--density-card-title)] font-semibold leading-tight md:text-[length:var(--density-card-title-md)]",
+  envCoverMark:
+    "text-[length:var(--density-cover-mark)] leading-tight md:text-[length:var(--density-cover-mark-md)]",
   envCoverMeta:
-    "text-[length:var(--density-meta)] leading-tight md:text-[length:var(--density-meta-md)]",
+    "text-[length:var(--density-cover-mark)] leading-tight md:text-[length:var(--density-cover-mark-md)]",
   envCoverStatus:
-    "text-[length:var(--density-meta)] font-medium leading-tight md:text-[length:var(--density-meta-md)]",
+    "text-[length:var(--density-cover-mark)] font-medium leading-tight md:text-[length:var(--density-cover-mark-md)]",
   envCoverValue:
     "font-mono font-bold tabular-nums tracking-[var(--tracking-readout)] leading-none text-[length:var(--density-value-lg)] md:text-[length:var(--density-value-lg-md)]",
 } as const;

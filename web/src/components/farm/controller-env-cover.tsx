@@ -70,7 +70,7 @@ function coverExitDurationMs(): number {
   return Number.isFinite(ms) ? ms : 0;
 }
 
-/** 닫힌 덮개. 위는 축사유형·축사 번호·컨트롤러 번호, 가운데는 값, 아래는 판정. 높이는 카드 본문. */
+/** 닫힌 덮개. 위는 이름과 한 단계 작은 번호, 가운데는 온도, 아래는 경보와 판정. 높이는 카드 본문. */
 export function ControllerEnvCover({
   reading,
   level,
@@ -172,21 +172,25 @@ export function ControllerEnvCover({
                 </span>
                 <span
                   data-cover-morph="marks"
-                  className="mt-0.5 flex min-w-0 items-center gap-2"
+                  className="mt-0.5 flex min-w-0 items-center gap-2 leading-none"
                 >
                   <StallUnitNoMark
                     stallNo={reading.stallNo}
                     onFill={onFill}
+                    fitText
                     className={cn(
-                      dashboardTypography.envCoverMeta,
+                      dashboardTypography.envCoverMark,
+                      "leading-none",
                       onFill && "text-current",
                     )}
                   />
                   <ControllerNoMark
                     eqpmnNo={reading.eqpmnNo}
                     onFill={onFill}
+                    fitText
                     className={cn(
-                      dashboardTypography.envCoverMeta,
+                      dashboardTypography.envCoverMark,
+                      "leading-none",
                       onFill && "text-current",
                     )}
                   />
@@ -197,6 +201,7 @@ export function ControllerEnvCover({
                 <ControllerNoMark
                   eqpmnNo={reading.eqpmnNo}
                   onFill={onFill}
+                  fitText
                   className={cn(
                     dashboardTypography.envCoverIdentity,
                     onFill && "text-current",
@@ -218,17 +223,6 @@ export function ControllerEnvCover({
         </span>
       </span>
       <span className="flex min-h-0 flex-1 flex-col justify-center gap-1">
-        {status.stale ? (
-          <span
-            className={cn(
-              dashboardTypography.envCoverMeta,
-              onFill && "text-current",
-            )}
-          >
-            {reason.valueLabel ? "마지막 측정 · " : ""}
-            {receivedLabel}
-          </span>
-        ) : null}
         <span
           data-cover-morph="value"
           className={cn(
@@ -238,34 +232,42 @@ export function ControllerEnvCover({
         >
           {reason.valueLabel ?? "—"}
         </span>
-        {reason.bandLabel ? (
-          <span
-            data-cover-morph="band"
-            className={cn(
-              dashboardTypography.envCoverMeta,
-              onFill && "text-current",
-            )}
-          >
-            {reason.bandLabel}
-          </span>
-        ) : null}
         {applyStrip.length > 0 ? (
           <CoverChannelApplyStrip items={applyStrip} />
         ) : null}
       </span>
-      <span className="flex items-end justify-between gap-2">
-        <span
-          className={cn(
-            "flex min-w-0 flex-col break-keep opacity-70",
-            dashboardTypography.envCoverStatus,
-            onFill && "text-current",
-          )}
-        >
-          <span data-cover-environment-status="">{status.environment}</span>
-          <span data-cover-communication-status="">{status.communication}</span>
+      <span
+        data-cover-footer=""
+        className={cn(
+          "flex items-end justify-between gap-2",
+          dashboardTypography.envCoverStatus,
+          "leading-snug opacity-80",
+          onFill && "text-current",
+        )}
+      >
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5 break-keep">
+          {status.stale ? (
+            <span>
+              {reason.valueLabel ? "마지막 측정 · " : ""}
+              {receivedLabel}
+            </span>
+          ) : null}
+          {reason.bandLabel ? (
+            <span data-cover-morph="band">{reason.bandLabel}</span>
+          ) : null}
+          <span className="flex min-w-0 flex-wrap items-baseline">
+            <span data-cover-environment-status="">{status.environment}</span>
+            <span className="px-1" aria-hidden>
+              ·
+            </span>
+            <span data-cover-communication-status="">
+              {status.communication}
+            </span>
+          </span>
         </span>
         <ChevronRight
-          className={cn(dashboardAffordance.hitHint, onFill && "text-current")}
+          className="size-[1em] shrink-0"
+          strokeWidth={1.75}
           aria-hidden
         />
       </span>

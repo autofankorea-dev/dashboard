@@ -312,6 +312,9 @@ html[data-viewport-preview="mobile"] [data-viewport-preview="mobile"] {
   --density-meta-md: 1.75rem;
   --density-badge: 0.875rem;
   --density-badge-md: 1.25rem;
+  /* Closed cover — marks, alarm band, and status. One step under the title. */
+  --density-cover-mark: 0.875rem;
+  --density-cover-mark-md: 1.25rem;
   --density-value-lg: 1.5rem;
   --density-value-lg-md: 2.25rem;
   /* Gap2 ? hub readout (instrument) vs meta */

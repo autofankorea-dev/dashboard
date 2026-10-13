@@ -46,11 +46,25 @@ test("header has no density toggle and the controller card uses the md scale", (
     pageUi,
     /envCoverValue:[\s\S]*md:text-\[length:var\(--density-value-lg-md\)\]/,
   );
+  assert.match(
+    pageUi,
+    /envCoverMark:[\s\S]*md:text-\[length:var\(--density-cover-mark-md\)\]/,
+  );
+  assert.match(
+    readRepoFile("src/app/globals.css"),
+    /--density-cover-mark-md:\s*1\.25rem/,
+  );
   const cover = readRepoFile("src/components/farm/controller-env-cover.tsx");
   assert.match(cover, /absolute inset-0/);
   assert.match(cover, /StallUnitNoMark/);
   assert.match(cover, /ControllerNoMark/);
+  assert.match(cover, /fitText/);
+  assert.match(cover, /data-cover-footer/);
+  assert.match(cover, /size-\[1em\]/);
   assert.equal(cover.includes("md:min-h-24"), false);
+  const footerAt = cover.indexOf('data-cover-footer=""');
+  const bandAt = cover.indexOf('data-cover-morph="band"');
+  assert.ok(footerAt >= 0 && bandAt > footerAt);
   const gaugeRow = readRepoFile("src/components/farm/controller-summary-gauge-row.tsx");
   assert.match(gaugeRow, /flex h-full min-w-0 flex-col/);
   assert.equal(gaugeRow.includes("showEnvCover ? null : cardBody"), false);
