@@ -207,7 +207,7 @@ controllerEnvMetricTextClass(warn|danger) → status-*-ink (검정 혼합)
 |------|------|
 | `UI_VISUAL_QA.md` | 다크 행: 컴팩트 주의 숫자, 끊김 덮개, 차트 EMA, 격자 경계 |
 | (선택) | 토큰 L 최소차 스크립트 — 신규 의존 없이 `globals.css` 파싱만 |
-| 수동 | 필드 / 차트 / 알림·델린 / 로그인 · compact+comfortable |
+| 수동 | 필드 / 차트 / 알림·델린 / 로그인 |
 
 ---
 
