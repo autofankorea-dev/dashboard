@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ChevronDown } from "lucide-react";
+import { ProfileAvatar } from "@/components/account/profile-avatar";
 import { RecentActivityMenuSection } from "@/components/account/recent-activity-menu-section";
 import { AccountMenuHub } from "@/components/account/account-menu-hub";
 import { AccountMenuSplitBody } from "@/components/account/account-menu-split";
@@ -43,6 +44,7 @@ type Props = {
     displayName: string | null;
     email: string | null;
     role: Role | null;
+    avatarUrl: string | null;
   };
   receipts?: ModuleReceipt[];
   farmLocationOptions?: EditableFarmOption[];
@@ -72,7 +74,6 @@ export function AccountMenu({
   const [open, setOpen] = useState(false);
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const name = user.displayName?.trim() || user.email || "사용자";
-  const initial = name.charAt(0).toUpperCase();
 
   const activeFarmLocation = useMemo(() => {
     if (activeFarmKey) {
@@ -115,7 +116,7 @@ export function AccountMenu({
 
   const triggerInner = (
     <>
-      <span className={dashboardUi.headerAccountAvatar}>{initial}</span>
+      <ProfileAvatar url={user.avatarUrl} />
       <div className="hidden min-w-0 leading-tight sm:block">
         <p className={dashboardUi.headerAccountName} suppressHydrationWarning>
           {name}
@@ -173,7 +174,7 @@ export function AccountMenu({
         <AccountMenuSheet open={open} onOpenChange={handleOpenChange}>
         <AccountMenuHub
           name={name}
-          initial={initial}
+          avatarUrl={user.avatarUrl}
           email={user.email}
           roleLabel={user.role ? roleLabel[user.role] : null}
           trailing={logoutAction}

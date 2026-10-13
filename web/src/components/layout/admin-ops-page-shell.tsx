@@ -28,6 +28,7 @@ export async function AdminOpsPageShell({ children }: Props) {
           displayName: user?.displayName ?? null,
           email: user?.email ?? null,
           role: user?.role ?? null,
+          avatarUrl: user?.avatarUrl ?? null,
         }}
       />
       <main
