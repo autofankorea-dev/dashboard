@@ -2766,7 +2766,7 @@ html[data-viewport-preview="mobile"] [data-mobile-viewport-toast] {
 
 .header-tools-panel {
   --tools-stagger: 45ms;
-  --tools-max: 5;
+  --tools-max: 6;
   --tools-cascade-ms: calc(
     var(--motion-duration-moderate) + var(--tools-max) * var(--tools-stagger)
   );
