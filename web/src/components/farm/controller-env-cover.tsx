@@ -17,6 +17,10 @@ import {
 } from "@/lib/farm/controller-env-cover";
 import { ChevronRight } from "lucide-react";
 import {
+  ControllerNoMark,
+  StallUnitNoMark,
+} from "@/components/farm/controller-no-marks";
+import {
   dashboardAffordance,
   dashboardChroma,
   dashboardTypography,
@@ -47,6 +51,8 @@ type Props = {
   morphReveal?: boolean;
   /** 일반 보기 — 축사 이름을 카드에 둔다. 그룹 보기는 묶음 헤더가 이름을 가진다. */
   showAffiliation?: boolean;
+  /** 걷힌 헤더의 차트·설정 버튼 자리. 명칭이 열릴 때와 같은 줄에 남는다. */
+  headerActionSlots?: number;
   onOpen: () => void;
 };
 
@@ -64,7 +70,7 @@ function coverExitDurationMs(): number {
   return Number.isFinite(ms) ? ms : 0;
 }
 
-/** 닫힌 덮개 한 줄. 그룹 보기는 장비 번호·온도·판정. 축사 이름은 묶음 헤더. */
+/** 닫힌 덮개. 위는 축사유형·축사 번호·컨트롤러 번호, 가운데는 값, 아래는 판정. 높이는 카드 본문. */
 export function ControllerEnvCover({
   reading,
   level,
@@ -72,6 +78,7 @@ export function ControllerEnvCover({
   animateEnter = false,
   morphReveal = false,
   showAffiliation = false,
+  headerActionSlots = 0,
   onOpen,
 }: Props) {
   const [exiting, setExiting] = useState(false);
@@ -136,9 +143,9 @@ export function ControllerEnvCover({
         e.stopPropagation();
         requestOpen();
       }}
-      data-cover-layout="row"
+      data-cover-layout="stack"
       className={cn(
-        "relative z-10 flex min-h-11 w-full min-w-0 items-center gap-2 px-2.5 py-1.5 text-left sm:px-3 md:min-h-24 md:gap-3 md:px-4 md:py-3",
+        "absolute inset-0 z-10 flex flex-col justify-between gap-1 p-2.5 text-left sm:p-3",
         dashboardAffordance.hitSurface,
         COVER_FILL[displayLevel],
         dashboardChroma.statusFilmGlassRim,
@@ -147,87 +154,121 @@ export function ControllerEnvCover({
         exiting ? motionClass.exitFade : animateEnter ? motionClass.enterFade : null,
       )}
     >
-      <span className="flex min-w-0 flex-1 items-baseline gap-2 overflow-hidden">
-        {showAffiliation ? (
-          <>
+      <span className="flex min-w-0 flex-nowrap items-start gap-2">
+        <span className="mt-1.5 size-2.5 shrink-0" aria-hidden />
+        <span className="flex min-w-0 flex-1 flex-nowrap items-start gap-2">
+          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+            {showAffiliation ? (
+              <>
+                <span
+                  data-cover-morph="identity"
+                  className={cn(
+                    "break-keep",
+                    dashboardTypography.envCoverIdentity,
+                    onFill && "text-current",
+                  )}
+                >
+                  {typeLabel}
+                </span>
+                <span
+                  data-cover-morph="marks"
+                  className="mt-0.5 flex min-w-0 items-center gap-2"
+                >
+                  <StallUnitNoMark
+                    stallNo={reading.stallNo}
+                    onFill={onFill}
+                    className={cn(
+                      dashboardTypography.envCoverMeta,
+                      onFill && "text-current",
+                    )}
+                  />
+                  <ControllerNoMark
+                    eqpmnNo={reading.eqpmnNo}
+                    onFill={onFill}
+                    className={cn(
+                      dashboardTypography.envCoverMeta,
+                      onFill && "text-current",
+                    )}
+                  />
+                </span>
+              </>
+            ) : (
+              <span data-cover-morph="identity" className="min-w-0">
+                <ControllerNoMark
+                  eqpmnNo={reading.eqpmnNo}
+                  onFill={onFill}
+                  className={cn(
+                    dashboardTypography.envCoverIdentity,
+                    onFill && "text-current",
+                  )}
+                />
+              </span>
+            )}
+          </span>
+          {headerActionSlots > 0 ? (
             <span
-              data-cover-morph="identity"
-              className={cn(
-                "shrink-0 break-keep",
-                dashboardTypography.envCoverIdentity,
-                onFill && "text-current",
-              )}
+              className="flex shrink-0 flex-nowrap items-center gap-1"
+              aria-hidden
             >
-              {typeLabel}
+              {Array.from({ length: headerActionSlots }, (_, i) => (
+                <span key={i} className="size-7" />
+              ))}
             </span>
-            <span
-              data-cover-morph="marks"
-              className={cn(
-                "shrink-0 break-keep",
-                dashboardTypography.envCoverMeta,
-                onFill && "text-current",
-              )}
-            >
-              {stallLabel} · {ctrlNo}
-            </span>
-          </>
-        ) : (
+          ) : null}
+        </span>
+      </span>
+      <span className="flex min-h-0 flex-1 flex-col justify-center gap-1">
+        {status.stale ? (
           <span
-            data-cover-morph="identity"
             className={cn(
-              "shrink-0 break-keep",
-              dashboardTypography.envCoverIdentity,
+              dashboardTypography.envCoverMeta,
               onFill && "text-current",
             )}
           >
-            {ctrlNo}
+            {reason.valueLabel ? "마지막 측정 · " : ""}
+            {receivedLabel}
           </span>
-        )}
+        ) : null}
         <span
           data-cover-morph="value"
           className={cn(
-            "shrink-0",
             dashboardTypography.envCoverValue,
             onFill && "text-current",
           )}
         >
           {reason.valueLabel ?? "—"}
         </span>
-        {status.stale ? (
+        {reason.bandLabel ? (
           <span
+            data-cover-morph="band"
             className={cn(
-              "min-w-0 truncate",
               dashboardTypography.envCoverMeta,
               onFill && "text-current",
             )}
           >
-            {receivedLabel}
+            {reason.bandLabel}
           </span>
         ) : null}
+        {applyStrip.length > 0 ? (
+          <CoverChannelApplyStrip items={applyStrip} />
+        ) : null}
       </span>
-      <span
-        className={cn(
-          "flex shrink-0 items-center gap-1.5 text-right opacity-80",
-          onFill && "text-current",
-        )}
-      >
+      <span className="flex items-end justify-between gap-2">
         <span
           className={cn(
-            "flex flex-col items-end break-keep",
+            "flex min-w-0 flex-col break-keep opacity-70",
             dashboardTypography.envCoverStatus,
+            onFill && "text-current",
           )}
         >
           <span data-cover-environment-status="">{status.environment}</span>
           <span data-cover-communication-status="">{status.communication}</span>
         </span>
+        <ChevronRight
+          className={cn(dashboardAffordance.hitHint, onFill && "text-current")}
+          aria-hidden
+        />
       </span>
-      {applyStrip.length > 0 ? (
-        <CoverChannelApplyStrip items={applyStrip} layout="inline" />
-      ) : null}
-      <ChevronRight
-        className={cn(dashboardAffordance.hitHint, onFill && "text-current")}
-        aria-hidden
-      />
     </button>
   );
 }
