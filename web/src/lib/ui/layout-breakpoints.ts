@@ -3,7 +3,7 @@ export const DASHBOARD_COMPACT_MAX_PX = 1023;
 
 /**
  * PC 창 너비 단계. 모바일/PC 모드(767px)와 별개다.
- * narrow 는 현황 레일을 접고 comfortable 글자를 compact 스케일로 둔다.
+ * narrow 는 현황 레일을 접는다. 글자 스케일은 너비와 무관하게 `:root` 토큰이다.
  * desk·wide 는 같은 글자이고, 카드 5열은 목록 패널이 1500px 이상일 때다.
  */
 export const PC_RAIL_OPEN_MIN_PX = 1280;
