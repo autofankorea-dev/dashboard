@@ -36,6 +36,7 @@ export async function PageShell({
           displayName: user?.displayName ?? null,
           email: user?.email ?? null,
           role: user?.role ?? null,
+          avatarUrl: user?.avatarUrl ?? null,
         }}
       />
       <main

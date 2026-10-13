@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { resolveProfileAvatarUrl } from "@/lib/auth/profile-avatar";
 import {
   parseControllerMeta,
   type ControllerMetaEntry,
@@ -22,6 +23,8 @@ export type CurrentUser = {
   email: string | null;
   role: Role | null;
   displayName: string | null;
+  /** Google·카카오 프로필 사진. 없거나 허용 호스트가 아니면 null. */
+  avatarUrl: string | null;
   accesses: UserAccess[];
   isAdmin: boolean;
   /** 데이터 조회 권한 보유 여부 (관리자이거나 can_read 스코프 1개 이상) */
@@ -64,6 +67,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     email: user.email ?? null,
     role,
     displayName: (profile?.display_name as string | null) ?? null,
+    avatarUrl: resolveProfileAvatarUrl(user.user_metadata),
     accesses: accessList,
     isAdmin,
     hasAccess,

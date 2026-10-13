@@ -1,11 +1,12 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { ProfileAvatar } from "@/components/account/profile-avatar";
 import { accountMenuLayout } from "@/lib/ui/account-menu-layout";
 
 type Props = {
   name: string;
-  initial: string;
+  avatarUrl: string | null;
   email: string | null;
   roleLabel?: string | null;
   trailing?: ReactNode;
@@ -13,14 +14,14 @@ type Props = {
 
 export function AccountMenuHub({
   name,
-  initial,
+  avatarUrl,
   email,
   roleLabel,
   trailing,
 }: Props) {
   return (
     <div className={accountMenuLayout.sheetHeader}>
-      <span className={accountMenuLayout.hubAvatar}>{initial}</span>
+      <ProfileAvatar url={avatarUrl} className={accountMenuLayout.hubAvatar} />
       <div className="min-w-0 flex-1">
         <p id="account-menu-sheet-title" className={accountMenuLayout.hubName}>
           {name}

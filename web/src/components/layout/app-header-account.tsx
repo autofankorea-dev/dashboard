@@ -30,6 +30,8 @@ type Props = {
 
     role: Role | null;
 
+    avatarUrl: string | null;
+
   };
 
   receipts?: ModuleReceipt[];

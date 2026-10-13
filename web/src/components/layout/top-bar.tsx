@@ -24,6 +24,7 @@ type TopBarProps = {
     displayName: string | null;
     email: string | null;
     role: Role | null;
+    avatarUrl: string | null;
   };
 };
 
