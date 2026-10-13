@@ -130,7 +130,7 @@ type ListDbRow = {
 };
 
 /**
- * Fallback source — LIVE hot view(2h)가 0건일 때 마지막 알려진 값을 채우기 위한 base table.
+ * Fallback source — LIVE 목록 창(LIVE_LIST_MEMBERSHIP_MIN)이 0건일 때 마지막 알려진 값을 채우기 위한 base table.
  * `iot_decoded_last_value`는 RLS 정책이 없어 앱 클라이언트로 조회 불가 → decoded 원본을 직접 읽는다.
  */
 const LAST_KNOWN_SOURCE = "iot_room_state_decoded";
@@ -347,7 +347,7 @@ function applyFarmFilter<
 }
 
 /**
- * Phase A — LIVE hot view가 0건(2시간 무신호)일 때 컨트롤러별 마지막 값을 offline 상태로 시드.
+ * Phase A — LIVE 목록 창이 통째로 0건일 때 컨트롤러별 마지막 값을 offline 상태로 시드.
  * decoded 원본(RLS `decoded_select_scoped`)을 최신순으로 읽어 (module_uid, controller_key)별 1건만 남긴다.
  * farm-scoped 진입에서만 동작(global admin hub는 부하 회피로 제외).
  */

@@ -133,9 +133,15 @@ if (errors.length > 0) {
 const globalsCss = readFileSync(join(root, "src/app/globals.css"), "utf8");
 const darkBlock = globalsCss.split(".dark {")[1] ?? "";
 const darkNeedles = [
-  ["--status-ok-on-canvas: var(--status-ok)", "dark on-canvas ink"],
-  ["--status-warn-on-canvas: var(--status-warn)", "dark on-canvas warn"],
-  ["--status-danger-on-canvas: var(--status-danger)", "dark on-canvas danger"],
+  ["--status-ok-on-canvas: var(--status-ok)", "dark on-canvas ok"],
+  [
+    "--status-warn-on-canvas: oklch(from var(--status-warn) 0.78 c h)",
+    "dark on-canvas warn",
+  ],
+  [
+    "--status-danger-on-canvas: oklch(from var(--status-danger) 0.82 c h)",
+    "dark on-canvas danger",
+  ],
   ["--status-offline:", "offline fill token"],
   ["--mix-lift:", "mix lift"],
   ["--heatmap-sev-faint: 0.34", "dark heatmap faint opacity"],

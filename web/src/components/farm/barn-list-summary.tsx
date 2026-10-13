@@ -23,7 +23,8 @@ import { normalizeStallTyCode } from "@/lib/domain/stall-type";
 import { StatusBadge } from "@/components/common/status-badge";
 import { EnvChip } from "@/components/common/env-chip";
 import { formatSensorNumberForDisplay } from "@/lib/domain/reading-display";
-import { StallUnitNoMark } from "@/components/farm/controller-summary-parts";
+import { StallUnitIcon } from "@/components/icons/stall-unit-icon";
+import { formatControllerHeaderStallUnit } from "@/lib/farm/controller-summary-display";
 import { dashboardChroma, dashboardUi, dashboardTypography } from "@/lib/ui/dashboard-page-ui";
 import {
   FIELD_LIST_CONTAINER,
@@ -565,12 +566,22 @@ export function BarnListSummary({
                       dashboardUi.body
                     )}
                   >
-                    <StallUnitNoMark
-                      stallNo={
-                        stall.stallKey.startsWith("__") ? null : stall.stallKey
-                      }
-                      className="font-semibold text-muted-foreground"
+                    <StallUnitIcon
+                      className="size-5 shrink-0 text-muted-foreground"
+                      aria-hidden
                     />
+                    <h4
+                      className={cn(
+                        "min-w-0 truncate font-semibold text-foreground",
+                        dashboardTypography.sectionTitle,
+                      )}
+                    >
+                      {formatControllerHeaderStallUnit({
+                        stallNo: stall.stallKey.startsWith("__")
+                          ? null
+                          : stall.stallKey,
+                      })}
+                    </h4>
                     <span className={cn("text-muted-foreground", dashboardTypography.meta)}>
                       {stall.readings.length}대
                     </span>
