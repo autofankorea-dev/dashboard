@@ -5,6 +5,16 @@ export const RECV_NORMAL_MIN = 15;
 /** 수신 신선도 임계(분) — 이 이하면 caution, 초과면 offline */
 export const RECV_CAUTION_MIN = 60;
 /**
+ * 목록·최신·개요가 컨트롤러를 유지하는 수신 창.
+ * 오프라인 판정({@link RECV_CAUTION_MIN})보다 길다.
+ * 이 창 안의 무수신 장비는 offline으로 남고, 창 밖이면 목록에서 빠진다.
+ * SQL 정본은 `interval '14 days'`
+ * (`supabase/migrations/20261013035322_live_list_keep_offline.sql`).
+ */
+export const LIVE_LIST_MEMBERSHIP_DAYS = 14;
+export const LIVE_LIST_MEMBERSHIP_MIN = LIVE_LIST_MEMBERSHIP_DAYS * 24 * 60;
+export const LIVE_LIST_MEMBERSHIP_INTERVAL = `${LIVE_LIST_MEMBERSHIP_DAYS} days`;
+/**
  * 측정 정체 임계(분).
  * 희소 게이팅 하트비트(안정 시 ~30분)보다 넉넉히 잡아 오탐을 피한다.
  * 수신은 최신인데 측정시각이 이 값을 넘게 정체하면 replay/장비 시계정지로 본다.
@@ -32,6 +42,7 @@ export function parseKstWallClockMs(
  * 컨트롤러 신선도 상태. 수신시각(received_at)과 측정시각(mesure_dt)을 함께 본다.
  *
  * - 수신 신선도: ≤15m normal · ≤60m caution · 그 외 offline
+ * - 목록에서 빼는 기준은 이 함수가 아니라 {@link LIVE_LIST_MEMBERSHIP_MIN} 이다.
  * - 측정 신선도: 수신이 최신(normal)이라도 측정시각이 {@link MESURE_STALE_MIN}분을
  *   넘게 정체하면(=버퍼 replay·장비 시계정지) normal → caution으로 강등한다.
  *
