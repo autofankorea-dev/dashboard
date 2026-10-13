@@ -499,8 +499,9 @@ html[data-pc-band="narrow"]:not([data-field-rail-user="1"]) [data-field-rail] {
   --status-warn-ink: color-mix(in oklch, var(--status-warn) 36%, black);
   --status-danger-ink: color-mix(in oklch, var(--status-danger) 40%, black);
   --status-ok-on-canvas: var(--status-ok);
-  --status-warn-on-canvas: var(--status-warn);
-  --status-danger-on-canvas: var(--status-danger);
+  /* 틴트 칸 위 숫자는 상태 면색 그대로면 위험 3.5:1. 색상각은 두고 명도만 올린다. 덮개 면은 --status-* 유지. */
+  --status-warn-on-canvas: oklch(from var(--status-warn) 0.78 c h);
+  --status-danger-on-canvas: oklch(from var(--status-danger) 0.82 c h);
   --status-offline: color-mix(in oklch, var(--muted-foreground) 38%, var(--background));
   --status-offline-ink: var(--foreground);
   --mix-lift: var(--foreground);

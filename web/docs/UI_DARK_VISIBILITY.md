@@ -240,7 +240,7 @@ controllerEnvMetricTextClass(warn|danger) → status-*-ink (검정 혼합)
 
 | 단계 | 상태 |
 |------|------|
-| P0 on-canvas 잉크 | 적용. 덮개 `*-ink` 유지 |
+| P0 on-canvas 잉크 | 적용. 덮개 `*-ink` 유지. 다크 주의·위험 on-canvas는 같은 색상각에서 명도만 올림 (주의 L 0.78 · 위험 L 0.82) |
 | P1 끊김 면 | 적용. `--status-offline` · 디밍 제거 |
 | P2 border/ring | 적용. 다크 border L 0.36 · ring 14% |
 | P3 mix-lift/shade | 적용. EMA·게이지·plan-cover |
