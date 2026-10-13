@@ -248,7 +248,7 @@ export function controllerEnvCoverInkClass(
   return "text-[var(--status-offline-ink)]";
 }
 
-/** 타일·차트 위 판정 글자 — 덮개 ink와 분리. 다크는 상태색 본값. */
+/** 타일·차트 위 판정 글자 — 덮개 ink와 분리. 다크는 같은 색상각에서 명도만 올린다. */
 export function controllerEnvCanvasTextClass(
   level: ControllerEnvCoverLevel,
 ): string {
