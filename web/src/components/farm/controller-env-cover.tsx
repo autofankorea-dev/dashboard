@@ -70,7 +70,7 @@ function coverExitDurationMs(): number {
   return Number.isFinite(ms) ? ms : 0;
 }
 
-/** 닫힌 덮개. 위는 축사유형·축사 번호·컨트롤러 번호, 가운데는 값, 아래는 판정. 높이는 카드 본문. */
+/** 닫힌 덮개. 이름과 번호는 같은 왼쪽·같은 크기, 가운데는 온도. 경보·판정 문구는 두지 않는다. */
 export function ControllerEnvCover({
   reading,
   level,
@@ -88,13 +88,9 @@ export function ControllerEnvCover({
   const ctrlLabel = `컨트롤러 ${ctrlNo}`;
   const status = controllerEnvCoverStatus(reading, alarmSettings);
   const displayLevel = status.stale ? reading.status === "offline" ? "offline" : "warn" : level;
-  const statusLabel = `${status.environment}, ${status.communication}`;
   const receivedLabel = controllerEnvCoverReceivedLabel(reading.receivedAt);
   const reason = controllerEnvCoverReason(reading, alarmSettings);
   const onFill = displayLevel !== "offline";
-  const reasonAria = [reason.valueLabel, reason.bandLabel]
-    .filter(Boolean)
-    .join(" ");
   const applyQueue = useApplyQueueOptional();
   const applyStrip = useMemo(
     () =>
@@ -138,7 +134,7 @@ export function ControllerEnvCover({
       type="button"
       data-farm-env-cover="on"
       data-cover-status-level={displayLevel}
-      aria-label={`${typeLabel} ${stallLabel} ${ctrlLabel}, ${statusLabel}${status.stale ? `, ${receivedLabel}` : ""}${reasonAria ? `, ${status.stale ? "마지막 측정 " : ""}${reasonAria}` : ""}${applyAria ? `, 적용 ${applyAria}` : ""}. 상세 보기`}
+      aria-label={`${typeLabel} ${stallLabel} ${ctrlLabel}${reason.valueLabel ? `, ${reason.valueLabel}` : ""}${status.stale ? `, ${receivedLabel}` : ""}${applyAria ? `, 적용 ${applyAria}` : ""}. 상세 보기`}
       onClick={(e) => {
         e.stopPropagation();
         requestOpen();
@@ -155,7 +151,6 @@ export function ControllerEnvCover({
       )}
     >
       <span className="flex min-w-0 flex-nowrap items-start gap-2">
-        <span className="mt-1.5 size-2.5 shrink-0" aria-hidden />
         <span className="flex min-w-0 flex-1 flex-nowrap items-start gap-2">
           <span className="flex min-w-0 flex-1 flex-col gap-0.5">
             {showAffiliation ? (
@@ -172,21 +167,25 @@ export function ControllerEnvCover({
                 </span>
                 <span
                   data-cover-morph="marks"
-                  className="mt-0.5 flex min-w-0 items-center gap-2"
+                  className="mt-0.5 flex min-w-0 items-center gap-2 leading-none"
                 >
                   <StallUnitNoMark
                     stallNo={reading.stallNo}
                     onFill={onFill}
+                    fitText
                     className={cn(
-                      dashboardTypography.envCoverMeta,
+                      dashboardTypography.envCoverIdentity,
+                      "leading-none",
                       onFill && "text-current",
                     )}
                   />
                   <ControllerNoMark
                     eqpmnNo={reading.eqpmnNo}
                     onFill={onFill}
+                    fitText
                     className={cn(
-                      dashboardTypography.envCoverMeta,
+                      dashboardTypography.envCoverIdentity,
+                      "leading-none",
                       onFill && "text-current",
                     )}
                   />
@@ -197,8 +196,10 @@ export function ControllerEnvCover({
                 <ControllerNoMark
                   eqpmnNo={reading.eqpmnNo}
                   onFill={onFill}
+                  fitText
                   className={cn(
                     dashboardTypography.envCoverIdentity,
+                    "leading-none",
                     onFill && "text-current",
                   )}
                 />
@@ -221,7 +222,8 @@ export function ControllerEnvCover({
         {status.stale ? (
           <span
             className={cn(
-              dashboardTypography.envCoverMeta,
+              dashboardTypography.envCoverIdentity,
+              "font-medium",
               onFill && "text-current",
             )}
           >
@@ -238,37 +240,18 @@ export function ControllerEnvCover({
         >
           {reason.valueLabel ?? "—"}
         </span>
-        {reason.bandLabel ? (
-          <span
-            data-cover-morph="band"
-            className={cn(
-              dashboardTypography.envCoverMeta,
-              onFill && "text-current",
-            )}
-          >
-            {reason.bandLabel}
-          </span>
-        ) : null}
         {applyStrip.length > 0 ? (
           <CoverChannelApplyStrip items={applyStrip} />
         ) : null}
       </span>
-      <span className="flex items-end justify-between gap-2">
-        <span
-          className={cn(
-            "flex min-w-0 flex-col break-keep opacity-70",
-            dashboardTypography.envCoverStatus,
-            onFill && "text-current",
-          )}
-        >
-          <span data-cover-environment-status="">{status.environment}</span>
-          <span data-cover-communication-status="">{status.communication}</span>
-        </span>
-        <ChevronRight
-          className={cn(dashboardAffordance.hitHint, onFill && "text-current")}
-          aria-hidden
-        />
-      </span>
+      <ChevronRight
+        className={cn(
+          "absolute right-3 bottom-3 size-[length:var(--density-cover-identity)] md:size-[length:var(--density-cover-identity-md)]",
+          onFill && "text-current",
+        )}
+        strokeWidth={1.75}
+        aria-hidden
+      />
     </button>
   );
 }
