@@ -13,7 +13,8 @@ import { cn } from "@/lib/utils";
 
 /**
  * 현장 통합 데스크톱 — 좌측 축사 현황과 우측 목록.
- * `farm-page-content.tsx`에서 분리(동작 보존).
+ * PC에서는 항상 가로 2열이다. 1280px 미만은 접힌 레일로 시작하고,
+ * 사용자가 열면 15rem이다. 카드 열 수는 오른쪽 패널 너비를 따른다.
  */
 export function FarmFieldSplit({
   fieldStatusOpen,
@@ -75,17 +76,19 @@ export function FarmFieldSplit({
   return (
     <div
       className={cn(
-        "grid min-h-[28rem] grid-cols-1 gap-3 lg:items-start",
+        "grid min-h-[28rem] items-start gap-3",
         "transition-[grid-template-columns] duration-motion-moderate ease-[var(--motion-ease-standard)]",
         fieldStatusOpen
-          ? "lg:grid-cols-[15rem_minmax(0,1fr)]"
-          : "lg:grid-cols-[2.5rem_minmax(0,1fr)]",
+          ? "grid-cols-[15rem_minmax(0,1fr)]"
+          : "grid-cols-[2.5rem_minmax(0,1fr)]",
       )}
       data-tour-id="field-split"
+      data-field-split=""
       data-field-status={fieldStatusOpen ? "open" : "collapsed"}
     >
       <div className="min-w-0 overflow-hidden">
         <div
+          data-field-rail=""
           className={cn(
             "transition-[width,max-width] duration-motion-moderate ease-[var(--motion-ease-standard)]",
             fieldStatusOpen ? "w-[15rem] max-w-[15rem]" : "w-10 max-w-10",

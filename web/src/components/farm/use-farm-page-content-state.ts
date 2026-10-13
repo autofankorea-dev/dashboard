@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -47,6 +48,10 @@ import {
   useFarmLiveRefreshOptional,
 } from "@/components/farm/farm-live-refresh";
 import { useHydrationSafeDashboardCompact } from "@/components/layout/dashboard-viewport-context";
+import {
+  PC_RAIL_OPEN_MIN_PX,
+  pcWidthBand,
+} from "@/lib/ui/layout-breakpoints";
 import { useFieldListFilterMotion } from "@/components/farm/use-field-list-filter-motion";
 import { useFarmTourActive } from "@/lib/onboarding/use-farm-tour-active";
 import { useFarmPageChartActions } from "@/components/farm/use-farm-page-chart-actions";
@@ -196,8 +201,25 @@ export function useFarmPageContentState({
   const [fieldSelectedBarnId, setFieldSelectedBarnId] = useState<string | null>(
     null,
   );
-  /** PC 스플릿 — 좌측 현황 열 표시 */
-  const [fieldStatusOpen, setFieldStatusOpen] = useState(true);
+  /** PC 스플릿 — 좌측 현황 열. 1280px 미만은 접힌 채로 시작한다. */
+  const [fieldStatusOpen, setFieldStatusOpenState] = useState(true);
+  const railToggledRef = useRef(false);
+  const setFieldStatusOpen = useCallback((open: boolean) => {
+    railToggledRef.current = true;
+    document.documentElement.dataset.fieldRailUser = "1";
+    setFieldStatusOpenState(open);
+  }, []);
+
+  useLayoutEffect(() => {
+    const sync = () => {
+      document.documentElement.dataset.pcBand = pcWidthBand(window.innerWidth);
+      if (railToggledRef.current) return;
+      setFieldStatusOpenState(window.innerWidth >= PC_RAIL_OPEN_MIN_PX);
+    };
+    sync();
+    window.addEventListener("resize", sync);
+    return () => window.removeEventListener("resize", sync);
+  }, []);
 
   const selectBarnForList = useCallback(
     (barn: BarnMapSnapshot) => {

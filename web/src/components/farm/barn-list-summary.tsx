@@ -25,6 +25,10 @@ import { EnvChip } from "@/components/common/env-chip";
 import { formatSensorNumberForDisplay } from "@/lib/domain/reading-display";
 import { StallUnitNoMark } from "@/components/farm/controller-summary-parts";
 import { dashboardChroma, dashboardUi, dashboardTypography } from "@/lib/ui/dashboard-page-ui";
+import {
+  FIELD_LIST_CONTAINER,
+  controllerGridClass,
+} from "@/lib/farm/controller-grid-layout";
 import { cn } from "@/lib/utils";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { motionStaggerStepMs } from "@/lib/ui/motion-tokens";
@@ -68,23 +72,6 @@ type Props = {
   onToolbarSheetKeyChange?: (key: string) => void;
   onToolbarSheetClose?: () => void;
 };
-
-/** flat(일반 보기) — 전체 너비 · 최대 5열 */
-const CONTROLLER_GRID_FLAT =
-  "grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5";
-
-/** 현장 스플릿 우패널 — 좁은 폭 · 최대 2열 */
-const CONTROLLER_GRID_NARROW =
-  "grid grid-cols-1 gap-2 sm:grid-cols-2";
-
-/** group(SP 구역) — 행별(전폭) SP 안 컨트롤러 그리드 */
-const CONTROLLER_GRID_IN_SP =
-  "grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5";
-
-function controllerGridClass(narrow: boolean, inSpSection: boolean): string {
-  if (narrow) return CONTROLLER_GRID_NARROW;
-  return inSpSection ? CONTROLLER_GRID_IN_SP : CONTROLLER_GRID_FLAT;
-}
 
 const STAGGER_INITIAL = 8;
 const STAGGER_BATCH = 8;
@@ -206,6 +193,7 @@ function ControllerCardGrid({
   const filterStagger = listFilterEnterEpoch > 0;
 
   return (
+    <div className={cn(FIELD_LIST_CONTAINER, "min-w-0")}>
     <div className={controllerGridClass(narrowControllerGrid, inSpSection)}>
       {visibleReadings.map((r, index) => {
         const spCode = normalizeStallTyCode(r.stallTyCode ?? "");
@@ -297,6 +285,7 @@ function ControllerCardGrid({
         </div>
         );
       })}
+    </div>
     </div>
   );
 }
