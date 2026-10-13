@@ -15,66 +15,10 @@ import { type ChannelSlot } from "@/lib/domain/iot-channel";
 import { isReadingOnline } from "@/lib/domain/reading-display";
 import { normalizeStallTyCode } from "@/lib/domain/stall-type";
 import { resolveReadingChannelThermo } from "@/lib/farm/controller-summary-display";
-import { cn } from "@/lib/utils";
 
-/** 일괄설정 모달 — Card 상속 타이포 차단 + 뷰포트별 스케일 */
-export const bulkModalShell = cn(
-  "flex max-h-[min(88dvh,960px)] w-full min-w-0 max-w-[min(100%,44rem)] flex-col overflow-hidden rounded-xl border bg-background shadow-lg",
-  "text-sm leading-snug md:text-base md:leading-snug lg:text-[1.75rem] lg:leading-snug"
-);
-export const bulkModalSectionTitle = "font-semibold text-foreground";
-export const bulkModalMeta = "text-muted-foreground";
+/** 일괄적용 툴바 버튼 — 카드 본문은 채널·알람 설정 카드와 같은 크기 */
 export const bulkModalBtn =
   "inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium leading-snug md:px-4 lg:min-h-12 lg:px-5 lg:text-[1.75rem]";
-export const bulkModalSection = "min-w-0 rounded-lg border bg-background p-3 md:p-5";
-
-export function SectionToggle({
-  checked,
-  onChange,
-  icon,
-  label,
-  /** 접이식 헤더에 제목이 있을 때 — 체크·적용 여부만 표시 */
-  applyOnly = false,
-}: {
-  checked: boolean;
-  onChange: (v: boolean) => void;
-  icon: React.ReactNode;
-  label: string;
-  applyOnly?: boolean;
-}) {
-  return (
-    <label
-      className={cn(
-        "flex min-w-0 cursor-pointer flex-wrap items-center gap-x-2.5 gap-y-1",
-        !applyOnly && "border-b pb-2.5 md:gap-x-3 md:pb-3",
-        applyOnly && "pb-2",
-      )}
-    >
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-        className="size-4 shrink-0 accent-emerald-600 md:size-5"
-        aria-label={applyOnly ? `${label} 적용` : undefined}
-      />
-      {applyOnly ? (
-        <span className={cn("min-w-0 flex-1 leading-snug", bulkModalMeta)}>
-          {checked ? "이 값으로 적용" : "적용하지 않음"}
-        </span>
-      ) : (
-        <>
-          <span className="flex shrink-0 items-center">{icon}</span>
-          <span className={cn("min-w-0 flex-1 leading-snug", bulkModalSectionTitle)}>
-            {label}
-          </span>
-          <span className={cn("shrink-0 leading-snug", bulkModalMeta)}>
-            {checked ? "적용" : "변경 안 함"}
-          </span>
-        </>
-      )}
-    </label>
-  );
-}
 
 export type BulkChannelThermo = {
   setpoint: number;

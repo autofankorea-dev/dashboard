@@ -1,23 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
-import { createPortal } from "react-dom";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   AlertCircle,
   AlertTriangle,
-  Bell,
   CheckCircle2,
-  Layers,
   Loader2,
-  Send,
   SlidersHorizontal,
-  Thermometer,
-  X,
 } from "lucide-react";
-import { ControllerDeviceIcon } from "@/components/icons/controller-device-icon";
-import { ControllerTempDualSlider } from "@/components/controllers/controller-temp-dual-slider";
-import { AlarmDomainIcon } from "@/components/settings/alarm-domain-icon";
-import { ThresholdRangeSlider } from "@/components/settings/threshold-range-slider";
 import {
   sendBulkThermoCommandAction,
   sendDeviceSettingsCommandsAction,
@@ -38,36 +28,29 @@ import {
   EMPTY_APPLY_PROGRESS,
   useApplyQueueOptional,
 } from "@/components/farm/apply-queue-context";
-import { SettingsCollapsibleSection } from "@/components/farm/settings-collapsible-section";
-import { dashboardAffordance, dashboardChroma, dashboardUi } from "@/lib/ui/dashboard-page-ui";
+import { SettingsEditOverlay } from "@/components/farm/settings-edit-overlay";
+import {
+  SharedSettingsStepper,
+  UnifiedSettingsTable,
+  type SettingsCell,
+} from "@/components/farm/unified-settings-table";
+import { dashboardAffordance, dashboardUi } from "@/lib/ui/dashboard-page-ui";
 import {
   BULK_CHANNEL_OPTIONS,
-  SectionToggle,
   buildBulkThermoCommands,
   bulkAlarmDraftSeed,
   bulkDirtyChannelSlots,
   bulkThermoDraftSeedByChannel,
   emptyBulkChannelDrafts,
   resolveBulkSendChannels,
-  bulkModalShell,
-  bulkModalSectionTitle,
-  bulkModalMeta,
   bulkModalBtn,
-  bulkModalSection,
   readingNeedsChannelsHydration,
 } from "@/components/farm/farm-map-bulk-apply-parts";
-import {
-  CHANNEL_SLOT_LABELS,
-  type ChannelSlot,
-} from "@/lib/domain/iot-channel";
+import { type ChannelSlot } from "@/lib/domain/iot-channel";
+import type { PanelThermoValues } from "@/lib/controllers/controller-panel-draft";
 import { useFarmLiveRefreshOptional } from "@/components/farm/farm-live-refresh";
 import { motionClass } from "@/lib/ui/motion-classes";
-import { useMobileLayout } from "@/lib/ui/use-mobile-layout";
 import { cn } from "@/lib/utils";
-
-const emptySubscribe = () => () => {};
-
-type BulkSettingsSectionId = "temp" | "alarm";
 
 type Props = {
   controller: ControllerGridData;
@@ -258,8 +241,6 @@ export function FarmMapBulkApply({
   trailing,
   trailingCompact: _trailingCompact = false,
 }: Props) {
-  const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
-  const isMobile = useMobileLayout();
   const liveRefresh = useFarmLiveRefreshOptional();
   const applyQueue = useApplyQueueOptional();
   const queueProgress = applyQueue?.progress ?? EMPTY_APPLY_PROGRESS;
@@ -275,18 +256,14 @@ export function FarmMapBulkApply({
     channelSkipped: number;
   } | null>(null);
 
-  const [applyTemp, setApplyTemp] = useState(true);
-  const [applyVent, setApplyVent] = useState(true);
-  const [applyAlarm, setApplyAlarm] = useState(true);
-  const [openSection, setOpenSection] = useState<BulkSettingsSectionId | null>(
-    null,
-  );
-  const [activeChannel, setActiveChannel] = useState<ChannelSlot>("A");
-  const channelTablistRef = useRef<HTMLDivElement>(null);
-  const [channelPill, setChannelPill] = useState({ left: 0, width: 0 });
   const [channelDrafts, setChannelDrafts] = useState(emptyBulkChannelDrafts);
   const [channelSeeds, setChannelSeeds] = useState(emptyBulkChannelDrafts);
   const [alarm, setAlarm] = useState<AlarmThresholds>(DEFAULT_ALARM_THRESHOLDS);
+  const [alarmSeed, setAlarmSeed] = useState<AlarmThresholds>(DEFAULT_ALARM_THRESHOLDS);
+  const [selectedCell, setSelectedCell] = useState<SettingsCell>({
+    slot: "A",
+    field: "setpoint",
+  });
 
   useEffect(() => {
     if (open) applyQueue?.setDockOpen(false);
@@ -331,16 +308,16 @@ export function FarmMapBulkApply({
       targets,
       controller.thermoSettings,
     );
+    const seededAlarm = bulkAlarmDraftSeed(
+      targets,
+      selectedSps,
+      controller.alarmSettings,
+    );
     setChannelSeeds(thermo);
     setChannelDrafts(thermo);
-    setActiveChannel("A");
-    setAlarm(
-      bulkAlarmDraftSeed(
-        targets,
-        selectedSps,
-        controller.alarmSettings,
-      ),
-    );
+    setAlarm(seededAlarm);
+    setAlarmSeed(seededAlarm);
+    setSelectedCell({ slot: "A", field: "setpoint" });
     setError(
       needsHydration
         ? "채널 정보를 불러오는 중입니다. 잠시 후 다시 적용하세요."
@@ -356,9 +333,23 @@ export function FarmMapBulkApply({
     liveRefresh,
   ]);
 
+  const valueChanged = (left: number, right: number) =>
+    Math.abs(left - right) > 0.05;
+  const applyTemp = BULK_CHANNEL_OPTIONS.some(
+    (slot) =>
+      valueChanged(channelDrafts[slot].setpoint, channelSeeds[slot].setpoint) ||
+      valueChanged(channelDrafts[slot].deviation, channelSeeds[slot].deviation),
+  );
+  const applyVent = BULK_CHANNEL_OPTIONS.some(
+    (slot) =>
+      channelDrafts[slot].minVent !== channelSeeds[slot].minVent ||
+      channelDrafts[slot].maxVent !== channelSeeds[slot].maxVent,
+  );
+  const applyAlarm =
+    valueChanged(alarm.tempLow, alarmSeed.tempLow) ||
+    valueChanged(alarm.tempHigh, alarmSeed.tempHigh);
   const nothingSelected = !applyTemp && !applyVent && !applyAlarm;
   const wantedControl = applyTemp || applyVent;
-  const activeDraft = channelDrafts[activeChannel];
   const dirtyChannelSlots = useMemo(
     () =>
       bulkDirtyChannelSlots(
@@ -415,48 +406,6 @@ export function FarmMapBulkApply({
     setError(null);
     setApplyPhase("idle");
   }, [running]);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") dismissModal();
-    };
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [open, dismissModal]);
-
-  /* 모달 닫힘 시 접기 상태 초기화 — effect setState 회피 */
-  if (!open && openSection !== null) {
-    setOpenSection(null);
-  }
-
-  useLayoutEffect(() => {
-    if (!open || !wantedControl) return;
-    const root = channelTablistRef.current;
-    if (!root) return;
-    const selected = root.querySelector<HTMLElement>(
-      '[role="tab"][aria-selected="true"]',
-    );
-    if (!selected) return;
-    const next = { left: selected.offsetLeft, width: selected.offsetWidth };
-    setChannelPill((prev) =>
-      prev.left === next.left && prev.width === next.width ? prev : next,
-    );
-  }, [activeChannel, open, wantedControl]);
-
-  const toggleSection = (id: BulkSettingsSectionId) => {
-    setOpenSection((prev) => (prev === id ? null : id));
-  };
-
-  const patchActiveDraft = useCallback(
-    (patch: Partial<(typeof channelDrafts)[ChannelSlot]>) => {
-      setChannelDrafts((prev) => ({
-        ...prev,
-        [activeChannel]: { ...prev[activeChannel], ...patch },
-      }));
-    },
-    [activeChannel],
-  );
 
   const runApply = async () => {
     if (running) return;
@@ -591,191 +540,84 @@ export function FarmMapBulkApply({
       )
     : null;
 
-  const tempSummary = applyTemp
-    ? `${activeDraft.setpoint}±${activeDraft.deviation}℃`
-    : "온도 미적용";
-  const ventSummary = applyVent
-    ? `환기 ${activeDraft.minVent}–${activeDraft.maxVent}%`
-    : "환기 미적용";
-  const controlSummary =
-    !applyTemp && !applyVent
-      ? "적용 안 함"
-      : [applyTemp ? tempSummary : null, applyVent ? ventSummary : null]
-          .filter(Boolean)
-          .join(" · ");
-  const alarmSummary = applyAlarm
-    ? `저온 ${alarm.tempLow}℃ · 고온 ${alarm.tempHigh}℃`
-    : "적용 안 함";
+  const alarmValidationError =
+    applyAlarm &&
+    !parseDeviceAlarms({
+      lowTempC: alarm.tempLow,
+      highTempC: alarm.tempHigh,
+    })
+      ? "저온 < 고온, 0~100℃, 0.1℃ 단위로 입력하세요."
+      : null;
+  const applyBlockedReason = nothingSelected
+    ? "바꾼 값이 없습니다."
+    : awaitingChannelHydration && wantedControl
+      ? "채널 정보를 불러온 뒤 다시 적용하세요."
+      : wantedControl && previewCommands.length === 0 && !applyAlarm
+        ? "선택한 채널에 해당하는 온라인 컨트롤러가 없습니다."
+        : alarmValidationError;
 
-  const tempSectionBody = (collapsible: boolean) => (
-    <>
-      <SectionToggle
-        checked={applyTemp}
-        onChange={setApplyTemp}
-        applyOnly={collapsible}
-        icon={
-          <Thermometer
-            className={cn(dashboardUi.iconSm, "text-channel-temp")}
-            aria-hidden
-          />
-        }
-        label="설정온도 · 편차"
-      />
-      <div className={cn("min-w-0", collapsible ? "pt-2" : "pt-3 md:pt-4")}>
-        <ControllerTempDualSlider
-          key={`temp-${activeChannel}`}
-          setpoint={activeDraft.setpoint}
-          deviation={activeDraft.deviation}
-          disabled={!applyTemp}
-          compact={false}
-          axisMode="editable"
-          axisInputSize="dashboard"
-          onChange={(sp, dev) => {
-            patchActiveDraft({ setpoint: sp, deviation: dev });
-          }}
-        />
-      </div>
-    </>
+  const tableRows = BULK_CHANNEL_OPTIONS.map((slot) => ({
+    slot,
+    present: true,
+    values: {
+      setpointTemp: channelDrafts[slot].setpoint,
+      tempDeviation: channelDrafts[slot].deviation,
+      minVentPct: channelDrafts[slot].minVent,
+      maxVentPct: channelDrafts[slot].maxVent,
+    },
+  }));
+  const currentBySlot: Partial<
+    Record<ChannelSlot | "ctrl", PanelThermoValues | null>
+  > = Object.fromEntries(
+    BULK_CHANNEL_OPTIONS.map((slot) => [
+      slot,
+      {
+        setpointTemp: channelSeeds[slot].setpoint,
+        tempDeviation: channelSeeds[slot].deviation,
+        minVentPct: channelSeeds[slot].minVent,
+        maxVentPct: channelSeeds[slot].maxVent,
+      },
+    ]),
   );
-
-  const ventSectionBody = (collapsible: boolean) => (
-    <>
-      <SectionToggle
-        checked={applyVent}
-        onChange={setApplyVent}
-        applyOnly={collapsible}
-        icon={
-          <span
-            className={cn(
-              dashboardUi.iconSm,
-              "inline-flex items-center justify-center font-bold text-channel-info",
-            )}
-            aria-hidden
-          >
-            %
-          </span>
-        }
-        label="환기 (최저·최고)"
-      />
-      <div className={cn("min-w-0", collapsible ? "pt-2" : "pt-3 md:pt-4")}>
-        <ThresholdRangeSlider
-          key={`vent-${activeChannel}`}
-          title="환기"
-          icon={
-            <span
-              className={cn(
-                dashboardUi.iconSm,
-                "inline-flex items-center justify-center font-bold text-channel-info",
-              )}
-              aria-hidden
-            >
-              %
-            </span>
-          }
-          min={0}
-          max={100}
-          step={1}
-          low={activeDraft.minVent}
-          high={activeDraft.maxVent}
-          unit="%"
-          lowLabel="최저환기"
-          highLabel="최고환기"
-          accentClass="bg-channel-info/35"
-          axisMode="editable"
-          axisInputSize="dashboard"
-          bare
-          compact={false}
-          titleClassName={bulkModalSectionTitle}
-          axisClassName={bulkModalMeta}
-          disabled={!applyVent}
-          onChange={(low, high) => {
-            patchActiveDraft({ minVent: low, maxVent: high });
-          }}
-        />
-      </div>
-    </>
-  );
-
-  const alarmSectionBody = (collapsible: boolean) => (
-    <>
-      <SectionToggle
-        checked={applyAlarm}
-        onChange={setApplyAlarm}
-        applyOnly={collapsible}
-        icon={
-          <Bell
-            className={cn(dashboardUi.iconSm, "text-red-600")}
-            aria-hidden
-          />
-        }
-        label="장비 저온·고온 경보"
-      />
-      <div
-        className={cn(
-          "min-w-0 space-y-4",
-          collapsible ? "pt-2" : "pt-3 md:space-y-5 md:pt-4",
-        )}
-      >
-        <ThresholdRangeSlider
-          title="저온 · 고온 경보"
-          icon={
-            <AlarmDomainIcon domain="temp" sizeClass={dashboardUi.iconSm} />
-          }
-          min={0}
-          max={100}
-          step={0.1}
-          low={alarm.tempLow}
-          high={alarm.tempHigh}
-          unit="℃"
-          accentClass="bg-channel-temp/35"
-          axisMode="editable"
-          axisInputSize="dashboard"
-          bare
-          compact={false}
-          titleClassName={bulkModalSectionTitle}
-          disabled={!applyAlarm}
-          onChange={(low, high) =>
-            setAlarm((a) => ({ ...a, tempLow: low, tempHigh: high }))
-          }
-        />
-
-      </div>
-    </>
-  );
-
-  const settingsSections = isMobile ? (
-    <div className="flex flex-col gap-2" data-settings-layout="collapsible">
-      <SettingsCollapsibleSection
-        id="temp"
-        title="설정온도 · 편차"
-        summary={controlSummary}
-        changed={applyTemp || applyVent}
-        open={openSection === "temp"}
-        onToggle={() => toggleSection("temp")}
-      >
-        <div className="space-y-4">
-          {tempSectionBody(false)}
-          {ventSectionBody(false)}
-        </div>
-      </SettingsCollapsibleSection>
-      <SettingsCollapsibleSection
-        id="alarm"
-        title="알람"
-        summary={alarmSummary}
-        changed={applyAlarm}
-        open={openSection === "alarm"}
-        onToggle={() => toggleSection("alarm")}
-      >
-        {alarmSectionBody(true)}
-      </SettingsCollapsibleSection>
-    </div>
-  ) : (
-    <>
-      <section className={bulkModalSection}>{tempSectionBody(false)}</section>
-      <section className={bulkModalSection}>{ventSectionBody(false)}</section>
-      <section className={bulkModalSection}>{alarmSectionBody(false)}</section>
-    </>
-  );
+  const draftKey = {
+    setpoint: "setpoint",
+    deviation: "deviation",
+    minVent: "minVent",
+    maxVent: "maxVent",
+  } as const;
+  const selectedValue =
+    selectedCell.slot === "alarm"
+      ? selectedCell.field === "lowTempC"
+        ? alarm.tempLow
+        : alarm.tempHigh
+      : selectedCell.slot === "ctrl"
+        ? null
+        : channelDrafts[selectedCell.slot][draftKey[selectedCell.field]];
+  const selectedRaw =
+    selectedCell.slot === "alarm"
+      ? selectedCell.field === "lowTempC"
+        ? alarmSeed.tempLow
+        : alarmSeed.tempHigh
+      : selectedCell.slot === "ctrl"
+        ? null
+        : channelSeeds[selectedCell.slot][draftKey[selectedCell.field]];
+  const onStepperChange = (value: number) => {
+    if (selectedCell.slot === "alarm") {
+      setAlarm((current) =>
+        selectedCell.field === "lowTempC"
+          ? { ...current, tempLow: value }
+          : { ...current, tempHigh: value },
+      );
+      return;
+    }
+    if (selectedCell.slot === "ctrl") return;
+    const key = draftKey[selectedCell.field];
+    const slot = selectedCell.slot;
+    setChannelDrafts((prev) => ({
+      ...prev,
+      [slot]: { ...prev[slot], [key]: value },
+    }));
+  };
 
   const queueCounts = applyQueueStageCounts(
     queueRows.map((row) => ({
@@ -792,389 +634,117 @@ export function FarmMapBulkApply({
     .filter(Boolean)
     .join(" · ");
 
-  const modalContent =
-    open && mounted ? (
-      <div
-        data-open=""
-        className={cn(
-          "fixed inset-0 z-50 flex bg-black/40",
-          isMobile
-            ? cn(
-                "items-end justify-center overflow-hidden p-0",
-                motionClass.durationNormal,
-                motionClass.portalOverlayEnter,
-              )
-            : "items-center justify-center overflow-y-auto p-3 sm:p-4 ui-motion-modal-backdrop",
-        )}
-        /* fullscreen만 — sheet를 같이 두면 preview CSS가 오버레이 높이를 85%로 줄여 하단 네비가 비침 */
-        data-mobile-viewport-fullscreen
-        onClick={(e) => {
-          if (!isMobile || running || e.target !== e.currentTarget) return;
-          dismissModal();
-        }}
-      >
+  const overlayBody =
+    result && resultFeedback ? (
+      <div className="space-y-3 text-sm">
         <div
-          data-open=""
           className={cn(
-            bulkModalShell,
-            isMobile
-              ? cn(
-                  motionClass.durationModerate,
-                  motionClass.portalEnter,
-                  motionClass.sheetEnter,
-                  "max-h-[min(85%,var(--mobile-preview-sheet-h,85dvh))] min-h-0 w-full max-w-none rounded-b-none rounded-t-2xl border-x-0 border-b-0 pb-[env(safe-area-inset-bottom,0px)]",
-                )
-              : "ui-motion-modal-panel",
+            "flex items-center gap-2.5",
+            resultFeedback.outcome === "success" && "text-[var(--status-ok)]",
+            resultFeedback.outcome === "partial" &&
+              "text-amber-800 dark:text-amber-300",
+            resultFeedback.outcome === "error" && "text-red-700 dark:text-red-400",
           )}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="bulk-apply-title"
-          onClick={(e) => e.stopPropagation()}
         >
-          {isMobile ? (
-            <div className="flex shrink-0 justify-center pt-2.5 pb-0.5" aria-hidden>
-              <div className="h-1 w-10 rounded-full bg-muted-foreground/35" />
-            </div>
-          ) : null}
-          <div className="flex shrink-0 items-start justify-between gap-3 border-b px-4 py-3 md:px-6 md:py-4">
-            <div className="min-w-0 flex-1">
-              <p id="bulk-apply-title" className={cn("font-semibold leading-snug", bulkModalSectionTitle)}>
-                컨트롤러 일괄 설정
-              </p>
-              <div
-                className={cn(
-                  "mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5",
-                  bulkModalMeta,
-                )}
-              >
-                <span
-                  className="inline-flex items-center gap-1.5"
-                  title="대상 유형"
-                >
-                  <Layers className={dashboardUi.iconSm} aria-hidden />
-                  <span className="sr-only">대상 유형</span>
-                  <span aria-label={`대상 유형 ${selectedSps.length}개`}>
-                    {selectedSps.length}
-                  </span>
-                </span>
-                <span
-                  className="inline-flex items-center gap-1.5"
-                  title={
-                    offlineCount > 0
-                      ? `컨트롤러 ${targets.length}대 (온라인 ${onlineTargets.length})`
-                      : "컨트롤러"
-                  }
-                >
-                  <ControllerDeviceIcon className={dashboardUi.iconSm} aria-hidden />
-                  <span className="sr-only">컨트롤러</span>
-                  <span aria-label={`컨트롤러 ${targets.length}대`}>
-                    {targets.length}
-                  </span>
-                </span>
-                {wantedControl && previewCommands.length > 0 ? (
-                  <span
-                    className="inline-flex items-center gap-1.5"
-                    title="제어 명령"
-                  >
-                    <Send className={dashboardUi.iconSm} aria-hidden />
-                    <span className="sr-only">제어 명령</span>
-                    <span aria-label={`제어 명령 약 ${previewCommands.length}건`}>
-                      {previewCommands.length}
-                    </span>
-                  </span>
-                ) : null}
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => dismissModal()}
-              disabled={running}
-              className="inline-flex shrink-0 items-center justify-center rounded-md p-1.5 text-muted-foreground hover:bg-muted disabled:opacity-50 md:p-2"
-              aria-label="닫기"
-            >
-              <X className={dashboardUi.iconSm} />
-            </button>
-          </div>
-
-          {result && resultFeedback ? (
-            <div className="min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-4 md:px-6 md:py-5">
-              <div
-                className={cn(
-                  "flex items-center gap-2.5",
-                  resultFeedback.outcome === "success" && "text-[var(--status-ok)]",
-                  resultFeedback.outcome === "partial" && "text-amber-800 dark:text-amber-300",
-                  resultFeedback.outcome === "error" && "text-red-700 dark:text-red-400",
-                )}
-              >
-                {resultFeedback.outcome === "success" ? (
-                  <CheckCircle2 className={dashboardUi.iconSm} aria-hidden />
-                ) : resultFeedback.outcome === "partial" ? (
-                  <AlertTriangle className={dashboardUi.iconSm} aria-hidden />
-                ) : (
-                  <AlertCircle className={dashboardUi.iconSm} aria-hidden />
-                )}
-                <p className={cn("font-semibold leading-snug", bulkModalSectionTitle)}>
-                  {resultFeedback.title}
-                </p>
-              </div>
-              <ul className="mt-3 space-y-1.5 leading-snug">
-                {result.control ? (
-                  <li>
-                    제어 명령: 전송 {result.control.sent}건
-                    {result.control.failed.length > 0
-                      ? ` · 실패 ${result.control.failed.length}건`
-                      : ""}
-                    {result.control.error && result.control.sent === 0
-                      ? ` · ${result.control.error}`
-                      : ""}
-                    {offlineCount > 0 ? ` · 오프라인 ${offlineCount}대 제외` : ""}
-                  </li>
-                ) : applyTemp || applyVent ? (
-                  <li className="text-amber-700 dark:text-amber-300">
-                    제어 명령: 온라인 컨트롤러가 없어 전송하지 않았습니다.
-                  </li>
-                ) : null}
-                {result.alarm ? (
-                  <li>
-                    임계 가이드:{" "}
-                    {result.alarm.ok
-                      ? `유형 ${result.alarm.spCount}개 갱신${
-                          (result.alarm.clearedOverrides ?? 0) > 0
-                            ? ` · 개별 설정 ${result.alarm.clearedOverrides}건 제거`
-                            : ""
-                        }`
-                      : `저장 실패 (${result.alarm.error ?? "오류"})`}
-                  </li>
-                ) : null}
-              </ul>
-              {resultFeedback.outcome === "partial" ? (
-                <p className={cn("mt-2 text-amber-800 dark:text-amber-300", bulkModalMeta)}>
-                  일부만 반영되었습니다. 실패 항목은 개별 패널에서 재시도하세요.
-                </p>
-              ) : null}
-              {resultFeedback.outcome === "error" ? (
-                <p className={cn("mt-2 text-red-600 dark:text-red-400", bulkModalMeta)}>
-                  적용에 실패했습니다. 권한·네트워크·대상 상태를 확인한 뒤 다시 시도하세요.
-                </p>
-              ) : null}
-              {queueProgress.total > 0 ? (
-                <div
-                  className={cn(
-                    "mt-4 rounded-lg border px-3 py-2.5",
-                    queueProgress.allOk
-                      ? "border-[color-mix(in_oklch,var(--status-ok)_40%,var(--border))] bg-[color-mix(in_oklch,var(--status-ok)_10%,transparent)]"
-                      : "border-border bg-muted/40",
-                  )}
-                >
-                  <p className={cn("font-semibold leading-snug", bulkModalSectionTitle)}>
-                    {queueProgress.failed > 0
-                      ? "일부 실패"
-                      : queueProgress.allOk
-                        ? "확인 완료"
-                        : queueProgress.timedOut
-                          ? "일부 미확인"
-                          : "적용 진행 중"}
-                  </p>
-                  <p className={cn("mt-1 leading-snug", bulkModalMeta)}>
-                    {queueCountLine}
-                  </p>
-                  {!queueProgress.allOk ? (
-                    <p className={cn("mt-1 text-xs leading-snug", bulkModalMeta)}>
-                      시트를 닫아도 왼쪽 아래 적용 큐에서 단계를 볼 수 있습니다.
-                    </p>
-                  ) : null}
-                </div>
-              ) : null}
-              <div className="mt-4 flex justify-end">
-                <button
-                  type="button"
-                  onClick={closeAll}
-                  className={cn(
-                    bulkModalBtn,
-                    resultFeedback.outcome === "error"
-                      ? "bg-red-600 text-white hover:bg-red-700"
-                      : resultFeedback.outcome === "partial"
-                        ? "bg-amber-600 text-white hover:bg-amber-700"
-                        : dashboardAffordance.action,
-                  )}
-                >
-                  확인
-                </button>
-              </div>
-            </div>
-          ) : running ? (
-            <div className="flex min-h-[12rem] flex-1 flex-col items-center justify-center gap-3 px-4 py-10 text-center md:px-6">
-              <Loader2
-                className="size-8 animate-spin text-primary md:size-10"
-                aria-hidden
-              />
-              <p className={cn("font-semibold", bulkModalSectionTitle)}>
-                일괄 적용 중…
-              </p>
-              <p className={cn("leading-snug", bulkModalMeta)}>
-                {applyPhase === "alarm"
-                  ? "임계 가이드를 저장하고 있습니다."
-                  : applyPhase === "control"
-                    ? `제어 명령을 전송하고 있습니다. (${previewCommands.length || onlineTargets.length}건)`
-                    : "적용을 준비하고 있습니다."}
-              </p>
-              <p className={cn("text-xs leading-snug", bulkModalMeta)}>
-                창을 닫지 마세요.
-              </p>
-            </div>
+          {resultFeedback.outcome === "success" ? (
+            <CheckCircle2 className="size-4" aria-hidden />
+          ) : resultFeedback.outcome === "partial" ? (
+            <AlertTriangle className="size-4" aria-hidden />
           ) : (
-            <>
-              <div
-                className={cn(
-                  "min-h-0 flex-1 overflow-x-hidden overflow-y-auto px-4 py-4 md:px-6 md:py-5",
-                  isMobile ? "space-y-2" : "space-y-4 md:space-y-5",
-                )}
-              >
-                {wantedControl ? (
-                  <section className={bulkModalSection}>
-                    <p className={cn("border-b pb-2.5 font-semibold md:pb-3", bulkModalSectionTitle)}>
-                      제어 채널
-                    </p>
-                    <div className="mt-3">
-                      <div
-                        ref={channelTablistRef}
-                        role="tablist"
-                        aria-label="제어 채널"
-                        className="relative inline-flex rounded-xl border bg-muted/40 p-1"
-                      >
-                        <span
-                          aria-hidden
-                          className={cn(
-                            "pointer-events-none absolute top-1 bottom-1 z-0 rounded-lg",
-                            dashboardChroma.viewTabPill,
-                            motionClass.viewTabPill,
-                            channelPill.width <= 0 && "opacity-0",
-                          )}
-                          style={{
-                            left: channelPill.left,
-                            width: channelPill.width,
-                          }}
-                        />
-                        {BULK_CHANNEL_OPTIONS.map((slot) => {
-                          const selected = slot === activeChannel;
-                          const dirty = dirtyChannelSlots.includes(slot);
-                          const slotLabel = CHANNEL_SLOT_LABELS[slot];
-                          return (
-                            <button
-                              key={slot}
-                              type="button"
-                              role="tab"
-                              aria-selected={selected}
-                              aria-label={dirty ? `${slotLabel} 변경됨` : slotLabel}
-                              className={cn(
-                                "relative z-[1] inline-flex min-h-8 min-w-8 items-center justify-center rounded-lg px-3 py-1.5 text-xs font-medium md:min-h-10 md:min-w-10 md:px-4 md:text-sm lg:min-h-12 lg:text-[1.75rem]",
-                                motionClass.microHover,
-                                selected
-                                  ? dashboardChroma.chromeActiveText
-                                  : dashboardAffordance.choiceIdle,
-                              )}
-                              onClick={() => {
-                                const active = document.activeElement;
-                                if (active instanceof HTMLElement) active.blur();
-                                setActiveChannel(slot);
-                              }}
-                            >
-                              <span className="inline-flex items-center gap-1">
-                                {slotLabel}
-                                {dirty ? (
-                                  <span
-                                    className="size-1.5 rounded-full bg-primary md:size-2"
-                                    aria-hidden
-                                  />
-                                ) : null}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                    {dirtyChannelSlots.length > 0 ? (
-                      <p className={cn("mt-2 text-xs leading-snug", bulkModalMeta)}>
-                        {dirtyChannelSlots
-                          .map((slot) => CHANNEL_SLOT_LABELS[slot])
-                          .join("·")}{" "}
-                        변경 — 바꾼 채널만 나갑니다.
-                      </p>
-                    ) : previewCommands.length === 0 && onlineTargets.length > 0 ? (
-                      <p className={cn("mt-2 text-xs leading-snug", bulkModalMeta)}>
-                        선택한 채널에 맞는 온라인 컨트롤러가 없습니다. 채널 선택을 확인하세요.
-                      </p>
-                    ) : (
-                      <p className={cn("mt-2 text-xs leading-snug", bulkModalMeta)}>
-                        채널별로 값을 맞춥니다. 바꾸지 않으면 1차·2차·3차 모두 현재 값으로
-                        나갑니다.
-                      </p>
-                    )}
-                  </section>
-                ) : null}
-
-                {settingsSections}
-
-                {error ? (
-                  <p className="leading-snug text-red-600">{error}</p>
-                ) : null}
-              </div>
-
-              <div className="flex shrink-0 flex-col gap-3 border-t px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 md:px-6 md:py-4">
-                {nothingSelected ? (
-                  <p className={cn("min-w-0 leading-snug", bulkModalMeta)}>
-                    적용할 항목을 선택하세요.
-                  </p>
-                ) : (
-                  <span className="min-w-0" aria-hidden />
-                )}
-                <div className="flex shrink-0 flex-wrap items-center justify-end gap-2 md:gap-3">
-                  <button
-                    type="button"
-                    onClick={() => dismissModal()}
-                    disabled={running}
-                    className={cn(bulkModalBtn, "border hover:bg-muted disabled:opacity-50")}
-                  >
-                    취소
-                  </button>
-                  <button
-                    type="button"
-                    onClick={runApply}
-                    disabled={
-                      running ||
-                      nothingSelected ||
-                      (wantedControl &&
-                        previewCommands.length === 0 &&
-                        !applyAlarm) ||
-                      (wantedControl &&
-                        selectedChannels.length === 0 &&
-                        allChannelTargets &&
-                        !applyAlarm)
-                    }
-                    className={cn(
-                      bulkModalBtn,
-                      "gap-1.5",
-                      dashboardAffordance.action,
-                    )}
-                  >
-                    {running ? (
-                      <>
-                        <Loader2 className="size-4 animate-spin lg:size-5" />
-                        적용 중…
-                      </>
-                    ) : wantedControl ? (
-                      `${targets.length}대 · 명령 ${previewCommands.length}건 적용`
-                    ) : (
-                      `${targets.length}대에 적용`
-                    )}
-                  </button>
-                </div>
-              </div>
-            </>
+            <AlertCircle className="size-4" aria-hidden />
           )}
+          <p className="font-semibold leading-snug">{resultFeedback.title}</p>
         </div>
+        <ul className="space-y-1.5 leading-snug">
+          {result.control ? (
+            <li>
+              제어 명령: 전송 {result.control.sent}건
+              {result.control.failed.length > 0
+                ? ` · 실패 ${result.control.failed.length}건`
+                : ""}
+              {result.control.error && result.control.sent === 0
+                ? ` · ${result.control.error}`
+                : ""}
+              {offlineCount > 0 ? ` · 오프라인 ${offlineCount}대 제외` : ""}
+            </li>
+          ) : applyTemp || applyVent ? (
+            <li className="text-amber-700 dark:text-amber-300">
+              제어 명령: 온라인 컨트롤러가 없어 전송하지 않았습니다.
+            </li>
+          ) : null}
+          {result.alarm ? (
+            <li>
+              임계 가이드:{" "}
+              {result.alarm.ok
+                ? `유형 ${result.alarm.spCount}개 갱신${
+                    (result.alarm.clearedOverrides ?? 0) > 0
+                      ? ` · 개별 설정 ${result.alarm.clearedOverrides}건 제거`
+                      : ""
+                  }`
+                : `저장 실패 (${result.alarm.error ?? "오류"})`}
+            </li>
+          ) : null}
+        </ul>
+        {queueProgress.total > 0 ? (
+          <div className="rounded-lg border px-3 py-2.5">
+            <p className="font-semibold leading-snug">
+              {queueProgress.failed > 0
+                ? "일부 실패"
+                : queueProgress.allOk
+                  ? "확인 완료"
+                  : queueProgress.timedOut
+                    ? "일부 미확인"
+                    : "적용 진행 중"}
+            </p>
+            <p className="mt-1 text-xs leading-snug text-muted-foreground">
+              {queueCountLine}
+            </p>
+          </div>
+        ) : null}
       </div>
-    ) : null;
+    ) : running ? (
+      <div className="flex flex-col items-center gap-2 py-6 text-center text-sm">
+        <Loader2 className="size-6 animate-spin text-primary" aria-hidden />
+        <p className="font-semibold">일괄 적용 중…</p>
+        <p className="text-xs text-muted-foreground">
+          {applyPhase === "alarm"
+            ? "임계 가이드를 저장하고 있습니다."
+            : applyPhase === "control"
+              ? `제어 명령을 전송하고 있습니다. (${previewCommands.length || onlineTargets.length}건)`
+              : "적용을 준비하고 있습니다."}
+        </p>
+      </div>
+    ) : (
+      <div className="space-y-3" data-unified-controller-settings>
+        <p className="text-xs text-muted-foreground">
+          유형 {selectedSps.length} · 컨트롤러 {targets.length}
+          {offlineCount > 0 ? ` · 온라인 ${onlineTargets.length}` : ""}
+        </p>
+        <UnifiedSettingsTable
+          rows={tableRows}
+          current={currentBySlot}
+          selected={selectedCell}
+          onSelect={setSelectedCell}
+          alarm={{
+            lowTempC: alarm.tempLow.toFixed(1),
+            highTempC: alarm.tempHigh.toFixed(1),
+            currentLow: alarmSeed.tempLow,
+            currentHigh: alarmSeed.tempHigh,
+          }}
+          disabled={running}
+        />
+        {error ? (
+          <p role="alert" className="text-xs text-destructive">
+            {error}
+          </p>
+        ) : null}
+        <p className="text-xs text-muted-foreground">
+          채널 {dirtyChannelSlots.length}개 변경 · 알람{" "}
+          {applyAlarm ? "변경됨" : "변경 없음"}
+        </p>
+      </div>
+    );
+
 
   return (
     <>
@@ -1251,7 +821,36 @@ export function FarmMapBulkApply({
         </div>
       </div>
 
-      {mounted && modalContent ? createPortal(modalContent, document.body) : null}
+      <SettingsEditOverlay
+        open={open}
+        spacious
+        title="컨트롤러 일괄 설정"
+        primaryLabel={result ? "확인" : "변경값 적용"}
+        primaryBusyLabel="적용 중…"
+        primaryDisabled={!result && Boolean(applyBlockedReason)}
+        busy={running}
+        hint={
+          result
+            ? undefined
+            : (applyBlockedReason ??
+              "변경된 채널과 알람을 선택한 컨트롤러에 전송합니다.")
+        }
+        onClose={dismissModal}
+        onPrimary={result ? closeAll : () => void runApply()}
+        footerContent={
+          open && !running && !result ? (
+            <SharedSettingsStepper
+              selected={selectedCell}
+              value={selectedValue}
+              raw={selectedRaw}
+              disabled={running}
+              onChange={onStepperChange}
+            />
+          ) : null
+        }
+      >
+        {overlayBody}
+      </SettingsEditOverlay>
     </>
   );
 }
