@@ -1,20 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import "@/fonts/pretendard/pretendard.css";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { NavigationPendingProvider } from "@/components/layout/navigation-pending-provider";
 import { ViewportPreviewBootstrap } from "@/components/layout/viewport-preview-bootstrap";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "스마트 축사 IoT",
@@ -46,7 +36,7 @@ export default function RootLayout({
     <html
       lang="ko"
       data-viewport-preview="desktop"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className="h-full antialiased"
       suppressHydrationWarning
     >
       <body className="min-h-full bg-muted/30 dark:bg-background">
