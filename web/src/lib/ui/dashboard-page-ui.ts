@@ -35,15 +35,15 @@ export const dashboardTypography = {
     "text-[length:var(--density-value-lg)] font-mono font-bold tabular-nums tracking-[var(--tracking-readout)] leading-none md:text-[length:var(--density-value-lg-md)]",
   tabNav:
     "text-[length:var(--density-meta)] font-medium md:text-[length:var(--density-meta-md)]",
-  /** 필드 덮개 한 줄 — md 2× 없이. 온도는 카드 값(1.5rem)으로 두고 이름은 남긴다. */
+  /** 닫힌 덮개 — 걷힌 헤더와 같은 md 스케일. 이름은 cardTitle, 온도는 valueLg. */
   envCoverIdentity:
-    "text-[length:var(--density-body)] font-semibold leading-tight",
+    "text-[length:var(--density-card-title)] font-semibold leading-tight md:text-[length:var(--density-card-title-md)]",
   envCoverMeta:
-    "text-[length:var(--density-meta)] leading-tight",
+    "text-[length:var(--density-meta)] leading-tight md:text-[length:var(--density-meta-md)]",
   envCoverStatus:
-    "text-[length:var(--density-meta)] font-medium leading-tight",
+    "text-[length:var(--density-meta)] font-medium leading-tight md:text-[length:var(--density-meta-md)]",
   envCoverValue:
-    "font-mono font-bold tabular-nums tracking-[var(--tracking-readout)] leading-none text-[length:var(--density-value-lg)]",
+    "font-mono font-bold tabular-nums tracking-[var(--tracking-readout)] leading-none text-[length:var(--density-value-lg)] md:text-[length:var(--density-value-lg-md)]",
 } as const;
 
 /**
