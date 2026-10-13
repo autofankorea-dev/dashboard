@@ -1,68 +1,8 @@
 /**
- * UI density — comfortable(기본) / compact(모든 너비에서 조밀).
- * comfortable은 너비 스케일: 768–1279px PC는 조밀 토큰, 1280px 이상은 md 2×.
- * CSS: globals.css `--density-*` · html[data-density]
+ * 대시보드 타이포 스케일. `--density-*` 는 `globals.css` `:root` 한 벌이다.
+ * `md`(768px) 이상은 `--density-*-md`. 조밀/여유 전환은 없다.
  * @see docs/UI_DENSITY.md
  */
-
-export const DENSITY_STORAGE_KEY = "dashboard-density";
-
-export type UiDensity = "comfortable" | "compact";
-
-const listeners = new Set<() => void>();
-
-let density: UiDensity = "comfortable";
-
-function notify(): void {
-  listeners.forEach((listener) => listener());
-}
-
-export function isUiDensity(v: unknown): v is UiDensity {
-  return v === "comfortable" || v === "compact";
-}
-
-export function readDensityFromDom(): UiDensity {
-  if (typeof document === "undefined") return "comfortable";
-  const raw = document.documentElement.dataset.density;
-  return isUiDensity(raw) ? raw : "comfortable";
-}
-
-export function getDashboardDensity(): UiDensity {
-  return density;
-}
-
-export function subscribeDashboardDensity(listener: () => void): () => void {
-  if (typeof document !== "undefined" && listeners.size === 0) {
-    density = readDensityFromDom();
-  }
-  listeners.add(listener);
-  return () => listeners.delete(listener);
-}
-
-/** 클라이언트 마운트 시 DOM·localStorage 초기 스크립트와 동기화 */
-export function syncDashboardDensityFromDom(): void {
-  const next = readDensityFromDom();
-  if (next === density) return;
-  density = next;
-  notify();
-}
-
-export function applyDensity(mode: UiDensity) {
-  density = mode;
-  document.documentElement.dataset.density = mode;
-  localStorage.setItem(DENSITY_STORAGE_KEY, mode);
-  notify();
-}
-
-export function toggleDashboardDensity(): UiDensity {
-  const next = nextDensity(density);
-  applyDensity(next);
-  return next;
-}
-
-export function nextDensity(mode: UiDensity): UiDensity {
-  return mode === "comfortable" ? "compact" : "comfortable";
-}
 
 /**
  * Tailwind arbitrary — `--density-*` 직접 참조.

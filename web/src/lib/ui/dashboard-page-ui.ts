@@ -1,6 +1,6 @@
 /**
  * 대시보드 공통 — 타이포·레이아웃 스케일
- * md 이상은 `--density-*-md` (comfortable≈2× / compact=조밀). docs/UI_DENSITY.md
+ * md(768px) 이상은 `--density-*-md`. 조밀 전환은 없다. docs/UI_DENSITY.md
  *
  * 역할 기반 타이포: canvases/dashboard-typography-guide.canvas.tsx 참고
  */
@@ -418,7 +418,7 @@ export const dashboardUi = {
     "truncate text-xs text-muted-foreground md:text-[length:var(--density-stat-compact-label-md)]",
   statCompactIcon: "size-5 shrink-0 opacity-70 md:size-7",
 
-  /* 타이포 — density 토큰 (comfortable / compact) */
+  /* 타이포 — density 토큰 (`:root`, md부터 *-md) */
   sectionTitle:
     "text-[length:var(--density-section)] font-medium text-muted-foreground md:text-[length:var(--density-section-md)]",
   label:

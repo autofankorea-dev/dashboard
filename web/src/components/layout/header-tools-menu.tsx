@@ -15,10 +15,8 @@ import {
   FileText,
   Monitor,
   Moon,
-  Rows3,
   ShieldCheck,
   Smartphone,
-  StretchHorizontal,
   Sun,
   type LucideIcon,
 } from "lucide-react";
@@ -67,12 +65,6 @@ import {
   syncDashboardThemeFromDom,
   toggleDashboardTheme,
 } from "@/lib/ui/dashboard-theme";
-import {
-  getDashboardDensity,
-  subscribeDashboardDensity,
-  syncDashboardDensityFromDom,
-  toggleDashboardDensity,
-} from "@/lib/ui/density";
 import {
   DEFAULT_PROFILE_PINNED_TOOLS,
   type ProfilePinToolId,
@@ -309,15 +301,9 @@ export function HeaderToolsMenu({
     () => getDashboardTheme() === "dark",
     () => false,
   );
-  const densityIsCompact = useSyncExternalStore(
-    subscribeDashboardDensity,
-    () => getDashboardDensity() === "compact",
-    () => false,
-  );
 
   useEffect(() => {
     syncDashboardThemeFromDom();
-    syncDashboardDensityFromDom();
   }, []);
 
   useEffect(() => {
@@ -353,8 +339,7 @@ export function HeaderToolsMenu({
   const iOps = 1;
   const iReport = 2;
   const iTheme = 3;
-  const iDensity = 4;
-  const iViewport = 5;
+  const iViewport = 4;
 
   const toggleDetail = (id: DetailId) => {
     setDetail((prev) => (prev === id ? null : id));
@@ -373,8 +358,6 @@ export function HeaderToolsMenu({
     toggleDashboardTheme();
   };
 
-  const densityLabel = densityIsCompact ? "여유 밀도" : "조밀 밀도";
-
   const toolbarIcons = (opts: {
     vertical: boolean;
     /** hub radial — 래퍼 없이 노드 배열만 */
@@ -391,19 +374,6 @@ export function HeaderToolsMenu({
         aria-label={themeIsDark ? "라이트 모드" : "다크 모드"}
         title={themeIsDark ? "라이트 모드" : "다크 모드"}
         onClick={toggleTheme}
-      />
-    );
-
-    const densityBtn = (
-      <ToolsIconBtn
-        Icon={densityIsCompact ? StretchHorizontal : Rows3}
-        active={densityIsCompact}
-        data-tour-id="header-density"
-        data-density-mode={densityIsCompact ? "compact" : "comfortable"}
-        aria-label={densityLabel}
-        aria-pressed={densityIsCompact}
-        title={densityLabel}
-        onClick={() => toggleDashboardDensity()}
       />
     );
 
@@ -536,31 +506,25 @@ export function HeaderToolsMenu({
           {themeBtn}
         </ToolsIconWrap>
       );
-    const densityEl = (
-      <ToolsIconWrap key="density" toolsI={iDensity}>
-        {densityBtn}
-      </ToolsIconWrap>
-    );
-
-    /* hub: 그룹별 · header: 이상상황 → 운영 → 리포트 → 테마 → 밀도 → (md+) 뷰포트 */
+    /* hub: 그룹별 · header: 이상상황 → 운영 → 리포트 → 테마 → (md+) 뷰포트 */
     const hubItems =
       group === "design"
-        ? [themeEl, densityEl, viewport]
+        ? [themeEl, viewport]
         : group === "function"
           ? [report, ops]
           : group === "alarm"
             ? [bell]
             : hubPattern === "design"
-              ? [themeEl, densityEl, viewport]
+              ? [themeEl, viewport]
               : hubPattern === "mode"
                 ? [ops]
                 : hubPattern === "all"
-                  ? [themeEl, densityEl, viewport, report, ops, bell]
+                  ? [themeEl, viewport, report, ops, bell]
                   : [report, bell];
     const items = (
       isHub
         ? hubItems
-        : [bell, ops, report, themeEl, densityEl, viewport]
+        : [bell, ops, report, themeEl, viewport]
     ).filter(Boolean);
 
     if (asNodes) return items;

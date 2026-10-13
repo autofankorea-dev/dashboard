@@ -272,7 +272,7 @@ hole=`moderate`+`emphasis`, tip=`normal`+`enter`, exit=`exit`+`enter`. accent gl
 
 #### T2 — UI density
 
-- `docs/UI_DENSITY.md` — `comfortable` / `compact`, `--density-*`, 헤더 토글
+- `docs/UI_DENSITY.md` — `--density-*` 한 스케일. `md`부터 `*-md`
 - 타이포·컨트롤: `dashboardTypography` / `dashboardControl` / `dashboardUi` → CSS 변수
 - `opsTypography`·차트 내부는 별도(이미 조밀)
 
@@ -293,7 +293,7 @@ hole=`moderate`+`emphasis`, tip=`normal`+`enter`, exit=`exit`+`enter`. accent gl
 - toast / command overlay / bulk banner 통일
 - `npm run audit:motion-reduced:ci` (`--strict`)
 
-헤더에서 밀도 토글 스모크 + `npm run verify:design`
+`npm run verify:design`
 
 ---
 
