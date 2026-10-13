@@ -22,6 +22,7 @@ function NoMarkFrame({
   Icon,
   dense = false,
   onFill = false,
+  fitText = false,
 }: {
   label: string;
   className?: string;
@@ -32,15 +33,25 @@ function NoMarkFrame({
   dense?: boolean;
   /** 상태색 면 위 — currentColor, 카드 스트로크 없음 */
   onFill?: boolean;
+  /** 부모 글자와 같은 1em·굵기 600. 덮개 번호에 쓴다. */
+  fitText?: boolean;
 }) {
   const compact = useHydrationSafeDashboardCompact();
-  const iconSize = dense ? "size-3.5" : compact ? "size-6" : "size-[1.35em]";
-  // 글자 크기 = 아이콘 높이. 데스크톱 카드는 부모 1.75rem이라 아이콘이 1.35em(약 38px)인데 text-xs는 12px였다.
+  const iconSize = dense
+    ? "size-3.5"
+    : fitText
+      ? "size-[1em]"
+      : compact
+        ? "size-6"
+        : "size-[1.35em]";
+  // 글자 크기 = 아이콘 높이. 카드 헤더는 부모보다 1.35em, 덮개는 부모 1em.
   const digitSize = dense
     ? "text-[0.875rem]"
-    : compact
-      ? "text-[1.5rem]"
-      : "text-[1.35em]";
+    : fitText
+      ? "text-[1em]"
+      : compact
+        ? "text-[1.5rem]"
+        : "text-[1.35em]";
   const ink = onFill ? "text-current" : "text-muted-foreground";
   const digitInk = onFill ? "text-current" : "text-foreground";
 
@@ -56,7 +67,8 @@ function NoMarkFrame({
       <Icon className={cn("shrink-0", iconSize, ink, iconClassName)} aria-hidden />
       <span
         className={cn(
-          "inline-flex items-center whitespace-nowrap font-bold tabular-nums leading-none",
+          "inline-flex items-center whitespace-nowrap tabular-nums leading-none",
+          fitText ? "font-semibold" : "font-bold",
           digitSize,
           digitInk,
         )}
@@ -75,12 +87,14 @@ export function ControllerNoMark({
   iconClassName,
   dense,
   onFill,
+  fitText,
 }: {
   eqpmnNo: string | undefined;
   className?: string;
   iconClassName?: string;
   dense?: boolean;
   onFill?: boolean;
+  fitText?: boolean;
 }) {
   const eq = normalizeEqpmnNo(eqpmnNo ?? "01");
   const noLabel = formatControllerNoLabel(eqpmnNo);
@@ -93,6 +107,7 @@ export function ControllerNoMark({
       Icon={ControllerDeviceIcon}
       dense={dense}
       onFill={onFill}
+      fitText={fitText}
     />
   );
 }
@@ -104,12 +119,14 @@ export function StallUnitNoMark({
   iconClassName,
   dense,
   onFill,
+  fitText,
 }: {
   stallNo: string | null | undefined;
   className?: string;
   iconClassName?: string;
   dense?: boolean;
   onFill?: boolean;
+  fitText?: boolean;
 }) {
   const key = stallKeyFromReading({ stallNo: stallNo ?? null });
   const display = key.startsWith("__") ? "—" : key;
@@ -127,6 +144,7 @@ export function StallUnitNoMark({
       Icon={StallUnitIcon}
       dense={dense}
       onFill={onFill}
+      fitText={fitText}
     />
   );
 }

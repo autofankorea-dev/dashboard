@@ -40,16 +40,27 @@ test("header has no density toggle and the controller card uses the md scale", (
   );
   assert.match(
     pageUi,
-    /envCoverIdentity:[\s\S]*md:text-\[length:var\(--density-card-title-md\)\]/,
+    /envCoverIdentity:[\s\S]*md:text-\[length:var\(--density-cover-identity-md\)\]/,
   );
   assert.match(
     pageUi,
-    /envCoverValue:[\s\S]*md:text-\[length:var\(--density-value-lg-md\)\]/,
+    /envCoverValue:[\s\S]*font-semibold[\s\S]*md:text-\[length:var\(--density-cover-value-md\)\]/,
+  );
+  assert.match(
+    readRepoFile("src/app/globals.css"),
+    /--density-cover-identity-md:\s*1\.5rem/,
+  );
+  assert.match(
+    readRepoFile("src/app/globals.css"),
+    /--density-cover-value-md:\s*2rem/,
   );
   const cover = readRepoFile("src/components/farm/controller-env-cover.tsx");
   assert.match(cover, /absolute inset-0/);
   assert.match(cover, /StallUnitNoMark/);
   assert.match(cover, /ControllerNoMark/);
+  assert.match(cover, /fitText/);
+  assert.equal(cover.includes("data-cover-environment-status"), false);
+  assert.equal(cover.includes('data-cover-morph="band"'), false);
   assert.equal(cover.includes("md:min-h-24"), false);
   const gaugeRow = readRepoFile("src/components/farm/controller-summary-gauge-row.tsx");
   assert.match(gaugeRow, /flex h-full min-w-0 flex-col/);
