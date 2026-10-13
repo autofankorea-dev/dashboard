@@ -197,7 +197,7 @@ export function BarnTable({
 
   /** SSR·hydration 동일 — window URL 금지. mount 후 urlTick effect로 동기화 */
   const [listLayout, setListLayout] = useState<ListLayout>(
-    () => initialListLayout ?? "flat",
+    () => initialListLayout ?? "group",
   );
   const [layoutPending, startLayoutTransition] = useTransition();
   const [, startListParamsTransition] = useTransition();
@@ -416,7 +416,7 @@ export function BarnTable({
     setListLayout(next);
     startLayoutTransition(() => {
       replaceListParams({
-        listLayout: next === "group" ? "group" : null,
+        listLayout: next === "flat" ? "flat" : null,
       });
     });
   };

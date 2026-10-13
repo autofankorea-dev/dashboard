@@ -45,6 +45,8 @@ type Props = {
   animateEnter?: boolean;
   /** true면 걷힘 FLIP을 위해 즉시 연다 (exitFade 없음). */
   morphReveal?: boolean;
+  /** 일반 보기 — 축사 이름을 카드에 둔다. 그룹 보기는 묶음 헤더가 이름을 가진다. */
+  showAffiliation?: boolean;
   onOpen: () => void;
 };
 
@@ -62,13 +64,14 @@ function coverExitDurationMs(): number {
   return Number.isFinite(ms) ? ms : 0;
 }
 
-/** 닫힌 덮개 — 이름, 온도, 판정 한 줄. 게이지·채널은 연 뒤에만. */
+/** 닫힌 덮개 한 줄. 그룹 보기는 장비 번호·온도·판정. 축사 이름은 묶음 헤더. */
 export function ControllerEnvCover({
   reading,
   level,
   alarmSettings,
   animateEnter = false,
   morphReveal = false,
+  showAffiliation = false,
   onOpen,
 }: Props) {
   const [exiting, setExiting] = useState(false);
@@ -144,26 +147,51 @@ export function ControllerEnvCover({
         exiting ? motionClass.exitFade : animateEnter ? motionClass.enterFade : null,
       )}
     >
-      <span className="flex min-w-0 flex-1 items-baseline gap-1 overflow-hidden">
+      <span className="flex min-w-0 flex-1 items-baseline gap-2 overflow-hidden">
+        {showAffiliation ? (
+          <>
+            <span
+              data-cover-morph="identity"
+              className={cn(
+                "shrink-0 break-keep",
+                dashboardTypography.envCoverIdentity,
+                onFill && "text-current",
+              )}
+            >
+              {typeLabel}
+            </span>
+            <span
+              data-cover-morph="marks"
+              className={cn(
+                "shrink-0 break-keep",
+                dashboardTypography.envCoverMeta,
+                onFill && "text-current",
+              )}
+            >
+              {stallLabel} · {ctrlNo}
+            </span>
+          </>
+        ) : (
+          <span
+            data-cover-morph="identity"
+            className={cn(
+              "shrink-0 break-keep",
+              dashboardTypography.envCoverIdentity,
+              onFill && "text-current",
+            )}
+          >
+            {ctrlNo}
+          </span>
+        )}
         <span
-          data-cover-morph="identity"
+          data-cover-morph="value"
           className={cn(
-            "shrink-0 break-keep",
-            dashboardTypography.envCoverIdentity,
+            "shrink-0",
+            dashboardTypography.envCoverValue,
             onFill && "text-current",
           )}
         >
-          {typeLabel}
-        </span>
-        <span
-          data-cover-morph="marks"
-          className={cn(
-            "shrink-0 break-keep",
-            dashboardTypography.envCoverMeta,
-            onFill && "text-current",
-          )}
-        >
-          {stallLabel} · {ctrlNo}
+          {reason.valueLabel ?? "—"}
         </span>
         {status.stale ? (
           <span
@@ -176,16 +204,6 @@ export function ControllerEnvCover({
             {receivedLabel}
           </span>
         ) : null}
-      </span>
-      <span
-        data-cover-morph="value"
-        className={cn(
-          "shrink-0",
-          dashboardTypography.envCoverValue,
-          onFill && "text-current",
-        )}
-      >
-        {reason.valueLabel ?? "—"}
       </span>
       <span
         className={cn(
