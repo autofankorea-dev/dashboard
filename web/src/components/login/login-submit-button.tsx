@@ -3,10 +3,12 @@
 import { useFormStatus } from "react-dom";
 import { BusyButtonLabel } from "@/components/common/busy-button-label";
 import { dashboardAffordance } from "@/lib/ui/dashboard-page-ui";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { cn } from "@/lib/utils";
 
 export function LoginSubmitButton() {
   const { pending } = useFormStatus();
+  const t = useSheetCopy();
 
   return (
     <button
@@ -21,8 +23,8 @@ export function LoginSubmitButton() {
     >
       <BusyButtonLabel
         busy={pending}
-        idleLabel="로그인"
-        busyLabel="로그인 중…"
+        idleLabel={t("login.submit")}
+        busyLabel={t("login.submitting")}
       />
     </button>
   );

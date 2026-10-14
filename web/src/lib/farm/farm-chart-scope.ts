@@ -7,9 +7,11 @@ import {
 } from "@/lib/domain/reading-hierarchy";
 import {
   formatStallTypeLabel,
+  formatStallTypeLabelLocalized,
   normalizeStallTyCode,
   stallTyCodeSortKey,
 } from "@/lib/domain/stall-type";
+import type { SheetLocale } from "@/lib/ui/profile-sheet-prefs";
 import {
   formatControllerNoLabel,
 } from "@/lib/farm/controller-summary-display";
@@ -156,20 +158,24 @@ export function alarmScopeKeyFromFarmChartScope(
 export function chartScopeLabel(
   scope: FarmChartScope,
   readings: BarnReading[] = [],
+  locale: SheetLocale = "ko",
 ): string {
-  if (scope.level === "farm") return "농장 전체";
-  const tyLabel = formatStallTypeLabel(scope.stallTyCode);
+  if (scope.level === "farm") return locale === "en" ? "Whole farm" : "농장 전체";
+  const tyLabel = formatStallTypeLabelLocalized(scope.stallTyCode, locale);
+  const stallLabel = (no: string) =>
+    no.startsWith("__")
+      ? locale === "en" ? "Unassigned stall" : "축사 미지정"
+      : locale === "en" ? `Stall ${no}` : `${no}번 축사`;
   if (scope.level === "sp") return tyLabel;
-  if (scope.level === "stall") {
-    if (scope.stallNo.startsWith("__")) return `${tyLabel} · 축사 미지정`;
-    return `${tyLabel} · ${scope.stallNo}번 축사`;
-  }
+  if (scope.level === "stall") return `${tyLabel} · ${stallLabel(scope.stallNo)}`;
   const hit = readings.find((r) => r.controllerKey === scope.controllerKey);
   if (hit) {
-    const stallLabel = scope.stallNo.startsWith("__") ? "축사 미지정" : `${scope.stallNo}번 축사`;
-    return `${tyLabel} · ${stallLabel} · 컨트롤러 ${formatControllerNoLabel(hit.eqpmnNo)}`;
+    const controller = locale === "en" ? "Controller" : "컨트롤러";
+    return `${tyLabel} · ${stallLabel(scope.stallNo)} · ${controller} ${formatControllerNoLabel(hit.eqpmnNo)}`;
   }
-  return `${tyLabel} · ${scope.stallNo}번 · 컨트롤러`;
+  return locale === "en"
+    ? `${tyLabel} · ${scope.stallNo} · Controller`
+    : `${tyLabel} · ${scope.stallNo}번 · 컨트롤러`;
 }
 
 /** readings → 축사유형 → 축사번호 → 컨트롤러 트리 */

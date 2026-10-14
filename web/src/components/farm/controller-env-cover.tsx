@@ -92,7 +92,7 @@ export function ControllerEnvCover({
   const ctrlLabel = `${t("list.controller")} ${ctrlNo}`;
   const status = controllerEnvCoverStatus(reading, alarmSettings);
   const displayLevel = status.stale ? reading.status === "offline" ? "offline" : "warn" : level;
-  const receivedLabel = controllerEnvCoverReceivedLabel(reading.receivedAt);
+  const receivedLabel = controllerEnvCoverReceivedLabel(reading.receivedAt, locale);
   const reason = controllerEnvCoverReason(reading, alarmSettings);
   const onFill = displayLevel !== "offline";
   const applyQueue = useApplyQueueOptional();

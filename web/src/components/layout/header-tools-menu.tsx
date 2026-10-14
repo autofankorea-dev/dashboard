@@ -75,7 +75,7 @@ import {
   dispatchTourGridActionDone,
   waitForTourTarget,
 } from "@/lib/onboarding/tour-timing";
-import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
+import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import type { SheetCopyKey } from "@/lib/ui/sheet-copy";
 import { cn } from "@/lib/utils";
 
@@ -240,6 +240,7 @@ export function HeaderToolsMenu({
   const { navigate } = useAppNavigate();
   const pathname = usePathname();
   const t = useSheetCopy();
+  const locale = useProfileSheetPrefs().locale;
 
   const offline = overview?.offlineCount ?? 0;
   const activeAlarms = liveAlarms.filter((a) => a.status === "active");
@@ -713,7 +714,7 @@ export function HeaderToolsMenu({
                           </span>
                         </span>
                         <span className="block truncate text-[0.65rem] text-muted-foreground">
-                          {situationAlarmMetaLine(a)}
+                          {situationAlarmMetaLine(a, locale)}
                         </span>
                         {isSituationLiveStateRow(a) ? null : (
                           <span className="block text-[0.65rem] text-muted-foreground">

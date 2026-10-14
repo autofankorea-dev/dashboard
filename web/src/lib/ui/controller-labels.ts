@@ -97,15 +97,24 @@ export function formatFarmItemLabel(
   return `${farmKey.lsindRegistNo} · ${item}`;
 }
 
-/** v0x0A 슬롯 라벨 — 축사 번호 + 장비 번호 */
-export function formatControllerSlotLabel(opts: {
-  stallNo?: string | null;
-  eqpmnNo?: string;
-  /** @deprecated legacy v0x09 */
-  idx?: number;
-}): string {
+/** v0x0A 슬롯 라벨 — 축사 번호 + 장비 번호. locale 없으면 한국어. */
+export function formatControllerSlotLabel(
+  opts: {
+    stallNo?: string | null;
+    eqpmnNo?: string;
+    /** @deprecated legacy v0x09 */
+    idx?: number;
+  },
+  locale: "ko" | "en" = "ko",
+): string {
   const stall = opts.stallNo?.trim();
   const eq = opts.eqpmnNo?.trim();
+  if (locale === "en") {
+    if (stall && eq) return `Stall ${stall} · ${eq}`;
+    if (eq) return `Controller ${eq}`;
+    if (opts.idx !== undefined) return `Controller #${opts.idx + 1}`;
+    return "Controller";
+  }
   if (stall && eq) return `축사 ${stall} · ${eq}번`;
   if (eq) return `컨트롤러 ${eq}`;
   if (opts.idx !== undefined) return `컨트롤러 #${opts.idx + 1}`;

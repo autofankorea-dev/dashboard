@@ -13,6 +13,7 @@ import {
   shouldUseNativeOAuth,
   signInWithNativeOAuth,
 } from "@/lib/auth/native-oauth";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
 
 const emptySubscribe = () => () => {};
 
@@ -25,6 +26,7 @@ function loginPageHref(): string {
 
 export function OAuthButtons() {
   const router = useRouter();
+  const t = useSheetCopy();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const googleBlocked = mounted && isGoogleOAuthBlockedBrowser();
   const nativeOAuth = mounted && shouldUseNativeOAuth();
@@ -34,9 +36,7 @@ export function OAuthButtons() {
   const startOAuth = async (provider: OAuthProvider) => {
     if (busy) return;
     if (provider === "google" && !nativeOAuth && isGoogleOAuthBlockedBrowser()) {
-      setError(
-        "이 창에서는 Google 로그인이 차단됩니다. 카카오를 쓰거나 Chrome/Edge에서 열어 주세요.",
-      );
+      setError(t("login.googleBlocked"));
       return;
     }
     setError(null);
@@ -47,7 +47,7 @@ export function OAuthButtons() {
         await router.refresh();
         const result = await finalizeNativeOAuthLogin();
         if (!result.ok) {
-          setError("로그인에 실패했습니다. 다시 시도해 주세요.");
+          setError(t("login.failed"));
           setBusy(null);
           return;
         }
@@ -57,7 +57,7 @@ export function OAuthButtons() {
 
       const result = await getOAuthSignInUrl(provider);
       if (!result.ok) {
-        setError("로그인 연결에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+        setError(t("login.connectionFailed"));
         setBusy(null);
         return;
       }
@@ -67,7 +67,7 @@ export function OAuthButtons() {
       const message =
         err instanceof Error && err.message.trim()
           ? err.message
-          : "로그인 연결에 실패했습니다. 잠시 후 다시 시도해 주세요.";
+          : t("login.connectionFailed");
       setError(message);
       setBusy(null);
     }
@@ -80,21 +80,20 @@ export function OAuthButtons() {
           <div className="w-full border-t border-border" />
         </div>
         <div className="relative flex justify-center text-xs uppercase">
-          <span className="bg-card px-2 text-muted-foreground">또는</span>
+          <span className="bg-card px-2 text-muted-foreground">{t("login.or")}</span>
         </div>
       </div>
 
       {googleBlocked && !nativeOAuth ? (
         <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-center text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-200">
-          Cursor·IDE 내장 브라우저에서는 Google 로그인이 막힙니다. 카카오는
-          이 창에서도 가능하고, Google은 Chrome/Edge에서{" "}
+          {t("login.embeddedNote")}{" "}
           <a
             className="font-medium underline underline-offset-2"
             href={loginPageHref()}
             target="_blank"
             rel="noopener noreferrer"
           >
-            로그인 페이지를 새 창으로 열기
+            {t("login.openWindow")}
           </a>
         </p>
       ) : null}
@@ -116,7 +115,7 @@ export function OAuthButtons() {
         ) : (
           <GoogleMark />
         )}
-        Google로 로그인하기
+        {t("login.google")}
       </button>
 
       <button
@@ -131,7 +130,7 @@ export function OAuthButtons() {
         ) : (
           <KakaoMark />
         )}
-        카카오로 로그인하기
+        {t("login.kakao")}
       </button>
     </div>
   );
