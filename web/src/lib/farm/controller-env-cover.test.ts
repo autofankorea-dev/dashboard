@@ -6,6 +6,8 @@ import assert from "node:assert/strict";
 import { dashboardChroma } from "../ui/dashboard-page-ui";
 import {
   CONTROLLER_PANEL_INTERACTIVE_SELECTOR,
+  controllerEnvCoverNotices,
+  coverNoticeLevel,
   controllerEnvCoverFillClass,
   controllerEnvCoverInkClass,
   controllerEnvCoverLabel,
@@ -255,6 +257,45 @@ import {
 }
 
 console.log("controller-env-cover.test.ts: ok");
+
+test("missing humidity does not outrank a normal temperature", () => {
+  const reading = {
+    alarmLowTempC: 10,
+    alarmHighTempC: 35,
+    status: "normal" as const,
+    tempC: 24.5,
+    humidityPct: null,
+    stallTyCode: "SP02",
+  };
+  assert.equal(controllerEnvCoverLevel(reading), "ok");
+  assert.deepEqual(controllerEnvCoverNotices(reading), []);
+  assert.equal(coverNoticeLevel(undefined), "ok");
+});
+
+test("offline stays a comm outage and hot temperature stays a temp warning", () => {
+  const offline = controllerEnvCoverNotices({
+    alarmLowTempC: 10,
+    alarmHighTempC: 35,
+    status: "offline",
+    tempC: 24.5,
+    humidityPct: null,
+    stallTyCode: "SP02",
+  });
+  assert.deepEqual(offline.map((notice) => notice.label), ["통신 두절"]);
+  assert.equal(coverNoticeLevel(offline[0]), "offline");
+
+  const hot = controllerEnvCoverNotices({
+    alarmLowTempC: 10,
+    alarmHighTempC: 35,
+    status: "normal",
+    tempC: 36.5,
+    humidityPct: null,
+    stallTyCode: "SP02",
+  });
+  assert.equal(hot.some((notice) => notice.kind === "humidity"), false);
+  assert.equal(hot[0]?.kind, "temp");
+  assert.equal(hot[0]?.grade, "warning");
+});
 
 test("module asserts", () => {
   // node:assert 호출은 이 파일을 불러올 때 이미 실행된다.
