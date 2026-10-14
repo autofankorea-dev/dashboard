@@ -247,12 +247,18 @@ export function coverNoticeLevel(notice: CoverNotice | undefined): ControllerEnv
   return "danger";
 }
 
-export function controllerEnvCoverReceivedLabel(receivedAt: string): string {
+export function controllerEnvCoverReceivedLabel(
+  receivedAt: string,
+  locale: "ko" | "en" = "ko",
+): string {
   const date = new Date(receivedAt);
-  if (!Number.isFinite(date.getTime())) return "마지막 수신 확인 불가";
-  return `마지막 수신 ${new Intl.DateTimeFormat("ko-KR", {
+  if (!Number.isFinite(date.getTime())) {
+    return locale === "en" ? "Last received time unknown" : "마지막 수신 확인 불가";
+  }
+  const time = new Intl.DateTimeFormat("ko-KR", {
     timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false,
-  }).format(date)}`;
+  }).format(date);
+  return locale === "en" ? `Last received ${time}` : `마지막 수신 ${time}`;
 }
 
 export type ControllerEnvCoverReason = {

@@ -33,7 +33,8 @@ import {
   type TrendWindow15m,
 } from "@/lib/domain/farm-trend-types";
 import type { FarmKey } from "@/lib/domain/farm-key";
-import { normalizeStallTyCode } from "@/lib/domain/stall-type";
+import { formatStallTypeLabelLocalized, normalizeStallTyCode } from "@/lib/domain/stall-type";
+import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import {
   EMPTY_FARM_CHART_LAB_SELECTION,
   toggleFarmChartComparisonKey,
@@ -121,6 +122,8 @@ export function FarmChartLabView({
   onSelectionChange,
   layersToolbarActive = true,
 }: Props) {
+  const t = useSheetCopy();
+  const locale = useProfileSheetPrefs().locale;
   const scopes = useMemo(
     () => farmChartLabControllerScopes(readings),
     [readings],
@@ -333,7 +336,7 @@ export function FarmChartLabView({
         ? null
         : scope.level === "sp"
           ? {
-              label: `${chartScopeLabel(scope, readings)}의 축사 보기`,
+              label: t("chart.viewStalls", { name: chartScopeLabel(scope, readings, locale) }),
               onClick: () => {
                 const ty = normalizeStallTyCode(scope.stallTyCode);
                 setOpenSp((prev) => (prev === ty ? null : ty));
@@ -342,7 +345,7 @@ export function FarmChartLabView({
             }
           : scope.level === "stall"
             ? {
-                label: `${chartScopeLabel(scope, readings)}의 컨트롤러 보기`,
+                label: t("chart.viewControllers", { name: chartScopeLabel(scope, readings, locale) }),
                 onClick: () =>
                   setOpenStall((prev) =>
                     prev === farmChartLabStallKey(scope)
@@ -352,7 +355,7 @@ export function FarmChartLabView({
               }
             : scope.level === "controller"
               ? {
-                  label: `${chartScopeLabel(scope, readings)} 개별 그래프 보기`,
+                  label: t("chart.viewGraph", { name: chartScopeLabel(scope, readings, locale) }),
                   onClick: (event: MouseEvent<HTMLButtonElement>) =>
                     openSingle(
                       scope,
@@ -426,10 +429,10 @@ export function FarmChartLabView({
                 type="checkbox"
                 checked={checked}
                 disabled={!checked && comparisonScopes.length >= 2}
-                aria-label={`${chartScopeLabel(scope, readings)} 비교 선택`}
+                aria-label={t("chart.comparePick", { name: chartScopeLabel(scope, readings, locale) })}
                 onChange={() => toggleComparison(key)}
               />
-              비교 선택
+              {t("chart.compareSelect")}
             </label>
           ) : null
         }
@@ -480,7 +483,7 @@ export function FarmChartLabView({
     >
       {scopes.length === 0 ? (
         <p className={cn(dashboardTypography.meta, "px-3 py-6")}>
-          컨트롤러가 없습니다.
+          {t("chart.noController")}
         </p>
       ) : mode === "batch" ? (
         <>
@@ -492,8 +495,8 @@ export function FarmChartLabView({
                 dashboardHubSurface.gridGap,
               )}
             >
-              <section aria-label="축사유형 미니그래프">
-                <h2 className="mb-2 text-sm font-medium">축사유형</h2>
+              <section aria-label={t("cover.stallType")}>
+                <h2 className="mb-2 text-sm font-medium">{t("cover.stallType")}</h2>
                 <div
                   className={labBatchListClass(isMobileStack)}
                   data-farm-chart-lab-batch-sp=""
@@ -508,9 +511,9 @@ export function FarmChartLabView({
                 </div>
               </section>
               {openSpNode ? (
-                <section aria-label={`${openSpNode.label} 축사 미니그래프`}>
+                <section aria-label={t("chart.stallGraphs", { name: formatStallTypeLabelLocalized(openSpNode.stallTyCode, locale) })}>
                   <h2 className="mb-2 text-sm font-medium">
-                    {openSpNode.label} · 축사
+                    {t("chart.stallHeading", { name: formatStallTypeLabelLocalized(openSpNode.stallTyCode, locale) })}
                   </h2>
                   <div
                     className={labBatchListClass(isMobileStack)}
@@ -531,10 +534,20 @@ export function FarmChartLabView({
               ) : null}
               {openSpNode && openStallNode ? (
                 <section
-                  aria-label={`${openSpNode.label} ${openStallNode.label} 컨트롤러 미니그래프`}
+                  aria-label={t("chart.controllerGraphs", {
+                    name: formatStallTypeLabelLocalized(openSpNode.stallTyCode, locale),
+                    stall: openStallNode.stallNo.startsWith("__")
+                      ? t("chart.stallUnknown")
+                      : t("chart.stallNo", { no: openStallNode.stallNo }),
+                  })}
                 >
                   <h2 className="mb-2 text-sm font-medium">
-                    {openSpNode.label} · {openStallNode.label} · 컨트롤러
+                    {t("chart.controllerHeading", {
+                      name: formatStallTypeLabelLocalized(openSpNode.stallTyCode, locale),
+                      stall: openStallNode.stallNo.startsWith("__")
+                        ? t("chart.stallUnknown")
+                        : t("chart.stallNo", { no: openStallNode.stallNo }),
+                    })}
                   </h2>
                   <div
                     className={labBatchListClass(isMobileStack)}
@@ -562,17 +575,17 @@ export function FarmChartLabView({
             data-chart-comparison-selection=""
           >
             <span className="text-sm" role="status">
-              비교 대상 {comparisonScopes.length}/2
+              {t("chart.compareCount", { count: comparisonScopes.length })}
             </span>
             {comparisonScopes.map((scope) => (
               <button
                 key={farmChartLabScopeKey(scope)}
                 type="button"
                 className="min-h-10 rounded-md border px-2 text-xs"
-                aria-label={`${chartScopeLabel(scope, readings)} 비교 선택 해제`}
+                aria-label={t("chart.compareClear", { name: chartScopeLabel(scope, readings, locale) })}
                 onClick={() => toggleComparison(farmChartLabScopeKey(scope))}
               >
-                {chartScopeLabel(scope, readings)} ×
+                {chartScopeLabel(scope, readings, locale)} ×
               </button>
             ))}
             <button
@@ -581,7 +594,7 @@ export function FarmChartLabView({
               disabled={comparisonScopes.length !== 2}
               onClick={startComparison}
             >
-              비교하기
+              {t("chart.compare")}
             </button>
           </div>
         </>
@@ -593,17 +606,17 @@ export function FarmChartLabView({
               className="min-h-10 rounded-md border px-3 text-sm"
               onClick={returnToList}
             >
-              미니그래프 목록
+              {t("chart.miniList")}
             </button>
             <span className="text-sm font-medium">
-              {mode === "compare" ? "컨트롤러 비교" : "컨트롤러 개별 그래프"}
+              {mode === "compare" ? t("chart.compareTitle") : t("chart.singleGraph")}
             </span>
             <button
               type="button"
               className="ml-auto min-h-10 rounded-md border px-3 text-sm"
               onClick={chooseComparison}
             >
-              {mode === "compare" ? "비교 대상 변경" : "비교 대상 고르기"}
+              {mode === "compare" ? t("chart.changeCompare") : t("chart.pickCompare")}
             </button>
           </div>
           {toolbar}
@@ -722,6 +735,8 @@ function LabTile({
   onDismiss?: () => void;
 }) {
   const tileRef = useRef<HTMLDivElement>(null);
+  const t = useSheetCopy();
+  const locale = useProfileSheetPrefs().locale;
   const scopeKey = farmChartScopeKey(scope);
   const reportMetricAvailable = useCallback(
     (available: UnifiedMetricAvailability) => {
@@ -744,7 +759,7 @@ function LabTile({
     Boolean(hiddenCtrlKeys?.size) &&
     scopedReadings.length > 0 &&
     controllers.length === 0;
-  const label = chartScopeLabel(scope, readings);
+  const label = chartScopeLabel(scope, readings, locale);
 
   useLayoutEffect(() => {
     const el = tileRef.current;
@@ -885,8 +900,8 @@ function LabTile({
                   "hover:bg-muted/50 hover:text-foreground",
                   motionClass.microHover,
                 )}
-                aria-label={`${label} 차트 끄기`}
-                title="차트 끄기"
+                aria-label={`${label}. ${t("chart.close")}`}
+                title={t("chart.close")}
               >
                 <X className="size-4" aria-hidden />
               </button>

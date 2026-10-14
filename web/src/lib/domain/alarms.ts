@@ -5,7 +5,7 @@ import { appendFarmKeyParams } from "@/lib/domain/farm-key";
 import { buildControllerHref } from "@/lib/auth/farm-access";
 import { compareReadings } from "@/lib/domain/reading-hierarchy";
 import { resolveThresholdsForReading } from "@/lib/domain/alarm-scope";
-import { normalizeStallTyCode, formatStallTypeLabel } from "@/lib/domain/stall-type";
+import { normalizeStallTyCode, formatStallTypeLabel, formatStallTypeLabelLocalized } from "@/lib/domain/stall-type";
 import { formatControllerSlotLabel } from "@/lib/ui/controller-labels";
 import {
   applyFarmChartScopeParams,
@@ -58,30 +58,25 @@ export function isDailyReportSituationRow(a: AlarmRow): boolean {
   return isModuleAlarmRow(a) || a.alarmType === SITUATION_OFFLINE_TYPE;
 }
 
-/** 모듈·통신두절·환경 이상상황 행 — 부가 메타 한 줄 */
-export function situationAlarmMetaLine(a: AlarmRow): string {
+/** 모듈·통신두절·환경 이상상황 행 — 부가 메타 한 줄. locale 없으면 한국어. */
+export function situationAlarmMetaLine(a: AlarmRow, locale: "ko" | "en" = "ko"): string {
+  const stallName = (code: string) =>
+    locale === "en" ? formatStallTypeLabelLocalized(code, "en") : formatStallTypeLabel(code);
+  const slot = formatControllerSlotLabel(
+    { stallNo: a.stallNo, eqpmnNo: a.eqpmnNo, idx: a.idx },
+    locale,
+  );
   if (isModuleAlarmRow(a)) {
     if (a.stallTyCode && a.stallNo && a.eqpmnNo) {
-      const parts = [
-        formatStallTypeLabel(a.stallTyCode),
-        formatControllerSlotLabel({
-          stallNo: a.stallNo,
-          eqpmnNo: a.eqpmnNo,
-          idx: a.idx,
-        }),
-      ];
-      if (a.channel) parts.push(`${a.channel}라인`);
+      const parts = [stallName(a.stallTyCode), slot];
+      if (a.channel) parts.push(locale === "en" ? `Line ${a.channel}` : `${a.channel}라인`);
       return parts.join(" · ");
     }
-    return a.farmName?.trim() || a.detail?.trim() || "모듈 경보";
+    return a.farmName?.trim() || a.detail?.trim() || (locale === "en" ? "Module alarm" : "모듈 경보");
   }
   const parts = [
-    a.stallTyCode ? formatStallTypeLabel(a.stallTyCode) : "—",
-    formatControllerSlotLabel({
-      stallNo: a.stallNo,
-      eqpmnNo: a.eqpmnNo,
-      idx: a.idx,
-    }),
+    a.stallTyCode ? stallName(a.stallTyCode) : "—",
+    slot,
   ];
   if (
     a.alarmType === SITUATION_FIELD_ALARM_TYPE &&

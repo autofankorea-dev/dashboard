@@ -20,6 +20,7 @@ import type { FarmChartScope } from "@/lib/farm/farm-chart-scope";
 import { toggleCommandChannelFlag } from "@/lib/farm/command-hold-bands";
 import { dashboardChroma } from "@/lib/ui/dashboard-page-ui";
 import { farmChartUi } from "@/lib/ui/farm-chart-ui-scale";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { cn } from "@/lib/utils";
 
 type FrameProps = UnifiedBarnTrendChromeModel &
@@ -127,6 +128,7 @@ export function UnifiedBarnTrendPanelFrame({
   renderPending,
   controllerSelectEmpty,
 }: FrameProps) {
+  const t = useSheetCopy();
   return (
     <div
       className={cn(
@@ -177,9 +179,7 @@ export function UnifiedBarnTrendPanelFrame({
           className={cn("text-muted-foreground", farmChartUi.fsMeta)}
           role="status"
         >
-          {window15mLoading
-            ? "선택한 구간을 자세히 불러오는 중."
-            : "최근 이력을 이어 받는 중."}
+          {window15mLoading ? t("chart.loadingDetail") : t("chart.loadingRecent")}
         </p>
       ) : null}
 
@@ -284,25 +284,25 @@ export function UnifiedBarnTrendPanelFrame({
             "mx-2 mb-2 min-h-16 flex-1",
           )}
           role="status"
-          aria-label="통합 추이를 불러오는 중."
+          aria-label={t("chart.loading")}
         />
       ) : (
         <p className="py-6 text-center text-xs text-muted-foreground">
           {built
-            ? "표시할 레이어를 선택하세요."
+            ? t("chart.pickLayers")
             : renderPending ||
                 trendLoading ||
                 (!controllerTrendByPeriod && !trendError)
-              ? "통합 추이를 불러오는 중."
+              ? t("chart.loading")
                 : trendExtending
-                ? "최근 이력을 이어 받는 중."
+                ? t("chart.loadingRecent")
                 : window15mLoading
-                  ? "선택한 구간을 자세히 불러오는 중."
+                  ? t("chart.loadingDetail")
                   : trendError
-                    ? "통합 추이를 불러오지 못했습니다."
+                    ? t("chart.loadFailed")
                     : controllerSelectEmpty
-                      ? "표시할 컨트롤러를 선택하세요."
-                    : "통합 추이 데이터가 없습니다."}
+                      ? t("chart.pickControllers")
+                    : t("chart.empty")}
         </p>
       )}
 

@@ -7,12 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { LoginSubmitButton } from "@/components/login/login-submit-button";
 import type { FarmKey } from "@/lib/domain/farm-key";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
+import { readDashboardLocale } from "@/lib/ui/dashboard-locale-store";
+import { sheetCopy, type SheetCopyKey } from "@/lib/ui/sheet-copy";
 
-const ERROR_MESSAGES: Record<string, string> = {
-  credentials: "이메일 또는 비밀번호가 올바르지 않습니다.",
-  missing: "이메일과 비밀번호를 입력해 주세요.",
-  auth: "로그인에 실패했습니다. 다시 시도해 주세요.",
-};
+const ERROR_KEYS = {
+  credentials: "login.badCredentials",
+  missing: "login.missing",
+  auth: "login.failed",
+} as const satisfies Record<string, SheetCopyKey>;
 
 type LoginFormProps = {
   initialError?: string | null;
@@ -27,12 +30,15 @@ export function LoginForm({
   onSuccessNavigate,
 }: LoginFormProps) {
   const router = useRouter();
+  const t = useSheetCopy();
 
   const [error, submitAction] = useActionState(
     async (_prev: string | null, formData: FormData) => {
       const result = await signInWithEmail(formData);
       if (!result.ok) {
-        return ERROR_MESSAGES[result.error] ?? ERROR_MESSAGES.auth;
+        const locale = readDashboardLocale();
+        const key = ERROR_KEYS[result.error] ?? ERROR_KEYS.auth;
+        return sheetCopy(locale, key);
       }
 
       await router.refresh();
@@ -57,7 +63,7 @@ export function LoginForm({
       ) : null}
       <form action={submitAction} className="space-y-4">
         <div className="space-y-1.5">
-          <Label htmlFor="email">아이디</Label>
+          <Label htmlFor="email">{t("login.id")}</Label>
           <Input
             id="email"
             name="email"
@@ -68,7 +74,7 @@ export function LoginForm({
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="password">비밀번호</Label>
+          <Label htmlFor="password">{t("login.password")}</Label>
           <Input
             id="password"
             name="password"

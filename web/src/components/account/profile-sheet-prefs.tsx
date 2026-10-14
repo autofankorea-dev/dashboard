@@ -3,7 +3,9 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useState,
+  useSyncExternalStore,
   type ReactNode,
 } from "react";
 import {
@@ -17,6 +19,11 @@ import {
   type ProfileSheetPrefs,
   type SheetLocale,
 } from "@/lib/ui/profile-sheet-prefs";
+import {
+  readDashboardLocale,
+  subscribeDashboardLocale,
+  writeDashboardLocale,
+} from "@/lib/ui/dashboard-locale-store";
 import { sheetCopy, type SheetCopyKey } from "@/lib/ui/sheet-copy";
 
 type Update = {
@@ -38,6 +45,10 @@ export function ProfileSheetPrefsProvider({
   children: ReactNode;
 }) {
   const [prefs, setPrefs] = useState(initial);
+
+  useEffect(() => {
+    writeDashboardLocale(prefs.locale);
+  }, [prefs.locale]);
 
   async function update(patch: Update) {
     const prev = prefs;
@@ -72,7 +83,13 @@ export function useUpdateProfileSheetPrefs() {
 }
 
 export function useSheetCopy() {
-  const { locale } = useProfileSheetPrefs();
+  const ctx = useContext(PrefsContext);
+  const stored = useSyncExternalStore(
+    subscribeDashboardLocale,
+    readDashboardLocale,
+    () => "ko" as const,
+  );
+  const locale = ctx?.prefs.locale ?? stored;
   return (key: SheetCopyKey, vars?: Record<string, string | number>) =>
     sheetCopy(locale, key, vars);
 }

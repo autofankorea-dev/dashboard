@@ -22,7 +22,7 @@ import {
 } from "@/lib/navigation/shell-live-alarms-store";
 import { dashboardUi } from "@/lib/ui/dashboard-page-ui";
 import { motionClass } from "@/lib/ui/motion-classes";
-import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
+import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import type { SheetCopyKey } from "@/lib/ui/sheet-copy";
 import { cn } from "@/lib/utils";
 
@@ -57,6 +57,7 @@ function AlarmPanelListItem({
 }: AlarmPanelListItemProps) {
   const { navigate } = useAppNavigate();
   const t = useSheetCopy();
+  const locale = useProfileSheetPrefs().locale;
 
   return (
     <li
@@ -91,7 +92,7 @@ function AlarmPanelListItem({
             </span>
           </span>
           <span className="block truncate text-[0.65rem] text-muted-foreground">
-            {situationAlarmMetaLine(alarm)}
+            {situationAlarmMetaLine(alarm, locale)}
           </span>
           {isSituationLiveStateRow(alarm) ? null : (
             <span className="block text-[0.65rem] text-muted-foreground">
