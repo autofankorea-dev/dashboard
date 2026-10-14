@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ComponentType } from "react";
+import { useMemo, useState, type ComponentType, type ReactNode } from "react";
 import {
   Activity,
   ChevronDown,
@@ -42,6 +42,8 @@ type Props = {
   deferAddressFocus?: boolean;
   onCloseMenu?: () => void;
   onFarmSaved?: () => void;
+  header: (identity: ReactNode) => ReactNode;
+  beforeTools?: ReactNode;
 };
 
 const HUB_TONE_CHIP: Record<
@@ -122,6 +124,8 @@ export function AccountMenuSplitBody({
   deferAddressFocus = false,
   onCloseMenu,
   onFarmSaved,
+  header,
+  beforeTools,
 }: Props) {
   const tFarm = useSheetCopy();
   const [switcherOpen, setSwitcherOpen] = useState(false);
@@ -165,101 +169,73 @@ export function AccountMenuSplitBody({
     return parts.join(" · ");
   }, [liveStatus, offline, tFarm]);
 
+  const farmControl = farmLabel ? (
+    showFarmSwitcher ? (
+      <button
+        type="button"
+        className={cn(
+          accountMenuLayout.contextFarmBtn,
+          "inline-flex min-w-0 max-w-full items-center gap-1",
+        )}
+        aria-expanded={switcherOpen}
+        aria-controls="account-menu-farm-matrix"
+        onClick={() => setSwitcherOpen((v) => !v)}
+      >
+        <span className="min-w-0 truncate">{farmLabel}</span>
+        <ChevronDown
+          className={cn(
+            "size-3 shrink-0 text-muted-foreground transition-transform",
+            switcherOpen && "rotate-180",
+          )}
+          aria-hidden
+        />
+      </button>
+    ) : (
+      <p className={cn(accountMenuLayout.contextFarm, "truncate")}>{farmLabel}</p>
+    )
+  ) : showFarmSwitcher ? (
+    <button
+      type="button"
+      className={cn(
+        accountMenuLayout.contextFarmBtn,
+        "inline-flex min-w-0 max-w-full items-center gap-1",
+      )}
+      aria-expanded={switcherOpen}
+      aria-controls="account-menu-farm-matrix"
+      onClick={() => setSwitcherOpen((v) => !v)}
+    >
+      <span className="min-w-0 truncate">{tFarm("header.farmSelect")}</span>
+      <ChevronDown
+        className={cn(
+          "size-3 shrink-0 text-muted-foreground transition-transform",
+          switcherOpen && "rotate-180",
+        )}
+        aria-hidden
+      />
+    </button>
+  ) : null;
+
+  const identity = (
+    <div
+      className={accountMenuLayout.sheetFarmCluster}
+      data-tour-id="account-menu-summary"
+    >
+      {farmControl}
+      {farmLabel && liveLine ? (
+        <p className={cn(accountMenuLayout.liveStrip, "min-w-0 flex-1")}>
+          <span className={statusDotClass(liveStatus?.status)} aria-hidden />
+          <span className="min-w-0 truncate">{liveLine}</span>
+        </p>
+      ) : null}
+      {!farmLabel ? (
+        <HubToneStrip farmOptions={farmOptions} farmSummaries={farmSummaries} />
+      ) : null}
+    </div>
+  );
+
   return (
     <>
-      <div className={accountMenuLayout.splitBody} data-tour-id="account-menu-hub">
-        <div
-          className={accountMenuLayout.zoneContext}
-          data-tour-id="account-menu-summary"
-        >
-          <div className={accountMenuLayout.zoneContextStack}>
-          {farmLabel ? (
-            showFarmSwitcher ? (
-              <button
-                type="button"
-                className={cn(
-                  accountMenuLayout.contextFarmBtn,
-                  "inline-flex min-w-0 max-w-full items-center gap-1",
-                )}
-                aria-expanded={switcherOpen}
-                aria-controls="account-menu-farm-matrix"
-                onClick={() => setSwitcherOpen((v) => !v)}
-              >
-                <span className="min-w-0 truncate">{farmLabel}</span>
-                <ChevronDown
-                  className={cn(
-                    "size-3 shrink-0 text-muted-foreground transition-transform",
-                    switcherOpen && "rotate-180",
-                  )}
-                  aria-hidden
-                />
-              </button>
-            ) : (
-              <p className={cn(accountMenuLayout.contextFarm, "truncate")}>
-                {farmLabel}
-              </p>
-            )
-          ) : showFarmSwitcher ? (
-            <button
-              type="button"
-              className={cn(
-                accountMenuLayout.contextFarmBtn,
-                "inline-flex min-w-0 max-w-full items-center gap-1",
-              )}
-              aria-expanded={switcherOpen}
-              aria-controls="account-menu-farm-matrix"
-              onClick={() => setSwitcherOpen((v) => !v)}
-            >
-              <span className="min-w-0 truncate">{tFarm("header.farmSelect")}</span>
-              <ChevronDown
-                className={cn(
-                  "size-3 shrink-0 text-muted-foreground transition-transform",
-                  switcherOpen && "rotate-180",
-                )}
-                aria-hidden
-              />
-            </button>
-          ) : null}
-
-          {farmLabel && liveLine ? (
-            <p className={accountMenuLayout.liveStrip}>
-              <span
-                className={statusDotClass(liveStatus?.status)}
-                aria-hidden
-              />
-              <span className="min-w-0 truncate">{liveLine}</span>
-            </p>
-          ) : null}
-
-          {!farmLabel ? (
-            <HubToneStrip
-              farmOptions={farmOptions}
-              farmSummaries={farmSummaries}
-            />
-          ) : null}
-          </div>
-        </div>
-
-        <div
-          className={accountMenuLayout.zoneAction}
-          onPointerDown={(e) => e.stopPropagation()}
-          onKeyDown={(e) => e.stopPropagation()}
-        >
-          <AccountMenuPins
-            variant="tile"
-            overview={overview}
-            alarms={alarms}
-            farmKey={activeFarmKey ? farmKey : null}
-            addressLocation={activeFarmKey ? activeFarmLocation?.location : null}
-            farmLabel={farmLabel}
-            canEditLocation={canEditLocation}
-            deferAddressFocus={deferAddressFocus}
-            onFarmSaved={onFarmSaved}
-            onCloseMenu={onCloseMenu}
-          />
-        </div>
-      </div>
-
+      {header(identity)}
       {switcherOpen && showFarmSwitcher ? (
         <FarmSwitcher
           farmOptions={farmOptions}
@@ -273,6 +249,25 @@ export function AccountMenuSplitBody({
           }}
         />
       ) : null}
+      {beforeTools}
+      <div
+        className={accountMenuLayout.sheetTools}
+        onPointerDown={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
+        <AccountMenuPins
+          variant="tile"
+          overview={overview}
+          alarms={alarms}
+          farmKey={activeFarmKey ? farmKey : null}
+          addressLocation={activeFarmKey ? activeFarmLocation?.location : null}
+          farmLabel={farmLabel}
+          canEditLocation={canEditLocation}
+          deferAddressFocus={deferAddressFocus}
+          onFarmSaved={onFarmSaved}
+          onCloseMenu={onCloseMenu}
+        />
+      </div>
     </>
   );
 }

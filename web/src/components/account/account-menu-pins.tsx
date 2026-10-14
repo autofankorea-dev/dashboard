@@ -179,6 +179,7 @@ export function AccountMenuPins({
             </button>
           ))}
         </div>
+        {sheetTool ? (
         <div className={accountMenuLayout.toolsCardWell}>
           {sheetTool === "alarm" ? (
             <AccountMenuAlarmPanel
@@ -206,6 +207,7 @@ export function AccountMenuPins({
             />
           ) : null}
         </div>
+        ) : null}
       </div>
     );
   }
