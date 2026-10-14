@@ -21,6 +21,7 @@ import {
 } from "@/lib/navigation/farm-live-refresh-bridge";
 import { useSoftRefresh } from "@/lib/ui/use-soft-refresh";
 import { cn } from "@/lib/utils";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { dashboardUi } from "@/lib/ui/dashboard-page-ui";
 
 const BRAND_TITLE = "IoT Board";
@@ -32,6 +33,7 @@ export function AppHeaderBrand() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { navigate } = useAppNavigate();
+  const t = useSheetCopy();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const titleRef = useRef<HTMLParagraphElement>(null);
   const [titleWidth, setTitleWidth] = useState<number | null>(null);
@@ -95,9 +97,9 @@ export function AppHeaderBrand() {
 
       // 다른 경로 → soft home (농장·기간 유지)
       e.preventDefault();
-      navigate(href, { message: "모니터링으로 이동 중…" });
+      navigate(href, { message: t("nav.monitoring") });
     },
-    [pathname, navigate, refreshBusy, runRefresh],
+    [pathname, navigate, refreshBusy, runRefresh, t],
   );
 
   const logoStyle: CSSProperties | undefined =
@@ -122,11 +124,9 @@ export function AppHeaderBrand() {
     >
       <AppNavLink
         href={monitoringHomeHref}
-        message={
-          softHome ? "데이터 새로고침 중…" : "모니터링으로 이동 중…"
-        }
-        aria-label={softHome ? "데이터 새로고침" : "모니터링 홈"}
-        title={softHome ? "새로고침" : "모니터링 홈"}
+        message={softHome ? t("nav.refresh") : t("nav.monitoring")}
+        aria-label={softHome ? t("nav.refreshLabel") : t("nav.home")}
+        title={softHome ? t("nav.refreshShort") : t("nav.home")}
         aria-busy={mounted && refreshBusy ? true : undefined}
         onClick={goMonitoringHome}
         className={cn(

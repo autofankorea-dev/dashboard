@@ -23,12 +23,10 @@ import type { FarmSummaryRow } from "@/lib/domain/farm-summaries";
 import { formatKst } from "@/lib/datetime/kst";
 import type { AlarmRow } from "@/lib/domain/alarms";
 import type { ModuleReceipt, FarmOverview } from "@/lib/data/iot";
-import {
-  accountMenuLayout,
-  CONTROLLER_STATUS_LABEL,
-} from "@/lib/ui/account-menu-layout";
+import { accountMenuLayout } from "@/lib/ui/account-menu-layout";
 import { cn } from "@/lib/utils";
 import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
+import type { SheetCopyKey } from "@/lib/ui/sheet-copy";
 
 type Props = {
   farmLabel?: string | null;
@@ -48,13 +46,13 @@ type Props = {
 
 const HUB_TONE_CHIP: Record<
   AdminHubFarmTone | "total",
-  { Icon: ComponentType<{ className?: string }>; label: string; className: string }
+  { Icon: ComponentType<{ className?: string }>; labelKey: SheetCopyKey; className: string }
 > = {
-  total: { Icon: MapPin, label: "전국 관제", className: "text-muted-foreground" },
-  live: { Icon: Activity, label: "정상", className: "text-[var(--status-ok-on-canvas)]" },
-  alert: { Icon: TriangleAlert, label: "경보", className: "text-status-danger" },
-  offline: { Icon: WifiOff, label: "오프라인", className: "text-muted-foreground" },
-  location: { Icon: MapPinned, label: "위치만", className: "text-channel-info" },
+  total: { Icon: MapPin, labelKey: "account.national", className: "text-muted-foreground" },
+  live: { Icon: Activity, labelKey: "cover.ok", className: "text-[var(--status-ok-on-canvas)]" },
+  alert: { Icon: TriangleAlert, labelKey: "account.alert", className: "text-status-danger" },
+  offline: { Icon: WifiOff, labelKey: "account.offline", className: "text-muted-foreground" },
+  location: { Icon: MapPinned, labelKey: "farm.locationOnly", className: "text-channel-info" },
 };
 
 function HubToneStrip({
@@ -81,11 +79,11 @@ function HubToneStrip({
   ] as const;
 
   return (
-    <ul className={accountMenuLayout.hubToneStrip} aria-label="전국 관제">
+    <ul className={accountMenuLayout.hubToneStrip} aria-label={t("account.national")}>
       {items.map(([key, count]) => {
         const chip = HUB_TONE_CHIP[key];
         const Icon = chip.Icon;
-        const label = key === "location" ? t("farm.locationOnly") : chip.label;
+        const label = t(chip.labelKey);
         const className = chip.className;
         return (
           <li key={key}>
@@ -139,10 +137,16 @@ export function AccountMenuSplitBody({
     if (!receipt) return null;
     return {
       status: receipt.status,
-      statusLabel: CONTROLLER_STATUS_LABEL[receipt.status],
+      statusLabel: tFarm(
+        receipt.status === "caution"
+          ? "cover.caution"
+          : receipt.status === "offline"
+            ? "account.offline"
+            : "cover.ok",
+      ),
       timeLabel: formatKst(receipt.receivedAt, "short"),
     };
-  }, [activeFarmKey, receipts]);
+  }, [activeFarmKey, receipts, tFarm]);
 
   const offline = overview?.offlineCount ?? 0;
 
@@ -150,16 +154,16 @@ export function AccountMenuSplitBody({
     if (!liveStatus) return null;
     const parts: string[] = [];
     if (liveStatus.status === "offline" && offline > 0) {
-      parts.push(`오프라인 ${offline}`);
+      parts.push(tFarm("tools.offlineCount", { count: offline }));
     } else {
       parts.push(liveStatus.statusLabel);
       if (offline > 0) {
-        parts.push(`오프라인 ${offline}`);
+        parts.push(tFarm("tools.offlineCount", { count: offline }));
       }
     }
     parts.push(liveStatus.timeLabel);
     return parts.join(" · ");
-  }, [liveStatus, offline]);
+  }, [liveStatus, offline, tFarm]);
 
   return (
     <>

@@ -105,7 +105,7 @@ export function AccountMenuPins({
     <DropdownMenu modal={false}>
       <DropdownMenuTrigger
         className={accountMenuLayout.kebabBtn}
-        aria-label="도구 메뉴"
+        aria-label={t("account.toolsMenu")}
         onPointerDown={(e) => e.stopPropagation()}
         onClick={(e) => e.stopPropagation()}
       >
@@ -125,12 +125,12 @@ export function AccountMenuPins({
           {editMode ? (
             <>
               <X className="size-3.5" aria-hidden />
-              편집 완료
+              {t("account.editDone")}
             </>
           ) : (
             <>
               <Pencil className="size-3.5" aria-hidden />
-              도구 편집
+              {t("account.editTools")}
             </>
           )}
         </DropdownMenuItem>
@@ -140,7 +140,7 @@ export function AccountMenuPins({
             onClick={() => resetProfilePinnedTools()}
           >
             <RotateCcw className="size-3.5" aria-hidden />
-            헤더로 되돌리기
+            {t("account.returnHeader")}
           </DropdownMenuItem>
         ) : null}
       </DropdownMenuContent>
@@ -265,7 +265,7 @@ export function AccountMenuPins({
         }}
       >
         {embedded ? (
-          <span className={accountMenuLayout.rowLabel}>도구</span>
+          <span className={accountMenuLayout.rowLabel}>{t("account.tools")}</span>
         ) : null}
         <div className={accountMenuLayout.toolsCluster}>{legacyChipRow}</div>
         {toolsMenu}
@@ -273,7 +273,7 @@ export function AccountMenuPins({
 
       {editMode ? (
         <p className={cn(accountMenuLayout.editHint, !embedded && "px-4")}>
-          헤더의 알람·리포트·테마를 끌어오거나, 고정 칩을 헤더로 되돌리세요.
+          {t("account.pinHint")}
         </p>
       ) : null}
 
