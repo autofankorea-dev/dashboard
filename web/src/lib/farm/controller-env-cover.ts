@@ -6,6 +6,7 @@ import {
 import { resolveThresholdsForReading } from "@/lib/domain/alarm-scope";
 import type { BarnReading } from "@/lib/data/iot";
 import { formatHumidityPct, formatTempC } from "@/lib/domain/farm-summaries";
+import { RECV_NORMAL_MIN } from "@/lib/domain/live-status";
 import { sevOfScore, severityScore } from "@/lib/farm/severity-score";
 
 export type ControllerEnvCoverLevel = "ok" | "warn" | "danger" | "offline";
@@ -27,7 +28,7 @@ type CoverReasonReading = Pick<
   BarnReading,
   "status" | "tempC" | "humidityPct" | "stallTyCode" | "alarmLowTempC" | "alarmHighTempC"
 > &
-  Partial<Pick<BarnReading, "farmKey" | "stallNo" | "controllerKey" | "eqpmnNo">>;
+  Partial<Pick<BarnReading, "farmKey" | "stallNo" | "controllerKey" | "eqpmnNo" | "receivedAt">>;
 
 function alarmChannelTint(
   value: number | null | undefined,
@@ -168,6 +169,95 @@ export function controllerEnvCoverStatus(
       : reading.status === "caution" ? "통신 주의" : "통신 정상",
     stale,
   };
+}
+
+export type CoverNoticeKind = "comm" | "temp" | "humidity";
+export type CoverNoticeGrade = "caution" | "warning" | "down";
+
+export type CoverNotice = {
+  kind: CoverNoticeKind;
+  grade: CoverNoticeGrade;
+  /** 항목과 단계. 예: 통신 주의 */
+  label: string;
+};
+
+const NOTICE_KIND_LABEL: Record<CoverNoticeKind, string> = {
+  comm: "통신",
+  temp: "온도",
+  humidity: "습도",
+};
+
+const NOTICE_GRADE_LABEL: Record<CoverNoticeGrade, string> = {
+  caution: "주의",
+  warning: "경고",
+  down: "두절",
+};
+
+const NOTICE_GRADE_RANK: Record<CoverNoticeGrade, number> = {
+  down: 0,
+  warning: 1,
+  caution: 2,
+};
+
+const NOTICE_KIND_RANK: Record<CoverNoticeKind, number> = {
+  comm: 0,
+  temp: 1,
+  humidity: 2,
+};
+
+function receiveAgeMin(receivedAt: string | undefined, now: number): number | null {
+  if (!receivedAt) return null;
+  const at = new Date(receivedAt).getTime();
+  if (!Number.isFinite(at)) return null;
+  return (now - at) / 60000;
+}
+
+function coverNotice(kind: CoverNoticeKind, grade: CoverNoticeGrade): CoverNotice {
+  const label = `${NOTICE_KIND_LABEL[kind]} ${NOTICE_GRADE_LABEL[grade]}`;
+  return { kind, grade, label };
+}
+
+function metricNotice(
+  kind: "temp" | "humidity",
+  value: number | null | undefined,
+  tint: RoomEnvTint | null | undefined,
+): CoverNotice | null {
+  if (value == null || !Number.isFinite(value)) return coverNotice(kind, "down");
+  if (tint === "danger") return coverNotice(kind, "warning");
+  if (tint === "warn") return coverNotice(kind, "caution");
+  return null;
+}
+
+/**
+ * 정상은 비운다. 통신 두절이면 온도·습도는 겹쳐 적지 않는다.
+ * 통신 주의 = 수신은 정상인데 측정이 정체. 통신 경고 = 수신이 지연. 통신 두절 = 수신 없음.
+ */
+export function controllerEnvCoverNotices(
+  reading: CoverReasonReading,
+  alarmSettings?: AlarmSettings,
+  now: number = Date.now(),
+): CoverNotice[] {
+  const notices: CoverNotice[] = [];
+  if (reading.status === "offline") {
+    notices.push(coverNotice("comm", "down"));
+  } else if (reading.status === "caution") {
+    const age = receiveAgeMin(reading.receivedAt, now);
+    const grade = age != null && age > RECV_NORMAL_MIN ? "warning" : "caution";
+    notices.push(coverNotice("comm", grade));
+  }
+  if (reading.status !== "offline") {
+    const channels = roomEnvChannels(reading, alarmSettings);
+    const temp = metricNotice("temp", reading.tempC, channels?.temp);
+    const humidity = metricNotice("humidity", reading.humidityPct, channels?.humidity);
+    if (temp) notices.push(temp);
+    if (humidity) notices.push(humidity);
+  }
+  notices.sort(
+    (a, b) =>
+      NOTICE_GRADE_RANK[a.grade] - NOTICE_GRADE_RANK[b.grade] ||
+      NOTICE_KIND_RANK[a.kind] - NOTICE_KIND_RANK[b.kind],
+  );
+  return notices;
 }
 
 export function controllerEnvCoverReceivedLabel(receivedAt: string): string {

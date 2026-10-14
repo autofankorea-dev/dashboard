@@ -38,9 +38,11 @@ import {
   ControllerNoMark,
   StallUnitNoMark,
 } from "@/components/farm/controller-no-marks";
+import { CoverNoticeLines } from "@/components/farm/cover-notice-lines";
 import {
   controllerEnvCoverFillClass,
   controllerEnvCoverLevel,
+  controllerEnvCoverNotices,
 } from "@/lib/farm/controller-env-cover";
 
 const cardActionBtnClass = cn(
@@ -164,6 +166,7 @@ export function ControllerSummaryHeader({
 }) {
   const stallTypeLabel = formatControllerHeaderStallType(reading);
   const envCoverLevel = controllerEnvCoverLevel(reading, alarmSettings);
+  const notices = controllerEnvCoverNotices(reading, alarmSettings);
   const titleBlock = showAffiliation ? (
     <>
       <span
@@ -223,14 +226,20 @@ export function ControllerSummaryHeader({
         onConcealDetail();
       }}
     >
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">{titleBlock}</span>
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        {titleBlock}
+        <CoverNoticeLines notices={notices} />
+      </span>
       <ChevronUp
         className={cn(dashboardAffordance.hitHint, "mt-1 text-muted-foreground")}
         aria-hidden
       />
     </button>
   ) : (
-    <div className="flex min-w-0 flex-1 flex-col gap-0.5">{titleBlock}</div>
+    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+      {titleBlock}
+      <CoverNoticeLines notices={notices} />
+    </div>
   );
 
   return (

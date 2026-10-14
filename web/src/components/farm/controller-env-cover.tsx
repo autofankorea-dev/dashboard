@@ -11,12 +11,12 @@ import {
 import {
   controllerEnvCoverFillClass,
   controllerEnvCoverInkClass,
-  controllerEnvCoverStatus,
-  controllerEnvCoverReceivedLabel,
+  controllerEnvCoverNotices,
   controllerEnvCoverReason,
   type ControllerEnvCoverLevel,
 } from "@/lib/farm/controller-env-cover";
 import { ChevronRight } from "lucide-react";
+import { CoverNoticeLines } from "@/components/farm/cover-notice-lines";
 import {
   ControllerNoMark,
   StallUnitNoMark,
@@ -71,7 +71,7 @@ function coverExitDurationMs(): number {
   return Number.isFinite(ms) ? ms : 0;
 }
 
-/** 닫힌 덮개. 축사유형·번호는 열린 패널 헤더와 같은 크기·왼쪽. 온도는 축사유형 크기. 경보·판정 문구는 두지 않는다. */
+/** 닫힌 덮개. 축사유형·번호는 열린 패널과 같은 크기. 정상은 적지 않고 주의·경고·두절만 번호 아래에 둔다. */
 export function ControllerEnvCover({
   reading,
   level,
@@ -87,9 +87,9 @@ export function ControllerEnvCover({
   const stallLabel = formatControllerHeaderStallUnit(reading);
   const ctrlNo = formatControllerNoLabel(reading.eqpmnNo);
   const ctrlLabel = `컨트롤러 ${ctrlNo}`;
-  const status = controllerEnvCoverStatus(reading, alarmSettings);
-  const displayLevel = status.stale ? reading.status === "offline" ? "offline" : "warn" : level;
-  const receivedLabel = controllerEnvCoverReceivedLabel(reading.receivedAt);
+  const notices = controllerEnvCoverNotices(reading, alarmSettings);
+  const noticeAria = notices.map((notice) => notice.label).join(", ");
+  const displayLevel = level;
   const reason = controllerEnvCoverReason(reading, alarmSettings);
   const onFill = displayLevel !== "offline";
   const applyQueue = useApplyQueueOptional();
@@ -135,7 +135,7 @@ export function ControllerEnvCover({
       type="button"
       data-farm-env-cover="on"
       data-cover-status-level={displayLevel}
-      aria-label={`${typeLabel} ${stallLabel} ${ctrlLabel}${reason.valueLabel ? `, ${reason.valueLabel}` : ""}${status.stale ? `, ${receivedLabel}` : ""}${applyAria ? `, 적용 ${applyAria}` : ""}. 상세 보기`}
+      aria-label={`${typeLabel} ${stallLabel} ${ctrlLabel}${reason.valueLabel ? `, ${reason.valueLabel}` : ""}${noticeAria ? `, ${noticeAria}` : ""}${applyAria ? `, 적용 ${applyAria}` : ""}. 상세 보기`}
       onClick={(e) => {
         e.stopPropagation();
         requestOpen();
@@ -213,20 +213,15 @@ export function ControllerEnvCover({
           ) : null}
         </span>
       </span>
+      {notices.length > 0 ? (
+        <span className="flex min-w-0 items-start gap-2">
+          <span className="size-2.5 shrink-0" aria-hidden />
+          <CoverNoticeLines notices={notices} onFill={onFill} />
+        </span>
+      ) : null}
       <span className="flex min-h-0 flex-1 items-center gap-2">
         <span className="size-2.5 shrink-0" aria-hidden />
         <span className="flex min-w-0 flex-1 flex-col justify-center gap-1">
-          {status.stale ? (
-            <span
-              className={cn(
-                dashboardTypography.envCoverMeta,
-                "font-medium text-current",
-              )}
-            >
-              {reason.valueLabel ? "마지막 측정 · " : ""}
-              {receivedLabel}
-            </span>
-          ) : null}
           <span
             data-cover-morph="value"
             className={cn(dashboardTypography.envCoverValue, "text-current")}
