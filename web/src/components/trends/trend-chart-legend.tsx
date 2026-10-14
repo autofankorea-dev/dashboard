@@ -19,6 +19,8 @@ import {
 } from "@/lib/farm/trend-chart-format";
 import type { UplinkCoverageBand } from "@/lib/farm/trend-uplink-coverage";
 import { cn } from "@/lib/utils";
+import { useProfileSheetPrefs } from "@/components/account/profile-sheet-prefs";
+import { sheetCopy, translateFixedLabel } from "@/lib/ui/sheet-copy";
 import type { PositionedCommandSettingHit } from "@/lib/farm/trend-chart-layout";
 
 /**
@@ -49,6 +51,7 @@ export function TrendChartLegend({
   coverageBands: UplinkCoverageBand[];
   eventLane: TrendEventLane | null;
 }) {
+  const locale = useProfileSheetPrefs().locale;
   if (!showLegend && !legendTrailing) return null;
   return (
   <div
@@ -78,7 +81,7 @@ export function TrendChartLegend({
         items.push({
           key: `s-${s.name}`,
           group: inferHoverMetricGroup(s.name),
-          label: s.name,
+          label: translateFixedLabel(locale, s.name),
           node: (
             <span className="inline-flex items-center gap-1 farm-chart-fs-legend text-muted-foreground">
               <span
@@ -93,9 +96,9 @@ export function TrendChartLegend({
                 }}
                 aria-hidden
               />
-              {s.name}
+              {translateFixedLabel(locale, s.name)}
               {(s.axis ?? "left") === "right" && usesRight ? (
-                <span className="opacity-60">(우)</span>
+                <span className="opacity-60">({sheetCopy(locale, "chart.right")})</span>
               ) : null}
             </span>
           ),

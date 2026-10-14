@@ -29,6 +29,7 @@ import { useAppNavigate } from "@/components/layout/use-app-navigate";
 import { accountMenuLayout } from "@/lib/ui/account-menu-layout";
 import { dashboardUi } from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
 
 const emptySubscribe = () => () => {};
 
@@ -92,6 +93,7 @@ function FarmSwitcherBody({
   onNavigated,
   inlineListClassName,
 }: FarmSwitcherProps) {
+  const t = useSheetCopy();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const hubPanels = useAdminHubPanelsOptional();
@@ -174,7 +176,7 @@ function FarmSwitcherBody({
   const activeId = activeFarmKey ? farmKeyId(activeFarmKey) : null;
   const triggerLabel =
     activeFarmKey === null
-      ? `전체 ${farmOptions.length}개 농장`
+      ? t("farm.all", { count: farmOptions.length })
       : farmShortLabel(activeFarmKey);
 
   const itemClass = (active: boolean) =>
@@ -196,7 +198,7 @@ function FarmSwitcherBody({
         )}
       >
         <span className="flex-1 font-medium">
-          전체 {farmOptions.length}개 농장
+          {t("farm.all", { count: farmOptions.length })}
         </span>
       </button>
       {orderedFarmOptions.map((farmKey) => {
@@ -272,7 +274,7 @@ function FarmSwitcherBody({
             aria-current={activeId === null ? "true" : undefined}
           >
             <span className={accountMenuLayout.farmMatrixLabel}>
-              전체 {farmOptions.length}개 농장
+              {t("farm.all", { count: farmOptions.length })}
             </span>
           </button>
           {orderedFarmOptions.map((farmKey) => {
@@ -407,7 +409,7 @@ function FarmSwitcherBody({
           className={itemClass(activeId === null)}
         >
           <span className="flex-1 font-medium">
-            전체 {farmOptions.length}개 농장
+            {t("farm.all", { count: farmOptions.length })}
           </span>
         </DropdownMenuItem>
         {orderedFarmOptions.map((farmKey) => {

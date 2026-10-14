@@ -26,7 +26,7 @@ test("account menu does not pass email or role into the sheet header", () => {
   assert.match(source, /<AccountMenuHub/);
   assert.doesNotMatch(source, /email=\{user\.email\}/);
   assert.doesNotMatch(source, /roleLabel=\{/);
-  assert.match(source, /로그아웃/);
+  assert.match(source, /header\.logout/);
   assert.match(source, /RecentActivityMenuSection/);
   assert.match(source, /AccountMenuSplitBody/);
 });

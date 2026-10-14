@@ -10,7 +10,6 @@ import {
   WifiOff,
 } from "lucide-react";
 import { AccountMenuPins } from "@/components/account/account-menu-pins";
-import { FarmAddressInput } from "@/components/settings/farm-address-input";
 import { FarmSwitcher } from "@/components/layout/farm-switcher";
 import { isValidFarmKey } from "@/lib/domain/barn-catalog";
 import { farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
@@ -29,6 +28,7 @@ import {
   CONTROLLER_STATUS_LABEL,
 } from "@/lib/ui/account-menu-layout";
 import { cn } from "@/lib/utils";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
 
 type Props = {
   farmLabel?: string | null;
@@ -69,6 +69,7 @@ function HubToneStrip({
     return summarizeAdminHubTones(rows);
   }, [farmOptions, farmSummaries]);
 
+  const t = useSheetCopy();
   if (tones.total === 0) return null;
 
   const items = [
@@ -82,7 +83,10 @@ function HubToneStrip({
   return (
     <ul className={accountMenuLayout.hubToneStrip} aria-label="전국 관제">
       {items.map(([key, count]) => {
-        const { Icon, label, className } = HUB_TONE_CHIP[key];
+        const chip = HUB_TONE_CHIP[key];
+        const Icon = chip.Icon;
+        const label = key === "location" ? t("farm.locationOnly") : chip.label;
+        const className = chip.className;
         return (
           <li key={key}>
             <span
@@ -121,6 +125,7 @@ export function AccountMenuSplitBody({
   onCloseMenu,
   onFarmSaved,
 }: Props) {
+  const tFarm = useSheetCopy();
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const showFarmSwitcher = farmOptions.length > 1;
 
@@ -201,7 +206,7 @@ export function AccountMenuSplitBody({
               aria-controls="account-menu-farm-matrix"
               onClick={() => setSwitcherOpen((v) => !v)}
             >
-              <span className="min-w-0 truncate">농장 선택</span>
+              <span className="min-w-0 truncate">{tFarm("header.farmSelect")}</span>
               <ChevronDown
                 className={cn(
                   "size-3 shrink-0 text-muted-foreground transition-transform",
@@ -240,30 +245,15 @@ export function AccountMenuSplitBody({
             variant="tile"
             overview={overview}
             alarms={alarms}
-            farmKey={farmKey}
+            farmKey={activeFarmKey ? farmKey : null}
+            addressLocation={activeFarmKey ? activeFarmLocation?.location : null}
+            canEditLocation={canEditLocation}
+            deferAddressFocus={deferAddressFocus}
+            onFarmSaved={onFarmSaved}
             onCloseMenu={onCloseMenu}
           />
         </div>
       </div>
-
-      {activeFarmLocation ? (
-        <div
-          className={accountMenuLayout.addressRow}
-          onPointerDown={(e) => e.stopPropagation()}
-          onKeyDown={(e) => e.stopPropagation()}
-        >
-          <FarmAddressInput
-            key={farmKeyId(activeFarmLocation.farmKey)}
-            farmKey={activeFarmLocation.farmKey}
-            location={activeFarmLocation.location}
-            disabled={!canEditLocation}
-            compact
-            saveOnly
-            deferFocusUntilTap={deferAddressFocus}
-            onSaved={onFarmSaved}
-          />
-        </div>
-      ) : null}
 
       {switcherOpen && showFarmSwitcher ? (
         <FarmSwitcher

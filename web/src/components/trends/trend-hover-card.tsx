@@ -1,6 +1,8 @@
 "use client";
 
 import { Fragment } from "react";
+import { useProfileSheetPrefs } from "@/components/account/profile-sheet-prefs";
+import { translateFixedLabel } from "@/lib/ui/sheet-copy";
 import {
   ControllerAffiliationMarks,
   ControllerNoMark,
@@ -263,6 +265,7 @@ export function TrendPointCardBody({
   hideTime?: boolean;
   onBreachEquipmentNavigate?: (target: TrendBreachNavTarget) => void;
 }) {
+  const locale = useProfileSheetPrefs().locale;
   const group = seriesKey ? inferHoverMetricGroup(seriesKey) : null;
   const tipSeries = series.filter(
     (s) => group == null || inferHoverMetricGroup(s.name) === group,
@@ -557,7 +560,7 @@ export function TrendPointCardBody({
                     style={{ backgroundColor: s.color }}
                   />
                   <span className="truncate text-muted-foreground">
-                    {s.name}
+                    {translateFixedLabel(locale, s.name)}
                   </span>
                 </span>
                 <span className="shrink-0 tabular-nums">{display}</span>

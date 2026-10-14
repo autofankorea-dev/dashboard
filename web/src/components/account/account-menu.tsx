@@ -28,6 +28,7 @@ import { dashboardControlFill, dashboardUi } from "@/lib/ui/dashboard-page-ui";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { useMobileLayout } from "@/lib/ui/use-mobile-layout";
 import { cn } from "@/lib/utils";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
 
 const emptySubscribe = () => () => {};
 
@@ -73,6 +74,7 @@ export function AccountMenu({
   const mobile = useMobileLayout();
   const [open, setOpen] = useState(false);
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  const t = useSheetCopy();
   const name = user.displayName?.trim() || user.email || "사용자";
 
   const activeFarmLocation = useMemo(() => {
@@ -151,7 +153,7 @@ export function AccountMenu({
         void signOut();
       }}
     >
-      로그아웃
+      {t("header.logout")}
     </button>
   );
 

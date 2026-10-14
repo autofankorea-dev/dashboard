@@ -14,10 +14,8 @@ import {
   ChevronUp,
   FileText,
   Monitor,
-  Moon,
   ShieldCheck,
   Smartphone,
-  Sun,
   type LucideIcon,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
@@ -59,12 +57,7 @@ import {
   type ViewportPreviewMode,
 } from "@/lib/ui/viewport-preview-store";
 import { useHydrationSafeDashboardCompact } from "@/components/layout/dashboard-viewport-context";
-import {
-  getDashboardTheme,
-  subscribeDashboardTheme,
-  syncDashboardThemeFromDom,
-  toggleDashboardTheme,
-} from "@/lib/ui/dashboard-theme";
+import { syncDashboardThemeFromDom } from "@/lib/ui/dashboard-theme";
 import {
   DEFAULT_PROFILE_PINNED_TOOLS,
   type ProfilePinToolId,
@@ -296,12 +289,6 @@ export function HeaderToolsMenu({
   );
   const pinDnDActive = pinEditMode && accountMenuOpen && !isHub;
 
-  const themeIsDark = useSyncExternalStore(
-    subscribeDashboardTheme,
-    () => getDashboardTheme() === "dark",
-    () => false,
-  );
-
   useEffect(() => {
     syncDashboardThemeFromDom();
   }, []);
@@ -338,8 +325,7 @@ export function HeaderToolsMenu({
   const iBell = 0;
   const iOps = 1;
   const iReport = 2;
-  const iTheme = 3;
-  const iViewport = 4;
+  const iViewport = 3;
 
   const toggleDetail = (id: DetailId) => {
     setDetail((prev) => (prev === id ? null : id));
@@ -354,10 +340,6 @@ export function HeaderToolsMenu({
     setAlarmListOpen(false);
   };
 
-  const toggleTheme = () => {
-    toggleDashboardTheme();
-  };
-
   const toolbarIcons = (opts: {
     vertical: boolean;
     /** hub radial — 래퍼 없이 노드 배열만 */
@@ -366,17 +348,6 @@ export function HeaderToolsMenu({
     group?: "design" | "function" | "alarm" | "all";
   }): ReactNode => {
     const { vertical, asNodes, group = "all" } = opts;
-    const themeBtn = (
-      <ToolsIconBtn
-        Icon={themeIsDark ? Sun : Moon}
-        data-tour-id="header-theme"
-        data-theme-ready={mounted || undefined}
-        aria-label={themeIsDark ? "라이트 모드" : "다크 모드"}
-        title={themeIsDark ? "라이트 모드" : "다크 모드"}
-        onClick={toggleTheme}
-      />
-    );
-
     const viewportBtn = (
       <ToolsIconBtn
         Icon={ViewportIcon}
@@ -483,48 +454,25 @@ export function HeaderToolsMenu({
           {viewportBtn}
         </ToolsIconWrap>
       ) : null;
-    const themeVis = headerPinVisibility("theme", pinnedTools, pinDnDActive);
-    const themeEl =
-      themeVis === "hidden" ? null : themeVis === "drop" ? (
-        <ToolsIconWrap key="theme" toolsI={iTheme}>
-          <ProfilePinHeaderDropZone
-            visible
-            onUnpinTool={unpinProfileTool}
-          />
-        </ToolsIconWrap>
-      ) : themeVis === "draggable" ? (
-        <ToolsIconWrap key="theme" toolsI={iTheme}>
-          <ProfilePinToolChip
-            toolId="theme"
-            draggable
-            data-tour-id="header-theme"
-            onClick={toggleTheme}
-          />
-        </ToolsIconWrap>
-      ) : (
-        <ToolsIconWrap key="theme" toolsI={iTheme}>
-          {themeBtn}
-        </ToolsIconWrap>
-      );
-    /* hub: 그룹별 · header: 이상상황 → 운영 → 리포트 → 테마 → (md+) 뷰포트 */
+    /* hub: 그룹별 · header: 이상상황 → 운영 → 리포트 → (md+) 뷰포트. 테마는 계정 설정 카드. */
     const hubItems =
       group === "design"
-        ? [themeEl, viewport]
+        ? [viewport]
         : group === "function"
           ? [report, ops]
           : group === "alarm"
             ? [bell]
             : hubPattern === "design"
-              ? [themeEl, viewport]
+              ? [viewport]
               : hubPattern === "mode"
                 ? [ops]
                 : hubPattern === "all"
-                  ? [themeEl, viewport, report, ops, bell]
+                  ? [viewport, report, ops, bell]
                   : [report, bell];
     const items = (
       isHub
         ? hubItems
-        : [bell, ops, report, themeEl, viewport]
+        : [bell, ops, report, viewport]
     ).filter(Boolean);
 
     if (asNodes) return items;

@@ -10,7 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useAppNavigate } from "@/components/layout/use-app-navigate";
 import type { AlarmRow } from "@/lib/domain/alarms";
-import { alarmChartHref, isModuleAlarmRow, isSituationLiveStateRow, situationAlarmMetaLine } from "@/lib/domain/alarms";
+import { alarmChartHref, alarmControlHref, isModuleAlarmRow, isSituationLiveStateRow, situationAlarmMetaLine } from "@/lib/domain/alarms";
 import { formatKst } from "@/lib/datetime/kst";
 import type { FarmOverview } from "@/lib/data/iot";
 import {
@@ -97,8 +97,27 @@ function AlarmPanelListItem({
             </span>
           )}
         </button>
-        {isModuleAlarmRow(alarm) ? (
-          <div className="mt-1 flex justify-end">
+        <div className="mt-1 flex justify-end gap-1">
+          <button
+            type="button"
+            disabled={exiting}
+            className={cn(
+              "shrink-0 rounded-md border border-border/70 bg-background px-2 py-0.5 text-[0.65rem] font-medium text-foreground hover:bg-muted/80 disabled:opacity-60",
+              motionClass.microInteractive,
+            )}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onNavigate?.();
+              const place = [alarm.stallNo, alarm.eqpmnNo].filter(Boolean).join(" ");
+              navigate(alarmControlHref(alarm), {
+                message: place ? `${place} 패널로 이동 중…` : "패널로 이동 중…",
+              });
+            }}
+          >
+            패널로 이동
+          </button>
+          {isModuleAlarmRow(alarm) ? (
             <button
               type="button"
               disabled={exiting}
@@ -115,8 +134,8 @@ function AlarmPanelListItem({
             >
               확인
             </button>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </div>
     </li>
   );
