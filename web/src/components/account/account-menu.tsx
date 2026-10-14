@@ -174,12 +174,6 @@ export function AccountMenu({
 
       {mounted ? (
         <AccountMenuSheet open={open} onOpenChange={handleOpenChange}>
-        <AccountMenuHub
-          name={name}
-          avatarUrl={user.avatarUrl}
-          trailing={logoutAction}
-        />
-
         <AccountMenuSplitBody
           farmLabel={identityFarmLabel}
           activeFarmKey={activeFarmKey}
@@ -194,15 +188,24 @@ export function AccountMenu({
           deferAddressFocus={mobile && open}
           onCloseMenu={() => handleOpenChange(false)}
           onFarmSaved={() => router.refresh()}
-        />
-
-        <RecentActivityMenuSection
-          receipts={receipts}
-          farmKeyFilter={activeFarmKey}
-          excludeActiveFarm
-          max={6}
-          variant="chips"
-          onItemNavigate={navigateToFarm}
+          header={(identity) => (
+            <AccountMenuHub
+              name={name}
+              avatarUrl={user.avatarUrl}
+              identity={identity}
+              trailing={logoutAction}
+            />
+          )}
+          beforeTools={
+            <RecentActivityMenuSection
+              receipts={receipts}
+              farmKeyFilter={activeFarmKey}
+              excludeActiveFarm
+              max={6}
+              variant="chips"
+              onItemNavigate={navigateToFarm}
+            />
+          }
         />
       </AccountMenuSheet>
       ) : null}

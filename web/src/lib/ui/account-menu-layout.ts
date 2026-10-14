@@ -32,7 +32,9 @@ export const accountMenuLayout = {
   ),
   sheetInner: "account-menu-sheet-inner w-full min-w-0",
   sheetHeader:
-    "flex min-w-0 items-center gap-2 border-b border-border/60 px-3 py-2 max-md:pt-safe md:gap-2.5 md:px-4 md:py-2.5",
+    "flex min-w-0 items-center gap-2 border-b border-border/60 px-3 py-2 max-md:pt-safe md:gap-3 md:px-4 md:py-2.5",
+  sheetIdentity: "flex min-w-0 flex-1 items-center gap-2",
+  sheetFarmCluster: "flex w-full min-w-0 items-center gap-2 overflow-hidden",
   sheetHeaderActions: "flex shrink-0 items-center gap-2",
   headerLogout: cn(
     "inline-flex shrink-0 items-center rounded-md px-2 py-1 text-[10px] font-medium text-destructive hover:bg-muted/60 hover:underline",
@@ -43,20 +45,21 @@ export const accountMenuLayout = {
     "size-8 shrink-0 text-sm md:size-8 md:text-sm",
   ),
   hubName:
-    "truncate font-semibold leading-snug text-[length:var(--density-section)] md:text-[length:var(--density-section-md)]",
+    "max-w-[9rem] shrink-0 truncate font-semibold leading-snug text-[length:var(--density-section)] sm:max-w-[14rem] md:text-[length:var(--density-section-md)]",
   hubMeta: inlineMeta,
   /** @deprecated Two-Zone Split — zoneContext 사용 */
   sheetMetaGrid:
     "grid grid-cols-2 gap-x-4 gap-y-1 border-b border-border/60 bg-muted/40 px-4 py-2.5 text-[length:var(--density-meta)] leading-snug text-foreground md:text-[length:var(--density-meta-md)]",
-  splitBody:
-    "grid min-w-0 grid-cols-1 gap-0 border-b border-border/60 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]",
+  splitBody: "flex min-w-0 flex-col",
   /** 펼친 도구 카드 높이만큼 행이 미리 잡힘. 표시명·상태는 블록으로 가운데 */
   zoneContext:
-    "flex min-w-0 flex-col justify-center border-b border-border/60 bg-muted/40 px-3 py-2.5 max-md:pt-safe md:border-b-0 md:border-r md:px-4 md:py-3",
+    "flex min-w-0 flex-col justify-center px-0 py-0",
   zoneContextStack: "flex min-w-0 flex-col gap-1.5",
-  zoneAction: "flex min-w-0 flex-col gap-2 px-3 py-2.5 md:px-4 md:py-3",
-  /** 알람·리포트 휴면 카드와 같은 높이 — 접혀 있어도 행이 안 흔들림 */
-  toolsCardWell: "min-h-14 w-full min-w-0",
+  zoneAction: "flex min-w-0 flex-col gap-2",
+  sheetTools:
+    "flex w-full min-w-0 flex-col gap-2 border-t border-border/60 px-3 py-2.5 md:px-4 md:py-3",
+  /** 아이콘 행과 같은 좌우 폭. 열린 카드만 높이를 쓴다. */
+  toolsCardWell: "w-full min-w-0",
   addressRow:
     "min-w-0 border-b border-border/60 px-3 py-2.5 md:px-4",
   contextFarm:
