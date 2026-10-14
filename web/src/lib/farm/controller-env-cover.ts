@@ -201,7 +201,10 @@ function metricNotice(
   value: number | null | undefined,
   tint: RoomEnvTint | null | undefined,
 ): CoverNotice | null {
-  if (value == null || !Number.isFinite(value)) return coverNotice(kind, "down");
+  if (value == null || !Number.isFinite(value)) {
+    if (kind === "humidity") return null;
+    return coverNotice(kind, "down");
+  }
   if (tint === "danger") return coverNotice(kind, "warning");
   if (tint === "warn") return coverNotice(kind, "caution");
   return null;
@@ -213,6 +216,7 @@ export function controllerEnvCoverNotices(
   alarmSettings?: AlarmSettings,
   now: number = Date.now(),
 ): CoverNotice[] {
+  if (controllerEnvCoverLevel(reading, alarmSettings) === "ok") return [];
   const notices: CoverNotice[] = [];
   if (reading.status === "offline") {
     notices.push(coverNotice("comm", "down"));
