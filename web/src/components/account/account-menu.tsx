@@ -175,8 +175,6 @@ export function AccountMenu({
         <AccountMenuHub
           name={name}
           avatarUrl={user.avatarUrl}
-          email={user.email}
-          roleLabel={user.role ? roleLabel[user.role] : null}
           trailing={logoutAction}
         />
 
