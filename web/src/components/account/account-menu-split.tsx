@@ -247,6 +247,7 @@ export function AccountMenuSplitBody({
             alarms={alarms}
             farmKey={activeFarmKey ? farmKey : null}
             addressLocation={activeFarmKey ? activeFarmLocation?.location : null}
+            farmLabel={farmLabel}
             canEditLocation={canEditLocation}
             deferAddressFocus={deferAddressFocus}
             onFarmSaved={onFarmSaved}

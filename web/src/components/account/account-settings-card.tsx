@@ -17,6 +17,13 @@ import {
   useSheetCopy,
   useUpdateProfileSheetPrefs,
 } from "@/components/account/profile-sheet-prefs";
+import {
+  SettingsAddressExample,
+  SettingsCoverExample,
+  SettingsFieldExample,
+  SettingsLanguageExample,
+  SettingsMotorExample,
+} from "@/components/account/account-settings-examples";
 
 type Section = "screen" | "motor" | "cover" | "language" | "address";
 
@@ -29,12 +36,14 @@ function addressPreview(text: string, emptyLabel: string) {
 export function AccountSettingsCard({
   farmKey,
   location,
+  farmLabel,
   canEditLocation,
   deferAddressFocus,
   onSaved,
 }: {
   farmKey: FarmKey | null;
   location: FarmLocationRow | null | undefined;
+  farmLabel?: string | null;
   canEditLocation: boolean;
   deferAddressFocus?: boolean;
   onSaved?: () => void;
@@ -100,54 +109,72 @@ export function AccountSettingsCard({
             <span className="truncate text-muted-foreground">{row.value}</span>
           </button>
           {open === row.id ? (
-            <div className="px-1 py-1.5">
+            <div className="flex flex-col gap-1.5 px-1 py-1.5">
               {row.id === "screen" ? (
-                <ChoiceRow
-                  options={[
-                    { id: "light", label: t("settings.light"), active: !dark },
-                    { id: "dark", label: t("settings.dark"), active: dark },
-                  ]}
-                  onPick={(id) => setDashboardTheme(id === "dark" ? "dark" : "light")}
-                />
+                <>
+                  <ChoiceRow
+                    options={[
+                      { id: "light", label: t("settings.light"), active: !dark },
+                      { id: "dark", label: t("settings.dark"), active: dark },
+                    ]}
+                    onPick={(id) => setDashboardTheme(id === "dark" ? "dark" : "light")}
+                  />
+                  <SettingsFieldExample />
+                </>
               ) : null}
               {row.id === "motor" ? (
-                <ChoiceRow
-                  options={[
-                    { id: "number", label: t("settings.number"), active: prefs.motorDisplay === "number" },
-                    { id: "bar", label: t("settings.bar"), active: prefs.motorDisplay === "bar" },
-                  ]}
-                  onPick={(id) => void update({ motorDisplay: id === "bar" ? "bar" : "number" })}
-                />
+                <>
+                  <ChoiceRow
+                    options={[
+                      { id: "number", label: t("settings.number"), active: prefs.motorDisplay === "number" },
+                      { id: "bar", label: t("settings.bar"), active: prefs.motorDisplay === "bar" },
+                    ]}
+                    onPick={(id) => void update({ motorDisplay: id === "bar" ? "bar" : "number" })}
+                  />
+                  <SettingsMotorExample mode={prefs.motorDisplay} />
+                </>
               ) : null}
               {row.id === "cover" ? (
-                <ChoiceRow
-                  options={[
-                    { id: "on", label: t("settings.coverOn"), active: prefs.envCover },
-                    { id: "off", label: t("settings.coverOff"), active: !prefs.envCover },
-                  ]}
-                  onPick={(id) => void update({ envCover: id === "on" })}
-                />
+                <>
+                  <ChoiceRow
+                    options={[
+                      { id: "on", label: t("settings.coverOn"), active: prefs.envCover },
+                      { id: "off", label: t("settings.coverOff"), active: !prefs.envCover },
+                    ]}
+                    onPick={(id) => void update({ envCover: id === "on" })}
+                  />
+                  <SettingsCoverExample on={prefs.envCover} />
+                </>
               ) : null}
               {row.id === "language" ? (
-                <ChoiceRow
-                  options={[
-                    { id: "ko", label: t("settings.korean"), active: prefs.locale === "ko" },
-                    { id: "en", label: t("settings.english"), active: prefs.locale === "en" },
-                  ]}
-                  onPick={(id) => void update({ locale: id === "en" ? "en" : "ko" })}
-                />
+                <>
+                  <ChoiceRow
+                    options={[
+                      { id: "ko", label: t("settings.korean"), active: prefs.locale === "ko" },
+                      { id: "en", label: t("settings.english"), active: prefs.locale === "en" },
+                    ]}
+                    onPick={(id) => void update({ locale: id === "en" ? "en" : "ko" })}
+                  />
+                  <SettingsLanguageExample />
+                </>
               ) : null}
               {row.id === "address" && farmKey ? (
-                <FarmAddressInput
-                  key={`${farmKey.lsindRegistNo}-${farmKey.itemCode}`}
-                  farmKey={farmKey}
-                  location={location}
-                  disabled={!canEditLocation}
-                  compact
-                  saveOnly
-                  deferFocusUntilTap={deferAddressFocus}
-                  onSaved={onSaved}
-                />
+                <>
+                  <FarmAddressInput
+                    key={`${farmKey.lsindRegistNo}-${farmKey.itemCode}`}
+                    farmKey={farmKey}
+                    location={location}
+                    disabled={!canEditLocation}
+                    compact
+                    saveOnly
+                    deferFocusUntilTap={deferAddressFocus}
+                    onSaved={onSaved}
+                  />
+                  <SettingsAddressExample
+                    farmName={farmLabel || location?.farmName || t("header.farmSelect")}
+                    address={addressText}
+                  />
+                </>
               ) : null}
             </div>
           ) : null}

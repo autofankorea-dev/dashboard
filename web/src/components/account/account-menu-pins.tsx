@@ -45,6 +45,7 @@ type Props = {
   alarms?: AlarmRow[];
   farmKey?: FarmKey | null;
   addressLocation?: FarmLocationRow | null;
+  farmLabel?: string | null;
   canEditLocation?: boolean;
   deferAddressFocus?: boolean;
   onFarmSaved?: () => void;
@@ -59,6 +60,7 @@ export function AccountMenuPins({
   alarms = [],
   farmKey = null,
   addressLocation = null,
+  farmLabel = null,
   canEditLocation = false,
   deferAddressFocus = false,
   onFarmSaved,
@@ -197,6 +199,7 @@ export function AccountMenuPins({
             <AccountSettingsCard
               farmKey={farmKey}
               location={addressLocation}
+              farmLabel={farmLabel}
               canEditLocation={canEditLocation}
               deferAddressFocus={deferAddressFocus}
               onSaved={onFarmSaved}
