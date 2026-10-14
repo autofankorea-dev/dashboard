@@ -10,6 +10,7 @@ import {
   publishShellAlarms,
   removeShellAlarm,
 } from "@/lib/navigation/shell-live-alarms-store";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { cn } from "@/lib/utils";
 import { motionClass } from "@/lib/ui/motion-classes";
 
@@ -25,6 +26,7 @@ type Props = {
  * 컨트롤러 명령·업링크 clear와 무관하다.
  */
 export function ModuleAlarmAckButton({ alarm, list, className }: Props) {
+  const t = useSheetCopy();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -58,9 +60,9 @@ export function ModuleAlarmAckButton({ alarm, list, className }: Props) {
           motionClass.microInteractive,
           className,
         )}
-        aria-label={`${alarm.alarmType} 확인`}
+        aria-label={t("account.ackNamed", { type: alarm.alarmType })}
       >
-        {pending ? "처리 중…" : "확인"}
+        {pending ? t("account.working") : t("account.ack")}
       </button>
       {error ? (
         <span className="max-w-[10rem] text-right text-[0.6rem] text-destructive">

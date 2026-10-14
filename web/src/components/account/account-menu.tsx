@@ -34,12 +34,6 @@ const emptySubscribe = () => () => {};
 
 type Role = "admin" | "operator" | "viewer";
 
-const roleLabel: Record<Role, string> = {
-  admin: "관리자",
-  operator: "운영자",
-  viewer: "뷰어",
-};
-
 type Props = {
   user: {
     displayName: string | null;
@@ -75,7 +69,7 @@ export function AccountMenu({
   const [open, setOpen] = useState(false);
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const t = useSheetCopy();
-  const name = user.displayName?.trim() || user.email || "사용자";
+  const name = user.displayName?.trim() || user.email || t("account.user");
 
   const activeFarmLocation = useMemo(() => {
     if (activeFarmKey) {
@@ -97,12 +91,12 @@ export function AccountMenu({
       const query = params.toString();
       const href = query ? `/farm?${query}` : "/farm";
       if (pathname === "/farm") {
-        appNavigate(href, { message: "농장으로 이동 중…" });
+        appNavigate(href, { message: t("nav.farm") });
         return;
       }
       router.push(href);
     },
-    [appNavigate, pathname, router],
+    [appNavigate, pathname, router, t],
   );
 
   const handleOpenChange = useCallback((next: boolean) => {
@@ -124,7 +118,13 @@ export function AccountMenu({
           {name}
         </p>
         <p className={dashboardUi.headerAccountRole} suppressHydrationWarning>
-          {user.role ? roleLabel[user.role] : "권한 없음"}
+          {user.role === "admin"
+            ? t("account.admin")
+            : user.role === "operator"
+              ? t("account.operator")
+              : user.role === "viewer"
+                ? t("account.viewer")
+                : t("account.noRole")}
         </p>
       </div>
       <ChevronDown
@@ -163,7 +163,7 @@ export function AccountMenu({
         type="button"
         className={triggerClassName}
         data-tour-id="header-account"
-        aria-label="계정 메뉴"
+        aria-label={t("account.menu")}
         aria-expanded={open}
         aria-controls="account-menu-sheet"
         onClick={() => handleOpenChange(!open)}

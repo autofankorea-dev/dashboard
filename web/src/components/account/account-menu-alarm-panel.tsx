@@ -22,19 +22,22 @@ import {
 } from "@/lib/navigation/shell-live-alarms-store";
 import { dashboardUi } from "@/lib/ui/dashboard-page-ui";
 import { motionClass } from "@/lib/ui/motion-classes";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
+import type { SheetCopyKey } from "@/lib/ui/sheet-copy";
 import { cn } from "@/lib/utils";
 
 const EXIT_MS = 150;
 
-function connectivityMessage(overview?: FarmOverview): string {
+function connectivityMessage(
+  overview: FarmOverview | undefined,
+  copy: (key: SheetCopyKey, vars?: Record<string, string | number>) => string,
+): string {
   const registered = overview?.controllerCount;
-  if (registered === undefined) {
-    return "컨트롤러 연결 정보를 불러올 수 없습니다.";
-  }
+  if (registered === undefined) return copy("tools.connUnknown");
   const offline = overview?.offlineCount ?? 0;
   const connected =
     overview?.connectedCount ?? Math.max(registered - offline, 0);
-  return `${registered}개 중 ${connected}개 연결`;
+  return copy("tools.connCount", { registered, connected });
 }
 
 type AlarmPanelListItemProps = {
@@ -53,6 +56,7 @@ function AlarmPanelListItem({
   onAckFinish,
 }: AlarmPanelListItemProps) {
   const { navigate } = useAppNavigate();
+  const t = useSheetCopy();
 
   return (
     <li
@@ -76,16 +80,14 @@ function AlarmPanelListItem({
           onClick={() => {
             onNavigate?.();
             navigate(alarmChartHref(alarm), {
-              message: isModuleAlarmRow(alarm)
-                ? "농장 차트로 이동 중…"
-                : "그래프로 이동 중…",
+              message: isModuleAlarmRow(alarm) ? t("nav.chartFarm") : t("nav.chart"),
             });
           }}
         >
           <span className="flex items-center justify-between gap-2 text-xs font-medium">
             <span className="truncate">{alarm.alarmType}</span>
             <span className="shrink-0 text-[0.65rem] text-muted-foreground">
-              {alarm.severity === "critical" ? "심각" : "주의"}
+              {alarm.severity === "critical" ? t("tools.critical") : t("cover.caution")}
             </span>
           </span>
           <span className="block truncate text-[0.65rem] text-muted-foreground">
@@ -111,11 +113,11 @@ function AlarmPanelListItem({
               onNavigate?.();
               const place = [alarm.stallNo, alarm.eqpmnNo].filter(Boolean).join(" ");
               navigate(alarmControlHref(alarm), {
-                message: place ? `${place} 패널로 이동 중…` : "패널로 이동 중…",
+                message: place ? t("nav.panelPlace", { place }) : t("alarm.toPanelPending"),
               });
             }}
           >
-            패널로 이동
+            {t("alarm.toPanel")}
           </button>
           {isModuleAlarmRow(alarm) ? (
             <button
@@ -130,9 +132,9 @@ function AlarmPanelListItem({
                 "shrink-0 rounded-md border border-border/70 bg-background px-2 py-0.5 text-[0.65rem] font-medium text-foreground hover:bg-muted/80 disabled:opacity-60",
                 motionClass.microInteractive,
               )}
-              aria-label={`${alarm.alarmType} 확인`}
+              aria-label={t("account.ackNamed", { type: alarm.alarmType })}
             >
-              확인
+              {t("account.ack")}
             </button>
           ) : null}
         </div>
@@ -157,6 +159,7 @@ export function AccountMenuAlarmPanel({
   defaultListOpen = true,
   embedded = false,
 }: Props) {
+  const t = useSheetCopy();
   const liveAlarms = useShellAlarms(alarms);
   const activeAlarms = liveAlarms.filter((a) => a.status === "active");
   const moduleAlarms = activeAlarms.filter(isModuleAlarmRow);
@@ -164,7 +167,7 @@ export function AccountMenuAlarmPanel({
   const alarmList = activeAlarms.slice(0, 12);
   const offline = overview?.offlineCount ?? 0;
   const alert = alarmCount > 0 || offline > 0;
-  const connTitle = connectivityMessage(overview);
+  const connTitle = connectivityMessage(overview, t);
   const [alarmListOpen, setAlarmListOpen] = useState(defaultListOpen);
   const [exitingIds, setExitingIds] = useState<Set<string>>(() => new Set());
   const [bulkPending, startBulkTransition] = useTransition();
@@ -291,13 +294,13 @@ export function AccountMenuAlarmPanel({
       </span>
       <div className={dashboardUi.headerToolsCardBody}>
         <div className={dashboardUi.headerToolsCardTitle}>
-          <span>이상상황</span>
+          <span>{t("tools.alarm")}</span>
           {alarmCount > 0 ? (
             <Badge
               variant="destructive"
               className="ml-auto h-5 min-h-0 px-1.5 text-[0.65rem]"
             >
-              {alarmCount}건
+              {t("tools.count", { count: alarmCount })}
             </Badge>
           ) : null}
         </div>
@@ -308,8 +311,8 @@ export function AccountMenuAlarmPanel({
             offline > 0 && "font-medium text-[var(--status-danger-on-canvas)]",
           )}
         >
-          {offline > 0 ? `${connTitle} · 오프라인 ${offline}` : connTitle}
-          {alarmCount > 0 ? null : " · 활성 이상상황 없음"}
+          {offline > 0 ? `${connTitle} · ${t("tools.offlineCount", { count: offline })}` : connTitle}
+          {alarmCount > 0 ? null : ` · ${t("tools.noActive")}`}
         </p>
         {alarmCount > 0 ? (
           <div className="mt-1.5 flex gap-1.5">
@@ -321,12 +324,12 @@ export function AccountMenuAlarmPanel({
             >
               {alarmListOpen ? (
                 <>
-                  접기
+                  {t("tools.collapse")}
                   <ChevronUp className="size-3.5 shrink-0" aria-hidden />
                 </>
               ) : (
                 <>
-                  상세 보기
+                  {t("cover.detail")}
                   <ChevronDown className="size-3.5 shrink-0" aria-hidden />
                 </>
               )}
@@ -341,7 +344,7 @@ export function AccountMenuAlarmPanel({
                   motionClass.microInteractive,
                 )}
               >
-                {bulkPending ? "처리 중…" : "일괄 확인"}
+                {bulkPending ? t("account.working") : t("account.ackAll")}
               </button>
             ) : null}
           </div>
@@ -352,7 +355,7 @@ export function AccountMenuAlarmPanel({
         {alarmListOpen && visibleList.length > 0 ? (
           <ul
             className={dashboardUi.headerToolsCardList}
-            aria-label="이상상황 목록"
+            aria-label={t("tools.alarmList")}
           >
             {visibleList.map((a) => (
               <AlarmPanelListItem
@@ -366,7 +369,7 @@ export function AccountMenuAlarmPanel({
             ))}
             {alarmCount > alarmList.length ? (
               <li className="px-1 py-1 text-[0.65rem] text-muted-foreground">
-                외 {alarmCount - alarmList.length}건 — 행을 눌러 차트로 이동합니다
+                {t("tools.more", { count: alarmCount - alarmList.length })}
               </li>
             ) : null}
           </ul>

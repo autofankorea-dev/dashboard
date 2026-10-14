@@ -1,5 +1,8 @@
+"use client";
+
 import type { Ref } from "react";
 import { LineChart, List, Map } from "lucide-react";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { StallUnitIcon } from "@/components/icons/stall-unit-icon";
 import type { FarmHubView } from "@/lib/farm/farm-view-url";
 import {
@@ -33,6 +36,7 @@ export function FarmViewToggle({
   view: FarmHubView;
   onView: (view: FarmHubView) => void;
 }) {
+  const t = useSheetCopy();
   if (hideViewTabs) return null;
 
   const tabNavClass =
@@ -69,7 +73,7 @@ export function FarmViewToggle({
               : dashboardUi.body,
       )}
       role="tablist"
-      aria-label="농장 보기"
+      aria-label={t("view.tabs")}
       data-tour-id="view-toggle"
     >
       <span
@@ -98,7 +102,7 @@ export function FarmViewToggle({
             strokeWidth={dashboardUi.iconStroke}
             aria-hidden
           />
-          필드
+          {t("view.field")}
         </button>
       ) : (
         <>
@@ -114,7 +118,7 @@ export function FarmViewToggle({
               strokeWidth={dashboardUi.iconStroke}
               aria-hidden
             />
-            그리드
+            {t("view.grid")}
           </button>
           <button
             type="button"
@@ -128,7 +132,7 @@ export function FarmViewToggle({
               strokeWidth={dashboardUi.iconStroke}
               aria-hidden
             />
-            목록
+            {t("view.list")}
           </button>
         </>
       )}
@@ -144,7 +148,7 @@ export function FarmViewToggle({
           strokeWidth={dashboardUi.iconStroke}
           aria-hidden
         />
-        차트
+        {t("view.chart")}
       </button>
     </div>
   );

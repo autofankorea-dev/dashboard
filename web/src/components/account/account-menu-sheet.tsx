@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { useHydrationSafeDashboardCompact } from "@/components/layout/dashboard-viewport-context";
 import { ACCOUNT_MENU_SHEET_Z, accountMenuLayout } from "@/lib/ui/account-menu-layout";
 import { cn } from "@/lib/utils";
@@ -102,6 +103,7 @@ function useSheetLayout(compact: boolean, enabled: boolean) {
 }
 
 export function AccountMenuSheet({ open, onOpenChange, children }: Props) {
+  const t = useSheetCopy();
   const compact = useHydrationSafeDashboardCompact();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const [sheet, setSheet] = useState({
@@ -205,7 +207,7 @@ export function AccountMenuSheet({ open, onOpenChange, children }: Props) {
         style={{ top: headerBottom, zIndex: ACCOUNT_MENU_SHEET_Z - 1 }}
         data-state={motionState}
         data-account-menu-sheet-backdrop
-        aria-label="계정 메뉴 닫기"
+        aria-label={t("account.close")}
         onClick={() => onOpenChange(false)}
         onAnimationEnd={handleBackdropAnimationEnd}
       />

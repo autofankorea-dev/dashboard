@@ -1,8 +1,14 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "vitest";
 import { formatStallTypeLabel, formatStallTypeLabelLocalized, STALL_TYPE_NAMES, STALL_TYPE_NAMES_EN } from "@/lib/domain/stall-type";
+import { resolveNavMessage } from "@/lib/navigation/nav-messages";
 import { parseProfileSheetPrefs } from "@/lib/ui/profile-sheet-prefs";
-import { SHEET_COPY, SHEET_COPY_KEYS, sheetCopy } from "@/lib/ui/sheet-copy";
+import { SHEET_COPY, SHEET_COPY_KEYS, sheetCopy, type SheetCopyKey } from "@/lib/ui/sheet-copy";
+
+function readSrc(relFromUi: string): string {
+  return readFileSync(new URL(relFromUi, import.meta.url), "utf8");
+}
 
 const REQUIRED = [
   "header.logout",
@@ -50,6 +56,187 @@ test("sheet copy keeps the six surfaces' keys in both languages", () => {
   for (const code of Object.keys(STALL_TYPE_NAMES)) {
     assert.ok(STALL_TYPE_NAMES_EN[code], code);
   }
+});
+
+const REST_REQUIRED = [
+  "tools.alarm",
+  "tools.alarmCount",
+  "tools.count",
+  "tools.ops",
+  "tools.opsExit",
+  "tools.opsToMonitor",
+  "tools.monitorToOps",
+  "tools.report",
+  "tools.reportPdf",
+  "tools.reportNeedFarm",
+  "tools.reportNeedFarmHint",
+  "tools.reportAfterFarm",
+  "tools.reportAfterFarmShort",
+  "tools.pdf",
+  "tools.autoSuffix",
+  "tools.viewportMobileToPc",
+  "tools.viewportPcToMobile",
+  "tools.connUnknown",
+  "tools.connCount",
+  "tools.offlineCount",
+  "tools.collapse",
+  "tools.noActive",
+  "tools.alarmList",
+  "tools.critical",
+  "tools.more",
+  "tools.pinnedHint",
+  "tools.pinnedShort",
+  "tools.toolbar",
+  "tools.close",
+  "tools.design",
+  "tools.function",
+  "tools.groupAlarm",
+  "tools.theme",
+  "tools.help",
+  "view.tabs",
+  "view.field",
+  "view.chart",
+  "view.grid",
+  "view.list",
+  "field.showAll",
+  "field.showAllAria",
+  "field.show",
+  "field.hide",
+  "field.waiting",
+  "account.menu",
+  "account.close",
+  "account.user",
+  "account.noRole",
+  "account.admin",
+  "account.operator",
+  "account.viewer",
+  "account.national",
+  "account.alert",
+  "account.offline",
+  "account.recent",
+  "account.recentEmpty",
+  "account.openFarm",
+  "account.ack",
+  "account.working",
+  "account.ackAll",
+  "account.ackNamed",
+  "account.toolsMenu",
+  "account.editDone",
+  "account.editTools",
+  "account.returnHeader",
+  "account.tools",
+  "account.lightMode",
+  "account.darkMode",
+  "account.returnTool",
+  "account.pinHint",
+  "nav.page",
+  "nav.controllers",
+  "nav.monitoring",
+  "nav.pending",
+  "nav.opsUsers",
+  "nav.opsFarms",
+  "nav.opsCommands",
+  "nav.opsPresets",
+  "nav.opsSystem",
+  "nav.health",
+  "nav.users",
+  "nav.admin",
+  "nav.ops",
+  "nav.farm",
+  "nav.farmSwitch",
+  "nav.switching",
+  "nav.farmSwitchAria",
+  "nav.chartFarm",
+  "nav.chart",
+  "nav.panelPlace",
+  "nav.refresh",
+  "nav.refreshLabel",
+  "nav.home",
+  "nav.refreshShort",
+  "nav.controller",
+  "report.building",
+  "report.collecting",
+  "report.composing",
+  "report.done",
+  "report.failed",
+  "report.noBarns",
+  "report.noFarm",
+] as const satisfies readonly SheetCopyKey[];
+
+test("sheet copy keeps the remaining dashboard keys in both languages", () => {
+  for (const key of REST_REQUIRED) {
+    assert.ok(SHEET_COPY_KEYS.includes(key), key);
+    assert.ok(SHEET_COPY[key].ko.length > 0, key);
+    assert.ok(SHEET_COPY[key].en.length > 0, key);
+  }
+  for (const key of REQUIRED) {
+    assert.ok(SHEET_COPY_KEYS.includes(key), key);
+  }
+  assert.equal(sheetCopy("ko", "tools.alarm"), "이상상황");
+  assert.equal(sheetCopy("en", "tools.alarm"), "Alarms");
+  assert.equal(sheetCopy("en", "tools.report"), "Today's report");
+  assert.equal(sheetCopy("ko", "tools.ops"), "운영");
+  assert.equal(
+    sheetCopy("ko", "tools.viewportPcToMobile", { auto: " (자동)" }),
+    "PC 레이아웃 (자동) → 모바일",
+  );
+  assert.equal(
+    sheetCopy("en", "tools.viewportMobileToPc", { auto: "" }),
+    "Mobile layout → PC",
+  );
+  assert.equal(sheetCopy("ko", "account.recentEmpty"), "최근 수신 데이터가 없습니다.");
+  assert.equal(sheetCopy("en", "account.ackNamed", { type: "온도 상한" }), "Confirm 온도 상한");
+  assert.equal(sheetCopy("ko", "nav.panelPlace", { place: "1-2" }), "1-2 패널로 이동 중…");
+  assert.equal(resolveNavMessage("/farm").message, "모니터링으로 이동 중…");
+  assert.equal(resolveNavMessage("/farm", { locale: "en" }).message, "Opening monitoring…");
+  assert.equal(resolveNavMessage("/admin/ops", { locale: "en" }).message, "Opening ops · system…");
+  assert.equal(
+    resolveNavMessage("/farm", { message: "stay", locale: "en" }).message,
+    "stay",
+  );
+
+  const header = readSrc("../../components/layout/header-tools-menu.tsx");
+  for (const key of [
+    "tools.alarm",
+    "tools.report",
+    "tools.ops",
+    "tools.viewportMobileToPc",
+    "tools.viewportPcToMobile",
+    "tools.noActive",
+    "nav.monitoring",
+    "nav.ops",
+    "nav.chartFarm",
+  ] as const) {
+    assert.ok(header.includes(`"${key}"`), key);
+  }
+  assert.match(header, /\{a\.alarmType\}/);
+
+  const alarm = readSrc("../../components/account/account-menu-alarm-panel.tsx");
+  for (const key of ["tools.noActive", "nav.chart", "alarm.toPanel"] as const) {
+    assert.ok(alarm.includes(`"${key}"`), key);
+  }
+  assert.match(alarm, /alarm\.alarmType/);
+
+  const recent = readSrc("../../components/account/recent-activity-menu-section.tsx");
+  assert.ok(recent.includes('"account.recentEmpty"'));
+  assert.ok(recent.includes('"account.recent"'));
+
+  const nav = readSrc("../../lib/navigation/nav-messages.ts");
+  assert.ok(nav.includes('"nav.monitoring"'));
+  assert.ok(nav.includes('"nav.page"'));
+
+  const view = readSrc("../../components/farm/farm-view-toggle.tsx");
+  assert.ok(view.includes('"view.field"'));
+  assert.ok(view.includes('"view.chart"'));
+  const field = readSrc("../../components/farm/farm-field-status-grid.tsx");
+  assert.ok(field.includes('"field.showAll"'));
+  assert.ok(field.includes('"field.waiting"'));
+  const help = readSrc("../../components/layout/feature-tour-help-button.tsx");
+  assert.ok(help.includes('"tools.help"'));
+
+  const pdf = readSrc("../../lib/report/build-daily-report-pdf.ts");
+  assert.match(pdf, /다운로드 완료/);
+  assert.equal(pdf.includes("sheetCopy"), false);
 });
 
 test("missing profile prefs stay on number, cover on, and Korean", () => {

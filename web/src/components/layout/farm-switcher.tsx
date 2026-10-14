@@ -168,7 +168,7 @@ function FarmSwitcherBody({
       return;
     }
 
-    appNavigate(href, { message: "농장 전환 중…" });
+    appNavigate(href, { message: t("nav.farmSwitch") });
   };
 
   if (farmOptions.length === 0) return null;
@@ -223,7 +223,7 @@ function FarmSwitcherBody({
                   <span className={dashboardUi.brandChip}>LIVE</span>
                 ) : (
                   <span className={dashboardUi.locationChip}>
-                    위치만
+                    {t("farm.locationOnly")}
                   </span>
                 )
               ) : null}
@@ -254,13 +254,13 @@ function FarmSwitcherBody({
         className={accountMenuLayout.farmMatrix}
         data-tour-id="farm-switcher"
         aria-busy={switchPending || undefined}
-        aria-label="농장 선택"
+        aria-label={t("header.farmSelect")}
         onPointerDown={(e) => e.stopPropagation()}
       >
         {switchPending ? (
           <p className="mb-1.5 flex items-center gap-2 text-[length:var(--density-meta)] text-muted-foreground">
             <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-            전환 중…
+            {t("nav.switching")}
           </p>
         ) : null}
         <div className={accountMenuLayout.farmMatrixGrid}>
@@ -302,7 +302,7 @@ function FarmSwitcherBody({
                       <span className={dashboardUi.brandChip}>LIVE</span>
                     ) : (
                       <span className={dashboardUi.locationChip}>
-                        위치만
+                        {t("farm.locationOnly")}
                       </span>
                     )
                   ) : (
@@ -338,12 +338,12 @@ function FarmSwitcherBody({
         )}
         data-tour-id="farm-switcher"
         aria-busy={switchPending || undefined}
-        aria-label="농장 선택"
+        aria-label={t("header.farmSelect")}
       >
         {switchPending ? (
           <p className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin" aria-hidden />
-            전환 중…
+            {t("nav.switching")}
           </p>
         ) : null}
         {farmRows}
@@ -371,11 +371,11 @@ function FarmSwitcherBody({
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
               ),
         )}
-        aria-label={switchPending ? "농장 전환 중" : "농장 선택"}
+        aria-label={switchPending ? t("nav.farmSwitchAria") : t("header.farmSelect")}
         data-tour-id="farm-switcher"
       >
         <span className={compact ? "max-w-[18rem] truncate" : undefined}>
-          {switchPending ? "전환 중…" : triggerLabel}
+          {switchPending ? t("nav.switching") : triggerLabel}
         </span>
         {switchPending ? (
           <Loader2
@@ -430,7 +430,7 @@ function FarmSwitcherBody({
                     <span className={dashboardUi.brandChip}>LIVE</span>
                   ) : (
                     <span className={dashboardUi.locationChip}>
-                      위치만
+                      {t("farm.locationOnly")}
                     </span>
                   )
                 ) : null}

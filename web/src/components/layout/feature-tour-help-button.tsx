@@ -17,6 +17,7 @@ import {
   type FarmKey,
 } from "@/lib/domain/farm-key";
 import { resolveFarmHubView } from "@/lib/farm/farm-view-url";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { dashboardUi } from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";
 
@@ -26,12 +27,13 @@ type Props = {
 };
 
 function TourHelpButtonShell() {
+  const t = useSheetCopy();
   return (
     <button
       type="button"
       className={cn(dashboardUi.topHeaderActionBtn, "rounded-full")}
-      aria-label="기능 안내"
-      title="기능 안내"
+      aria-label={t("tools.help")}
+      title={t("tools.help")}
       data-tour-id="header-feature-tour"
       tabIndex={-1}
       aria-hidden
@@ -43,6 +45,7 @@ function TourHelpButtonShell() {
 }
 
 function FeatureTourHelpButtonInner({ tourFarmKey = null }: Props) {
+  const t = useSheetCopy();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -85,8 +88,8 @@ function FeatureTourHelpButtonInner({ tourFarmKey = null }: Props) {
       type="button"
       onClick={onClick}
       className={cn(dashboardUi.topHeaderActionBtn, "rounded-full")}
-      aria-label="기능 안내"
-      title="기능 안내"
+      aria-label={t("tools.help")}
+      title={t("tools.help")}
       data-tour-id="header-feature-tour"
       suppressHydrationWarning
     >

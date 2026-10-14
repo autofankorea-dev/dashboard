@@ -16,6 +16,7 @@ import {
   getFarmUrlEpochServer,
   subscribeFarmUrlEpoch,
 } from "@/lib/farm/farm-view-url";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { dashboardUi } from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";
 
@@ -26,9 +27,6 @@ type Props = {
   presentation?: "icon" | "row" | "tools-card" | "hub-detail";
   className?: string;
 };
-
-const NO_FARM_TOAST =
-  "농장을 선택한 뒤 오늘의 리포트를 받을 수 있습니다.";
 
 function resolveReportFarmKey(serverFarmKey: FarmKey | null): FarmKey | null {
   const params = currentFarmSearchParams();
@@ -41,6 +39,7 @@ export function DailyReportButton({
   presentation = "icon",
   className,
 }: Props) {
+  const t = useSheetCopy();
   const [pending, startTransition] = useTransition();
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<{
@@ -74,7 +73,7 @@ export function DailyReportButton({
     if (busyLocked) return;
     const key = resolveReportFarmKey(serverFarmKey);
     if (!key) {
-      setToast({ message: NO_FARM_TOAST, tone: "warn" });
+      setToast({ message: t("report.noFarm"), tone: "warn" });
       return;
     }
     setToast(null);
@@ -82,8 +81,8 @@ export function DailyReportButton({
     setOverlay({
       visible: true,
       phase: "loading",
-      title: "보고서 작성 중…",
-      detail: "데이터 수집 중",
+      title: t("report.building"),
+      detail: t("report.collecting"),
     });
 
     startTransition(() => {
@@ -91,11 +90,11 @@ export function DailyReportButton({
         try {
           const payload = await fetchDailyReportPayloadAction(key);
           if (!payload.barns.length) {
-            throw new Error("출력할 축사 데이터가 없습니다.");
+            throw new Error(t("report.noBarns"));
           }
           setOverlay((o) => ({
             ...o,
-            detail: `30일 브리핑 PDF 구성 중`,
+            detail: t("report.composing"),
           }));
           const { buildAndDownloadDailyReportPdf } = await import(
             "@/lib/report/build-daily-report-pdf"
@@ -104,23 +103,23 @@ export function DailyReportButton({
             setOverlay({
               visible: true,
               phase: "loading",
-              title: "보고서 작성 중…",
+              title: t("report.building"),
               detail: `${p.message} (${p.current}/${p.total})`,
             });
           });
           setOverlay({
             visible: true,
             phase: "success",
-            title: "PDF 다운로드 완료",
+            title: t("report.done"),
             detail: dailyReportPdfFilename(payload),
           });
         } catch (err) {
           const message =
-            err instanceof Error ? err.message : "보고서 생성에 실패했습니다.";
+            err instanceof Error ? err.message : t("report.failed");
           setOverlay({
             visible: true,
             phase: "error",
-            title: "보고서 작성 실패",
+            title: t("report.failed"),
             detail: message,
           });
         } finally {
@@ -160,14 +159,10 @@ export function DailyReportButton({
         )}
         data-tour-id="header-daily-report"
         aria-label={
-          farmKey
-            ? "오늘의 리포트 PDF 다운로드"
-            : "오늘의 리포트 (농장 선택 필요)"
+          farmKey ? t("tools.reportPdf") : t("tools.reportNeedFarm")
         }
         title={
-          farmKey
-            ? "오늘의 리포트"
-            : "농장을 선택한 뒤 리포트를 받을 수 있습니다"
+          farmKey ? t("tools.report") : t("tools.reportNeedFarmHint")
         }
         aria-disabled={needsFarm || undefined}
         disabled={nativeDisabled}
@@ -190,12 +185,10 @@ export function DailyReportButton({
             </span>
             <div className={dashboardUi.headerToolsCardBody}>
               <div className={dashboardUi.headerToolsCardTitle}>
-                오늘의 리포트
+                {t("tools.report")}
               </div>
               <p className={dashboardUi.headerToolsCardMeta}>
-                {needsFarm
-                  ? "농장 선택 후 받을 수 있습니다"
-                  : "PDF 다운로드"}
+                {needsFarm ? t("tools.reportAfterFarm") : t("tools.pdf")}
               </p>
             </div>
           </>
@@ -215,9 +208,9 @@ export function DailyReportButton({
               )}
             </span>
             <div className={dashboardUi.hubDetailBody}>
-              <div className={dashboardUi.hubDetailTitle}>오늘의 리포트</div>
+              <div className={dashboardUi.hubDetailTitle}>{t("tools.report")}</div>
               <p className={dashboardUi.hubDetailMeta}>
-                {needsFarm ? "농장 선택 후 다운로드" : "PDF 다운로드"}
+                {needsFarm ? t("tools.reportAfterFarmShort") : t("tools.pdf")}
               </p>
             </div>
           </>
@@ -232,7 +225,7 @@ export function DailyReportButton({
               <FileText className="size-4 shrink-0 md:size-5" aria-hidden />
             )}
             {presentation === "row" ? (
-              <span className="font-medium">오늘의 리포트</span>
+              <span className="font-medium">{t("tools.report")}</span>
             ) : null}
           </>
         )}
