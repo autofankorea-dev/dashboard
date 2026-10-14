@@ -225,9 +225,9 @@ export function TrendChartLegend({
 
       const GROUP_ORDER: HoverMetricGroup[] = ["temp", "hum", "motor"];
       const GROUP_ARIA: Record<HoverMetricGroup, string> = {
-        temp: "온도",
-        hum: "습도",
-        motor: "모터",
+        temp: sheetCopy(locale, "chart.temp"),
+        hum: sheetCopy(locale, "chart.humidity"),
+        motor: sheetCopy(locale, "chart.motor"),
       };
       /** 그룹 안 표시 순서 */
       const LABEL_RANK: Record<HoverMetricGroup, string[]> = {

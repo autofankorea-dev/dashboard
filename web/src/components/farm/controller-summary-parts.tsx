@@ -12,7 +12,6 @@ import {
   CHANNELS,
   channelPercentsFromReading,
   formatChannelPercent,
-  formatControllerHeaderStallType,
   formatHumidityAlarmRange,
   formatSetpointDisplay,
   formatTempAlarmRange,
@@ -30,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { Check, ChevronUp, Droplets, LineChart, Settings, Thermometer, Wifi } from "lucide-react";
 import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
+import { formatStallTypeLabelLocalized } from "@/lib/domain/stall-type";
 import { ControllerDeviceIcon } from "@/components/icons/controller-device-icon";
 import {
   ControllerAffiliationMarks,
@@ -71,12 +71,13 @@ function CardPanelModeToggle({
   onToggleSettings?: () => void;
   onOpenChart?: () => void;
 }) {
+  const t = useSheetCopy();
   if (hideActions) return null;
   const canSettings = onToggleSettings != null;
   const canChart = onOpenChart != null;
   if (!canSettings && !canChart) return null;
 
-  const settingsAria = settingsActive ? "컨트롤러로 접기" : "설정으로 전환";
+  const settingsAria = settingsActive ? t("panel.toController") : t("panel.toSettings");
   const SettingsIcon = settingsActive ? ControllerDeviceIcon : Settings;
 
   return (
@@ -88,8 +89,8 @@ function CardPanelModeToggle({
         >
           <button
             type="button"
-            aria-label="차트에서 보기"
-            title="차트에서 보기"
+            aria-label={t("panel.chart")}
+            title={t("panel.chart")}
             onClick={(e) => {
               e.stopPropagation();
               onOpenChart?.();
@@ -112,7 +113,7 @@ function CardPanelModeToggle({
           <button
             type="button"
             aria-label={settingsAria}
-            title={settingsActive ? "컨트롤러" : "설정"}
+            title={settingsActive ? t("list.controller") : t("list.settings")}
             onClick={(e) => {
               e.stopPropagation();
               onToggleSettings?.();
@@ -165,7 +166,8 @@ export function ControllerSummaryHeader({
   className?: string;
 }) {
   const t = useSheetCopy();
-  const stallTypeLabel = formatControllerHeaderStallType(reading);
+  const locale = useProfileSheetPrefs().locale;
+  const stallTypeLabel = formatStallTypeLabelLocalized(reading.stallTyCode, locale);
   const notices = controllerEnvCoverNotices(reading, alarmSettings);
   const topNotice = notices[0];
   const bareLevel = coverNoticeLevel(topNotice);
@@ -233,7 +235,7 @@ export function ControllerSummaryHeader({
         "flex min-w-0 flex-1 items-start gap-1 text-left",
         dashboardAffordance.hitSurface,
       )}
-      aria-label="상세 숨기기"
+      aria-label={t("panel.hideDetail")}
       onClick={(e) => {
         e.stopPropagation();
         onConcealDetail();

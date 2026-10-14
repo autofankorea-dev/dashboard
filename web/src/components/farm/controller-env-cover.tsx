@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { AlarmSettings } from "@/lib/domain/alarms";
 import type { BarnReading } from "@/lib/data/iot";
 import {
-  formatControllerHeaderStallType,
   formatControllerHeaderStallUnit,
   formatControllerNoLabel,
 } from "@/lib/farm/controller-summary-display";
@@ -28,6 +27,8 @@ import {
 } from "@/lib/ui/dashboard-page-ui";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { cn } from "@/lib/utils";
+import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
+import { formatStallTypeLabelLocalized } from "@/lib/domain/stall-type";
 import { useApplyQueueOptional } from "@/components/farm/apply-queue-context";
 import { CoverChannelApplyStrip } from "@/components/farm/cover-channel-apply-strip";
 import {
@@ -83,10 +84,12 @@ export function ControllerEnvCover({
   onOpen,
 }: Props) {
   const [exiting, setExiting] = useState(false);
-  const typeLabel = formatControllerHeaderStallType(reading);
+  const t = useSheetCopy();
+  const locale = useProfileSheetPrefs().locale;
+  const typeLabel = formatStallTypeLabelLocalized(reading.stallTyCode, locale);
   const stallLabel = formatControllerHeaderStallUnit(reading);
   const ctrlNo = formatControllerNoLabel(reading.eqpmnNo);
-  const ctrlLabel = `컨트롤러 ${ctrlNo}`;
+  const ctrlLabel = `${t("list.controller")} ${ctrlNo}`;
   const status = controllerEnvCoverStatus(reading, alarmSettings);
   const displayLevel = status.stale ? reading.status === "offline" ? "offline" : "warn" : level;
   const receivedLabel = controllerEnvCoverReceivedLabel(reading.receivedAt);
@@ -135,7 +138,7 @@ export function ControllerEnvCover({
       type="button"
       data-farm-env-cover="on"
       data-cover-status-level={displayLevel}
-      aria-label={`${typeLabel} ${stallLabel} ${ctrlLabel}${reason.valueLabel ? `, ${reason.valueLabel}` : ""}${status.stale ? `, ${receivedLabel}` : ""}${applyAria ? `, 적용 ${applyAria}` : ""}. 상세 보기`}
+      aria-label={`${typeLabel} ${stallLabel} ${ctrlLabel}${reason.valueLabel ? `, ${reason.valueLabel}` : ""}${status.stale ? `, ${receivedLabel}` : ""}${applyAria ? `, ${applyAria}` : ""}. ${t("cover.detail")}`}
       onClick={(e) => {
         e.stopPropagation();
         requestOpen();
@@ -223,7 +226,7 @@ export function ControllerEnvCover({
                 "font-medium text-current",
               )}
             >
-              {reason.valueLabel ? "마지막 측정 · " : ""}
+              {reason.valueLabel ? `${t("cover.lastReading")} · ` : ""}
               {receivedLabel}
             </span>
           ) : null}

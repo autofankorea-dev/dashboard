@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "vitest";
+import { formatStallTypeLabel, formatStallTypeLabelLocalized, STALL_TYPE_NAMES, STALL_TYPE_NAMES_EN } from "@/lib/domain/stall-type";
 import { parseProfileSheetPrefs } from "@/lib/ui/profile-sheet-prefs";
 import { SHEET_COPY, SHEET_COPY_KEYS, sheetCopy } from "@/lib/ui/sheet-copy";
 
@@ -24,6 +25,15 @@ const REQUIRED = [
   "settings.cover",
   "settings.language",
   "settings.address",
+  "list.controller",
+  "list.settings",
+  "list.bulk",
+  "list.bulkStart",
+  "list.bulkStop",
+  "cover.detail",
+  "panel.chart",
+  "panel.toSettings",
+  "chart.motor",
 ] as const;
 
 test("sheet copy keeps the six surfaces' keys in both languages", () => {
@@ -34,6 +44,12 @@ test("sheet copy keeps the six surfaces' keys in both languages", () => {
   }
   assert.equal(sheetCopy("en", "farm.all", { count: 3 }), "All 3 farms");
   assert.equal(sheetCopy("ko", "header.logout"), "로그아웃");
+  assert.equal(formatStallTypeLabel("SP07"), "비육사");
+  assert.equal(formatStallTypeLabelLocalized("SP07", "ko"), "비육사");
+  assert.equal(formatStallTypeLabelLocalized("SP07", "en"), "Finisher");
+  for (const code of Object.keys(STALL_TYPE_NAMES)) {
+    assert.ok(STALL_TYPE_NAMES_EN[code], code);
+  }
 });
 
 test("missing profile prefs stay on number, cover on, and Korean", () => {
