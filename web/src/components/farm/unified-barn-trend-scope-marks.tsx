@@ -1,5 +1,8 @@
+"use client";
+
 import type { BarnReading } from "@/lib/data/iot";
-import { formatControllerHeaderStallType } from "@/lib/farm/controller-summary-display";
+import { formatStallTypeLabelLocalized } from "@/lib/domain/stall-type";
+import { useProfileSheetPrefs } from "@/components/account/profile-sheet-prefs";
 import type { FarmChartScope } from "@/lib/farm/farm-chart-scope";
 import {
   ControllerAffiliationMarks,
@@ -24,13 +27,12 @@ export function ChartScopeTargetMarks({
   fallbackLabel: string;
   typeClassName?: string;
 }) {
+  const locale = useProfileSheetPrefs().locale;
   if (chartScope.level === "farm") {
     return fallbackLabel;
   }
 
-  const typeLabel = formatControllerHeaderStallType({
-    stallTyCode: chartScope.stallTyCode,
-  });
+  const typeLabel = formatStallTypeLabelLocalized(chartScope.stallTyCode, locale);
 
   if (chartScope.level === "sp") {
     return <span className={cn("break-keep", typeClassName)}>{typeLabel}</span>;

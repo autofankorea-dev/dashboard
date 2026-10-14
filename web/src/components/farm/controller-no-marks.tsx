@@ -1,12 +1,12 @@
 "use client";
 
 import {
-  formatControllerHeaderStallType,
   formatControllerHeaderStallUnit,
   formatControllerNoLabel,
 } from "@/lib/farm/controller-summary-display";
 import { normalizeEqpmnNo } from "@/lib/domain/controller-key";
-import { formatStallTypeLabelCompact } from "@/lib/domain/stall-type";
+import { formatStallTypeLabelCompactLocalized, formatStallTypeLabelLocalized } from "@/lib/domain/stall-type";
+import { useProfileSheetPrefs } from "@/components/account/profile-sheet-prefs";
 import { stallKeyFromReading } from "@/lib/domain/reading-hierarchy";
 import { useHydrationSafeDashboardCompact } from "@/components/layout/dashboard-viewport-context";
 import { cn } from "@/lib/utils";
@@ -167,9 +167,10 @@ export function ControllerAffiliationMarks({
   className?: string;
   typeClassName?: string;
 }) {
+  const locale = useProfileSheetPrefs().locale;
   const typeLabel = compactType
-    ? formatStallTypeLabelCompact(stallTyCode)
-    : formatControllerHeaderStallType({ stallTyCode: stallTyCode ?? "" });
+    ? formatStallTypeLabelCompactLocalized(stallTyCode, locale)
+    : formatStallTypeLabelLocalized(stallTyCode, locale);
   return (
     <span className={cn("inline-flex min-w-0 items-center gap-1.5", className)}>
       {showType ? (

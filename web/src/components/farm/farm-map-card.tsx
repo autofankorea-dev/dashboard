@@ -6,11 +6,12 @@ import type { BarnMapSnapshot } from "@/lib/data/iot";
 import { parseBarnCatalogKey } from "@/lib/domain/barn-catalog";
 import { EnvChip } from "@/components/common/env-chip";
 import type { StatusTone } from "@/components/common/status-badge";
-import { getStallTypeName, formatStallTypeLabelCompact } from "@/lib/domain/stall-type";
+import { formatStallTypeLabelCompactLocalized, formatStallTypeLabelLocalized } from "@/lib/domain/stall-type";
+import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
+import type { SheetLocale } from "@/lib/ui/profile-sheet-prefs";
 import { formatSensorNumberForDisplay } from "@/lib/domain/reading-display";
 import { StallUnitNoMark } from "@/components/farm/controller-summary-parts";
 import {
-  controllerEnvCoverLabel,
   controllerEnvCoverRingClass,
   controllerEnvMetricTextClass,
   type ControllerEnvCoverLevel,
@@ -65,23 +66,28 @@ function compactEnvLevel(
   return "ok";
 }
 
-function displayCardTypeName(snapshot: BarnMapSnapshot, compact = false): string {
+function displayCardTypeName(
+  snapshot: BarnMapSnapshot,
+  compact: boolean,
+  locale: SheetLocale,
+  stallFallback: string,
+): string {
   const entry = parseBarnCatalogKey(snapshot.meta.id);
   if (entry && entry.stallTyCode !== "UNK") {
     const tyName = compact
-      ? formatStallTypeLabelCompact(entry.stallTyCode)
-      : getStallTypeName(entry.stallTyCode);
+      ? formatStallTypeLabelCompactLocalized(entry.stallTyCode, locale)
+      : formatStallTypeLabelLocalized(entry.stallTyCode, locale);
     if (tyName && tyName !== entry.stallTyCode) {
       return tyName;
     }
   }
   const legacy = snapshot.meta.name.trim();
   const stripped = legacy.replace(/^SP\d+\s*/i, "").trim();
-  return stripped || legacy || "축사";
+  return stripped || legacy || stallFallback;
 }
 
-function displayCardTitle(snapshot: BarnMapSnapshot, compact = false): string {
-  const typeName = displayCardTypeName(snapshot, compact);
+function displayCardTitle(snapshot: BarnMapSnapshot, compact: boolean, locale: SheetLocale, stallFallback: string): string {
+  const typeName = displayCardTypeName(snapshot, compact, locale, stallFallback);
   const stallNo = snapshot.meta.stallNo?.trim() ?? "";
   return stallNo ? `${typeName} ${stallNo}` : typeName;
 }
@@ -123,8 +129,10 @@ export function FarmMapCard({
   envCoverLevel,
 }: Props) {
   const { meta } = snapshot;
-  const title = displayCardTitle(snapshot, compact || statusCompact);
-  const typeName = displayCardTypeName(snapshot, compact || statusCompact);
+  const locale = useProfileSheetPrefs().locale;
+  const t = useSheetCopy();
+  const title = displayCardTitle(snapshot, compact || statusCompact, locale, t("list.stall"));
+  const typeName = displayCardTypeName(snapshot, compact || statusCompact, locale, t("list.stall"));
   const stallNo = meta.stallNo?.trim() || null;
   const showStallMark = meta.type !== "office" && Boolean(stallNo);
   const showGrip = Boolean(draggable) && !statusCompact;
@@ -149,7 +157,7 @@ export function FarmMapCard({
         type="button"
         onClick={handleSelect}
         disabled={!onSelect}
-        aria-label={`${title} ${controllerEnvCoverLabel(envLevel)} 온도 ${tempLabel ?? "—"} 습도 ${humLabel ?? "—"}`}
+        aria-label={`${title} ${t(envLevel === "ok" ? "cover.ok" : envLevel === "warn" ? "cover.caution" : envLevel === "danger" ? "cover.danger" : "cover.offline")} ${t("cover.temp")} ${tempLabel ?? "—"} ${t("cover.humidity")} ${humLabel ?? "—"}`}
         data-tour-id="barn-card"
         className={cn(
           "flex w-full min-w-0 flex-col items-center gap-0.5 rounded-lg border px-2 py-1.5 text-center transition-shadow",

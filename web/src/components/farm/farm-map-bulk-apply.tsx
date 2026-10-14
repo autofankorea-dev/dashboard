@@ -58,6 +58,7 @@ import {
 import { useFarmLiveRefreshOptional } from "@/components/farm/farm-live-refresh";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { cn } from "@/lib/utils";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
 
 type Props = {
   controller: ControllerGridData;
@@ -248,6 +249,7 @@ export function FarmMapBulkApply({
   trailing,
   trailingCompact: _trailingCompact = false,
 }: Props) {
+  const t = useSheetCopy();
   const liveRefresh = useFarmLiveRefreshOptional();
   const applyQueue = useApplyQueueOptional();
   const queueProgress = applyQueue?.progress ?? EMPTY_APPLY_PROGRESS;
@@ -819,13 +821,13 @@ export function FarmMapBulkApply({
             aria-hidden
           />
           <span className="truncate text-sm font-semibold leading-snug lg:text-lg">
-            일괄적용
+            {t("list.bulk")}
           </span>
           <button
             type="button"
             role="switch"
             aria-checked={bulkMode}
-            aria-label={bulkMode ? "일괄적용 종료" : "일괄적용 시작"}
+            aria-label={bulkMode ? t("list.bulkStop") : t("list.bulkStart")}
             onClick={() => (bulkMode ? onExit() : onEnter())}
             className={cn(
               "relative h-5 w-9 shrink-0 rounded-full md:h-6 md:w-11",
