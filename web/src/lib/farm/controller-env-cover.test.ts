@@ -12,6 +12,7 @@ import {
   controllerEnvCoverStatus,
   controllerEnvCoverReceivedLabel,
   controllerEnvCoverLevel,
+  controllerEnvCoverNotices,
   controllerEnvCoverReason,
   controllerEnvCoverRingClass,
   controllerEnvCanvasTextClass,
@@ -30,6 +31,64 @@ import {
   assert.equal(controllerEnvCoverStatus({ ...fresh, tempC: NaN, humidityPct: NaN }).environment, "환경 확인 필요");
   assert.equal(controllerEnvCoverReceivedLabel("invalid"), "마지막 수신 확인 불가");
   assert.ok(controllerEnvCoverReceivedLabel("2026-10-06T00:00:00Z").includes("09:00"), "last reception is shown in KST");
+}
+
+{
+  const now = Date.parse("2026-10-13T12:00:00Z");
+  const fresh = {
+    alarmLowTempC: 10,
+    alarmHighTempC: 35,
+    status: "normal" as const,
+    tempC: 25.3,
+    humidityPct: 55,
+    stallTyCode: "SP07",
+    receivedAt: "2026-10-13T11:55:00Z",
+  };
+  assert.deepEqual(controllerEnvCoverNotices(fresh, undefined, now), []);
+  assert.deepEqual(
+    controllerEnvCoverNotices({ ...fresh, tempC: 60 }, undefined, now).map((n) => n.label),
+    ["온도 경고"],
+  );
+  assert.deepEqual(
+    controllerEnvCoverNotices({ ...fresh, tempC: 34 }, undefined, now).map((n) => n.label),
+    ["온도 주의"],
+  );
+  assert.deepEqual(
+    controllerEnvCoverNotices({ ...fresh, status: "caution" }, undefined, now).map((n) => n.label),
+    ["통신 주의"],
+  );
+  assert.deepEqual(
+    controllerEnvCoverNotices(
+      { ...fresh, status: "caution", receivedAt: "2026-10-13T11:30:00Z" },
+      undefined,
+      now,
+    ).map((n) => n.label),
+    ["통신 경고"],
+  );
+  assert.deepEqual(
+    controllerEnvCoverNotices(
+      { ...fresh, status: "offline", tempC: null, humidityPct: null },
+      undefined,
+      now,
+    ).map((n) => n.kind),
+    ["comm"],
+  );
+  assert.deepEqual(
+    controllerEnvCoverNotices({ ...fresh, tempC: null }, undefined, now).map((n) => n.label),
+    ["온도 두절"],
+  );
+  assert.deepEqual(
+    controllerEnvCoverNotices({ ...fresh, humidityPct: null }, undefined, now).map((n) => n.label),
+    ["습도 두절"],
+  );
+  assert.deepEqual(
+    controllerEnvCoverNotices(
+      { ...fresh, status: "caution", tempC: 60 },
+      undefined,
+      now,
+    ).map((n) => n.kind),
+    ["temp", "comm"],
+  );
 }
 
 {
