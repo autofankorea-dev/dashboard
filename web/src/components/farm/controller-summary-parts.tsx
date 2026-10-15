@@ -1,12 +1,9 @@
 "use client";
 
-import {
-  resolveThermoSettings,
-  type ControllerThermoSettings,
-} from "@/lib/controllers/controller-settings";
+import type { ControllerThermoSettings } from "@/lib/controllers/controller-settings";
 import type { BarnReading } from "@/lib/data/iot";
 import type { AlarmSettings } from "@/lib/domain/alarms";
-import { type ChannelSlot } from "@/lib/domain/iot-channel";
+import { channelBySlot, type ChannelSlot } from "@/lib/domain/iot-channel";
 import type {
   TrendControllerPeriodData,
   TrendPeriodId,
@@ -20,6 +17,7 @@ import {
   formatTempAlarmRange,
   humidityAlarmBreached,
   resolveReadingAlarmThresholds,
+  resolveReadingChannelThermo,
   resolveReadingThermo,
   tempAlarmBreached,
 } from "@/lib/farm/controller-summary-display";
@@ -375,6 +373,19 @@ export function SetpointBlock({
   );
 }
 
+function setpointParts(
+  raw:
+    | { setpointTemp?: string | number | null; tempDeviation?: string | number | null }
+    | null
+    | undefined,
+): { set: string; dev: string } | null {
+  if (!raw || raw.setpointTemp == null || raw.tempDeviation == null) return null;
+  const set = Number(raw.setpointTemp);
+  const dev = Number(raw.tempDeviation);
+  if (!Number.isFinite(set) || !Number.isFinite(dev)) return null;
+  return { set: set.toFixed(1), dev: dev.toFixed(1) };
+}
+
 export function ChannelStrip({
   reading,
   thermo,
@@ -405,23 +416,10 @@ export function ChannelStrip({
     <div className="min-w-0">
       <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
         {CHANNELS.map((slot) => {
-          const slotThermo =
-            resolveThermoSettings(
-              thermoSettings,
-              reading.farmKey,
-              reading.moduleUid,
-              reading.controllerKey,
-              slot,
-            ) ?? (slot === "A" ? thermo ?? null : null);
-          const setParts =
-            slotThermo &&
-            Number.isFinite(slotThermo.setpointTemp) &&
-            Number.isFinite(slotThermo.tempDeviation)
-              ? {
-                  set: slotThermo.setpointTemp.toFixed(1),
-                  dev: slotThermo.tempDeviation.toFixed(1),
-                }
-              : null;
+          const ownSetpoint =
+            setpointParts(resolveReadingChannelThermo(reading, thermoSettings, slot)) ??
+            setpointParts(channelBySlot(reading.channels ?? [], slot)?.thermo);
+          const setParts = ownSetpoint ?? setpointParts(thermo);
           return (
             <ChannelCell
               key={slot}
