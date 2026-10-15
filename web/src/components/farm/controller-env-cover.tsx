@@ -11,7 +11,7 @@ import {
   controllerEnvCoverFillClass,
   controllerEnvCoverInkClass,
   controllerEnvCoverStatus,
-  controllerEnvCoverReceivedLabel,
+  controllerEnvCoverStaleLine,
   controllerEnvCoverReason,
   type ControllerEnvCoverLevel,
 } from "@/lib/farm/controller-env-cover";
@@ -92,8 +92,14 @@ export function ControllerEnvCover({
   const ctrlLabel = `${t("list.controller")} ${ctrlNo}`;
   const status = controllerEnvCoverStatus(reading, alarmSettings);
   const displayLevel = status.stale ? reading.status === "offline" ? "offline" : "warn" : level;
-  const receivedLabel = controllerEnvCoverReceivedLabel(reading.receivedAt, locale);
   const reason = controllerEnvCoverReason(reading, alarmSettings);
+  const staleLine = status.stale
+    ? controllerEnvCoverStaleLine({
+        locale,
+        receivedAt: reading.receivedAt,
+        hasValue: Boolean(reason.valueLabel),
+      })
+    : "";
   const onFill = displayLevel !== "offline";
   const applyQueue = useApplyQueueOptional();
   const applyStrip = useMemo(
@@ -138,7 +144,7 @@ export function ControllerEnvCover({
       type="button"
       data-farm-env-cover="on"
       data-cover-status-level={displayLevel}
-      aria-label={`${typeLabel} ${stallLabel} ${ctrlLabel}${reason.valueLabel ? `, ${reason.valueLabel}` : ""}${status.stale ? `, ${receivedLabel}` : ""}${applyAria ? `, ${applyAria}` : ""}. ${t("cover.detail")}`}
+      aria-label={`${typeLabel} ${stallLabel} ${ctrlLabel}${reason.valueLabel ? `, ${reason.valueLabel}` : ""}${staleLine ? `, ${staleLine}` : ""}${applyAria ? `, ${applyAria}` : ""}. ${t("cover.detail")}`}
       onClick={(e) => {
         e.stopPropagation();
         requestOpen();
@@ -226,8 +232,7 @@ export function ControllerEnvCover({
                 "font-medium text-current",
               )}
             >
-              {reason.valueLabel ? `${t("cover.lastReading")} · ` : ""}
-              {receivedLabel}
+              {staleLine}
             </span>
           ) : null}
           <span

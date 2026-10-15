@@ -13,6 +13,7 @@ import {
   controllerEnvCoverLabel,
   controllerEnvCoverStatus,
   controllerEnvCoverReceivedLabel,
+  controllerEnvCoverStaleLine,
   controllerEnvCoverLevel,
   controllerEnvCoverReason,
   controllerEnvCoverRingClass,
@@ -31,8 +32,25 @@ import {
   assert.equal(controllerEnvCoverStatus({ ...fresh, tempC: null, humidityPct: null }).environment, "환경 확인 필요");
   assert.equal(controllerEnvCoverStatus({ ...fresh, tempC: NaN, humidityPct: NaN }).environment, "환경 확인 필요");
   assert.equal(controllerEnvCoverReceivedLabel("invalid"), "마지막 수신 확인 불가");
-  assert.equal(controllerEnvCoverReceivedLabel("invalid", "en"), "Last received time unknown");
+  assert.equal(controllerEnvCoverReceivedLabel("invalid", "en"), "Last seen unknown");
   assert.ok(controllerEnvCoverReceivedLabel("2026-10-06T00:00:00Z").includes("09:00"), "last reception is shown in KST");
+  assert.match(controllerEnvCoverReceivedLabel("2026-10-06T00:00:00Z", "en"), /^Last seen /);
+  assert.equal(
+    controllerEnvCoverStaleLine({
+      locale: "en",
+      receivedAt: "2026-10-06T00:00:00Z",
+      hasValue: true,
+    }).startsWith("Last seen "),
+    true,
+  );
+  assert.equal(
+    controllerEnvCoverStaleLine({
+      locale: "ko",
+      receivedAt: "invalid",
+      hasValue: true,
+    }),
+    "마지막 측정 · 마지막 수신 확인 불가",
+  );
 }
 
 {

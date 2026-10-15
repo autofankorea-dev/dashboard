@@ -8,6 +8,8 @@ import type { BarnReading } from "@/lib/data/iot";
 import { formatHumidityPct, formatTempC } from "@/lib/domain/farm-summaries";
 import { RECV_NORMAL_MIN } from "@/lib/domain/live-status";
 import { sevOfScore, severityScore } from "@/lib/farm/severity-score";
+import { sheetCopy } from "@/lib/ui/sheet-copy";
+import type { SheetLocale } from "@/lib/ui/profile-sheet-prefs";
 
 export type ControllerEnvCoverLevel = "ok" | "warn" | "danger" | "offline";
 type RoomEnvTint = "ok" | "warn" | "danger";
@@ -249,16 +251,27 @@ export function coverNoticeLevel(notice: CoverNotice | undefined): ControllerEnv
 
 export function controllerEnvCoverReceivedLabel(
   receivedAt: string,
-  locale: "ko" | "en" = "ko",
+  locale: SheetLocale = "ko",
 ): string {
   const date = new Date(receivedAt);
   if (!Number.isFinite(date.getTime())) {
-    return locale === "en" ? "Last received time unknown" : "마지막 수신 확인 불가";
+    return sheetCopy(locale, "cover.lastReceivedUnknown");
   }
   const time = new Intl.DateTimeFormat("ko-KR", {
     timeZone: "Asia/Seoul", month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit", hour12: false,
   }).format(date);
-  return locale === "en" ? `Last received ${time}` : `마지막 수신 ${time}`;
+  return sheetCopy(locale, "cover.lastReceived", { time });
+}
+
+/** 덮개가 오래된 측정일 때 보이는 한 줄. 영어는 Last seen, 한국어는 마지막 측정 · 마지막 수신. */
+export function controllerEnvCoverStaleLine(opts: {
+  locale: SheetLocale;
+  receivedAt: string;
+  hasValue: boolean;
+}): string {
+  const received = controllerEnvCoverReceivedLabel(opts.receivedAt, opts.locale);
+  if (opts.locale === "en" || !opts.hasValue) return received;
+  return `${sheetCopy(opts.locale, "cover.lastReading")} · ${received}`;
 }
 
 export type ControllerEnvCoverReason = {
