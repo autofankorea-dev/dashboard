@@ -1,16 +1,16 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState, useTransition } from "react";
-import { Bell, ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import {
   ackModuleAlarmAction,
   ackModuleAlarmsBulkAction,
   fetchActiveModuleAlarmsAction,
 } from "@/app/(dashboard)/farm/actions";
-import { Badge } from "@/components/ui/badge";
+import { AlarmTemplateExample } from "@/components/account/tool-card-examples";
 import { useAppNavigate } from "@/components/layout/use-app-navigate";
 import type { AlarmRow } from "@/lib/domain/alarms";
-import { alarmChartHref, isModuleAlarmRow, isSituationLiveStateRow, situationAlarmMetaLine } from "@/lib/domain/alarms";
+import { alarmChartHref, alarmControlHref, isModuleAlarmRow, isSituationLiveStateRow, situationAlarmMetaLine } from "@/lib/domain/alarms";
 import { formatKst } from "@/lib/datetime/kst";
 import type { FarmOverview } from "@/lib/data/iot";
 import {
@@ -20,21 +20,24 @@ import {
   removeShellAlarms,
   useShellAlarms,
 } from "@/lib/navigation/shell-live-alarms-store";
-import { dashboardUi } from "@/lib/ui/dashboard-page-ui";
+import { accountMenuLayout } from "@/lib/ui/account-menu-layout";
 import { motionClass } from "@/lib/ui/motion-classes";
+import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
+import type { SheetCopyKey } from "@/lib/ui/sheet-copy";
 import { cn } from "@/lib/utils";
 
 const EXIT_MS = 150;
 
-function connectivityMessage(overview?: FarmOverview): string {
+function connectivityMessage(
+  overview: FarmOverview | undefined,
+  copy: (key: SheetCopyKey, vars?: Record<string, string | number>) => string,
+): string {
   const registered = overview?.controllerCount;
-  if (registered === undefined) {
-    return "컨트롤러 연결 정보를 불러올 수 없습니다.";
-  }
+  if (registered === undefined) return copy("tools.connUnknown");
   const offline = overview?.offlineCount ?? 0;
   const connected =
     overview?.connectedCount ?? Math.max(registered - offline, 0);
-  return `${registered}개 중 ${connected}개 연결`;
+  return copy("tools.connCount", { registered, connected });
 }
 
 type AlarmPanelListItemProps = {
@@ -53,6 +56,8 @@ function AlarmPanelListItem({
   onAckFinish,
 }: AlarmPanelListItemProps) {
   const { navigate } = useAppNavigate();
+  const t = useSheetCopy();
+  const locale = useProfileSheetPrefs().locale;
 
   return (
     <li
@@ -65,7 +70,7 @@ function AlarmPanelListItem({
         onAckFinish(alarm);
       }}
     >
-      <div className="w-full rounded-xl border border-border/60 bg-muted/20 px-1.5 py-1.5">
+      <div className="w-full rounded-lg border border-border/60 bg-background px-2 py-1.5">
         <button
           type="button"
           className={cn(
@@ -76,20 +81,18 @@ function AlarmPanelListItem({
           onClick={() => {
             onNavigate?.();
             navigate(alarmChartHref(alarm), {
-              message: isModuleAlarmRow(alarm)
-                ? "농장 차트로 이동 중…"
-                : "그래프로 이동 중…",
+              message: isModuleAlarmRow(alarm) ? t("nav.chartFarm") : t("nav.chart"),
             });
           }}
         >
           <span className="flex items-center justify-between gap-2 text-xs font-medium">
             <span className="truncate">{alarm.alarmType}</span>
             <span className="shrink-0 text-[0.65rem] text-muted-foreground">
-              {alarm.severity === "critical" ? "심각" : "주의"}
+              {alarm.severity === "critical" ? t("tools.critical") : t("cover.caution")}
             </span>
           </span>
           <span className="block truncate text-[0.65rem] text-muted-foreground">
-            {situationAlarmMetaLine(alarm)}
+            {situationAlarmMetaLine(alarm, locale)}
           </span>
           {isSituationLiveStateRow(alarm) ? null : (
             <span className="block text-[0.65rem] text-muted-foreground">
@@ -97,8 +100,24 @@ function AlarmPanelListItem({
             </span>
           )}
         </button>
-        {isModuleAlarmRow(alarm) ? (
-          <div className="mt-1 flex justify-end">
+        <div className="mt-1 flex justify-end gap-1">
+          <button
+            type="button"
+            disabled={exiting}
+            className={accountMenuLayout.compactBtn}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onNavigate?.();
+              const place = [alarm.stallNo, alarm.eqpmnNo].filter(Boolean).join(" ");
+              navigate(alarmControlHref(alarm), {
+                message: place ? t("nav.panelPlace", { place }) : t("alarm.toPanelPending"),
+              });
+            }}
+          >
+            {t("alarm.toPanel")}
+          </button>
+          {isModuleAlarmRow(alarm) ? (
             <button
               type="button"
               disabled={exiting}
@@ -107,16 +126,13 @@ function AlarmPanelListItem({
                 e.stopPropagation();
                 onAckStart(alarm);
               }}
-              className={cn(
-                "shrink-0 rounded-md border border-border/70 bg-background px-2 py-0.5 text-[0.65rem] font-medium text-foreground hover:bg-muted/80 disabled:opacity-60",
-                motionClass.microInteractive,
-              )}
-              aria-label={`${alarm.alarmType} 확인`}
+              className={accountMenuLayout.compactBtn}
+              aria-label={t("account.ackNamed", { type: alarm.alarmType })}
             >
-              확인
+              {t("account.ack")}
             </button>
-          </div>
-        ) : null}
+          ) : null}
+        </div>
       </div>
     </li>
   );
@@ -138,14 +154,14 @@ export function AccountMenuAlarmPanel({
   defaultListOpen = true,
   embedded = false,
 }: Props) {
+  const t = useSheetCopy();
   const liveAlarms = useShellAlarms(alarms);
   const activeAlarms = liveAlarms.filter((a) => a.status === "active");
   const moduleAlarms = activeAlarms.filter(isModuleAlarmRow);
   const alarmCount = activeAlarms.length;
   const alarmList = activeAlarms.slice(0, 12);
   const offline = overview?.offlineCount ?? 0;
-  const alert = alarmCount > 0 || offline > 0;
-  const connTitle = connectivityMessage(overview);
+  const connTitle = connectivityMessage(overview, t);
   const [alarmListOpen, setAlarmListOpen] = useState(defaultListOpen);
   const [exitingIds, setExitingIds] = useState<Set<string>>(() => new Set());
   const [bulkPending, startBulkTransition] = useTransition();
@@ -255,59 +271,43 @@ export function AccountMenuAlarmPanel({
   return (
     <div
       className={cn(
-        dashboardUi.headerToolsCard,
-        embedded ? "mx-0 mb-0 mt-0 w-full" : "mx-4 mb-2 w-[calc(100%-2rem)]",
-        alert && dashboardUi.headerToolsCardAlert,
+        "flex w-full min-w-0 flex-col gap-1.5",
+        embedded ? "mx-0" : "mx-4 mb-2 w-[calc(100%-2rem)]",
       )}
       data-tour-id="account-menu-alarm-panel"
     >
-      <span
+      <div className="flex min-w-0 items-center justify-between gap-2 px-0.5">
+        <span className={accountMenuLayout.contextFarm}>{t("tools.alarm")}</span>
+        <span className="shrink-0 text-xs text-muted-foreground">
+          {alarmCount > 0 ? t("tools.count", { count: alarmCount }) : t("tools.noActive")}
+        </span>
+      </div>
+      <p
         className={cn(
-          dashboardUi.headerToolsCardIcon,
-          alert && dashboardUi.headerToolsCardIconAlert,
+          "truncate px-0.5 text-[10px] leading-snug text-muted-foreground",
+          offline > 0 && "font-medium text-[var(--status-danger-on-canvas)]",
         )}
-        aria-hidden
       >
-        <Bell className="size-4 md:size-5" />
-      </span>
-      <div className={dashboardUi.headerToolsCardBody}>
-        <div className={dashboardUi.headerToolsCardTitle}>
-          <span>이상상황</span>
-          {alarmCount > 0 ? (
-            <Badge
-              variant="destructive"
-              className="ml-auto h-5 min-h-0 px-1.5 text-[0.65rem]"
-            >
-              {alarmCount}건
-            </Badge>
-          ) : null}
-        </div>
-        <p
-          className={cn(
-            dashboardUi.headerToolsCardMeta,
-            "truncate",
-            offline > 0 && "font-medium text-[var(--status-danger-on-canvas)]",
-          )}
-        >
-          {offline > 0 ? `${connTitle} · 오프라인 ${offline}` : connTitle}
-          {alarmCount > 0 ? null : " · 활성 이상상황 없음"}
-        </p>
-        {alarmCount > 0 ? (
-          <div className="mt-1.5 flex gap-1.5">
+        {offline > 0 ? `${connTitle} · ${t("tools.offlineCount", { count: offline })}` : connTitle}
+      </p>
+      {alarmCount === 0 ? <AlarmTemplateExample /> : null}
+      {alarmCount > 0 ? (
+        <>
+          <div className="flex gap-1">
             <button
               type="button"
-              className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-[color:var(--surface-well-border)] bg-[color:var(--surface-well)] px-2 py-1.5 text-xs font-medium text-foreground"
+              className={cn(accountMenuLayout.compactBtn, "h-auto flex-1 justify-center py-1")}
               aria-expanded={alarmListOpen}
               onClick={() => setAlarmListOpen((v) => !v)}
             >
               {alarmListOpen ? (
                 <>
-                  접기
+                  {t("tools.collapse")}
                   <ChevronUp className="size-3.5 shrink-0" aria-hidden />
                 </>
               ) : (
                 <>
-                  상세 보기
+                  {t("cover.detail")}
                   <ChevronDown className="size-3.5 shrink-0" aria-hidden />
                 </>
               )}
@@ -317,23 +317,19 @@ export function AccountMenuAlarmPanel({
                 type="button"
                 disabled={bulkPending || bulkAckBusy}
                 onClick={onBulkAck}
-                className={cn(
-                  "shrink-0 rounded-lg border border-border/70 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted/80 disabled:opacity-60",
-                  motionClass.microInteractive,
-                )}
+                className={accountMenuLayout.compactBtn}
               >
-                {bulkPending ? "처리 중…" : "일괄 확인"}
+                {bulkPending ? t("account.working") : t("account.ackAll")}
               </button>
             ) : null}
           </div>
-        ) : null}
-        {bulkError ? (
-          <p className="mt-1 text-[0.65rem] text-destructive">{bulkError}</p>
-        ) : null}
-        {alarmListOpen && visibleList.length > 0 ? (
+          {bulkError ? (
+            <p className="text-[0.65rem] text-destructive">{bulkError}</p>
+          ) : null}
+          {alarmListOpen && visibleList.length > 0 ? (
           <ul
-            className={dashboardUi.headerToolsCardList}
-            aria-label="이상상황 목록"
+            className="max-h-40 min-h-0 space-y-1 overflow-y-auto overscroll-contain"
+            aria-label={t("tools.alarmList")}
           >
             {visibleList.map((a) => (
               <AlarmPanelListItem
@@ -347,12 +343,13 @@ export function AccountMenuAlarmPanel({
             ))}
             {alarmCount > alarmList.length ? (
               <li className="px-1 py-1 text-[0.65rem] text-muted-foreground">
-                외 {alarmCount - alarmList.length}건 — 행을 눌러 차트로 이동합니다
+                {t("tools.more", { count: alarmCount - alarmList.length })}
               </li>
             ) : null}
           </ul>
-        ) : null}
-      </div>
+          ) : null}
+        </>
+      ) : null}
     </div>
   );
 }

@@ -29,6 +29,7 @@ import { useAppNavigate } from "@/components/layout/use-app-navigate";
 import { accountMenuLayout } from "@/lib/ui/account-menu-layout";
 import { dashboardUi } from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";
+import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
 
 const emptySubscribe = () => () => {};
 
@@ -92,6 +93,8 @@ function FarmSwitcherBody({
   onNavigated,
   inlineListClassName,
 }: FarmSwitcherProps) {
+  const t = useSheetCopy();
+  const locale = useProfileSheetPrefs().locale;
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const hubPanels = useAdminHubPanelsOptional();
@@ -166,7 +169,7 @@ function FarmSwitcherBody({
       return;
     }
 
-    appNavigate(href, { message: "농장 전환 중…" });
+    appNavigate(href, { message: t("nav.farmSwitch") });
   };
 
   if (farmOptions.length === 0) return null;
@@ -174,8 +177,8 @@ function FarmSwitcherBody({
   const activeId = activeFarmKey ? farmKeyId(activeFarmKey) : null;
   const triggerLabel =
     activeFarmKey === null
-      ? `전체 ${farmOptions.length}개 농장`
-      : farmShortLabel(activeFarmKey);
+      ? t("farm.all", { count: farmOptions.length })
+      : farmShortLabel(activeFarmKey, locale);
 
   const itemClass = (active: boolean) =>
     cn(
@@ -196,7 +199,7 @@ function FarmSwitcherBody({
         )}
       >
         <span className="flex-1 font-medium">
-          전체 {farmOptions.length}개 농장
+          {t("farm.all", { count: farmOptions.length })}
         </span>
       </button>
       {orderedFarmOptions.map((farmKey) => {
@@ -215,13 +218,13 @@ function FarmSwitcherBody({
             )}
           >
             <span className="flex min-w-0 flex-1 items-center gap-2">
-              <span className="truncate">{farmShortLabel(farmKey)}</span>
+              <span className="truncate">{farmShortLabel(farmKey, locale)}</span>
               {hasLiveSummary ? (
                 isLive ? (
                   <span className={dashboardUi.brandChip}>LIVE</span>
                 ) : (
                   <span className={dashboardUi.locationChip}>
-                    위치만
+                    {t("farm.locationOnly")}
                   </span>
                 )
               ) : null}
@@ -252,13 +255,13 @@ function FarmSwitcherBody({
         className={accountMenuLayout.farmMatrix}
         data-tour-id="farm-switcher"
         aria-busy={switchPending || undefined}
-        aria-label="농장 선택"
+        aria-label={t("header.farmSelect")}
         onPointerDown={(e) => e.stopPropagation()}
       >
         {switchPending ? (
           <p className="mb-1.5 flex items-center gap-2 text-[length:var(--density-meta)] text-muted-foreground">
             <Loader2 className="size-4 shrink-0 animate-spin" aria-hidden />
-            전환 중…
+            {t("nav.switching")}
           </p>
         ) : null}
         <div className={accountMenuLayout.farmMatrixGrid}>
@@ -272,7 +275,7 @@ function FarmSwitcherBody({
             aria-current={activeId === null ? "true" : undefined}
           >
             <span className={accountMenuLayout.farmMatrixLabel}>
-              전체 {farmOptions.length}개 농장
+              {t("farm.all", { count: farmOptions.length })}
             </span>
           </button>
           {orderedFarmOptions.map((farmKey) => {
@@ -292,7 +295,7 @@ function FarmSwitcherBody({
                 aria-current={activeId === id ? "true" : undefined}
               >
                 <span className={accountMenuLayout.farmMatrixLabel}>
-                  {farmShortLabel(farmKey)}
+                  {farmShortLabel(farmKey, locale)}
                 </span>
                 <span className={accountMenuLayout.farmMatrixMeta}>
                   {hasLiveSummary ? (
@@ -300,7 +303,7 @@ function FarmSwitcherBody({
                       <span className={dashboardUi.brandChip}>LIVE</span>
                     ) : (
                       <span className={dashboardUi.locationChip}>
-                        위치만
+                        {t("farm.locationOnly")}
                       </span>
                     )
                   ) : (
@@ -336,12 +339,12 @@ function FarmSwitcherBody({
         )}
         data-tour-id="farm-switcher"
         aria-busy={switchPending || undefined}
-        aria-label="농장 선택"
+        aria-label={t("header.farmSelect")}
       >
         {switchPending ? (
           <p className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground">
             <Loader2 className="size-4 animate-spin" aria-hidden />
-            전환 중…
+            {t("nav.switching")}
           </p>
         ) : null}
         {farmRows}
@@ -369,11 +372,11 @@ function FarmSwitcherBody({
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
               ),
         )}
-        aria-label={switchPending ? "농장 전환 중" : "농장 선택"}
+        aria-label={switchPending ? t("nav.farmSwitchAria") : t("header.farmSelect")}
         data-tour-id="farm-switcher"
       >
         <span className={compact ? "max-w-[18rem] truncate" : undefined}>
-          {switchPending ? "전환 중…" : triggerLabel}
+          {switchPending ? t("nav.switching") : triggerLabel}
         </span>
         {switchPending ? (
           <Loader2
@@ -407,7 +410,7 @@ function FarmSwitcherBody({
           className={itemClass(activeId === null)}
         >
           <span className="flex-1 font-medium">
-            전체 {farmOptions.length}개 농장
+            {t("farm.all", { count: farmOptions.length })}
           </span>
         </DropdownMenuItem>
         {orderedFarmOptions.map((farmKey) => {
@@ -422,13 +425,13 @@ function FarmSwitcherBody({
               className={itemClass(activeId === id)}
             >
               <span className="flex min-w-0 flex-1 items-center gap-2">
-                <span className="truncate">{farmShortLabel(farmKey)}</span>
+                <span className="truncate">{farmShortLabel(farmKey, locale)}</span>
                 {hasLiveSummary ? (
                   isLive ? (
                     <span className={dashboardUi.brandChip}>LIVE</span>
                   ) : (
                     <span className={dashboardUi.locationChip}>
-                      위치만
+                      {t("farm.locationOnly")}
                     </span>
                   )
                 ) : null}

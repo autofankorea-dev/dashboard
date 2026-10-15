@@ -7,10 +7,13 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { AppNavLink } from "@/components/layout/app-nav-link";
 import { useAppNavigate } from "@/components/layout/use-app-navigate";
+import { useFarmScope } from "@/components/layout/farm-scope-provider";
 import {
+  ADMIN_NATIONAL_MAP_PATH,
   buildFarmMonitoringHomeParams,
   buildFarmMonitoringHomePath,
   currentFarmSearchParams,
+  isAdminNationalMapHome,
   isFarmMonitoringSoftHome,
   replaceFarmUrlShallow,
   requestFarmHubViewResync,
@@ -21,6 +24,7 @@ import {
 } from "@/lib/navigation/farm-live-refresh-bridge";
 import { useSoftRefresh } from "@/lib/ui/use-soft-refresh";
 import { cn } from "@/lib/utils";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { dashboardUi } from "@/lib/ui/dashboard-page-ui";
 
 const BRAND_TITLE = "IoT Board";
@@ -32,6 +36,8 @@ export function AppHeaderBrand() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { navigate } = useAppNavigate();
+  const { isAdmin } = useFarmScope();
+  const t = useSheetCopy();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const titleRef = useRef<HTMLParagraphElement>(null);
   const [titleWidth, setTitleWidth] = useState<number | null>(null);
@@ -52,12 +58,13 @@ export function AppHeaderBrand() {
     return () => ro.disconnect();
   }, [mounted]);
 
-  /** SSR·Link — Next searchParams. 클릭 시 window shallow URL 재계산 */
-  const monitoringHomeHref = useMemo(
-    () =>
-      buildFarmMonitoringHomePath(new URLSearchParams(searchParams.toString())),
-    [searchParams],
-  );
+  /** SSR·Link — Next searchParams. 클릭 시 window URL을 다시 읽는다. */
+  const monitoringHomeHref = useMemo(() => {
+    if (isAdmin) return ADMIN_NATIONAL_MAP_PATH;
+    return buildFarmMonitoringHomePath(
+      new URLSearchParams(searchParams.toString()),
+    );
+  }, [isAdmin, searchParams]);
 
   const doLiveRefresh = useCallback(async () => {
     if (hasFarmLiveRefreshHandler()) {
@@ -76,10 +83,22 @@ export function AppHeaderBrand() {
   const goMonitoringHome = useCallback(
     (e: MouseEvent<HTMLAnchorElement>) => {
       const live = currentFarmSearchParams();
+
+      // 관리자 홈은 전국 지도. 농장·차트에 남아 있으면 문서 이동으로 돌아간다.
+      // shallow는 SSR 농장 키를 유지해서 지도로 바뀌지 않고, 진행 중 전환에 막힌다.
+      if (isAdmin) {
+        e.preventDefault();
+        if (pathname === "/farm" && isAdminNationalMapHome(live)) {
+          if (!refreshBusy) runRefresh();
+          return;
+        }
+        window.location.assign(ADMIN_NATIONAL_MAP_PATH);
+        return;
+      }
+
       const homeParams = buildFarmMonitoringHomeParams(live);
       const href = buildFarmMonitoringHomePath(live);
 
-      // 이미 모니터링 홈 → 새로고침 (ScopeBar 새로고침 대체)
       if (pathname === "/farm" && isFarmMonitoringSoftHome(live)) {
         e.preventDefault();
         if (!refreshBusy) runRefresh();
@@ -93,11 +112,10 @@ export function AppHeaderBrand() {
         return;
       }
 
-      // 다른 경로 → soft home (농장·기간 유지)
       e.preventDefault();
-      navigate(href, { message: "모니터링으로 이동 중…" });
+      navigate(href, { message: t("nav.monitoring") });
     },
-    [pathname, navigate, refreshBusy, runRefresh],
+    [isAdmin, pathname, navigate, refreshBusy, runRefresh, t],
   );
 
   const logoStyle: CSSProperties | undefined =
@@ -107,11 +125,12 @@ export function AppHeaderBrand() {
         } as CSSProperties)
       : undefined;
 
+  const liveParams = new URLSearchParams(searchParams.toString());
   const softHome =
     pathname === "/farm" &&
-    isFarmMonitoringSoftHome(
-      new URLSearchParams(searchParams.toString()),
-    );
+    (isAdmin
+      ? isAdminNationalMapHome(liveParams)
+      : isFarmMonitoringSoftHome(liveParams));
 
   return (
     <div
@@ -122,18 +141,16 @@ export function AppHeaderBrand() {
     >
       <AppNavLink
         href={monitoringHomeHref}
-        message={
-          softHome ? "데이터 새로고침 중…" : "모니터링으로 이동 중…"
-        }
-        aria-label={softHome ? "데이터 새로고침" : "모니터링 홈"}
-        title={softHome ? "새로고침" : "모니터링 홈"}
+        message={softHome ? t("nav.refresh") : t("nav.monitoring")}
+        aria-label={softHome ? t("nav.refreshLabel") : t("nav.home")}
+        title={softHome ? t("nav.refreshShort") : t("nav.home")}
         aria-busy={mounted && refreshBusy ? true : undefined}
         onClick={goMonitoringHome}
         className={cn(
           dashboardUi.headerBrandIcon,
           mounted && titleWidth != null && "sm:w-[var(--brand-title-w)]",
           "transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-          mounted && refreshBusy && "pointer-events-none opacity-70",
+          mounted && softHome && refreshBusy && "pointer-events-none opacity-70",
         )}
         style={logoStyle}
       >

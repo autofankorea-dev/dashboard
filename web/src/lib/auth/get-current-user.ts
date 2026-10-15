@@ -5,6 +5,10 @@ import {
   parseControllerMeta,
   type ControllerMetaEntry,
 } from "@/lib/domain/controller-meta-shared";
+import {
+  parseProfileSheetPrefs,
+  type ProfileSheetPrefs,
+} from "@/lib/ui/profile-sheet-prefs";
 
 export type Role = "admin" | "operator" | "viewer";
 
@@ -31,6 +35,7 @@ export type CurrentUser = {
   hasAccess: boolean;
   /** profiles.ui_config 컨트롤러 표시명 — layout/meta와 동일 요청 내 재조회 방지 */
   controllerMetas: ControllerMetaEntry[];
+  sheetPrefs: ProfileSheetPrefs;
 };
 
 // React cache() 로 동일 요청 내 중복 조회 제거
@@ -72,6 +77,7 @@ export const getCurrentUser = cache(async (): Promise<CurrentUser | null> => {
     isAdmin,
     hasAccess,
     controllerMetas: parseControllerMeta(profile?.ui_config).controllers,
+    sheetPrefs: parseProfileSheetPrefs(profile?.ui_config),
   };
 });
 

@@ -3,9 +3,10 @@
 import { useEffect, useRef } from "react";
 import type { PanelDraft } from "@/lib/controllers/controller-panel-draft";
 import {
-  CHANNEL_SLOT_LABELS,
   type ChannelSlot,
 } from "@/lib/domain/iot-channel";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
+import { channelSlotCopyKey } from "@/lib/ui/sheet-copy";
 import {
   applyPresetCreateField,
   COMMAND_PRESET_NAME_MAX,
@@ -48,6 +49,7 @@ export function SettingsPresetCreateForm({
   error,
   disabled = false,
 }: Props) {
+  const t = useSheetCopy();
   const nameRef = useRef<HTMLInputElement>(null);
   const slots = SLOTS.filter((slot) => channels[slot] != null);
 
@@ -61,14 +63,14 @@ export function SettingsPresetCreateForm({
   return (
     <div className="flex flex-col gap-3">
       <label className="flex flex-col gap-1">
-        <span className="text-[11px] text-muted-foreground">이름</span>
+        <span className="text-[11px] text-muted-foreground">{t("preset.name")}</span>
         <input
           ref={nameRef}
           value={name}
           maxLength={COMMAND_PRESET_NAME_MAX}
           disabled={disabled}
-          placeholder="이름"
-          aria-label="프리셋 이름"
+          placeholder={t("preset.name")}
+          aria-label={t("preset.nameAria")}
           className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm outline-none"
           onChange={(e) => onName(e.target.value)}
         />
@@ -76,7 +78,7 @@ export function SettingsPresetCreateForm({
       {slots.map((slot) => {
         const draft = channels[slot] as PanelDraft;
         return (
-          <SettingsChannelWell key={slot} title={CHANNEL_SLOT_LABELS[slot]}>
+          <SettingsChannelWell key={slot} title={t(channelSlotCopyKey(slot))}>
             <SettingsChannelStepperGrid
               draft={draft}
               disabled={disabled}
@@ -89,8 +91,7 @@ export function SettingsPresetCreateForm({
         );
       })}
       <p className="text-[11px] text-muted-foreground">
-        {error ??
-          "설정·편차 0.1℃, 환기 5%. −/+를 꾹 누르면 연속입니다. 이 기기 칩만 만듭니다."}
+        {error ?? t("preset.formHint")}
       </p>
     </div>
   );

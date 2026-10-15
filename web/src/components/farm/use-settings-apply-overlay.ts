@@ -6,9 +6,10 @@ import { commandStatusLabel } from "@/lib/controllers/controller-settings";
 import type { CommandPipelineFlash } from "@/components/controllers/use-command-pipeline-tracker";
 import type { CommandPipelineOverlayState } from "@/components/farm/command-pipeline-overlay";
 import {
-  COMMAND_REGISTER_SUCCESS,
   pipelineDetailMessage,
 } from "@/lib/ui/controller-labels";
+import { useProfileSheetPrefs } from "@/components/account/profile-sheet-prefs";
+import { sheetCopy } from "@/lib/ui/sheet-copy";
 
 type Args = {
   isSaving: boolean;
@@ -37,6 +38,7 @@ export function useSettingsApplyOverlay({
   onAcknowledgeCommandOverlay,
   isUserInitiatedCommand,
 }: Args) {
+  const locale = useProfileSheetPrefs().locale;
   const [dismissed, setDismissed] = useState(false);
   const [alarmSavedFlash, setAlarmSavedFlash] = useState(false);
   const [prevSaving, setPrevSaving] = useState(isSaving);
@@ -83,8 +85,8 @@ export function useSettingsApplyOverlay({
         return {
           visible: true,
           phase: "loading",
-          title: "적용 중…",
-          detail: "설정을 저장하고 있습니다.",
+          title: sheetCopy(locale, "cmd.applying"),
+          detail: sheetCopy(locale, "cmd.saving"),
           autoDismiss: false,
         };
       }
@@ -106,7 +108,7 @@ export function useSettingsApplyOverlay({
       return {
         visible: true,
         phase: "error",
-        title: "적용 실패",
+        title: sheetCopy(locale, "cmd.applyFailed"),
         detail: panelError,
         autoDismiss: true,
       };
@@ -118,12 +120,12 @@ export function useSettingsApplyOverlay({
       return {
         visible: true,
         phase: "success",
-        title: "적용 완료",
+        title: sheetCopy(locale, "cmd.applied"),
         detail:
           flash?.text ??
           (setpoint
-            ? `설정온도 ${setpoint}로 적용했습니다.`
-            : "적용한 설정값이 표시됩니다."),
+            ? sheetCopy(locale, "cmd.setpointApplied", { value: setpoint })
+            : sheetCopy(locale, "cmd.panelShows")),
         autoDismiss: true,
         autoDismissMs: 4000,
       };
@@ -133,8 +135,8 @@ export function useSettingsApplyOverlay({
       return {
         visible: true,
         phase: "success",
-        title: "저장 완료",
-        detail: "알람·설정이 적용되었습니다.",
+        title: sheetCopy(locale, "cmd.saved"),
+        detail: sheetCopy(locale, "cmd.alarmSaved"),
         autoDismiss: true,
         autoDismissMs: 4000,
       };
@@ -144,8 +146,8 @@ export function useSettingsApplyOverlay({
       return {
         visible: true,
         phase: "error",
-        title: commandStatusLabel(command.status),
-        detail: pipelineDetailMessage(command.status, command.errorMsg),
+        title: commandStatusLabel(command.status, locale),
+        detail: pipelineDetailMessage(command.status, command.errorMsg, locale),
         autoDismiss: true,
       };
     }
@@ -164,10 +166,10 @@ export function useSettingsApplyOverlay({
       return {
         visible: true,
         phase: "success",
-        title: "적용 완료",
+        title: sheetCopy(locale, "cmd.applied"),
         detail: setpoint
-          ? `설정온도 ${setpoint} 명령을 보냈습니다. 연결된 컨트롤러에 곧 반영됩니다.`
-          : COMMAND_REGISTER_SUCCESS,
+          ? sheetCopy(locale, "cmd.setpointSent", { value: setpoint })
+          : sheetCopy(locale, "cmd.registerSuccess"),
         autoDismiss: true,
         autoDismissMs: 4000,
       };
@@ -176,9 +178,10 @@ export function useSettingsApplyOverlay({
     if (flash) {
       const isLiveConfirmFlash =
         flash.tone === "ok" &&
-        (flash.text.includes("현장 반영") ||
+        (flash.liveMatch === true ||
+          flash.text.includes("현장 반영") ||
           flash.text.includes("LIVE 설정온도") ||
-          flash.text.includes("LIVE 설정값이 명령과 일치"));
+          flash.text.includes("live setpoint"));
       if (
         isLiveConfirmFlash &&
         (suppressCommandStatus ||
@@ -196,7 +199,7 @@ export function useSettingsApplyOverlay({
             : flash.tone === "ok"
               ? "success"
               : "info",
-        title: command ? commandStatusLabel(command.status) : "상태",
+        title: command ? commandStatusLabel(command.status, locale) : sheetCopy(locale, "cmd.status"),
         detail: flash.text,
         autoDismiss: flash.tone !== "info",
       };
@@ -215,6 +218,7 @@ export function useSettingsApplyOverlay({
     isUserInitiatedCommand,
     liveConfirmed,
     panelError,
+    locale,
     suppressCommandStatus,
   ]);
 

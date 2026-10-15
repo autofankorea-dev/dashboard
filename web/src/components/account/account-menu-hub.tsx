@@ -7,30 +7,22 @@ import { accountMenuLayout } from "@/lib/ui/account-menu-layout";
 type Props = {
   name: string;
   avatarUrl: string | null;
-  email: string | null;
-  roleLabel?: string | null;
+  identity?: ReactNode;
   trailing?: ReactNode;
 };
 
-export function AccountMenuHub({
-  name,
-  avatarUrl,
-  email,
-  roleLabel,
-  trailing,
-}: Props) {
+export function AccountMenuHub({ name, avatarUrl, identity, trailing }: Props) {
   return (
-    <div className={accountMenuLayout.sheetHeader}>
+    <div className={accountMenuLayout.sheetHeader} data-tour-id="account-menu-hub">
       <ProfileAvatar url={avatarUrl} className={accountMenuLayout.hubAvatar} />
-      <div className="min-w-0 flex-1">
-        <p id="account-menu-sheet-title" className={accountMenuLayout.hubName}>
-          {name}
-        </p>
-        {email ? <p className={accountMenuLayout.hubMeta}>{email}</p> : null}
-        {roleLabel ? (
-          <p className={accountMenuLayout.hubMeta}>{roleLabel}</p>
-        ) : null}
-      </div>
+      <p id="account-menu-sheet-title" className={accountMenuLayout.hubName}>
+        {name}
+      </p>
+      {identity ? (
+        <div className={accountMenuLayout.sheetIdentity}>{identity}</div>
+      ) : (
+        <div className="min-w-0 flex-1" />
+      )}
       {trailing ? (
         <div className={accountMenuLayout.sheetHeaderActions}>{trailing}</div>
       ) : null}

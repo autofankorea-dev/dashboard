@@ -6,7 +6,8 @@ import type {
   HealthStatus,
   HealthNodeId,
 } from "@/lib/admin/health/types";
-import { HEALTH_STATUS_LABEL } from "@/lib/admin/health/types";
+import { healthNodeDisplay, healthStatusLabel } from "@/lib/admin/health/health-locale";
+import { useProfileSheetPrefs } from "@/components/account/profile-sheet-prefs";
 import {
   domRectToPeekAnchor,
   type HealthDagNodeSelectPayload,
@@ -50,6 +51,7 @@ export function HealthDataPathStrip({
   activeDrillId,
   compactCollectors = false,
 }: Props) {
+  const locale = useProfileSheetPrefs().locale;
   const select = (nodeId: HealthNodeId, e: MouseEvent<HTMLButtonElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     onNodeSelect?.({
@@ -68,7 +70,9 @@ export function HealthDataPathStrip({
       <div className={opsControl.pathStrip} role="list">
         {snapshot.pipeline.map((node, i) => {
           const active = activeDrillId === node.id;
-          const label = node.short || node.label;
+          const shown = healthNodeDisplay(node.id, node.label, node.short || node.label, locale);
+          const label = shown.short;
+          const statusText = healthStatusLabel(node.status, locale);
           return (
             <div key={node.id} className={opsControl.pathStep} role="listitem">
               {i > 0 ? (
@@ -80,8 +84,8 @@ export function HealthDataPathStrip({
                 type="button"
                 onClick={(e) => select(node.id, e)}
                 aria-pressed={active}
-                aria-label={`${node.label} · ${HEALTH_STATUS_LABEL[node.status]}`}
-                title={`${node.label} · ${HEALTH_STATUS_LABEL[node.status]}`}
+                aria-label={`${shown.label} · ${statusText}`}
+                title={`${shown.label} · ${statusText}`}
                 className={cn(
                   opsControl.chip,
                   healthStatusBorderClass(node.status),
@@ -102,7 +106,7 @@ export function HealthDataPathStrip({
                 <span className="min-w-0 md:flex-1">
                   <span className={opsTypography.chipLabel}>{label}</span>
                   <span className={opsTypography.chipMeta}>
-                    {HEALTH_STATUS_LABEL[node.status]}
+                    {statusText}
                   </span>
                 </span>
               </button>
@@ -138,14 +142,14 @@ export function HealthDataPathStrip({
                   id={node.id}
                   className="size-3 shrink-0"
                 />
-                {node.short || node.label}
+                {healthNodeDisplay(node.id, node.label, node.short || node.label, locale).short}
               </button>
             );
           })}
         </div>
       ) : compactCollectors && snapshot.collectorSub.length > 0 ? (
         <p className={cn("border-t pt-2", opsTypography.meta)}>
-          수집기 전부 정상
+          {locale === "en" ? "All collectors normal" : "수집기 전부 정상"}
         </p>
       ) : null}
     </div>

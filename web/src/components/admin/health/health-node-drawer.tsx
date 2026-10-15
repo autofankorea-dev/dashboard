@@ -25,6 +25,7 @@ import type {
   HealthStatus,
 } from "@/lib/admin/health/types";
 import { HEALTH_STATUS_LABEL } from "@/lib/admin/health/types";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { dashboardReadout, dashboardTypography } from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";
 
@@ -85,6 +86,7 @@ function PointRows({ points }: { points: HealthPoint[] }) {
 }
 
 function TechRows({ nodeId, liveRowLimit }: { nodeId: string; liveRowLimit?: number }) {
+  const t = useSheetCopy();
   const rows = healthNodeTechRows(nodeId, liveRowLimit);
   if (rows.length === 0) return null;
   return (
@@ -95,7 +97,7 @@ function TechRows({ nodeId, liveRowLimit }: { nodeId: string; liveRowLimit?: num
           "cursor-pointer list-none [&::-webkit-details-marker]:hidden",
         )}
       >
-        기술 · {rows.length}
+        {t("health.techCount", { count: rows.length })}
       </summary>
       <ul className="mt-1 space-y-0.5">
         {rows.map((row) => {

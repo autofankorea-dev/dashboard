@@ -7,6 +7,7 @@ import { isValidFarmKey } from "@/lib/domain/barn-catalog";
 import { farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
 import { farmShortLabel } from "@/lib/domain/farm-summaries";
 import { formatKst } from "@/lib/datetime/kst";
+import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { accountMenuLayout } from "@/lib/ui/account-menu-layout";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +38,8 @@ export function RecentActivityMenuSection({
   variant = "list",
   excludeActiveFarm = false,
 }: Props) {
+  const t = useSheetCopy();
+  const locale = useProfileSheetPrefs().locale;
   const [expanded, setExpanded] = useState(false);
 
   const allItems = useMemo(() => {
@@ -60,7 +63,7 @@ export function RecentActivityMenuSection({
 
   const microHeader = (
     <div className={accountMenuLayout.sectionMicroHeader}>
-      <span className={accountMenuLayout.sectionMicroLabel}>최근</span>
+      <span className={accountMenuLayout.sectionMicroLabel}>{t("account.recent")}</span>
       <div className="flex items-center gap-2">
         {hiddenCount > 0 ? (
           <button
@@ -78,11 +81,11 @@ export function RecentActivityMenuSection({
 
   const list =
     items.length === 0 ? (
-      <p className={accountMenuLayout.inlineMeta}>최근 수신 데이터가 없습니다.</p>
+      <p className={accountMenuLayout.inlineMeta}>{t("account.recentEmpty")}</p>
     ) : (
       <ul className={accountMenuLayout.list}>
         {items.map((r) => {
-          const label = farmShortLabel(r.farmKey);
+          const label = farmShortLabel(r.farmKey, locale);
           const meta = formatKst(r.receivedAt, "short");
           const line = `${label} · ${meta}`;
 
@@ -92,7 +95,7 @@ export function RecentActivityMenuSection({
                 <button
                   type="button"
                   className={accountMenuLayout.listInlineRow}
-                  aria-label={`${line} · 농장으로 이동`}
+                  aria-label={t("account.openFarm", { line })}
                   onClick={() => onItemNavigate(r.farmKey)}
                 >
                   {line}
@@ -125,7 +128,7 @@ export function RecentActivityMenuSection({
         data-tour-id="account-menu-activity"
       >
         {allItems.map((r) => {
-          const label = farmShortLabel(r.farmKey);
+          const label = farmShortLabel(r.farmKey, locale);
           const meta = formatKst(r.receivedAt, "short");
           const timePart = meta.split(" ").slice(-1)[0] ?? meta;
           const chipLabel = `${label} · ${timePart}`;
@@ -136,7 +139,7 @@ export function RecentActivityMenuSection({
                 key={`${farmKeyId(r.farmKey)}-${r.moduleUid}`}
                 type="button"
                 className={accountMenuLayout.activityChip}
-                aria-label={`${chipLabel} · 농장으로 이동`}
+                aria-label={t("account.openFarm", { line: chipLabel })}
                 onClick={() => onItemNavigate(r.farmKey)}
               >
                 {chipLabel}

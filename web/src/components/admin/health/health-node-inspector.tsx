@@ -11,9 +11,10 @@ import {
   healthNodeShort,
   healthNodeStatus,
 } from "@/lib/admin/health/health-node-inspector-meta";
+import { healthNodeDisplay, healthStatusLabel } from "@/lib/admin/health/health-locale";
 import { healthNodeTitle } from "@/lib/admin/health/health-ui-labels";
-import { HEALTH_STATUS_LABEL } from "@/lib/admin/health/types";
 import type { HealthNodeId, HealthSnapshot, HealthStatus } from "@/lib/admin/health/types";
+import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { dashboardTypography } from "@/lib/ui/dashboard-page-ui";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { cn } from "@/lib/utils";
@@ -77,9 +78,15 @@ function InspectorHeader({
   snapshot: HealthSnapshot;
   onClose: () => void;
 }) {
+  const t = useSheetCopy();
+  const locale = useProfileSheetPrefs().locale;
   const status = healthNodeStatus(nodeId, snapshot);
-  const short = healthNodeShort(nodeId);
-  const title = healthNodeTitle(nodeId);
+  const display = healthNodeDisplay(
+    nodeId,
+    healthNodeTitle(nodeId),
+    healthNodeShort(nodeId),
+    locale,
+  );
   return (
     <div className="flex shrink-0 items-center gap-2 border-b px-3 py-1.5">
       <span className="relative inline-flex">
@@ -94,18 +101,18 @@ function InspectorHeader({
       </span>
       <p
         className={cn(dashboardTypography.cardTitle, "min-w-0 flex-1 truncate leading-tight")}
-        title={`${title} · ${nodeId}`}
+        title={`${display.label} · ${nodeId}`}
       >
-        {short}
+        {display.short}
         <span className={cn(dashboardTypography.meta, "ml-1.5 font-normal")}>
-          {HEALTH_STATUS_LABEL[status]}
+          {healthStatusLabel(status, locale)}
         </span>
       </p>
       <button
         type="button"
         onClick={onClose}
         className="rounded-md p-1 text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-        aria-label="닫기"
+        aria-label={t("settings.close")}
       >
         <X className="size-4" />
       </button>
@@ -119,6 +126,8 @@ export function HealthNodeInspector({
   placement,
   onClose,
 }: Props) {
+  const t = useSheetCopy();
+  const locale = useProfileSheetPrefs().locale;
   useEffect(() => {
     if (!nodeId || placement === "sheet") return;
     const onKey = (e: KeyboardEvent) => {
@@ -137,10 +146,10 @@ export function HealthNodeInspector({
           nodeId ? (
             <span className="inline-flex items-center gap-2">
               <HealthPipelineIcon id={nodeId} className="size-4" />
-              {healthNodeShort(nodeId)}
+              {healthNodeDisplay(nodeId, healthNodeTitle(nodeId), healthNodeShort(nodeId), locale).short}
             </span>
           ) : (
-            "노드"
+            t("health.node")
           )
         }
         contentClassName="min-h-0"
@@ -160,7 +169,9 @@ export function HealthNodeInspector({
   return (
     <aside
       role="dialog"
-      aria-label={`${healthNodeTitle(nodeId)} 상세`}
+      aria-label={t("ui.detailNamed", {
+        name: healthNodeDisplay(nodeId, healthNodeTitle(nodeId), healthNodeShort(nodeId), locale).label,
+      })}
       className={cn(
         "flex min-h-0 flex-col overflow-hidden bg-card",
         "animate-in slide-in-from-right-4 fade-in-0",

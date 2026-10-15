@@ -238,18 +238,21 @@ export function mergeThermoSettingsMaps(
   return out;
 }
 
-export function commandStatusLabel(status: ThermoCommand["status"]): string {
+export function commandStatusLabel(
+  status: ThermoCommand["status"],
+  locale: "ko" | "en" = "ko",
+): string {
   switch (status) {
     case "pending":
-      return "전송 대기";
+      return locale === "en" ? "Waiting to send" : "전송 대기";
     case "sent":
-      return "전송 완료";
+      return locale === "en" ? "Sent" : "전송 완료";
     case "applied":
-      return "적용 완료";
+      return locale === "en" ? "Applied" : "적용 완료";
     case "failed":
-      return "실패";
+      return locale === "en" ? "Failed" : "실패";
     case "cancelled":
-      return "취소";
+      return locale === "en" ? "Cancelled" : "취소";
     default:
       return status;
   }

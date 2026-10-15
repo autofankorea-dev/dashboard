@@ -23,7 +23,10 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { CHANNEL_SLOT_LABELS, type ChannelSlot } from "@/lib/domain/iot-channel";
+import { type ChannelSlot } from "@/lib/domain/iot-channel";
+import { useProfileSheetPrefs } from "@/components/account/profile-sheet-prefs";
+import { channelSlotCopyKey, sheetCopy } from "@/lib/ui/sheet-copy";
+import type { SheetLocale } from "@/lib/ui/profile-sheet-prefs";
 import {
   COMMAND_HOLD_CHANNELS,
   type CommandChannelFlags,
@@ -51,7 +54,34 @@ export type LayerGroupId = "temp" | "hum" | "motor";
 
 const LAYER_TOOLBAR_GROUPS: readonly LayerGroupId[] = ["temp", "hum", "motor"];
 
-const EMPTY_METRIC_CARD = "데이터가 없습니다";
+function groupName(group: LayerGroupId, locale: SheetLocale): string {
+  const key = group === "temp" ? "chart.temp" : group === "hum" ? "chart.humidity" : "chart.motor";
+  return sheetCopy(locale, key);
+}
+
+function modeTooltip(group: LayerGroupId, mode: LayerGroupCycleMode, locale: SheetLocale): string {
+  const name = groupName(group, locale);
+  return sheetCopy(locale, mode === "base" ? "chart.baseView" : "chart.graphOff", { name });
+}
+
+function nextModeHint(group: LayerGroupId, mode: LayerGroupCycleMode, locale: SheetLocale): string {
+  return sheetCopy(locale, "chart.nextPrefix", {
+    hint: modeTooltip(group, nextLayerGroupMode(mode), locale),
+  });
+}
+
+function alarmRangeTooltip(kind: "temp" | "hum", on: boolean, locale: SheetLocale): string {
+  const name = sheetCopy(locale, kind === "temp" ? "chart.tempAlarm" : "chart.humAlarm");
+  return sheetCopy(locale, on ? "chart.rangeOn" : "chart.rangeOff", { name });
+}
+
+function controllerToggleTooltip(eqpmnNo: string, on: boolean, locale: SheetLocale): string {
+  const no = formatControllerNoLabel(eqpmnNo);
+  const name = locale === "en"
+    ? sheetCopy("en", "slot.controllerNo", { eq: no.replace(/번$/, "") })
+    : `컨트롤러 ${no}`;
+  return sheetCopy(locale, on ? "chart.toggleOn" : "chart.toggleOff", { name });
+}
 
 /** 그룹 토글 사이클: 기본보기(본선+산포) ↔ 끔 */
 export type LayerGroupCycleMode = "base" | "off";
@@ -169,27 +199,6 @@ export function applyLayerGroupMode(
   return next;
 }
 
-function modeTooltip(group: LayerGroupId, mode: LayerGroupCycleMode): string {
-  const name = GROUP_META[group].baseLabel;
-  if (mode === "base") return `${name} 기본보기`;
-  return `${name} 그래프 끔`;
-}
-
-function nextModeHint(group: LayerGroupId, mode: LayerGroupCycleMode): string {
-  return `다음: ${modeTooltip(group, nextLayerGroupMode(mode))}`;
-}
-
-function alarmRangeTooltip(kind: "temp" | "hum", on: boolean): string {
-  const name = kind === "temp" ? "온도 알람" : "습도 알람";
-  return on
-    ? `${name} 범위 켜짐 · 다음: 끔`
-    : `${name} 범위 꺼짐 · 다음: 켬`;
-}
-
-function controllerToggleTooltip(eqpmnNo: string, on: boolean): string {
-  const name = `컨트롤러 ${formatControllerNoLabel(eqpmnNo)}`;
-  return on ? `${name} 켬 · 다음: 끔` : `${name} 끔 · 다음: 켬`;
-}
 
 export type LayerControllerToggle = {
   key: string;
@@ -324,6 +333,7 @@ function EmptyMetricNoticeCard({
   anchor: HTMLElement | null;
   phase: "enter" | "exit";
 }) {
+  const locale = useProfileSheetPrefs().locale;
   const [box, setBox] = useState<{ top: number; left: number } | null>(() => {
     if (!anchor) return null;
     const r = anchor.getBoundingClientRect();
@@ -362,7 +372,7 @@ function EmptyMetricNoticeCard({
           farmChartUi.fsBody,
         )}
       >
-        {EMPTY_METRIC_CARD}
+        {sheetCopy(locale, "chart.emptyCard")}
       </div>
     </div>,
     document.body,
@@ -409,6 +419,7 @@ export function UnifiedTrendLayerToolbar({
   controllerToggles,
   onToggleController,
 }: Props) {
+  const locale = useProfileSheetPrefs().locale;
   const [emptyNotice, setEmptyNotice] = useState<LayerGroupId | null>(null);
   const [emptyAnchor, setEmptyAnchor] = useState<HTMLElement | null>(null);
   const emptyPresence = usePresenceValue(emptyAnchor, {
@@ -456,7 +467,7 @@ export function UnifiedTrendLayerToolbar({
         data-tour-id="unified-trend-layer-toolbar"
         data-placement="inline"
         role="group"
-        aria-label="통합 추이 레이어"
+        aria-label={sheetCopy(locale, "chart.layers")}
       >
         {LAYER_TOOLBAR_GROUPS.map((group) => {
           const meta = GROUP_META[group];
@@ -467,8 +478,8 @@ export function UnifiedTrendLayerToolbar({
           const on = hasSeries && mode !== "off";
           const emptyOpen = emptyNotice === group;
           const tip = empty
-            ? `${meta.baseLabel} · ${EMPTY_METRIC_CARD}`
-            : `${modeTooltip(group, mode)} · ${nextModeHint(group, mode)}`;
+            ? `${groupName(group, locale)} · ${sheetCopy(locale, "chart.emptyCard")}`
+            : `${modeTooltip(group, mode, locale)} · ${nextModeHint(group, mode, locale)}`;
 
           return (
             <div
@@ -520,7 +531,7 @@ export function UnifiedTrendLayerToolbar({
         {tempAlarmAvailable && onToggleTempAlarm ? (
           <div className="relative overflow-visible">
             <IconTipButton
-              label={alarmRangeTooltip("temp", tempAlarmOn)}
+              label={alarmRangeTooltip("temp", tempAlarmOn, locale)}
               pressed={tempAlarmOn}
               on={tempAlarmOn}
               muted={!tempAlarmOn}
@@ -542,7 +553,7 @@ export function UnifiedTrendLayerToolbar({
         {humAlarmAvailable && onToggleHumAlarm ? (
           <div className="relative overflow-visible">
             <IconTipButton
-              label={alarmRangeTooltip("hum", humAlarmOn)}
+              label={alarmRangeTooltip("hum", humAlarmOn, locale)}
               pressed={humAlarmOn}
               on={humAlarmOn}
               muted={!humAlarmOn}
@@ -575,7 +586,7 @@ export function UnifiedTrendLayerToolbar({
             {controllerToggles.map((item) => (
               <div key={item.key} className="relative overflow-visible">
                 <IconTipButton
-                  label={controllerToggleTooltip(item.eqpmnNo, item.on)}
+                  label={controllerToggleTooltip(item.eqpmnNo, item.on, locale)}
                   pressed={item.on}
                   on={item.on}
                   muted={!item.on}
@@ -617,6 +628,7 @@ export function CommandChannelLayerToolbar({
   onToggle: (channel: ChannelSlot) => void;
   className?: string;
 }) {
+  const locale = useProfileSheetPrefs().locale;
   return (
     <TooltipProvider delay={200}>
       <div
@@ -626,13 +638,12 @@ export function CommandChannelLayerToolbar({
         )}
         data-tour-id="chart-command-channel-toolbar"
         role="group"
-        aria-label="명령 이력 채널"
+        aria-label={sheetCopy(locale, "chart.commandLane")}
       >
         {COMMAND_HOLD_CHANNELS.map((channel) => {
           const on = channels[channel];
-          const label = on
-            ? `${CHANNEL_SLOT_LABELS[channel]} 명령 이력 · 다음: 끔`
-            : `${CHANNEL_SLOT_LABELS[channel]} 명령 이력 끔 · 다음: 켬`;
+          const slot = sheetCopy(locale, channelSlotCopyKey(channel));
+          const label = sheetCopy(locale, on ? "chart.commandOn" : "chart.commandOff", { slot });
           return (
             <div key={channel} className="relative overflow-visible">
               <IconTipButton

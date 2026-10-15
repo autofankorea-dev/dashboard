@@ -19,6 +19,8 @@ import {
 } from "@/lib/farm/trend-chart-format";
 import type { UplinkCoverageBand } from "@/lib/farm/trend-uplink-coverage";
 import { cn } from "@/lib/utils";
+import { useProfileSheetPrefs } from "@/components/account/profile-sheet-prefs";
+import { sheetCopy, translateFixedLabel } from "@/lib/ui/sheet-copy";
 import type { PositionedCommandSettingHit } from "@/lib/farm/trend-chart-layout";
 
 /**
@@ -49,6 +51,7 @@ export function TrendChartLegend({
   coverageBands: UplinkCoverageBand[];
   eventLane: TrendEventLane | null;
 }) {
+  const locale = useProfileSheetPrefs().locale;
   if (!showLegend && !legendTrailing) return null;
   return (
   <div
@@ -65,7 +68,7 @@ export function TrendChartLegend({
         label: string;
         node: ReactNode;
       };
-      const items: LegendItem[] = [];
+      const items: Array<LegendItem & { sourceLabel: string }> = [];
 
       for (const s of series) {
         if (
@@ -78,7 +81,8 @@ export function TrendChartLegend({
         items.push({
           key: `s-${s.name}`,
           group: inferHoverMetricGroup(s.name),
-          label: s.name,
+          label: translateFixedLabel(locale, s.name),
+          sourceLabel: s.name,
           node: (
             <span className="inline-flex items-center gap-1 farm-chart-fs-legend text-muted-foreground">
               <span
@@ -93,9 +97,9 @@ export function TrendChartLegend({
                 }}
                 aria-hidden
               />
-              {s.name}
+              {translateFixedLabel(locale, s.name)}
               {(s.axis ?? "left") === "right" && usesRight ? (
-                <span className="opacity-60">(우)</span>
+                <span className="opacity-60">({sheetCopy(locale, "chart.right")})</span>
               ) : null}
             </span>
           ),
@@ -108,13 +112,15 @@ export function TrendChartLegend({
           const ch = hit.seg.mark.hold?.channel;
           if (!ch || seen.has(ch)) continue;
           seen.add(ch);
-          const label = CHANNEL_SLOT_LABELS[ch];
+          const sourceLabel = CHANNEL_SLOT_LABELS[ch];
+          const label = translateFixedLabel(locale, sourceLabel);
           const dash = COMMAND_SETTING_DASH[ch];
           const fillOp = COMMAND_SETTING_FILL_OPACITY[ch];
           items.push({
             key: `cmd-set-${ch}`,
             group: "temp",
             label,
+            sourceLabel,
             node: (
               <span className="inline-flex items-center gap-1 farm-chart-fs-legend text-muted-foreground">
                 <span
@@ -161,7 +167,8 @@ export function TrendChartLegend({
           items.push({
             key: `env-${idx}`,
             group: inferHoverMetricGroup(env.legendLabel),
-            label: env.legendLabel,
+            label: translateFixedLabel(locale, env.legendLabel),
+            sourceLabel: env.legendLabel,
             node: (
               <span className="inline-flex items-center gap-1 farm-chart-fs-legend text-muted-foreground">
                 <span
@@ -172,7 +179,7 @@ export function TrendChartLegend({
                   }}
                   aria-hidden
                 />
-                {env.legendLabel}
+                {translateFixedLabel(locale, env.legendLabel)}
               </span>
             ),
           });
@@ -190,7 +197,8 @@ export function TrendChartLegend({
         items.push({
           key: `hist-${idx}`,
           group: inferHoverMetricGroup(h.legendLabel),
-          label: h.legendLabel,
+          label: translateFixedLabel(locale, h.legendLabel),
+          sourceLabel: h.legendLabel,
           node: (
             <span className="inline-flex items-center gap-1 farm-chart-fs-legend text-muted-foreground">
               {h.style === "volume" ? (
@@ -214,7 +222,7 @@ export function TrendChartLegend({
                   />
                 </span>
               )}
-              {h.legendLabel}
+              {translateFixedLabel(locale, h.legendLabel)}
             </span>
           ),
         });
@@ -222,9 +230,9 @@ export function TrendChartLegend({
 
       const GROUP_ORDER: HoverMetricGroup[] = ["temp", "hum", "motor"];
       const GROUP_ARIA: Record<HoverMetricGroup, string> = {
-        temp: "온도",
-        hum: "습도",
-        motor: "모터",
+        temp: sheetCopy(locale, "chart.temp"),
+        hum: sheetCopy(locale, "chart.humidity"),
+        motor: sheetCopy(locale, "chart.motor"),
       };
       /** 그룹 안 표시 순서 */
       const LABEL_RANK: Record<HoverMetricGroup, string[]> = {
@@ -258,9 +266,9 @@ export function TrendChartLegend({
       };
 
       const coverageLegend = [
-        { kind: "sparse" as const, label: "희소", fill: "var(--status-warn)", opacity: 0.55 },
-        { kind: "offline" as const, label: "통신두절", fill: "var(--status-danger)", opacity: 0.55 },
-        { kind: "void" as const, label: "없음", fill: "currentColor", opacity: 0.35 },
+        { kind: "sparse" as const, label: sheetCopy(locale, "chart.sparse"), fill: "var(--status-warn)", opacity: 0.55 },
+        { kind: "offline" as const, label: sheetCopy(locale, "chart.commDown"), fill: "var(--status-danger)", opacity: 0.55 },
+        { kind: "void" as const, label: sheetCopy(locale, "chart.none"), fill: "currentColor", opacity: 0.35 },
       ].filter((item) => coverageBands.some((b) => b.kind === item.kind));
 
       return (
@@ -270,8 +278,8 @@ export function TrendChartLegend({
           .filter((it) => it.group === group)
           .sort(
             (a, b) =>
-              rank(group, a.label) - rank(group, b.label) ||
-              a.label.localeCompare(b.label, "ko"),
+              rank(group, a.sourceLabel) - rank(group, b.sourceLabel) ||
+              a.label.localeCompare(b.label, locale),
           );
         if (groupItems.length === 0) return null;
         return (
@@ -298,7 +306,7 @@ export function TrendChartLegend({
           {coverageLegend.length > 0 ? (
             <div
               role="group"
-              aria-label="수신 상태"
+              aria-label={sheetCopy(locale, "chart.coverage")}
               className="inline-flex flex-wrap items-center gap-x-2.5 gap-y-1"
             >
               {coverageLegend.map((item) => (

@@ -42,6 +42,39 @@ export const STALL_TYPE_NAMES: Record<string, string> = {
   SB01: "양봉장",
 };
 
+/** 화면 표시 전용. 장비 명령과 PDF는 STALL_TYPE_NAMES를 유지한다. */
+export const STALL_TYPE_NAMES_EN: Record<string, string> = {
+  SP01: "Gilt house",
+  SP02: "Gestation",
+  SP03: "Farrowing",
+  SP04: "Baby house",
+  SP05: "Nursery",
+  SP06: "Grower",
+  SP07: "Finisher",
+  SP08: "Test house",
+  SP09: "Breeding",
+  SP10: "Compost",
+  SW01: "Cattle barn",
+  SW02: "Milking parlor",
+  SW03: "Compost",
+  SD01: "Cattle barn",
+  SD02: "Milking parlor",
+  SD03: "Compost",
+  SH01: "Pullet house",
+  SH02: "Layer house",
+  SH03: "Breeder pullet",
+  SH04: "Breeder house",
+  SH05: "Broiler house",
+  SH06: "Grading",
+  SH07: "Poultry house",
+  SH08: "Compost",
+  ST01: "Breeder duck",
+  ST02: "Meat duck",
+  SR01: "Deer pen",
+  SI01: "Insect house",
+  SB01: "Apiary",
+};
+
 const STALL_PREFIX_ORDER: Record<string, number> = {
   SW: 10,
   SD: 20,
@@ -71,13 +104,33 @@ export function getStallTypeName(code: string | null | undefined): string {
   return STALL_TYPE_NAMES[key] ?? key;
 }
 
-/** UI 표시용 — SP 코드 없이 축사유형명만 (예: 후보돈사) */
+/** UI 표시용 — SP 코드 없이 축사유형명만 (예: 후보돈사). 한국어 고정. */
 export function formatStallTypeLabel(code: string | null | undefined): string {
   const key = normalizeStallTyCode(code);
   return getStallTypeName(key);
 }
 
+/** 화면 표시용. locale이 ko면 formatStallTypeLabel과 같다. */
+export function formatStallTypeLabelLocalized(
+  code: string | null | undefined,
+  locale: "ko" | "en",
+): string {
+  const key = normalizeStallTyCode(code);
+  if (locale === "en") return STALL_TYPE_NAMES_EN[key] ?? STALL_TYPE_NAMES[key] ?? key;
+  return STALL_TYPE_NAMES[key] ?? key;
+}
+
 /** 모바일 등 좁은 타일 — 괄호 부설명 생략 (예: 퇴비장(분뇨처리장) → 퇴비장) */
+export function formatStallTypeLabelCompactLocalized(
+  code: string | null | undefined,
+  locale: "ko" | "en",
+): string {
+  const full = formatStallTypeLabelLocalized(code, locale);
+  const paren = full.indexOf("(");
+  if (paren > 0) return full.slice(0, paren).trim();
+  return full;
+}
+
 export function formatStallTypeLabelCompact(
   code: string | null | undefined
 ): string {

@@ -2,9 +2,9 @@
 
 import { useSyncExternalStore } from "react";
 import { Bell, FileText, Moon, Sun } from "lucide-react";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import {
   PROFILE_PIN_DRAG_MIME,
-  PROFILE_PIN_TOOL_META,
   type ProfilePinToolId,
 } from "@/lib/ui/profile-pin-tools";
 import {
@@ -51,8 +51,14 @@ export function ProfilePinToolChip({
     () => getDashboardTheme() === "dark",
     () => false,
   );
+  const t = useSheetCopy();
 
-  const meta = PROFILE_PIN_TOOL_META[toolId];
+  const label =
+    toolId === "alarm"
+      ? t("tools.alarm")
+      : toolId === "pdf"
+        ? t("tools.report")
+        : t("tools.theme");
   const Icon =
     toolId === "alarm"
       ? Bell
@@ -65,9 +71,9 @@ export function ProfilePinToolChip({
   const ariaLabel =
     toolId === "theme"
       ? themeDark
-        ? "라이트 모드"
-        : "다크 모드"
-      : meta.label;
+        ? t("account.lightMode")
+        : t("account.darkMode")
+      : label;
 
   if (variant === "tile") {
     return (
@@ -77,7 +83,7 @@ export function ProfilePinToolChip({
         data-profile-pin-tool={toolId}
         data-tour-id={tourId ?? `profile-pin-${toolId}`}
         aria-label={ariaLabel}
-        title={meta.label}
+        title={label}
         aria-pressed={active || undefined}
         className={cn(
           accountMenuLayout.toolTile,
@@ -126,7 +132,7 @@ export function ProfilePinToolChip({
       data-profile-pin-tool={toolId}
       data-tour-id={tourId ?? `profile-pin-${toolId}`}
       aria-label={ariaLabel}
-      title={meta.label}
+      title={label}
       aria-pressed={active || undefined}
       className={cn(
         dashboardUi.topHeaderActionBtn,
@@ -252,6 +258,7 @@ export function ProfilePinHeaderDropZone({
   visible: boolean;
   onUnpinTool: (id: ProfilePinToolId) => void;
 }) {
+  const t = useSheetCopy();
   if (!visible) return null;
   return (
     <div
@@ -259,7 +266,7 @@ export function ProfilePinHeaderDropZone({
         "flex size-9 shrink-0 items-center justify-center rounded-lg border-2 border-dashed border-border/80 bg-muted/30 text-[10px] text-muted-foreground",
         motionClass.microInteractive,
       )}
-      aria-label="헤더로 도구 되돌리기"
+      aria-label={t("account.returnTool")}
       onDragOver={(e) => {
         e.preventDefault();
         e.dataTransfer.dropEffect = "move";

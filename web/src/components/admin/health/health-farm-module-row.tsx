@@ -1,8 +1,12 @@
+"use client";
+
 import Link from "next/link";
+import { useProfileSheetPrefs } from "@/components/account/profile-sheet-prefs";
+import { healthStatusLabel } from "@/lib/admin/health/health-locale";
+import { localizeFarmSpeciesLabel } from "@/lib/domain/farm-summaries";
 import { Clock, Cpu } from "lucide-react";
 import { HealthErrorActionLines } from "@/components/admin/health/health-error-action";
 import type { ModuleHealthRow } from "@/lib/admin/health/types";
-import { HEALTH_STATUS_LABEL } from "@/lib/admin/health/types";
 import { adminOpsHealthHref } from "@/lib/admin/health/health-routes";
 import { classifyHealthError } from "@/lib/admin/health/d11-map";
 import { formatHealthAgeMin } from "@/lib/admin/health/format-health-time";
@@ -31,13 +35,14 @@ function statusDotClass(status: ModuleHealthRow["status"]): string {
 }
 
 export function HealthFarmModuleRow({ row, highlightFarmId = null }: Props) {
+  const locale = useProfileSheetPrefs().locale;
   const farmSlug = farmKeyUrlSlug(row.farmId);
   const highlighted =
     highlightFarmId != null &&
     (row.farmId === highlightFarmId || farmSlug === highlightFarmId);
-  const ago = formatHealthAgeMin(row.ageMin);
+  const ago = formatHealthAgeMin(row.ageMin, locale);
   const action = classifyHealthError(row.d11Hint, row.scope);
-  const statusLabel = HEALTH_STATUS_LABEL[row.status];
+  const statusLabel = healthStatusLabel(row.status, locale);
 
   return (
     <li
@@ -58,7 +63,7 @@ export function HealthFarmModuleRow({ row, highlightFarmId = null }: Props) {
           title={row.farmId}
           className={cn(dashboardUi.cardTitle, "min-w-0 truncate hover:underline")}
         >
-          {row.farmLabel}
+          {localizeFarmSpeciesLabel(row.farmLabel, locale)}
         </Link>
         <span className="text-muted-foreground">{row.moduleLabel}</span>
         <span className="inline-flex items-center gap-0.5" title="제어기">
@@ -82,7 +87,7 @@ export function HealthFarmModuleRow({ row, highlightFarmId = null }: Props) {
         {ago ? (
           <span
             className="inline-flex items-center gap-0.5 text-muted-foreground"
-            title={row.ageMin != null ? `${Math.round(row.ageMin)}분 전` : undefined}
+            title={ago ?? undefined}
           >
             <Clock className="size-3.5" aria-hidden />
             <span>{ago}</span>

@@ -8,6 +8,7 @@ import {
   type ComponentProps,
   type MouseEvent,
 } from "react";
+import { useProfileSheetPrefs } from "@/components/account/profile-sheet-prefs";
 import { useAppNavigate } from "@/components/layout/use-app-navigate";
 import { hrefToString, shouldUseGlobalNav } from "@/lib/navigation/nav-utils";
 import type { NavMessageOptions } from "@/lib/navigation/nav-messages";
@@ -28,6 +29,7 @@ export function AppNavLink({
 }: AppNavLinkProps) {
   const pathname = usePathname();
   const { navigate, isPending } = useAppNavigate();
+  const { locale } = useProfileSheetPrefs();
   const hrefStr = hrefToString(href as Parameters<typeof hrefToString>[0]);
   const useGlobal = shouldUseGlobalNav(hrefStr, pathname);
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
@@ -43,9 +45,9 @@ export function AppNavLink({
       if (!useGlobal) return;
       e.preventDefault();
       /* pending 중이어도 navigate가 목적지를 교체 */
-      navigate(hrefStr, { message, sublabel });
+      navigate(hrefStr, { message, sublabel, locale });
     },
-    [onClick, useGlobal, navigate, hrefStr, message, sublabel],
+    [onClick, useGlobal, navigate, hrefStr, message, sublabel, locale],
   );
 
   return (

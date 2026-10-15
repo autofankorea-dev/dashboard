@@ -22,6 +22,7 @@ import {
   type StackMetricRowWithValues,
 } from "@/lib/farm/stack-metric";
 import { cn } from "@/lib/utils";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { dashboardAffordance } from "@/lib/ui/dashboard-page-ui";
 
 const CELL_H = 14; // 집계 히트맵 행 높이(px)
@@ -383,6 +384,7 @@ export function SeverityHeatmap({
   className,
 }: Props) {
   const { navigate, isPending } = useAppNavigate();
+  const t = useSheetCopy();
   const [selected, setSelected] = useState<string | null>(null);
   const [seq, setSeq] = useState(0);
 
@@ -408,7 +410,7 @@ export function SeverityHeatmap({
 
   const move = (href: string | null) => {
     if (!href) return;
-    navigate(href, { message: "컨트롤러 페이지로 이동 중…" });
+    navigate(href, { message: t("nav.controller") });
   };
 
   return (

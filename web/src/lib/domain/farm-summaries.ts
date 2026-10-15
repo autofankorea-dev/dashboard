@@ -7,7 +7,8 @@ import {
   type FarmKey,
 } from "@/lib/domain/farm-key";
 import type { BarnReading } from "@/lib/domain/iot-types";
-import { getItemCodeName } from "@/lib/domain/item-code";
+import { getItemCodeNameLocalized } from "@/lib/domain/item-code";
+import type { SheetLocale } from "@/lib/ui/profile-sheet-prefs";
 import { sensorValueForDisplay } from "@/lib/domain/reading-display";
 
 export type FarmSummaryRow = {
@@ -73,41 +74,75 @@ export function buildFarmSummaries(
   });
 }
 
-export function formatReceivedAgo(iso: string | null): string {
+export function formatReceivedAgo(
+  iso: string | null,
+  locale: SheetLocale = "ko",
+): string {
   if (!iso) return "—";
   const diffMs = Date.now() - new Date(iso).getTime();
-  if (diffMs < 60_000) return "방금";
   const minutes = Math.floor(diffMs / 60_000);
-  if (minutes < 60) return `${minutes}분 전`;
   const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
+  if (locale === "en") {
+    if (diffMs < 60_000) return "just now";
+    if (minutes < 60) return `${minutes} min ago`;
+    if (hours < 24) return `${hours} h ago`;
+    return `${days} d ago`;
+  }
+  if (diffMs < 60_000) return "방금";
+  if (minutes < 60) return `${minutes}분 전`;
   if (hours < 24) return `${hours}시간 전`;
-  return `${Math.floor(hours / 24)}일 전`;
+  return `${days}일 전`;
 }
 
-export function farmLabel(farmKey: FarmKey): string {
-  const itemName = getItemCodeName(farmKey.itemCode);
+export function farmLabel(farmKey: FarmKey, locale: SheetLocale = "ko"): string {
+  const itemName = getItemCodeNameLocalized(farmKey.itemCode, locale);
   return `${farmKey.lsindRegistNo} · ${itemName}`;
 }
 
 /** Pill·드롭다운·트리용 짧은 라벨 */
-export function farmShortLabel(farmKey: FarmKey): string {
-  const itemName = getItemCodeName(farmKey.itemCode);
-  return `${farmKey.lsindRegistNo} · ${itemName}`;
+export function farmShortLabel(farmKey: FarmKey, locale: SheetLocale = "ko"): string {
+  return farmLabel(farmKey, locale);
 }
 
 /** 프로필 농장명 우선, 없으면 등록번호·축종 라벨 */
 export function farmDisplayLabel(
   farmKey: FarmKey,
   farmName?: string | null,
+  locale: SheetLocale = "ko",
 ): string {
   const n = farmName?.trim();
-  return n || farmShortLabel(farmKey);
+  return n || farmShortLabel(farmKey, locale);
 }
 
 /** 내부 farmKeyId(lsind/itemCode) → 사용자 표시 라벨 */
-export function farmShortLabelFromId(farmId: string): string {
+export function farmShortLabelFromId(farmId: string, locale: SheetLocale = "ko"): string {
   const fk = parseFarmKeyId(farmId);
-  return fk ? farmShortLabel(fk) : farmId;
+  return fk ? farmShortLabel(fk, locale) : farmId;
+}
+
+const SPECIES_EN: Record<string, string> = {
+  한우: "Hanwoo",
+  낙농: "Dairy",
+  양돈: "Swine",
+  양계: "Poultry",
+  오리: "Duck",
+  사슴: "Deer",
+  곤충: "Insect",
+  양봉: "Apiary",
+  말: "Horse",
+  "염소·양": "Goat and sheep",
+};
+
+/** 서버에서 만든 `등록번호 · 축종` 문자열의 축종만 영어로 바꾼다. */
+export function localizeFarmSpeciesLabel(label: string, locale: SheetLocale): string {
+  if (locale !== "en") return label;
+  const mark = " · ";
+  const idx = label.lastIndexOf(mark);
+  if (idx < 0) return label;
+  const species = label.slice(idx + mark.length);
+  const en = SPECIES_EN[species];
+  return en ? `${label.slice(0, idx)}${mark}${en}` : label;
 }
 
 export function formatHumidityPct(v: number | null): string {

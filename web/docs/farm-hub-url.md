@@ -93,9 +93,10 @@ resolveFarmHubView(raw)
 
 - 헬퍼: `buildFarmMonitoringHomeParams` / `buildFarmMonitoringHomePath` / `isFarmMonitoringSoftHome`
 - 진입점:
-  - PC: 좌측 상단 로고 (`AppHeaderBrand`)
+  - PC: 좌측 상단 로고 (`AppHeaderBrand`) — 운영자·뷰어
   - 모바일 compact: 로고 홈 · 하단 보기 독은 탭 전환용 (구 «모니터링» 하단 내비와 별개)
-- 유지: `lsind`, `item`, `trendPeriod`(7d|30d)
+- 관리자 로고는 전국 지도(`/farm`, 농장 키 없음)로 문서 이동한다. 이미 그 화면이면 새로고침.
+- 유지: `lsind`, `item`, `trendPeriod`(7d|30d) — 운영자·뷰어 soft home
 - 제거: `view`, drill, `listMode`, `ctrl`, `alarm`, `chart*`, `plan*`
 - 이미 soft home이면 no-op
 

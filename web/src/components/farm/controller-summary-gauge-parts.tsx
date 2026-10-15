@@ -10,6 +10,8 @@ import { dashboardUi } from "@/lib/ui/dashboard-page-ui";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { cn } from "@/lib/utils";
 import { Droplets, Thermometer } from "lucide-react";
+import { useProfileSheetPrefs } from "@/components/account/profile-sheet-prefs";
+import { sheetCopy, translateFixedLabel } from "@/lib/ui/sheet-copy";
 
 type GaugeMetricProps = {
   label: "온도" | "습도";
@@ -201,9 +203,11 @@ function MetricValue({
 }) {
   const accent = TEXT_ACCENT[label];
   const Icon = label === "온도" ? Thermometer : Droplets;
+  const locale = useProfileSheetPrefs().locale;
+  const labelText = translateFixedLabel(locale, label);
 
   return (
-    <div className="flex min-w-0 items-center gap-1.5" title={displayValue === "—" ? `${label}값 미수신` : undefined}>
+    <div className="flex min-w-0 items-center gap-1.5" title={displayValue === "—" ? sheetCopy(locale, "panel.noReading", { label: labelText }) : undefined}>
       <Icon className={cn("size-4 shrink-0", accent)} aria-hidden />
       <span
         className={cn(

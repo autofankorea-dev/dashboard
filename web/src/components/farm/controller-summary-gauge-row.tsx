@@ -30,10 +30,14 @@ import {
   type CoverRevealDirection,
 } from "@/components/farm/cover-reveal-overlay";
 import {
+  controllerEnvCoverFillClass,
   controllerEnvCoverLevel,
+  controllerEnvCoverNotices,
   controllerEnvCoverRingClass,
+  coverNoticeLevel,
   isControllerPanelInteractiveTarget,
 } from "@/lib/farm/controller-env-cover";
+import { useProfileSheetPrefs } from "@/components/account/profile-sheet-prefs";
 import {
   captureCoverMorphSnapshot,
   coverMorphDurationMs,
@@ -270,12 +274,20 @@ export function ControllerSummaryGaugeRow({
     [closeEnvCover, concealOnIdleClick, onCardActivate],
   );
 
+  const userCoverOn = useProfileSheetPrefs().envCover;
+  const bareHeader = envCoverEnabled && !userCoverOn;
+  const bareNotice = bareHeader
+    ? controllerEnvCoverNotices(reading, alarmSettings)[0]
+    : undefined;
+
   const cardClass = cn(
     "relative flex h-full min-w-0 flex-col rounded-xl border bg-card overflow-hidden",
-    !toolbarSheetSelected && controllerEnvCoverRingClass(envCoverLevel),
+    !toolbarSheetSelected &&
+      controllerEnvCoverRingClass(bareHeader ? coverNoticeLevel(bareNotice) : envCoverLevel),
     toolbarSheetSelected && "ring-2 ring-primary/70",
     !toolbarSheetSelected && settingsExpanded && "ring-2 ring-primary/40",
     (onCardActivate || concealOnIdleClick) && "cursor-pointer",
+    bareHeader && "relative",
     className,
   );
 
@@ -283,7 +295,16 @@ export function ControllerSummaryGaugeRow({
     concealOnIdleClick || onCardActivate ? handleCardSurfaceClick : undefined;
 
   const showEnvCover =
-    envCoverEnabled && !envCoverOpen && !settingsExpanded;
+    envCoverEnabled && userCoverOn && !envCoverOpen && !settingsExpanded;
+  const bareRail = bareHeader ? (
+    <span
+      className={cn(
+        "pointer-events-none absolute inset-y-0 left-0 z-10 w-2",
+        controllerEnvCoverFillClass(coverNoticeLevel(bareNotice)),
+      )}
+      aria-hidden
+    />
+  ) : null;
   const envCover = showEnvCover ? (
     <ControllerEnvCover
       reading={reading}
@@ -391,6 +412,7 @@ export function ControllerSummaryGaugeRow({
           onConcealDetail={
             envCoverEnabled && envCoverOpen ? closeEnvCover : undefined
           }
+          bare={bareHeader}
           className={cn("w-full", !hideMetricsForSettings && "mb-2")}
         />
       </div>
@@ -514,6 +536,7 @@ export function ControllerSummaryGaugeRow({
             data-panel-layout="grid"
             onClick={cardSurfaceClick}
           >
+            {bareRail}
             {envCover}
             {coverRevealLayer}
             {cardBody}
@@ -589,6 +612,7 @@ export function ControllerSummaryGaugeRow({
           role={onCardActivate ? "button" : undefined}
           tabIndex={onCardActivate ? 0 : undefined}
         >
+          {bareRail}
           {envCover}
           {coverRevealLayer}
           {cardBody}
@@ -611,6 +635,7 @@ export function ControllerSummaryGaugeRow({
       data-card-body="expanded"
       onClick={cardSurfaceClick}
     >
+      {bareRail}
       {envCover}
       {coverRevealLayer}
       {cardBody}

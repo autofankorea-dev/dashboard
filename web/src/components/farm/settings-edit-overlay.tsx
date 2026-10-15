@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { FEEDBACK_Z } from "@/lib/ui/feedback-layers";
 import { BusyButtonLabel } from "@/components/common/busy-button-label";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
 
 type Props = {
   open: boolean;
@@ -54,12 +55,14 @@ export function SettingsEditOverlay({
   hint,
   onClose,
   onPrimary,
-  closeLabel = "닫기",
+  closeLabel,
   wide = false,
   footerContent,
   spacious = false,
   focusTarget = "primary",
 }: Props) {
+  const t = useSheetCopy();
+  const closeText = closeLabel ?? t("settings.close");
   const mounted = useSyncExternalStore(emptySubscribe, clientTrue, serverFalse);
   const [show, setShow] = useState(false);
   const titleId = useId();
@@ -180,7 +183,7 @@ export function SettingsEditOverlay({
             tabIndex={open ? 0 : -1}
             onClick={onClose}
           >
-            {closeLabel}
+            {closeText}
           </button>
           {primaryLabel && onPrimary ? (
             <button

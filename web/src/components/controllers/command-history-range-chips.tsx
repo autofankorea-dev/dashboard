@@ -1,5 +1,6 @@
 "use client";
 
+import { useProfileSheetPrefs } from "@/components/account/profile-sheet-prefs";
 import { kstDayStartIso } from "@/lib/datetime/kst";
 import { opsStatus } from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";
@@ -8,11 +9,11 @@ export type CommandHistoryRangeId = "today" | "7d" | "30d" | "all";
 
 export const COMMAND_HISTORY_RANGE_DEFAULT: CommandHistoryRangeId = "7d";
 
-const RANGES: { id: CommandHistoryRangeId; label: string }[] = [
-  { id: "today", label: "오늘" },
-  { id: "7d", label: "7일" },
-  { id: "30d", label: "30일" },
-  { id: "all", label: "전체" },
+const RANGES: { id: CommandHistoryRangeId; ko: string; en: string }[] = [
+  { id: "today", ko: "오늘", en: "Today" },
+  { id: "7d", ko: "7일", en: "7 days" },
+  { id: "30d", ko: "30일", en: "30 days" },
+  { id: "all", ko: "전체", en: "All" },
 ];
 
 /** 프리셋 → created_at 하한 (KST 자정). all이면 null. */
@@ -45,11 +46,12 @@ export function CommandHistoryRangeChips({
   disabled,
   className,
 }: Props) {
+  const en = useProfileSheetPrefs().locale === "en";
   return (
     <div
       className={cn("flex flex-wrap gap-1", className)}
       role="group"
-      aria-label="명령 조회 기간"
+      aria-label={en ? "Command range" : "명령 조회 기간"}
     >
       {RANGES.map((r) => {
         const active = value === r.id;
@@ -66,7 +68,7 @@ export function CommandHistoryRangeChips({
               active ? opsStatus.selected : opsStatus.idle,
             )}
           >
-            {r.label}
+            {en ? r.en : r.ko}
           </button>
         );
       })}

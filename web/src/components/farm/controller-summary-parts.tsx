@@ -3,10 +3,7 @@
 import type { ControllerThermoSettings } from "@/lib/controllers/controller-settings";
 import type { BarnReading } from "@/lib/data/iot";
 import type { AlarmSettings } from "@/lib/domain/alarms";
-import {
-  CHANNEL_SLOT_LABELS,
-  type ChannelSlot,
-} from "@/lib/domain/iot-channel";
+import { type ChannelSlot } from "@/lib/domain/iot-channel";
 import type {
   TrendControllerPeriodData,
   TrendPeriodId,
@@ -15,7 +12,6 @@ import {
   CHANNELS,
   channelPercentsFromReading,
   formatChannelPercent,
-  formatControllerHeaderStallType,
   formatHumidityAlarmRange,
   formatSetpointDisplay,
   formatTempAlarmRange,
@@ -31,7 +27,9 @@ import { VentGaugeV1 } from "@/components/farm/controller-summary-gauge-parts";
 import { dashboardAffordance, dashboardControlFill, dashboardUi, dashboardTypography } from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";
 import { motionClass } from "@/lib/ui/motion-classes";
-import { LineChart, Settings, ChevronUp } from "lucide-react";
+import { Check, ChevronUp, Droplets, LineChart, Settings, Thermometer, Wifi } from "lucide-react";
+import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
+import { formatStallTypeLabelLocalized } from "@/lib/domain/stall-type";
 import { ControllerDeviceIcon } from "@/components/icons/controller-device-icon";
 import {
   ControllerAffiliationMarks,
@@ -41,6 +39,8 @@ import {
 import {
   controllerEnvCoverFillClass,
   controllerEnvCoverLevel,
+  controllerEnvCoverNotices,
+  coverNoticeLevel,
 } from "@/lib/farm/controller-env-cover";
 
 const cardActionBtnClass = cn(
@@ -71,12 +71,13 @@ function CardPanelModeToggle({
   onToggleSettings?: () => void;
   onOpenChart?: () => void;
 }) {
+  const t = useSheetCopy();
   if (hideActions) return null;
   const canSettings = onToggleSettings != null;
   const canChart = onOpenChart != null;
   if (!canSettings && !canChart) return null;
 
-  const settingsAria = settingsActive ? "컨트롤러로 접기" : "설정으로 전환";
+  const settingsAria = settingsActive ? t("panel.toController") : t("panel.toSettings");
   const SettingsIcon = settingsActive ? ControllerDeviceIcon : Settings;
 
   return (
@@ -88,8 +89,8 @@ function CardPanelModeToggle({
         >
           <button
             type="button"
-            aria-label="차트에서 보기"
-            title="차트에서 보기"
+            aria-label={t("panel.chart")}
+            title={t("panel.chart")}
             onClick={(e) => {
               e.stopPropagation();
               onOpenChart?.();
@@ -112,7 +113,7 @@ function CardPanelModeToggle({
           <button
             type="button"
             aria-label={settingsAria}
-            title={settingsActive ? "컨트롤러" : "설정"}
+            title={settingsActive ? t("list.controller") : t("list.settings")}
             onClick={(e) => {
               e.stopPropagation();
               onToggleSettings?.();
@@ -143,6 +144,7 @@ export function ControllerSummaryHeader({
   onToggleSettings,
   onOpenChart,
   onConcealDetail,
+  bare = false,
   className,
 }: {
   reading: BarnReading;
@@ -160,9 +162,25 @@ export function ControllerSummaryHeader({
   onOpenChart?: () => void;
   /** 덮개 연 뒤 — 명칭·번호를 눌러 다시 덮음 */
   onConcealDetail?: () => void;
+  bare?: boolean;
   className?: string;
 }) {
-  const stallTypeLabel = formatControllerHeaderStallType(reading);
+  const t = useSheetCopy();
+  const locale = useProfileSheetPrefs().locale;
+  const stallTypeLabel = formatStallTypeLabelLocalized(reading.stallTyCode, locale);
+  const notices = controllerEnvCoverNotices(reading, alarmSettings);
+  const topNotice = notices[0];
+  const bareLevel = coverNoticeLevel(topNotice);
+  const BareIcon = !topNotice
+    ? Check
+    : topNotice.kind === "comm"
+      ? Wifi
+      : topNotice.kind === "temp"
+        ? Thermometer
+        : Droplets;
+  const barePhrase = topNotice
+    ? `${t(topNotice.kind === "comm" ? "cover.comm" : topNotice.kind === "temp" ? "cover.temp" : "cover.humidity")} ${t(topNotice.grade === "caution" ? "cover.caution" : topNotice.grade === "warning" ? "cover.warning" : "cover.down")}`
+    : t("cover.ok");
   const envCoverLevel = controllerEnvCoverLevel(reading, alarmSettings);
   const titleBlock = showAffiliation ? (
     <>
@@ -217,7 +235,7 @@ export function ControllerSummaryHeader({
         "flex min-w-0 flex-1 items-start gap-1 text-left",
         dashboardAffordance.hitSurface,
       )}
-      aria-label="상세 숨기기"
+      aria-label={t("panel.hideDetail")}
       onClick={(e) => {
         e.stopPropagation();
         onConcealDetail();
@@ -233,26 +251,48 @@ export function ControllerSummaryHeader({
     <div className="flex min-w-0 flex-1 flex-col gap-0.5">{titleBlock}</div>
   );
 
+  const actions = (
+    <CardPanelModeToggle
+      hideActions={hideActions}
+      settingsActive={settingsActive}
+      onToggleSettings={onToggleSettings}
+      onOpenChart={onOpenChart}
+    />
+  );
+
   return (
     <div className={cn("flex min-w-0 flex-col gap-0.5", className)}>
-      <div className="flex min-w-0 flex-nowrap items-start gap-2">
-        <span
-          className={cn(
-            "mt-1.5 size-2.5 shrink-0 rounded-sm",
-            controllerEnvCoverFillClass(envCoverLevel),
-          )}
-          aria-hidden
-        />
-        <div className="flex min-w-0 flex-1 flex-nowrap items-start gap-2">
-          {identity}
-          <CardPanelModeToggle
-            hideActions={hideActions}
-            settingsActive={settingsActive}
-            onToggleSettings={onToggleSettings}
-            onOpenChart={onOpenChart}
+      {bare ? (
+        <>
+          <div className="flex min-w-0 items-center gap-2">
+            <span
+              className={cn(
+                "inline-flex min-w-0 flex-1 items-center gap-1 text-xs font-medium",
+                controllerEnvCoverFillClass(bareLevel).replace("bg-", "text-"),
+              )}
+            >
+              <BareIcon className="size-3.5 shrink-0" aria-hidden />
+              <span className="truncate">{barePhrase}</span>
+            </span>
+            {actions}
+          </div>
+          <div className="flex min-w-0 items-start">{identity}</div>
+        </>
+      ) : (
+        <div className="flex min-w-0 flex-nowrap items-start gap-2">
+          <span
+            className={cn(
+              "mt-1.5 size-2.5 shrink-0 rounded-sm",
+              controllerEnvCoverFillClass(envCoverLevel),
+            )}
+            aria-hidden
           />
+          <div className="flex min-w-0 flex-1 flex-nowrap items-start gap-2">
+            {identity}
+            {actions}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -275,6 +315,7 @@ export function MetricValue({
   alarmRange?: string;
   alarmBreached?: boolean;
 }) {
+  const t = useSheetCopy();
   return (
     <div className="min-w-0">
       <div className={cn("text-muted-foreground", dashboardTypography.formLabel)}>{label}</div>
@@ -303,7 +344,7 @@ export function MetricValue({
               : "text-muted-foreground"
           )}
         >
-          임계 {alarmRange}
+          {t("settings.threshold", { range: alarmRange })}
         </div>
       ) : null}
     </div>
@@ -315,10 +356,11 @@ export function SetpointBlock({
 }: {
   thermo: ControllerThermoSettings | null;
 }) {
+  const t = useSheetCopy();
   const { main, sub } = formatSetpointDisplay(thermo);
   return (
     <div className="min-w-0">
-      <div className={cn("text-muted-foreground", dashboardTypography.formLabel)}>설정</div>
+      <div className={cn("text-muted-foreground", dashboardTypography.formLabel)}>{t("settings.glanceSet")}</div>
       <div className={cn("mt-0.5 font-bold tabular-nums", dashboardUi.sectionTitle)}>
         {main}
         {main !== "—" ? "℃" : null}
@@ -417,7 +459,12 @@ function ChannelCell({
   interactive?: boolean;
   onToggle?: (slot: ChannelSlot) => void;
 }) {
-  const slotLabel = CHANNEL_SLOT_LABELS[slot];
+  const motorDisplay = useProfileSheetPrefs().motorDisplay;
+  const t = useSheetCopy();
+  const slotLabel =
+    slot === "A" ? t("cover.channel1") : slot === "B" ? t("cover.channel2") : t("cover.channel3");
+  const percent = value === "—" ? null : Number(value);
+  const showBar = motorDisplay === "bar" && percent != null && Number.isFinite(percent);
   const label = `${slotLabel} ${value}${value !== "—" ? "%" : ""}`;
   const cellClass = cn(
     "relative min-h-[3rem] rounded-md border bg-background/80 sm:min-h-[3.25rem]",
@@ -445,13 +492,23 @@ function ChannelCell({
         {slotLabel}
       </span>
       <div className="flex h-full min-h-[2.25rem] items-center justify-center pt-2 sm:min-h-[2.5rem]">
-        <span
-          className={cn(
-            compact ? dashboardUi.gridCellValueCompact : dashboardUi.gridCellValueDefault
-          )}
-        >
-          {value}
-        </span>
+        {showBar ? (
+          <span className="block h-1.5 w-[70%] overflow-hidden rounded-full bg-muted" aria-hidden>
+            <span
+              className="block h-full bg-channel-info"
+              style={{ width: `${Math.max(0, Math.min(100, percent ?? 0))}%` }}
+            />
+          </span>
+        ) : (
+          <span
+            className={cn(
+              compact ? dashboardUi.gridCellValueCompact : dashboardUi.gridCellValueDefault
+            )}
+          >
+            {value}
+            {value !== "—" ? <span className="ml-0.5 text-[10px] font-medium">%</span> : null}
+          </span>
+        )}
       </div>
       {expanded && interactive ? (
         <span

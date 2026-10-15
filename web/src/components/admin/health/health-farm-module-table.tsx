@@ -1,4 +1,7 @@
+"use client";
+
 import type { ModuleHealthRow } from "@/lib/admin/health/types";
+import { useProfileSheetPrefs } from "@/components/account/profile-sheet-prefs";
 import { HealthFarmModuleRow } from "@/components/admin/health/health-farm-module-row";
 import { dashboardTypography } from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";
@@ -18,6 +21,7 @@ export function HealthFarmModuleTable({
   compact = false,
   highlightFarmId = null,
 }: HealthFarmModuleTableProps) {
+  const locale = useProfileSheetPrefs().locale;
   if (modules.length === 0) {
     return (
       <p
@@ -28,7 +32,7 @@ export function HealthFarmModuleTable({
           !compact && "py-8 text-center",
         )}
       >
-        표시할 모듈 데이터가 없습니다.
+        {locale === "en" ? "No module data to show." : "표시할 모듈 데이터가 없습니다."}
       </p>
     );
   }

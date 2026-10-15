@@ -1,12 +1,12 @@
 "use client";
 
 import {
-  formatControllerHeaderStallType,
   formatControllerHeaderStallUnit,
   formatControllerNoLabel,
 } from "@/lib/farm/controller-summary-display";
 import { normalizeEqpmnNo } from "@/lib/domain/controller-key";
-import { formatStallTypeLabelCompact } from "@/lib/domain/stall-type";
+import { formatStallTypeLabelCompactLocalized, formatStallTypeLabelLocalized } from "@/lib/domain/stall-type";
+import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { stallKeyFromReading } from "@/lib/domain/reading-hierarchy";
 import { useHydrationSafeDashboardCompact } from "@/components/layout/dashboard-viewport-context";
 import { cn } from "@/lib/utils";
@@ -96,11 +96,13 @@ export function ControllerNoMark({
   onFill?: boolean;
   fitText?: boolean;
 }) {
+  const t = useSheetCopy();
+  const locale = useProfileSheetPrefs().locale;
   const eq = normalizeEqpmnNo(eqpmnNo ?? "01");
   const noLabel = formatControllerNoLabel(eqpmnNo);
   return (
     <NoMarkFrame
-      label={`컨트롤러 ${noLabel}`}
+      label={locale === "en" ? t("slot.controllerNo", { eq }) : `컨트롤러 ${noLabel}`}
       className={className}
       iconClassName={iconClassName}
       digit={eq}
@@ -128,13 +130,14 @@ export function StallUnitNoMark({
   onFill?: boolean;
   fitText?: boolean;
 }) {
+  const locale = useProfileSheetPrefs().locale;
   const key = stallKeyFromReading({ stallNo: stallNo ?? null });
   const display = key.startsWith("__") ? "—" : key;
   const unitLabel = formatControllerHeaderStallUnit({
     stallNo: stallNo ?? null,
     controllerKey: undefined,
     idx: undefined,
-  });
+  }, locale);
   return (
     <NoMarkFrame
       label={unitLabel}
@@ -167,9 +170,10 @@ export function ControllerAffiliationMarks({
   className?: string;
   typeClassName?: string;
 }) {
+  const locale = useProfileSheetPrefs().locale;
   const typeLabel = compactType
-    ? formatStallTypeLabelCompact(stallTyCode)
-    : formatControllerHeaderStallType({ stallTyCode: stallTyCode ?? "" });
+    ? formatStallTypeLabelCompactLocalized(stallTyCode, locale)
+    : formatStallTypeLabelLocalized(stallTyCode, locale);
   return (
     <span className={cn("inline-flex min-w-0 items-center gap-1.5", className)}>
       {showType ? (

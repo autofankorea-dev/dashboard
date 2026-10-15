@@ -9,6 +9,8 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
+import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
+import { tourStepBody, tourStepBullets, tourStepTitle } from "@/lib/onboarding/tour-copy";
 import {
   FARM_TOUR_ACTION_EVENT,
   FARM_TOUR_ACTIVE_EVENT,
@@ -168,6 +170,8 @@ function TourOverlay({
   setView: (v: TourView) => void;
   onFinish: (completed: boolean) => void;
 }) {
+  const t = useSheetCopy();
+  const locale = useProfileSheetPrefs().locale;
   const [stepIdx, setStepIdx] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
   const [accentRect, setAccentRect] = useState<Rect | null>(null);
@@ -678,12 +682,9 @@ function TourOverlay({
   });
   const tooltipStyle: React.CSSProperties = tooltipPlacement.style;
   if (!step) return null;
-  const stepTitle =
-    mobileSheet && step.mobileTitle ? step.mobileTitle : step.title;
-  const stepBody =
-    mobileSheet && step.mobileBody ? step.mobileBody : step.body;
-  const stepBullets =
-    mobileSheet && step.mobileBullets ? step.mobileBullets : step.bullets;
+  const stepTitle = tourStepTitle(step, locale, mobileSheet);
+  const stepBody = tourStepBody(step, locale, mobileSheet);
+  const stepBullets = tourStepBullets(step, locale, mobileSheet);
   const showStepExtra =
     Boolean(step.extra) && !(mobileSheet && step.mobileHideExtra);
   const dimW = portalBounds?.width ?? vw;
@@ -708,7 +709,7 @@ function TourOverlay({
       data-farm-tour-root
       role="dialog"
       aria-modal="true"
-      aria-label="기능 안내 투어"
+      aria-label={t("tour.label")}
     >
       {/* 딤 + 스포트라이트 홀 — 주 타깃·보조(accent) 모두 밝게 */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
@@ -808,7 +809,7 @@ function TourOverlay({
               "rounded text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
               mobileSheet ? "p-0.5" : "p-1",
             )}
-            aria-label="투어 닫기"
+            aria-label={t("tour.close")}
           >
             <X className={mobileSheet ? "size-3.5" : "size-4"} aria-hidden />
           </button>
@@ -900,7 +901,7 @@ function TourOverlay({
                 mobileSheet ? "px-2 py-1.5 text-xs" : "px-2.5 py-1.5 text-sm",
               )}
             >
-              건너뛰기
+              {t("tour.skip")}
             </button>
             {stepIdx > 0 ? (
               <button
@@ -911,7 +912,7 @@ function TourOverlay({
                   mobileSheet ? "px-2.5 py-1.5 text-xs" : "px-3.5 py-1.5 text-sm",
                 )}
               >
-                이전
+                {t("tour.back")}
               </button>
             ) : null}
             <button
@@ -922,7 +923,7 @@ function TourOverlay({
                 mobileSheet ? "px-3 py-1.5 text-xs" : "px-4 py-1.5 text-sm",
               )}
             >
-              {stepIdx === steps.length - 1 ? "완료" : "다음"}
+              {stepIdx === steps.length - 1 ? t("tour.done") : t("tour.next")}
             </button>
           </div>
         </div>

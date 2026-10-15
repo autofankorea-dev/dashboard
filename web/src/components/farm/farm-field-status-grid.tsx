@@ -7,6 +7,7 @@ import { parseBarnCatalogKey } from "@/lib/domain/barn-catalog";
 import { normalizeStallTyCode } from "@/lib/domain/stall-type";
 import { FarmMapCard } from "@/components/farm/farm-map-card";
 import { worstControllerEnvCoverLevel } from "@/lib/farm/controller-env-cover";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { cn } from "@/lib/utils";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { PanelLeft, PanelLeftClose } from "lucide-react";
@@ -79,6 +80,7 @@ export function FarmFieldStatusGrid({
   alarmSettings,
   className,
 }: Props) {
+  const t = useSheetCopy();
   const sorted = useMemo(() => {
     return [...barns].sort((a, b) => {
       const ar = a.meta.grid.row - b.meta.grid.row;
@@ -111,7 +113,7 @@ export function FarmFieldStatusGrid({
                 type="button"
                 onClick={onShowAll}
                 aria-pressed={!selectedBarnId}
-                aria-label="전체 컨트롤러 보기"
+                aria-label={t("field.showAllAria")}
                 className={cn(
                   "min-w-0 flex-1 truncate text-left text-xs font-semibold",
                   motionClass.microHover,
@@ -120,11 +122,11 @@ export function FarmFieldStatusGrid({
                     : "text-foreground",
                 )}
               >
-                전체보기
+                {t("field.showAll")}
               </button>
             ) : (
               <p className="min-w-0 flex-1 truncate text-xs font-semibold">
-                전체보기
+                {t("field.showAll")}
               </p>
             )
           ) : null}
@@ -137,7 +139,7 @@ export function FarmFieldStatusGrid({
                 "hover:bg-muted/50 hover:text-foreground",
                 motionClass.microHover,
               )}
-              aria-label="현황 나타내기"
+              aria-label={t("field.show")}
               data-tour-id="field-status-show"
             >
               <PanelLeft className="size-4" aria-hidden />
@@ -151,7 +153,7 @@ export function FarmFieldStatusGrid({
                 "hover:bg-muted/50 hover:text-foreground",
                 motionClass.microHover,
               )}
-              aria-label="현황 숨기기"
+              aria-label={t("field.hide")}
               data-tour-id="field-status-hide"
             >
               <PanelLeftClose className="size-4" aria-hidden />
@@ -194,7 +196,7 @@ export function FarmFieldStatusGrid({
             })}
           </div>
           {readings.length === 0 ? (
-            <p className="mt-2 text-xs text-muted-foreground">판독 대기 중…</p>
+            <p className="mt-2 text-xs text-muted-foreground">{t("field.waiting")}</p>
           ) : null}
         </div>
       </div>

@@ -11,6 +11,7 @@ import { AccountMenuSheet } from "@/components/account/account-menu-sheet";
 import type { EditableFarmOption } from "@/lib/data/farm-location";
 import {
   farmShortLabel,
+  localizeFarmSpeciesLabel,
   type FarmSummaryRow,
 } from "@/lib/domain/farm-summaries";
 import {
@@ -28,16 +29,11 @@ import { dashboardControlFill, dashboardUi } from "@/lib/ui/dashboard-page-ui";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { useMobileLayout } from "@/lib/ui/use-mobile-layout";
 import { cn } from "@/lib/utils";
+import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
 
 const emptySubscribe = () => () => {};
 
 type Role = "admin" | "operator" | "viewer";
-
-const roleLabel: Record<Role, string> = {
-  admin: "관리자",
-  operator: "운영자",
-  viewer: "뷰어",
-};
 
 type Props = {
   user: {
@@ -73,7 +69,9 @@ export function AccountMenu({
   const mobile = useMobileLayout();
   const [open, setOpen] = useState(false);
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
-  const name = user.displayName?.trim() || user.email || "사용자";
+  const t = useSheetCopy();
+  const locale = useProfileSheetPrefs().locale;
+  const name = user.displayName?.trim() || user.email || t("account.user");
 
   const activeFarmLocation = useMemo(() => {
     if (activeFarmKey) {
@@ -95,12 +93,12 @@ export function AccountMenu({
       const query = params.toString();
       const href = query ? `/farm?${query}` : "/farm";
       if (pathname === "/farm") {
-        appNavigate(href, { message: "농장으로 이동 중…" });
+        appNavigate(href, { message: t("nav.farm") });
         return;
       }
       router.push(href);
     },
-    [appNavigate, pathname, router],
+    [appNavigate, pathname, router, t],
   );
 
   const handleOpenChange = useCallback((next: boolean) => {
@@ -122,7 +120,13 @@ export function AccountMenu({
           {name}
         </p>
         <p className={dashboardUi.headerAccountRole} suppressHydrationWarning>
-          {user.role ? roleLabel[user.role] : "권한 없음"}
+          {user.role === "admin"
+            ? t("account.admin")
+            : user.role === "operator"
+              ? t("account.operator")
+              : user.role === "viewer"
+                ? t("account.viewer")
+                : t("account.noRole")}
         </p>
       </div>
       <ChevronDown
@@ -138,9 +142,12 @@ export function AccountMenu({
     </>
   );
 
-  const identityFarmLabel =
+  const identityFarmRaw =
     activeFarmLocation?.label ??
-    (activeFarmKey ? farmShortLabel(activeFarmKey) : null);
+    (activeFarmKey ? farmShortLabel(activeFarmKey, locale) : null);
+  const identityFarmLabel = identityFarmRaw
+    ? localizeFarmSpeciesLabel(identityFarmRaw, locale)
+    : null;
 
   const logoutAction = (
     <button
@@ -151,7 +158,7 @@ export function AccountMenu({
         void signOut();
       }}
     >
-      로그아웃
+      {t("header.logout")}
     </button>
   );
 
@@ -161,7 +168,7 @@ export function AccountMenu({
         type="button"
         className={triggerClassName}
         data-tour-id="header-account"
-        aria-label="계정 메뉴"
+        aria-label={t("account.menu")}
         aria-expanded={open}
         aria-controls="account-menu-sheet"
         onClick={() => handleOpenChange(!open)}
@@ -172,14 +179,6 @@ export function AccountMenu({
 
       {mounted ? (
         <AccountMenuSheet open={open} onOpenChange={handleOpenChange}>
-        <AccountMenuHub
-          name={name}
-          avatarUrl={user.avatarUrl}
-          email={user.email}
-          roleLabel={user.role ? roleLabel[user.role] : null}
-          trailing={logoutAction}
-        />
-
         <AccountMenuSplitBody
           farmLabel={identityFarmLabel}
           activeFarmKey={activeFarmKey}
@@ -194,15 +193,24 @@ export function AccountMenu({
           deferAddressFocus={mobile && open}
           onCloseMenu={() => handleOpenChange(false)}
           onFarmSaved={() => router.refresh()}
-        />
-
-        <RecentActivityMenuSection
-          receipts={receipts}
-          farmKeyFilter={activeFarmKey}
-          excludeActiveFarm
-          max={6}
-          variant="chips"
-          onItemNavigate={navigateToFarm}
+          header={(identity) => (
+            <AccountMenuHub
+              name={name}
+              avatarUrl={user.avatarUrl}
+              identity={identity}
+              trailing={logoutAction}
+            />
+          )}
+          beforeTools={
+            <RecentActivityMenuSection
+              receipts={receipts}
+              farmKeyFilter={activeFarmKey}
+              excludeActiveFarm
+              max={6}
+              variant="chips"
+              onItemNavigate={navigateToFarm}
+            />
+          }
         />
       </AccountMenuSheet>
       ) : null}

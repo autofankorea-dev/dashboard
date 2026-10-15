@@ -9,6 +9,7 @@ import { InlineStatusToast, type InlineStatusTone } from "@/components/common/in
 import { RefreshScopeShell } from "@/components/common/refresh-scope-shell";
 import { SectionCard } from "@/components/common/section-card";
 import { PageActionButton } from "@/components/common/page-action-button";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { BarnListSummary } from "@/components/farm/barn-list-summary";
 import { BarnListModeToolbar } from "@/components/farm/barn-list-mode-toolbar";
 import type {
@@ -143,6 +144,7 @@ export function BarnTable({
 }: Props) {
   const router = useRouter();
   const compact = useHydrationSafeDashboardCompact();
+  const t = useSheetCopy();
   const liveRefresh = useFarmLiveRefreshOptional();
   const searchParams = useSearchParams();
   const [hubParamsTick, setHubParamsTick] = useState(0);
@@ -554,7 +556,7 @@ export function BarnTable({
   );
 
   const layoutToggleLabel =
-    listLayout === "group" ? "일반 보기" : "그룹별 보기";
+    listLayout === "group" ? t("list.flatView") : t("list.groupView");
   const layoutToggleIcon = layoutPending ? (
     <Loader2 className={cn(dashboardUi.iconSm, "animate-spin")} aria-hidden />
   ) : listLayout === "group" ? (
@@ -570,8 +572,8 @@ export function BarnTable({
         onClick={toggleListLayout}
         disabled={layoutPending}
         aria-busy={layoutPending || undefined}
-        aria-label={layoutPending ? "보기 전환 중" : layoutToggleLabel}
-        title={layoutPending ? "보기 전환 중" : layoutToggleLabel}
+        aria-label={layoutPending ? t("list.switching") : layoutToggleLabel}
+        title={layoutPending ? t("list.switching") : layoutToggleLabel}
       />
       <BarnListModeToolbar
         value={effectiveListMode}
@@ -587,8 +589,8 @@ export function BarnTable({
       onClick={toggleListLayout}
       disabled={layoutPending}
       aria-busy={layoutPending || undefined}
-      aria-label={layoutPending ? "보기 전환 중" : layoutToggleLabel}
-      title={layoutPending ? "보기 전환 중" : layoutToggleLabel}
+      aria-label={layoutPending ? t("list.switching") : layoutToggleLabel}
+      title={layoutPending ? t("list.switching") : layoutToggleLabel}
     />
   );
 

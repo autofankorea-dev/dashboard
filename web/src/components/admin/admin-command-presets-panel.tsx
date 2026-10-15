@@ -22,7 +22,7 @@ import {
 import type { SharedCommandPreset } from "@/lib/farm/shared-command-presets";
 import {
   STALL_TYPE_NAMES,
-  formatStallTypeLabel,
+  formatStallTypeLabelLocalized,
   normalizeStallTyCode,
   stallTyCodeSortKey,
 } from "@/lib/domain/stall-type";
@@ -30,6 +30,9 @@ import {
   SettingsChannelStepperGrid,
   SettingsChannelWell,
 } from "@/components/farm/settings-channel-stepper-grid";
+import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
+import { sheetCopy } from "@/lib/ui/sheet-copy";
+import type { SheetLocale } from "@/lib/ui/profile-sheet-prefs";
 import { SettingsEditOverlay } from "@/components/farm/settings-edit-overlay";
 import {
   dashboardAffordance,
@@ -51,8 +54,13 @@ const STALL_OPTIONS = Object.keys(STALL_TYPE_NAMES)
   .filter((code) => code.startsWith("SP"))
   .sort((a, b) => stallTyCodeSortKey(a) - stallTyCodeSortKey(b));
 
-function draftSummary(d: PanelDraft): string {
-  return `${d.setpointTemp.toFixed(1)}℃ · ±${d.tempDeviation.toFixed(1)}℃ · 환기 ${d.minVentPct}~${d.maxVentPct}%`;
+function draftSummary(d: PanelDraft, locale: SheetLocale): string {
+  return sheetCopy(locale, "preset.summary", {
+    setpoint: d.setpointTemp.toFixed(1),
+    dev: d.tempDeviation.toFixed(1),
+    min: d.minVentPct,
+    max: d.maxVentPct,
+  });
 }
 
 function firstChannelDraft(
@@ -88,17 +96,18 @@ function AdminDraftEditor({
   disabled?: boolean;
   error?: string | null;
 }) {
+  const t = useSheetCopy();
   return (
     <div className="flex flex-col gap-3">
       {showName ? (
         <label className="flex flex-col gap-1">
-          <span className="text-[11px] text-muted-foreground">이름</span>
+          <span className="text-[11px] text-muted-foreground">{t("preset.name")}</span>
           <input
             value={name}
             maxLength={COMMAND_PRESET_NAME_MAX}
             disabled={disabled}
-            placeholder="이름"
-            aria-label="프리셋 이름"
+            placeholder={t("preset.name")}
+            aria-label={t("preset.nameAria")}
             className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm outline-none"
             onChange={(e) => onName(e.target.value)}
           />
@@ -115,8 +124,7 @@ function AdminDraftEditor({
         />
       </SettingsChannelWell>
       <p className="text-[11px] text-muted-foreground">
-        {error ??
-          "설정·편차 0.1℃, 환기 5%. −/+를 꾹 누르면 연속입니다. 저장해도 현장으로 나가지 않습니다."}
+        {error ?? t("preset.adminHint")}
       </p>
     </div>
   );
@@ -127,6 +135,9 @@ export function AdminCommandPresetsPanel({
   initialPresets,
 }: Props) {
   const router = useRouter();
+  const locale = useProfileSheetPrefs().locale;
+  const en = locale === "en";
+  const typeName = (code: string) => formatStallTypeLabelLocalized(code, locale);
   const [defaults, setDefaults] = useState(initialDefaults);
   const [presets, setPresets] = useState(initialPresets);
   const [stallTyCode, setStallTyCode] = useState(STALL_OPTIONS[0] ?? "SP07");
@@ -239,7 +250,7 @@ export function AdminCommandPresetsPanel({
       setMessage(
         editorMode === "edit"
           ? "프리셋을 수정했습니다."
-          : `${formatStallTypeLabel(stallTyCode)} 프리셋을 저장했습니다.`,
+          : `${typeName(stallTyCode)} 프리셋을 저장했습니다.`,
       );
       router.refresh();
     });
@@ -286,11 +297,11 @@ export function AdminCommandPresetsPanel({
   return (
     <section id="presets" className="order-2 scroll-mt-3 space-y-4 md:order-3">
       <header className="space-y-1">
-        <h2 className={opsTypography.sectionTitle}>명령 기본값 · 프리셋</h2>
+        <h2 className={opsTypography.sectionTitle}>{en ? "Command defaults · presets" : "명령 기본값 · 프리셋"}</h2>
         <p className={opsTypography.sectionDesc}>
-          축사유형을 고른 뒤 통합 카드로 값을 저장합니다. 카드는 현장 「공용」칩으로
-          쓰이며, 탭하면 같은 카드로 수정합니다 (유형당 최대 {COMMAND_PRESET_MAX}
-          개).
+          {en
+            ? `Choose a stall type, then save values on one card. The card is the shared chip on site, and tapping it edits the same card (up to ${COMMAND_PRESET_MAX} per type).`
+            : `축사유형을 고른 뒤 통합 카드로 값을 저장합니다. 카드는 현장 「공용」칩으로 쓰이며, 탭하면 같은 카드로 수정합니다 (유형당 최대 ${COMMAND_PRESET_MAX} 개).`}
         </p>
       </header>
 
@@ -301,14 +312,14 @@ export function AdminCommandPresetsPanel({
         )}
       >
         <div className="min-w-0 space-y-1">
-          <p className="text-sm font-semibold">전역 기본값</p>
+          <p className="text-sm font-semibold">{en ? "Global defaults" : "전역 기본값"}</p>
           <p
             className={cn(
               opsTypography.meta,
               "font-variant-numeric tabular-nums",
             )}
           >
-            {draftSummary(defaults)}
+            {draftSummary(defaults, locale)}
           </p>
         </div>
         <button
@@ -317,11 +328,11 @@ export function AdminCommandPresetsPanel({
           onClick={openDefaults}
           className={cn(opsControl.buttonOutline, dashboardAffordance.tool)}
         >
-          편집
+          {en ? "Edit" : "편집"}
         </button>
       </div>
 
-      <div className="flex flex-wrap gap-1.5" role="group" aria-label="축사유형">
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label={en ? "Stall type" : "축사유형"}>
         {STALL_OPTIONS.map((code) => {
           const on =
             normalizeStallTyCode(code) === normalizeStallTyCode(stallTyCode);
@@ -340,7 +351,7 @@ export function AdminCommandPresetsPanel({
                   : dashboardAffordance.chipToggleIdle,
               )}
             >
-              {formatStallTypeLabel(code)}
+              {typeName(code)}
             </button>
           );
         })}
@@ -357,10 +368,10 @@ export function AdminCommandPresetsPanel({
             motionClass.microHover,
           )}
         >
-          <span aria-hidden>＋</span> 생성
+          <span aria-hidden>＋</span> {en ? "Create" : "생성"}
         </button>
         <p className={opsTypography.meta}>
-          {formatStallTypeLabel(stallTyCode)} · {forStall.length}/
+          {typeName(stallTyCode)} · {forStall.length}/
           {COMMAND_PRESET_MAX}
         </p>
       </div>
@@ -372,15 +383,16 @@ export function AdminCommandPresetsPanel({
             "px-4 py-8 text-center text-sm text-muted-foreground",
           )}
         >
-          이 축사유형에 프리셋이 없습니다.
+          {en ? "No presets for this stall type." : "이 축사유형에 프리셋이 없습니다."}
           <br />
-          「생성」으로 첫 카드를 만드세요.
+          {en ? "Use Create to make the first card." : "「생성」으로 첫 카드를 만드세요."}
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
           {forStall.map((item) => {
             const summary = draftSummary(
               firstChannelDraft(item.channels, defaults),
+              locale,
             );
             return (
               <button
@@ -405,7 +417,7 @@ export function AdminCommandPresetsPanel({
                   {summary}
                 </p>
                 <p className="mt-1 text-[11px] text-channel-info">
-                  {formatStallTypeLabel(stallTyCode)} · 공용
+                  {typeName(stallTyCode)} · {en ? "Shared" : "공용"}
                 </p>
               </button>
             );
@@ -429,9 +441,9 @@ export function AdminCommandPresetsPanel({
         wide
         focusTarget="content"
         title={editorTitle}
-        closeLabel="취소"
-        primaryLabel="저장"
-        primaryBusyLabel="저장 중"
+        closeLabel={en ? "Cancel" : "취소"}
+        primaryLabel={en ? "Save" : "저장"}
+        primaryBusyLabel={en ? "Saving" : "저장 중"}
         primaryDisabled={primaryDisabled}
         busy={pending}
         hint={editorHint}

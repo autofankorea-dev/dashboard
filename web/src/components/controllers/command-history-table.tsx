@@ -1,4 +1,7 @@
+"use client";
+
 import { HealthSectionCard } from "@/components/admin/health/health-section-card";
+import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { CommandHistoryMobileList } from "@/components/controllers/command-history-mobile-list";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -13,19 +16,12 @@ import { commandStatusLabel } from "@/lib/controllers/controller-settings";
 import type { ThermoCommand } from "@/lib/data/commands";
 import {
   formatCommandDetail,
+  formatCommandSummary,
   formatCommandTarget,
 } from "@/lib/ui/controller-labels";
 import { opsLayout, opsTypography } from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
-
-const statusLabel: Record<string, string> = {
-  pending: commandStatusLabel("pending"),
-  sent: commandStatusLabel("sent"),
-  applied: commandStatusLabel("applied"),
-  failed: commandStatusLabel("failed"),
-  cancelled: commandStatusLabel("cancelled"),
-};
 
 const statusVariant = (
   status: string,
@@ -41,8 +37,8 @@ function fmtTime(iso: string) {
   return formatKst(iso, "short");
 }
 
-function fmtCommand(c: ThermoCommand) {
-  return c.alarmSettings ? `저온 ${c.alarmSettings.lowTempC}℃ · 고온 ${c.alarmSettings.highTempC}℃${c.channels?.length ? " · " + c.channels.map(ch => `${ch.channel}: ${ch.setpointTemp}℃ +${ch.tempDeviation} · 환기 ${ch.minVentPct}~${ch.maxVentPct}%`).join(" / ") : ""}` : c.channels?.length ? c.channels.map((ch) => `${ch.channel}: ${ch.setpointTemp}℃ +${ch.tempDeviation} · 환기 ${ch.minVentPct}~${ch.maxVentPct}%`).join(" / ") : `환기 ${c.minVentPct}~${c.maxVentPct}% · ${c.setpointTemp}℃ +${c.tempDeviation}`;
+function fmtCommand(c: ThermoCommand, locale: "ko" | "en") {
+  return formatCommandSummary(c, locale);
 }
 
 type Props = {
@@ -67,10 +63,10 @@ type Props = {
 
 export function CommandHistoryTable({
   commands = [],
-  title = "명령 히스토리",
+  title,
   action,
   toolbar,
-  emptyMessage = "등록된 명령이 없습니다.",
+  emptyMessage,
   emptyExtra,
   busy = false,
   bodyHidden = false,
@@ -78,10 +74,14 @@ export function CommandHistoryTable({
   onSelect,
   className,
 }: Props) {
+  const t = useSheetCopy();
+  const locale = useProfileSheetPrefs().locale;
+  const heading = title ?? t("cmd.history");
+  const empty = emptyMessage ?? t("cmd.empty");
   return (
     <HealthSectionCard
       density="hub"
-      title={title}
+      title={heading}
       action={action}
       className={cn("w-full shrink-0", className)}
     >
@@ -93,7 +93,7 @@ export function CommandHistoryTable({
               emptyExtra
             ) : (
               <p className={cn("py-4 text-center", opsTypography.meta)}>
-                {emptyMessage}
+                {empty}
               </p>
             )
           ) : (
@@ -124,7 +124,7 @@ export function CommandHistoryTable({
                             opsLayout.commandTableStickyTh,
                           )}
                         >
-                          시간
+                          {t("cmd.time")}
                         </TableHead>
                         <TableHead
                           className={cn(
@@ -132,7 +132,7 @@ export function CommandHistoryTable({
                             opsLayout.commandTableStickyTh,
                           )}
                         >
-                          명령
+                          {t("cmd.command")}
                         </TableHead>
                         <TableHead
                           className={cn(
@@ -140,7 +140,7 @@ export function CommandHistoryTable({
                             opsLayout.commandTableStickyTh,
                           )}
                         >
-                          대상
+                          {t("cmd.target")}
                         </TableHead>
                         <TableHead
                           className={cn(
@@ -148,7 +148,7 @@ export function CommandHistoryTable({
                             opsLayout.commandTableStickyTh,
                           )}
                         >
-                          상태
+                          {t("cmd.status")}
                         </TableHead>
                         <TableHead
                           className={cn(
@@ -156,7 +156,7 @@ export function CommandHistoryTable({
                             opsLayout.commandTableStickyTh,
                           )}
                         >
-                          상세
+                          {t("cmd.detail")}
                         </TableHead>
                       </TableRow>
                     </TableHeader>
@@ -186,14 +186,14 @@ export function CommandHistoryTable({
                           <TableCell className="whitespace-nowrap text-muted-foreground">
                             {fmtTime(c.createdAt)}
                           </TableCell>
-                          <TableCell>{fmtCommand(c)}</TableCell>
+                          <TableCell>{fmtCommand(c, locale)}</TableCell>
                           <TableCell>{formatCommandTarget(c)}</TableCell>
                           <TableCell>
                             <Badge
                               variant={statusVariant(c.status)}
                               className="text-xs font-medium"
                             >
-                              {statusLabel[c.status] ?? c.status}
+                              {commandStatusLabel(c.status, locale)}
                             </Badge>
                           </TableCell>
                           <TableCell className="max-w-[8rem] truncate text-muted-foreground">

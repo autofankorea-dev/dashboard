@@ -1,4 +1,7 @@
+"use client";
+
 import type { D11Hint, HealthPoint } from "@/lib/admin/health/types";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { HealthStatusBadge } from "@/components/admin/health/health-status-badge";
 import { dashboardTypography } from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";
@@ -8,12 +11,14 @@ type HealthPointTableProps = {
 };
 
 export function HealthPointTable({ points }: HealthPointTableProps) {
+  const t = useSheetCopy();
+  const headers = [t("health.point"), t("chart.value"), t("cmd.status")];
   return (
     <div className="overflow-x-auto rounded-xl border">
       <table className="w-full border-collapse">
         <thead>
           <tr className="border-b bg-muted/40 text-left">
-            {["포인트", "값", "상태"].map((h) => (
+            {headers.map((h) => (
               <th key={h} className={cn("px-4 py-3", dashboardTypography.tableHead)}>
                 {h}
               </th>
@@ -43,9 +48,10 @@ type HealthD11PanelProps = {
 };
 
 export function HealthD11Panel({ hints }: HealthD11PanelProps) {
+  const t = useSheetCopy();
   if (hints.length === 0) {
     return (
-      <p className={dashboardTypography.meta}>현재 추천 D11 증상 없음</p>
+      <p className={dashboardTypography.meta}>{t("health.d11None")}</p>
     );
   }
 
@@ -63,7 +69,7 @@ export function HealthD11Panel({ hints }: HealthD11PanelProps) {
         </div>
       ))}
       <p className={dashboardTypography.meta}>
-        상세: Diagrams/deploy/incident-quickref.md · D11-incident.md
+        {t("health.d11Docs")}
       </p>
     </div>
   );

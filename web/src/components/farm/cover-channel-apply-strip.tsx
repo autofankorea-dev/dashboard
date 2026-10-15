@@ -6,7 +6,8 @@ import {
   applyQueueFillRatio,
   type ApplyQueueChannelStripItem,
 } from "@/lib/farm/apply-queue";
-import { CHANNEL_SLOT_LABELS } from "@/lib/domain/iot-channel";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
+import { channelSlotCopyKey } from "@/lib/ui/sheet-copy";
 import { useApplyQueueStripPresence } from "@/components/farm/use-apply-queue-strip-presence";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { dashboardTypography } from "@/lib/ui/dashboard-page-ui";
@@ -66,7 +67,10 @@ export function CoverChannelApplyStrip({
   /** inline — 닫힌 한 줄 덮개. stack — 값 아래 채널 행. */
   layout?: "stack" | "inline";
 }) {
+  const t = useSheetCopy();
   const { visible, leaving } = useApplyQueueStripPresence(items);
+  const itemLabel = (slot: ApplyQueueChannelStripItem["slot"]) =>
+    slot ? t(channelSlotCopyKey(slot)) : t("settings.alarmWord");
   if (visible.length === 0) return null;
 
   if (layout === "inline") {
@@ -89,7 +93,7 @@ export function CoverChannelApplyStrip({
                   "text-current",
                 )}
               >
-                {item.slot ? CHANNEL_SLOT_LABELS[item.slot] : "알람"}
+                {itemLabel(item.slot)}
               </span>
               {confirmed ? (
                 <CoverApplyCheck />
@@ -122,7 +126,7 @@ export function CoverChannelApplyStrip({
                 "text-current",
               )}
             >
-              {item.slot ? CHANNEL_SLOT_LABELS[item.slot] : "알람"}
+              {itemLabel(item.slot)}
             </span>
             <CoverApplyGauge filled={item.filled} />
             <span className="flex justify-end text-current">

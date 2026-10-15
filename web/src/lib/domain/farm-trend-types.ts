@@ -63,6 +63,23 @@ export const TREND_30D_DAY_CHUNKS = 30;
 /** 허브 클라 하루 조각 동시 요청. 화면 반영은 최신→과거 순. */
 export const TREND_30D_DAY_CONCURRENCY = 3;
 
+/** 목록·현장 idle은 24시간만. 30일 하루 조각은 차트에서만 시작한다. */
+export function farmTrendIdleExtends30d(view: string): boolean {
+  return view === "chart";
+}
+
+/**
+ * 하루 조각마다 화면을 다시 그리지 않는다.
+ * 5일마다, 그리고 마지막 조각에서만 구독자에게 알린다.
+ */
+export function shouldPublishTrendDayProgress(
+  appliedDays: number,
+  total = TREND_30D_DAY_CHUNKS,
+): boolean {
+  if (appliedDays <= 0 || total <= 0) return false;
+  return appliedDays >= total || appliedDays % 5 === 0;
+}
+
 /** 브러시 줌이 아니라 플롯 드래그 줌(≤48h) 전용 15분 축. 허브·PDF 기본 로드는 TREND_PERIODS. */
 export const TREND_15M_PERIODS: Record<TrendPeriodId, TrendPeriodConfig> = {
   "24h": TREND_PERIODS["24h"],

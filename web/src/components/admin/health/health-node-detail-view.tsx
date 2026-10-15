@@ -12,6 +12,7 @@ import { HealthUsageBar } from "@/components/admin/health/health-usage-bar";
 import { hintsFromPoints } from "@/lib/admin/health/d11-map";
 import { adminOpsHealthHref } from "@/lib/admin/health/health-routes";
 import type { HealthSnapshot } from "@/lib/admin/health/types";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { dashboardTypography } from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";
 
@@ -28,10 +29,11 @@ type NodeDetailSectionsProps = {
 };
 
 function NodeDetailPoints({ points }: { points: NodeDetailSectionsProps["points"] }) {
+  const t = useSheetCopy();
   const displayPoints =
     points.length > 0
       ? points
-      : [{ id: "—", label: "포인트", value: "P0 미구현", status: "unknown" as const }];
+      : [{ id: "—", label: t("health.point"), value: t("health.notBuilt"), status: "unknown" as const }];
 
   return <HealthPointTable points={displayPoints} />;
 }
@@ -41,6 +43,7 @@ function NodeDetailOverview({
   snapshot,
   compactTables = false,
 }: NodeDetailSectionsProps & { compactTables?: boolean }) {
+  const t = useSheetCopy();
   return (
     <>
       {nodeId === "collector-rs" ? (
@@ -59,12 +62,12 @@ function NodeDetailOverview({
         </HealthSectionCard>
       ) : null}
       {nodeId === "field-module" ? (
-        <HealthSectionCard title="모듈 목록 (전역)">
+        <HealthSectionCard title={t("health.moduleList")}>
           <HealthFarmModuleTable modules={snapshot.modules} compact={compactTables} />
         </HealthSectionCard>
       ) : null}
       {nodeId === "field-controller" ? (
-        <HealthSectionCard title="장비 목록 (전역)">
+        <HealthSectionCard title={t("health.controllerList")}>
           <HealthControllerTable controllers={snapshot.controllers} limit={50} />
         </HealthSectionCard>
       ) : null}
@@ -76,7 +79,7 @@ function NodeDetailOverview({
               fetchedAt={snapshot.fetchedAt}
             />
           </HealthSectionCard>
-          <HealthSectionCard title="C 실패 이력 · 체크포인트">
+          <HealthSectionCard title={t("health.commandFailures")}>
             <HealthCommandFailurePanel
               failures={snapshot.commandFailures}
               checkpointCount={snapshot.commandCheckpointCount}
@@ -87,29 +90,28 @@ function NodeDetailOverview({
       {nodeId === "collector-mqtt" ? (
         <div className="rounded-xl border border-channel-info/40 bg-channel-info/10 px-5 py-4">
           <p className={dashboardTypography.body}>
-            Mosquitto active probe 없음 — RS raw 수신으로 간접 추론 (spec §3a).
+            {t("health.mqttIndirect")}
           </p>
         </div>
       ) : null}
       {nodeId === "collector-ekape" ? (
         <div className="rounded-xl border border-channel-info/40 bg-channel-info/10 px-5 py-4">
           <p className={dashboardTypography.body}>
-            Ekape export 비활성화 — snapshot·View·config 테이블 제거됨 (migration
-            20260619000000).
+            {t("health.ekapeOff")}
           </p>
         </div>
       ) : null}
       {nodeId === "collector-ftp" ? (
         <div className="rounded-xl border border-channel-info/40 bg-channel-info/10 px-5 py-4">
           <p className={dashboardTypography.body}>
-            FTP Worker 비활성화 (Ekape 미구현). 수집 서버 rollup에서 제외됩니다.
+            {t("health.ftpOff")}
           </p>
         </div>
       ) : null}
       {nodeId === "external" ? (
         <div className="rounded-xl border border-channel-info/40 bg-channel-info/10 px-5 py-4">
           <p className={dashboardTypography.body}>
-            외부 연계(축평원) 비활성화 — 재개 시 D10·migration 이력 참고.
+            {t("health.externalOff")}
           </p>
         </div>
       ) : null}
@@ -118,13 +120,14 @@ function NodeDetailOverview({
 }
 
 function NodeDetailTechList({ nodeId, snapshot }: NodeDetailSectionsProps) {
+  const t = useSheetCopy();
   return (
     <ul className={cn("space-y-2", dashboardTypography.meta)}>
       {nodeId === "collector-rs" && (
         <>
           <li>Process: RS.py</li>
           <li>Table: iot_room_state_raw</li>
-          <li>Mosquitto: RS 간접 추론 — active probe 없음</li>
+          <li>{t("health.rsIndirect")}</li>
         </>
       )}
       {nodeId === "storage" && (
@@ -138,42 +141,42 @@ function NodeDetailTechList({ nodeId, snapshot }: NodeDetailSectionsProps) {
         <>
           <li>Table: ctrl_thermo_command</li>
           <li>Checkpoint: health_command_checkpoint (admin)</li>
-          <li>COL rollup: uplink only — C는 별도 downlink 노드</li>
+          <li>{t("health.cDownlink")}</li>
         </>
       )}
       {nodeId === "collector-mqtt" && (
         <>
           <li>Broker: Mosquitto</li>
-          <li>Probe: 없음 — RS raw 간접 추론</li>
+          <li>{t("health.probeNone")}</li>
         </>
       )}
       {nodeId === "collector-ekape" && (
         <>
-          <li>상태: 비활성화 (Ekape 미구현)</li>
-          <li>설계 참고: Diagrams/D10-external-ekape.md</li>
+          <li>{t("health.statusOff")}</li>
+          <li>{t("health.designRef")}</li>
         </>
       )}
       {nodeId === "collector-ftp" && (
         <>
-          <li>상태: 비활성화 (Ekape 미구현)</li>
+          <li>{t("health.statusOff")}</li>
         </>
       )}
       {nodeId === "external" && (
         <>
-          <li>상태: 비활성화 (Ekape 미구현)</li>
-          <li>설계 참고: Diagrams/D10-external-ekape.md</li>
+          <li>{t("health.statusOff")}</li>
+          <li>{t("health.designRef")}</li>
         </>
       )}
       {nodeId === "field-module" && (
         <>
           <li>Source: v_iot_decoded_latest (module rollup)</li>
-          <li>Staleness: 동일 컨트롤러 10분 초과 warn · 30분 초과 critical (목표 주기 5분)</li>
+          <li>{t("health.staleness")}</li>
         </>
       )}
       {nodeId === "field-controller" && (
         <>
           <li>Source: v_iot_decoded_latest (controller_key)</li>
-          <li>단일 장비 이상 → S5</li>
+          <li>{t("health.singleFault")}</li>
         </>
       )}
       {nodeId === "dashboard" && (
@@ -192,12 +195,13 @@ function NodeDetailTech({
   snapshot,
   collapsible,
 }: NodeDetailSectionsProps & { collapsible: boolean }) {
+  const t = useSheetCopy();
   if (collapsible) {
     return (
-      <HealthSectionCard title="기술 상세 (admin 2층)">
+      <HealthSectionCard title={t("health.techDetail")}>
         <details>
           <summary className={cn(dashboardTypography.sectionTitle, "cursor-pointer")}>
-            펼치기
+            {t("ui.expand")}
           </summary>
           <div className="mt-4">
             <NodeDetailTechList nodeId={nodeId} snapshot={snapshot} points={[]} />
@@ -208,7 +212,7 @@ function NodeDetailTech({
   }
 
   return (
-    <HealthSectionCard title="기술 상세 (admin 2층)">
+    <HealthSectionCard title={t("health.techDetail")}>
       <NodeDetailTechList nodeId={nodeId} snapshot={snapshot} points={[]} />
     </HealthSectionCard>
   );
@@ -219,6 +223,7 @@ export function HealthNodeDetailView({
   snapshot,
   variant = "page",
 }: HealthNodeDetailViewProps) {
+  const t = useSheetCopy();
   const points =
     snapshot.pointsByNode[nodeId as keyof typeof snapshot.pointsByNode] ?? [];
   const hints = hintsFromPoints(points);
@@ -232,13 +237,13 @@ export function HealthNodeDetailView({
     <div className="grid gap-6 lg:grid-cols-[1fr_18rem]">
       <div className="space-y-6">
         <p className={dashboardTypography.meta}>
-          {adminOpsHealthHref({ node: nodeId })} · 2층 상세
+          {adminOpsHealthHref({ node: nodeId })} · {t("health.layerDetail")}
         </p>
         <NodeDetailPoints points={points} />
         <NodeDetailOverview {...sectionProps} />
         <NodeDetailTech {...sectionProps} collapsible />
       </div>
-      <HealthSectionCard title="D11 추천">
+      <HealthSectionCard title={t("health.d11Title")}>
         <HealthD11Panel hints={hints} />
       </HealthSectionCard>
     </div>

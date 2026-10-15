@@ -13,7 +13,8 @@ import { compareFarmKey, farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
 import { fetchFarmOverviewRows } from "@/lib/data/iot-live-fetch";
 import { farmShortLabel } from "@/lib/domain/farm-summaries";
 import { OpsInspectorFrame } from "@/components/admin/ops-inspector-frame";
-import { opsLayout, opsTypography } from "@/lib/ui/dashboard-page-ui";
+import { OpsServiceRoleNotice } from "@/components/admin/ops-service-role-notice";
+import { opsLayout } from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";
 
 async function loadDirectoryFarmOptions() {
@@ -53,18 +54,7 @@ async function DirectorySection() {
       id="directory"
       className={cn("order-1 scroll-mt-3 md:order-2", opsLayout.stack)}
     >
-      {configError ? (
-        <p
-          className={cn(
-            "rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-amber-900",
-            opsTypography.alert,
-          )}
-        >
-          SUPABASE_SERVICE_ROLE_KEY가 설정되지 않았습니다.{" "}
-          <code>web/.env.local</code>에 service_role 키를 입력해야 사용자
-          목록/권한 부여가 동작합니다.
-        </p>
-      ) : null}
+      {configError ? <OpsServiceRoleNotice /> : null}
       <AdminDirectoryPanel
         users={users}
         farmOptions={farmOptions}

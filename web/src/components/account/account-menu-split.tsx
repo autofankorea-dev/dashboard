@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ComponentType } from "react";
+import { useMemo, useState, type ComponentType, type ReactNode } from "react";
 import {
   Activity,
   ChevronDown,
@@ -10,7 +10,6 @@ import {
   WifiOff,
 } from "lucide-react";
 import { AccountMenuPins } from "@/components/account/account-menu-pins";
-import { FarmAddressInput } from "@/components/settings/farm-address-input";
 import { FarmSwitcher } from "@/components/layout/farm-switcher";
 import { isValidFarmKey } from "@/lib/domain/barn-catalog";
 import { farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
@@ -24,11 +23,10 @@ import type { FarmSummaryRow } from "@/lib/domain/farm-summaries";
 import { formatKst } from "@/lib/datetime/kst";
 import type { AlarmRow } from "@/lib/domain/alarms";
 import type { ModuleReceipt, FarmOverview } from "@/lib/data/iot";
-import {
-  accountMenuLayout,
-  CONTROLLER_STATUS_LABEL,
-} from "@/lib/ui/account-menu-layout";
+import { accountMenuLayout } from "@/lib/ui/account-menu-layout";
 import { cn } from "@/lib/utils";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
+import type { SheetCopyKey } from "@/lib/ui/sheet-copy";
 
 type Props = {
   farmLabel?: string | null;
@@ -44,17 +42,19 @@ type Props = {
   deferAddressFocus?: boolean;
   onCloseMenu?: () => void;
   onFarmSaved?: () => void;
+  header: (identity: ReactNode) => ReactNode;
+  beforeTools?: ReactNode;
 };
 
 const HUB_TONE_CHIP: Record<
   AdminHubFarmTone | "total",
-  { Icon: ComponentType<{ className?: string }>; label: string; className: string }
+  { Icon: ComponentType<{ className?: string }>; labelKey: SheetCopyKey; className: string }
 > = {
-  total: { Icon: MapPin, label: "전국 관제", className: "text-muted-foreground" },
-  live: { Icon: Activity, label: "정상", className: "text-[var(--status-ok-on-canvas)]" },
-  alert: { Icon: TriangleAlert, label: "경보", className: "text-status-danger" },
-  offline: { Icon: WifiOff, label: "오프라인", className: "text-muted-foreground" },
-  location: { Icon: MapPinned, label: "위치만", className: "text-channel-info" },
+  total: { Icon: MapPin, labelKey: "account.national", className: "text-muted-foreground" },
+  live: { Icon: Activity, labelKey: "cover.ok", className: "text-[var(--status-ok-on-canvas)]" },
+  alert: { Icon: TriangleAlert, labelKey: "account.alert", className: "text-status-danger" },
+  offline: { Icon: WifiOff, labelKey: "account.offline", className: "text-muted-foreground" },
+  location: { Icon: MapPinned, labelKey: "farm.locationOnly", className: "text-channel-info" },
 };
 
 function HubToneStrip({
@@ -69,6 +69,7 @@ function HubToneStrip({
     return summarizeAdminHubTones(rows);
   }, [farmOptions, farmSummaries]);
 
+  const t = useSheetCopy();
   if (tones.total === 0) return null;
 
   const items = [
@@ -80,9 +81,12 @@ function HubToneStrip({
   ] as const;
 
   return (
-    <ul className={accountMenuLayout.hubToneStrip} aria-label="전국 관제">
+    <ul className={accountMenuLayout.hubToneStrip} aria-label={t("account.national")}>
       {items.map(([key, count]) => {
-        const { Icon, label, className } = HUB_TONE_CHIP[key];
+        const chip = HUB_TONE_CHIP[key];
+        const Icon = chip.Icon;
+        const label = t(chip.labelKey);
+        const className = chip.className;
         return (
           <li key={key}>
             <span
@@ -120,7 +124,10 @@ export function AccountMenuSplitBody({
   deferAddressFocus = false,
   onCloseMenu,
   onFarmSaved,
+  header,
+  beforeTools,
 }: Props) {
+  const tFarm = useSheetCopy();
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const showFarmSwitcher = farmOptions.length > 1;
 
@@ -134,10 +141,16 @@ export function AccountMenuSplitBody({
     if (!receipt) return null;
     return {
       status: receipt.status,
-      statusLabel: CONTROLLER_STATUS_LABEL[receipt.status],
+      statusLabel: tFarm(
+        receipt.status === "caution"
+          ? "cover.caution"
+          : receipt.status === "offline"
+            ? "account.offline"
+            : "cover.ok",
+      ),
       timeLabel: formatKst(receipt.receivedAt, "short"),
     };
-  }, [activeFarmKey, receipts]);
+  }, [activeFarmKey, receipts, tFarm]);
 
   const offline = overview?.offlineCount ?? 0;
 
@@ -145,126 +158,84 @@ export function AccountMenuSplitBody({
     if (!liveStatus) return null;
     const parts: string[] = [];
     if (liveStatus.status === "offline" && offline > 0) {
-      parts.push(`오프라인 ${offline}`);
+      parts.push(tFarm("tools.offlineCount", { count: offline }));
     } else {
       parts.push(liveStatus.statusLabel);
       if (offline > 0) {
-        parts.push(`오프라인 ${offline}`);
+        parts.push(tFarm("tools.offlineCount", { count: offline }));
       }
     }
     parts.push(liveStatus.timeLabel);
     return parts.join(" · ");
-  }, [liveStatus, offline]);
+  }, [liveStatus, offline, tFarm]);
+
+  const farmControl = farmLabel ? (
+    showFarmSwitcher ? (
+      <button
+        type="button"
+        className={cn(
+          accountMenuLayout.contextFarmBtn,
+          "inline-flex min-w-0 max-w-full items-center gap-1",
+        )}
+        aria-expanded={switcherOpen}
+        aria-controls="account-menu-farm-matrix"
+        onClick={() => setSwitcherOpen((v) => !v)}
+      >
+        <span className="min-w-0 truncate">{farmLabel}</span>
+        <ChevronDown
+          className={cn(
+            "size-3 shrink-0 text-muted-foreground transition-transform",
+            switcherOpen && "rotate-180",
+          )}
+          aria-hidden
+        />
+      </button>
+    ) : (
+      <p className={cn(accountMenuLayout.contextFarm, "truncate")}>{farmLabel}</p>
+    )
+  ) : showFarmSwitcher ? (
+    <button
+      type="button"
+      className={cn(
+        accountMenuLayout.contextFarmBtn,
+        "inline-flex min-w-0 max-w-full items-center gap-1",
+      )}
+      aria-expanded={switcherOpen}
+      aria-controls="account-menu-farm-matrix"
+      onClick={() => setSwitcherOpen((v) => !v)}
+    >
+      <span className="min-w-0 truncate">{tFarm("header.farmSelect")}</span>
+      <ChevronDown
+        className={cn(
+          "size-3 shrink-0 text-muted-foreground transition-transform",
+          switcherOpen && "rotate-180",
+        )}
+        aria-hidden
+      />
+    </button>
+  ) : null;
+
+  const identity = (
+    <div
+      className={accountMenuLayout.sheetFarmCluster}
+      data-tour-id="account-menu-summary"
+    >
+      {farmControl}
+      {farmLabel && liveLine ? (
+        <p className={cn(accountMenuLayout.liveStrip, "min-w-0 flex-1")}>
+          <span className={statusDotClass(liveStatus?.status)} aria-hidden />
+          <span className="min-w-0 truncate">{liveLine}</span>
+        </p>
+      ) : null}
+      {!farmLabel ? (
+        <HubToneStrip farmOptions={farmOptions} farmSummaries={farmSummaries} />
+      ) : null}
+    </div>
+  );
 
   return (
     <>
-      <div className={accountMenuLayout.splitBody} data-tour-id="account-menu-hub">
-        <div
-          className={accountMenuLayout.zoneContext}
-          data-tour-id="account-menu-summary"
-        >
-          <div className={accountMenuLayout.zoneContextStack}>
-          {farmLabel ? (
-            showFarmSwitcher ? (
-              <button
-                type="button"
-                className={cn(
-                  accountMenuLayout.contextFarmBtn,
-                  "inline-flex min-w-0 max-w-full items-center gap-1",
-                )}
-                aria-expanded={switcherOpen}
-                aria-controls="account-menu-farm-matrix"
-                onClick={() => setSwitcherOpen((v) => !v)}
-              >
-                <span className="min-w-0 truncate">{farmLabel}</span>
-                <ChevronDown
-                  className={cn(
-                    "size-3 shrink-0 text-muted-foreground transition-transform",
-                    switcherOpen && "rotate-180",
-                  )}
-                  aria-hidden
-                />
-              </button>
-            ) : (
-              <p className={cn(accountMenuLayout.contextFarm, "truncate")}>
-                {farmLabel}
-              </p>
-            )
-          ) : showFarmSwitcher ? (
-            <button
-              type="button"
-              className={cn(
-                accountMenuLayout.contextFarmBtn,
-                "inline-flex min-w-0 max-w-full items-center gap-1",
-              )}
-              aria-expanded={switcherOpen}
-              aria-controls="account-menu-farm-matrix"
-              onClick={() => setSwitcherOpen((v) => !v)}
-            >
-              <span className="min-w-0 truncate">농장 선택</span>
-              <ChevronDown
-                className={cn(
-                  "size-3 shrink-0 text-muted-foreground transition-transform",
-                  switcherOpen && "rotate-180",
-                )}
-                aria-hidden
-              />
-            </button>
-          ) : null}
-
-          {farmLabel && liveLine ? (
-            <p className={accountMenuLayout.liveStrip}>
-              <span
-                className={statusDotClass(liveStatus?.status)}
-                aria-hidden
-              />
-              <span className="min-w-0 truncate">{liveLine}</span>
-            </p>
-          ) : null}
-
-          {!farmLabel ? (
-            <HubToneStrip
-              farmOptions={farmOptions}
-              farmSummaries={farmSummaries}
-            />
-          ) : null}
-          </div>
-        </div>
-
-        <div
-          className={accountMenuLayout.zoneAction}
-          onPointerDown={(e) => e.stopPropagation()}
-          onKeyDown={(e) => e.stopPropagation()}
-        >
-          <AccountMenuPins
-            variant="tile"
-            overview={overview}
-            alarms={alarms}
-            farmKey={farmKey}
-            onCloseMenu={onCloseMenu}
-          />
-        </div>
-      </div>
-
-      {activeFarmLocation ? (
-        <div
-          className={accountMenuLayout.addressRow}
-          onPointerDown={(e) => e.stopPropagation()}
-          onKeyDown={(e) => e.stopPropagation()}
-        >
-          <FarmAddressInput
-            key={farmKeyId(activeFarmLocation.farmKey)}
-            farmKey={activeFarmLocation.farmKey}
-            location={activeFarmLocation.location}
-            disabled={!canEditLocation}
-            compact
-            saveOnly
-            deferFocusUntilTap={deferAddressFocus}
-            onSaved={onFarmSaved}
-          />
-        </div>
-      ) : null}
-
+      {header(identity)}
       {switcherOpen && showFarmSwitcher ? (
         <FarmSwitcher
           farmOptions={farmOptions}
@@ -278,6 +249,25 @@ export function AccountMenuSplitBody({
           }}
         />
       ) : null}
+      {beforeTools}
+      <div
+        className={accountMenuLayout.sheetTools}
+        onPointerDown={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+      >
+        <AccountMenuPins
+          variant="tile"
+          overview={overview}
+          alarms={alarms}
+          farmKey={activeFarmKey ? farmKey : null}
+          addressLocation={activeFarmKey ? activeFarmLocation?.location : null}
+          farmLabel={farmLabel}
+          canEditLocation={canEditLocation}
+          deferAddressFocus={deferAddressFocus}
+          onFarmSaved={onFarmSaved}
+          onCloseMenu={onCloseMenu}
+        />
+      </div>
     </>
   );
 }

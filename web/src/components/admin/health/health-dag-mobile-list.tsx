@@ -14,6 +14,11 @@ import {
   HealthStatusBadge,
 } from "@/components/admin/health/health-status-badge";
 import { HealthPipelineIcon } from "@/lib/admin/health/health-pipeline-icons";
+import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
+import {
+  DAG_ZONE_LABELS_EN,
+  healthNodeDisplay,
+} from "@/lib/admin/health/health-locale";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -46,6 +51,8 @@ export function HealthDagMobileList({
   onNodeSelect,
   activeDrillId,
 }: Props) {
+  const locale = useProfileSheetPrefs().locale;
+  const t = useSheetCopy();
   const graph = useMemo(
     () => buildHealthDag(snapshot, { fieldExpanded }),
     [snapshot, fieldExpanded]
@@ -68,10 +75,12 @@ export function HealthDagMobileList({
       .sort(([a], [b]) => a - b)
       .map(([rank, nodes]) => ({
         rank,
-        label: DAG_ZONE_LABELS[rank] ?? `구역 ${rank + 1}`,
+        label:
+          (locale === "en" ? DAG_ZONE_LABELS_EN[rank] : DAG_ZONE_LABELS[rank]) ??
+          t("health.zone", { n: rank + 1 }),
         nodes: [...nodes].sort((a, b) => a.label.localeCompare(b.label, "ko")),
       }));
-  }, [graph.nodes, rankById]);
+  }, [graph.nodes, locale, rankById, t]);
 
   return (
     <ul className="space-y-2">
@@ -83,6 +92,7 @@ export function HealthDagMobileList({
           <ul className="space-y-1">
             {section.nodes.map((node) => {
               const isActive = activeDrillId === node.drillId;
+              const display = healthNodeDisplay(node.id, node.label, node.short, locale);
               return (
                 <li key={node.id}>
                   <button
@@ -107,8 +117,8 @@ export function HealthDagMobileList({
                     )}
                     aria-label={
                       node.togglesField
-                        ? `${node.label} 펼치기`
-                        : `${node.label} 상세`
+                        ? t("ui.expandNamed", { name: display.label })
+                        : t("ui.detailNamed", { name: display.label })
                     }
                   >
                     <span
@@ -123,7 +133,7 @@ export function HealthDagMobileList({
                       className="size-3.5 shrink-0 text-foreground"
                     />
                     <div className="min-w-0 flex-1 leading-tight">
-                      <p className="truncate font-semibold">{node.short}</p>
+                      <p className="truncate font-semibold">{display.short}</p>
                       {node.metric ? (
                         <p className="truncate text-[10px] text-muted-foreground tabular-nums">
                           {node.metric}

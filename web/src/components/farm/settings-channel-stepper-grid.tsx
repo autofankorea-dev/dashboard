@@ -7,6 +7,8 @@ import type { PresetCreateField } from "@/lib/farm/command-presets";
 import { SettingsStepperField } from "@/components/farm/settings-stepper-field";
 import { dashboardElevation } from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
+import type { SheetCopyKey } from "@/lib/ui/sheet-copy";
 
 type Props = {
   draft: PanelDraft;
@@ -21,9 +23,10 @@ export function SettingsChannelStepperGrid({
   ventStep,
   onChange,
 }: Props) {
+  const t = useSheetCopy();
   const fields: {
     field: PresetCreateField;
-    label: string;
+    labelKey: SheetCopyKey;
     step: number;
     min: number;
     max: number;
@@ -31,7 +34,7 @@ export function SettingsChannelStepperGrid({
   }[] = [
     {
       field: "setpointTemp",
-      label: "설정 ℃",
+      labelKey: "settings.setC",
       step: MENU_STEPS.setpoint.step,
       min: MENU_STEPS.setpoint.min,
       max: MENU_STEPS.setpoint.max,
@@ -39,7 +42,7 @@ export function SettingsChannelStepperGrid({
     },
     {
       field: "tempDeviation",
-      label: "편차 ℃",
+      labelKey: "settings.devC",
       step: MENU_STEPS.deviation.step,
       min: MENU_STEPS.deviation.min,
       max: MENU_STEPS.deviation.max,
@@ -47,7 +50,7 @@ export function SettingsChannelStepperGrid({
     },
     {
       field: "minVentPct",
-      label: "환기 최저 %",
+      labelKey: "settings.ventMinPct",
       step: ventStep,
       min: 0,
       max: 100,
@@ -55,7 +58,7 @@ export function SettingsChannelStepperGrid({
     },
     {
       field: "maxVentPct",
-      label: "환기 최고 %",
+      labelKey: "settings.ventMaxPct",
       step: ventStep,
       min: 0,
       max: 100,
@@ -68,7 +71,7 @@ export function SettingsChannelStepperGrid({
       {fields.map((spec) => (
         <SettingsStepperField
           key={spec.field}
-          label={spec.label}
+          label={t(spec.labelKey)}
           value={draft[spec.field]}
           step={spec.step}
           min={spec.min}

@@ -32,7 +32,8 @@ test("header has no density toggle and the controller card uses the md scale", (
   const header = readRepoFile("src/components/layout/header-tools-menu.tsx");
   assert.equal(header.includes("header-density"), false);
   assert.equal(header.includes("toggleDashboardDensity"), false);
-  assert.match(header, /\[bell, ops, report, themeEl, viewport\]/);
+  assert.match(header, /\[bell, ops, report, viewport\]/);
+  assert.equal(header.includes("header-theme"), false);
   const pageUi = readRepoFile("src/lib/ui/dashboard-page-ui.ts");
   assert.match(
     pageUi,

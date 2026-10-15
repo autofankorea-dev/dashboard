@@ -5,6 +5,8 @@ import type { AlarmSettings } from "@/lib/domain/alarms";
 import type { ThermoCommand } from "@/lib/data/commands";
 import { parseDeviceAlarms } from "@/lib/controllers/device-alarm-command";
 import { sendDeviceSettingsCommandsAction } from "@/app/(dashboard)/controllers/actions";
+import { useProfileSheetPrefs } from "@/components/account/profile-sheet-prefs";
+import { sheetCopy } from "@/lib/ui/sheet-copy";
 import type { CommandChannelValues } from "@/lib/controllers/combined-channel-command";
 export type AlarmThresholdHeaderState = {
   scopeDescription: string; scopeHasOverride: boolean; scopeReady: boolean; hasChanges: boolean;
@@ -24,6 +26,13 @@ type Props = {
   headless?: boolean;
 };
 export function AlarmThresholdForm({ readings, fixedScope, disabled, onHeaderState, commands = [], onCommandQueued, headless, submitCommands = sendDeviceSettingsCommandsAction }: Props) {
+  const locale = useProfileSheetPrefs().locale;
+  const t = useMemo(
+    () =>
+      (key: Parameters<typeof sheetCopy>[1], vars?: Record<string, string | number>) =>
+        sheetCopy(locale, key, vars),
+    [locale],
+  );
   const reading = readings.find(r => r.key === fixedScope?.readingKey);
   const latest = [...commands].sort((a,b) => b.createdAt.localeCompare(a.createdAt) || ({pending:1,sent:2,applied:3,failed:3,cancelled:3}[b.status] - {pending:1,sent:2,applied:3,failed:3,cancelled:3}[a.status])).find(c => c.alarmSettings && c.controllerKey === reading?.controllerKey && c.moduleUid === reading?.moduleUid && c.farmKey.lsindRegistNo === reading?.farmKey.lsindRegistNo && c.farmKey.itemCode === reading?.farmKey.itemCode);
   const awaitingFreshApplied = latest?.status === "applied" && latest.appliedAt && (reading?.receivedAt ?? "") <= latest.appliedAt &&
@@ -46,7 +55,7 @@ export function AlarmThresholdForm({ readings, fixedScope, disabled, onHeaderSta
   if (signature !== source) { setSource(signature); if (!dirty && !pending) { setLow(sourceLow == null ? "" : String(sourceLow)); setHigh(sourceHigh == null ? "" : String(sourceHigh)); } }
   const values = useMemo(() => low.trim() && high.trim() ? parseDeviceAlarms({ lowTempC: Number(low), highTempC: Number(high) }) : null, [low, high]);
   const busy = pending || latest?.status === "pending" || latest?.status === "sent";
-  const validationError = values ? null : "0~100℃, 0.1℃ 단위로 저온 < 고온을 입력하세요.";
+  const validationError = values ? null : t("settings.alarmValidate");
   const onChange = useCallback((field: "lowTempC" | "highTempC", value: number) => {
     if (disabled || busy) return;
     (field === "lowTempC" ? setLow : setHigh)(String(value)); setDirty(true);
@@ -56,28 +65,32 @@ export function AlarmThresholdForm({ readings, fixedScope, disabled, onHeaderSta
     setPending(true); setError(null);
     void submitCommands([{ key: reading.key, ...reading.farmKey, moduleUid: reading.moduleUid,
       stallTyCode: reading.stallTyCode ?? "", stallNo: reading.stallNo ?? "", eqpmnNo: reading.eqpmnNo, alarmSettings: values, channels }])
-      .then(result => { const cmd = result.sentItems[0]?.command; if (cmd) { setDirty(false); onCommitted?.(); onCommandQueued?.(cmd); } else setError(result.error ?? result.failed[0]?.error ?? "전송 실패"); })
-      .catch(() => setError("전송 요청에 실패했습니다. 입력값을 유지합니다."))
+      .then(result => { const cmd = result.sentItems[0]?.command; if (cmd) { setDirty(false); onCommitted?.(); onCommandQueued?.(cmd); } else setError(result.error ?? result.failed[0]?.error ?? t("settings.sendFailedShort")); })
+    .catch(() => setError(t("settings.sendRequestFailed")))
       .finally(() => setPending(false));
-  }, [reading, disabled, busy, values, onCommandQueued, submitCommands]);
+  }, [reading, disabled, busy, values, onCommandQueued, submitCommands, t]);
   useEffect(() => {
     const reset = () => { setLow(reading?.alarmLowTempC == null ? "" : String(reading.alarmLowTempC)); setHigh(reading?.alarmHighTempC == null ? "" : String(reading.alarmHighTempC)); setDirty(false); };
-    onHeaderState?.({ scopeDescription: "컨트롤러 장비 경보", scopeHasOverride: false, scopeReady: Boolean(reading),
+    onHeaderState?.({ scopeDescription: t("settings.deviceAlarm", { summary: "" }).trim(), scopeHasOverride: false, scopeReady: Boolean(reading),
       hasChanges: dirty && (Number(low) !== sourceLow || Number(high) !== sourceHigh), pending: busy, validationError,
-      collapsedSummary: values ? `저온 ${low}℃ · 고온 ${high}℃` : "경보값 미수신",
+      collapsedSummary: values ? t("settings.alarmPair", { low, high }) : t("settings.alarmUnread"),
       glanceCells: { temp: low || "—", tempDev: high || "—", humidity: "—" }, values: { lowTempC: low, highTempC: high }, onChange, onSave, onClear: reset, onApplyDefaults: reset });
-  }, [onHeaderState, reading, dirty, latest?.status, busy, validationError, low, high, onSave, values, sourceLow, sourceHigh, onChange]);
+  }, [onHeaderState, reading, dirty, latest?.status, busy, validationError, low, high, onSave, values, sourceLow, sourceHigh, onChange, t]);
   if (headless) return error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null;
+  const alarmFields = [
+    [t("settings.lowAlarm"), low, setLow],
+    [t("settings.highAlarm"), high, setHigh],
+  ] as const;
   return <div className="space-y-3" data-device-alarm-settings>
-    <p className="text-sm text-muted-foreground">컨트롤러 공통 경보 · 장비 수신값</p>
-    <p className="text-sm">현재 저온 {reading?.alarmLowTempC ?? "—"}℃ / 고온 {reading?.alarmHighTempC ?? "—"}℃</p>
-    <div className="grid grid-cols-2 gap-3">{([["저온 경보", low, setLow], ["고온 경보", high, setHigh]] as const).map(([label, value, setter]) =>
+    <p className="text-sm text-muted-foreground">{t("settings.alarmShared")}</p>
+    <p className="text-sm">{t("settings.alarmNow", { low: reading?.alarmLowTempC ?? "—", high: reading?.alarmHighTempC ?? "—" })}</p>
+    <div className="grid grid-cols-2 gap-3">{alarmFields.map(([label, value, setter]) =>
       <label key={label} className="min-w-0 space-y-1 text-sm">{label} (℃)<input aria-label={label} type="number" min={0} max={100} step={0.1} value={value} disabled={disabled || busy}
         onChange={e => { setter(e.target.value); setDirty(true); }} className="h-11 w-full rounded-md border bg-background px-3" /></label>)}</div>
-    <p className="text-xs text-muted-foreground">적용 시 장비로 명령을 전송합니다. 새 raw의 일치값 수신 후 반영을 확인합니다.</p>
+    <p className="text-xs text-muted-foreground">{t("settings.alarmApplyNote")}</p>
     {(error || (dirty && validationError)) && <p role="alert" className="text-sm text-destructive">{error ?? validationError}</p>}
-    {busy && <p role="status" className="text-sm">{latest?.status === "sent" ? "전송 · 2/3 · 장비 응답 대기" : "접수 · 1/3"}</p>}
-    {latest?.status === "applied" && <p role="status" className="text-sm">확인 · 3/3</p>}
-    {latest?.status === "failed" && <p role="alert" className="text-sm">명령 적용 실패 · 최신 장비 수신값을 표시합니다.</p>}
+    {busy && <p role="status" className="text-sm">{latest?.status === "sent" ? t("settings.alarmSentWait") : t("settings.alarmQueuedStep")}</p>}
+    {latest?.status === "applied" && <p role="status" className="text-sm">{t("settings.alarmConfirmedStep")}</p>}
+    {latest?.status === "failed" && <p role="alert" className="text-sm">{t("settings.alarmFailedNote")}</p>}
   </div>;
 }

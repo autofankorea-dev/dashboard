@@ -7,6 +7,7 @@ import type { BarnListViewMode } from "@/lib/farm/farm-view-url";
 import { dashboardAffordance, dashboardUi } from "@/lib/ui/dashboard-page-ui";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { cn } from "@/lib/utils";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
 
 type ModeIcon = ComponentType<{
   className?: string;
@@ -16,11 +17,11 @@ type ModeIcon = ComponentType<{
 
 const MODES: {
   id: BarnListViewMode;
-  label: string;
+  labelKey: "list.controller" | "list.settings";
   Icon: ModeIcon;
 }[] = [
-  { id: "controller", label: "컨트롤러", Icon: ControllerDeviceIcon },
-  { id: "settings", label: "설정", Icon: Settings },
+  { id: "controller", labelKey: "list.controller", Icon: ControllerDeviceIcon },
+  { id: "settings", labelKey: "list.settings", Icon: Settings },
 ];
 
 type Props = {
@@ -37,6 +38,7 @@ export function BarnListModeToolbar({
   disabled = false,
   className,
 }: Props) {
+  const t = useSheetCopy();
   const [pendingMode, setPendingMode] = useState<BarnListViewMode | null>(null);
 
   if (pendingMode != null && value === pendingMode) {
@@ -56,7 +58,7 @@ export function BarnListModeToolbar({
   return (
     <div
       role="tablist"
-      aria-label="목록 보기 모드"
+      aria-label={t("list.mode")}
       aria-disabled={disabled || undefined}
       aria-busy={switching || undefined}
       className={cn(
@@ -70,13 +72,14 @@ export function BarnListModeToolbar({
         const selected = displayMode === mode.id;
         const modeBusy = pendingMode === mode.id;
         const Icon = mode.Icon;
+        const label = t(mode.labelKey);
         return (
           <button
             key={mode.id}
             type="button"
             role="tab"
-            aria-label={mode.label}
-            title={mode.label}
+            aria-label={label}
+            title={label}
             aria-selected={selected}
             aria-busy={modeBusy || undefined}
             disabled={disabled}

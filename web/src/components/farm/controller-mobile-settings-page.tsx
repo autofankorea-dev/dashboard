@@ -8,6 +8,7 @@ import { BarnListAccordionPanel } from "@/components/farm/barn-list-accordion-pa
 import { dashboardUi } from "@/lib/ui/dashboard-page-ui";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { cn } from "@/lib/utils";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
 
 type Props = {
   reading: BarnReading;
@@ -33,6 +34,7 @@ export function ControllerMobileSettingsPage({
   onCommandQueued,
   onOpenChart,
 }: Props) {
+  const t = useSheetCopy();
   return (
     <div
       className="min-h-min w-full pb-[max(0.75rem,env(safe-area-inset-bottom,0px))]"
@@ -55,7 +57,7 @@ export function ControllerMobileSettingsPage({
               strokeWidth={dashboardUi.iconStroke}
               aria-hidden
             />
-            차트로 옮기기
+            {t("settings.toChart")}
           </button>
         </div>
       ) : null}

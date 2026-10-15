@@ -19,7 +19,12 @@ import {
   domRectToPeekAnchor,
   type HealthDagNodeSelectPayload,
 } from "@/lib/admin/health/health-node-peek-content";
-import { HEALTH_STATUS_LABEL } from "@/lib/admin/health/types";
+import {
+  DAG_ZONE_LABELS_EN,
+  healthNodeDisplay,
+  healthStatusLabel,
+} from "@/lib/admin/health/health-locale";
+import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { HealthDagMobileList } from "@/components/admin/health/health-dag-mobile-list";
 import { healthStatusBorderClass } from "@/components/admin/health/health-status-badge";
 import { dashboardControl } from "@/lib/ui/dashboard-page-ui";
@@ -57,6 +62,8 @@ function mqttModUsed(metric?: string): number {
 }
 
 export function HealthDagGraph({ snapshot, onNodeSelect, activeDrillId }: Props) {
+  const locale = useProfileSheetPrefs().locale;
+  const t = useSheetCopy();
   const [mounted, setMounted] = useState(false);
   const [fieldExpanded, setFieldExpanded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -165,7 +172,7 @@ export function HealthDagGraph({ snapshot, onNodeSelect, activeDrillId }: Props)
             "h-8 min-h-8 w-full rounded-lg px-2.5 text-xs sm:w-auto sm:text-sm"
           )}
         >
-          {fieldExpanded ? "농장 접기" : "농장 펼치기"}
+          {fieldExpanded ? t("ui.collapseFarms") : t("ui.expandFarms")}
         </button>
       </div>
 
@@ -215,7 +222,7 @@ export function HealthDagGraph({ snapshot, onNodeSelect, activeDrillId }: Props)
                 className="fill-muted-foreground"
                 fontSize={10}
               >
-                {DAG_ZONE_LABELS[zoneIndex] ?? ""}
+                {(locale === "en" ? DAG_ZONE_LABELS_EN[zoneIndex] : DAG_ZONE_LABELS[zoneIndex]) ?? ""}
               </text>
             </g>
           ))}
@@ -299,10 +306,10 @@ export function HealthDagGraph({ snapshot, onNodeSelect, activeDrillId }: Props)
                   />
                 </span>
                 <span className="line-clamp-1 text-center text-[11px] font-semibold leading-tight">
-                  {meta.short}
+                  {healthNodeDisplay(meta.id, meta.label, meta.short, locale).short}
                 </span>
                 <span className="line-clamp-1 text-center text-[10px] leading-tight text-muted-foreground tabular-nums">
-                  {meta.metric ?? HEALTH_STATUS_LABEL[meta.status]}
+                  {meta.metric ?? healthStatusLabel(meta.status, locale)}
                 </span>
                 {meta.id === "mqtt" ? (
                   <div className="mt-0.5 h-1 w-[80%] overflow-hidden rounded-full bg-muted">
@@ -348,13 +355,17 @@ export function HealthDagGraph({ snapshot, onNodeSelect, activeDrillId }: Props)
                   className="box-border h-full w-full overflow-hidden rounded-xl bg-card p-1"
                   title={
                     meta.metric
-                      ? `${meta.label} · ${meta.metric}`
-                      : meta.label
+                      ? `${healthNodeDisplay(meta.id, meta.label, meta.short, locale).label} · ${meta.metric}`
+                      : healthNodeDisplay(meta.id, meta.label, meta.short, locale).label
                   }
                   aria-label={
                     meta.togglesField
-                      ? `${meta.label} 펼치기`
-                      : `${meta.label} 상세`
+                      ? t("ui.expandNamed", {
+                          name: healthNodeDisplay(meta.id, meta.label, meta.short, locale).label,
+                        })
+                      : t("ui.detailNamed", {
+                          name: healthNodeDisplay(meta.id, meta.label, meta.short, locale).label,
+                        })
                   }
                 >
                   {box}
