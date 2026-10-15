@@ -10,8 +10,6 @@ import {
 } from "react";
 import {
   Bell,
-  ChevronDown,
-  ChevronUp,
   FileText,
   Monitor,
   ShieldCheck,
@@ -19,8 +17,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { useAppNavigate } from "@/components/layout/use-app-navigate";
 import { AppNavLink } from "@/components/layout/app-nav-link";
+import { AccountMenuAlarmPanel } from "@/components/account/account-menu-alarm-panel";
 import { DailyReportButton } from "@/components/layout/daily-report-button";
 import {
   ProfilePinHeaderDropZone,
@@ -32,20 +30,11 @@ import {
   hubRailToolDistances,
   railOffset,
 } from "@/components/layout/hub-rail-layout";
-import { Badge } from "@/components/ui/badge";
 import type { AlarmRow } from "@/lib/domain/alarms";
-import {
-  alarmChartHref,
-  isModuleAlarmRow,
-  isSituationLiveStateRow,
-  situationAlarmMetaLine,
-} from "@/lib/domain/alarms";
 import { useShellAlarms } from "@/lib/navigation/shell-live-alarms-store";
 import type { FarmKey } from "@/lib/domain/farm-key";
 import type { FarmOverview } from "@/lib/data/iot";
-import { formatKst } from "@/lib/datetime/kst";
 import { isAdminOpsNavPath } from "@/lib/dashboard-sections";
-import { ModuleAlarmAckButton } from "@/components/layout/module-alarm-ack-button";
 import { dashboardUi } from "@/lib/ui/dashboard-page-ui";
 import { motionClass } from "@/lib/ui/motion-classes";
 import {
@@ -75,8 +64,7 @@ import {
   dispatchTourGridActionDone,
   waitForTourTarget,
 } from "@/lib/onboarding/tour-timing";
-import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
-import type { SheetCopyKey } from "@/lib/ui/sheet-copy";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { cn } from "@/lib/utils";
 
 const emptySubscribe = () => () => {};
@@ -136,18 +124,6 @@ function headerPinVisibility(
     return pinned.includes(id) ? "hidden" : "normal";
   }
   return pinned.includes(id) ? "drop" : "draggable";
-}
-
-function connectivityMessage(
-  overview: FarmOverview | undefined,
-  copy: (key: SheetCopyKey, vars?: Record<string, string | number>) => string,
-): string {
-  const registered = overview?.controllerCount;
-  if (registered === undefined) return copy("tools.connUnknown");
-  const offline = overview?.offlineCount ?? 0;
-  const connected =
-    overview?.connectedCount ?? Math.max(registered - offline, 0);
-  return copy("tools.connCount", { registered, connected });
 }
 
 function toolsIconStyle(toolsI: number): CSSProperties {
@@ -237,15 +213,12 @@ export function HeaderToolsMenu({
   const liveAlarms = useShellAlarms(alarms);
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const viewportCompact = useHydrationSafeDashboardCompact();
-  const { navigate } = useAppNavigate();
   const pathname = usePathname();
   const t = useSheetCopy();
-  const locale = useProfileSheetPrefs().locale;
 
   const offline = overview?.offlineCount ?? 0;
   const activeAlarms = liveAlarms.filter((a) => a.status === "active");
   const alarmCount = activeAlarms.length;
-  const alarmList = activeAlarms.slice(0, 12);
   /** 배지 = 종 이상상황 건수 */
   const alert = alarmCount > 0 || offline > 0;
 
@@ -275,7 +248,6 @@ export function HeaderToolsMenu({
     : "mobile";
 
   const [detail, setDetail] = useState<DetailId | null>(null);
-  const [alarmListOpen, setAlarmListOpen] = useState(false);
 
   const pinnedTools = useSyncExternalStore(
     subscribeProfilePinStore,
@@ -312,7 +284,6 @@ export function HeaderToolsMenu({
       }
       if (action === "close-header-tools") {
         setDetail(null);
-        setAlarmListOpen(false);
         dispatchTourGridActionDone("close-header-tools");
       }
     };
@@ -321,7 +292,6 @@ export function HeaderToolsMenu({
       window.removeEventListener(FARM_TOUR_ACTION_EVENT, onTourAction);
   }, []);
 
-  const connTitle = connectivityMessage(overview, t);
   const auto = viewportPref === "auto" ? t("tools.autoSuffix") : "";
   const viewportTitle =
     viewportMode === "mobile"
@@ -335,15 +305,10 @@ export function HeaderToolsMenu({
 
   const toggleDetail = (id: DetailId) => {
     setDetail((prev) => (prev === id ? null : id));
-    /* 이상상황 상세를 닫거나 다른 상세로 바꿀 때 리스트 접기 */
-    if (id !== "alarms" || detail === id) {
-      setAlarmListOpen(false);
-    }
   };
 
   const closePanels = () => {
     setDetail(null);
-    setAlarmListOpen(false);
   };
 
   const toolbarIcons = (opts: {
@@ -578,166 +543,14 @@ export function HeaderToolsMenu({
       ) : null}
 
       {detail === "alarms" ? (
-        <div
-          className={cn(
-            isHub
-              ? dashboardUi.hubDetailRowList
-              : cn(
-                  dashboardUi.headerToolsCard,
-                  "mx-0 mb-0 w-full",
-                  alert && dashboardUi.headerToolsCardAlert,
-                ),
-          )}
-        >
-          <span
-            className={cn(
-              isHub
-                ? dashboardUi.hubDetailLeadIcon
-                : dashboardUi.headerToolsCardIcon,
-              alert &&
-                (isHub
-                  ? dashboardUi.hubDetailLeadIconAlert
-                  : dashboardUi.headerToolsCardIconAlert),
-            )}
-            aria-hidden
-          >
-            <Bell className="size-4 md:size-5" />
-          </span>
-          <div
-            className={
-              isHub
-                ? dashboardUi.hubDetailBodyList
-                : dashboardUi.headerToolsCardBody
-            }
-          >
-            <div
-              className={
-                isHub
-                  ? dashboardUi.hubDetailTitle
-                  : dashboardUi.headerToolsCardTitle
-              }
-            >
-              <span>{t("tools.alarm")}</span>
-              {alarmCount > 0 ? (
-                <Badge
-                  variant="destructive"
-                  className="ml-auto h-5 min-h-0 px-1.5 text-[0.65rem]"
-                >
-                  {t("tools.count", { count: alarmCount })}
-                </Badge>
-              ) : null}
-            </div>
-            <p
-              className={cn(
-                isHub
-                  ? dashboardUi.hubDetailMeta
-                  : dashboardUi.headerToolsCardMeta,
-                offline > 0 &&
-                  "font-medium text-red-600 dark:text-red-400",
-              )}
-            >
-              {offline > 0
-                ? `${connTitle} · ${t("tools.offlineCount", { count: offline })}`
-                : connTitle}
-            </p>
-            {alarmCount > 0 ? (
-              <button
-                type="button"
-                className={cn(
-                  isHub
-                    ? dashboardUi.hubDetailAlarmToggle
-                    : "mt-1.5 flex w-full items-center justify-center gap-1 rounded-lg border px-2 py-1.5 text-xs font-medium",
-                  !isHub && "text-emerald-700 dark:text-emerald-400",
-                )}
-                aria-expanded={alarmListOpen}
-                onClick={() => setAlarmListOpen((v) => !v)}
-              >
-                {alarmListOpen ? (
-                  <>
-                    {t("tools.collapse")}
-                    <ChevronUp className="size-3.5 shrink-0" aria-hidden />
-                  </>
-                ) : (
-                  <>
-                    {t("cover.detail")}
-                    <ChevronDown className="size-3.5 shrink-0" aria-hidden />
-                  </>
-                )}
-              </button>
-            ) : (
-              <p
-                className={
-                  isHub
-                    ? dashboardUi.hubDetailMeta
-                    : dashboardUi.headerToolsCardMeta
-                }
-              >
-                {t("tools.noActive")}
-              </p>
-            )}
-            {alarmListOpen && alarmList.length > 0 ? (
-              <ul
-                className={cn(
-                  "min-h-0 space-y-1 overflow-y-auto overscroll-contain",
-                  isHub
-                    ? "mt-1 flex-1 border-t border-border/50 pt-1.5 pr-0.5"
-                    : "mt-1.5 max-h-[min(50dvh,16rem)]",
-                )}
-                aria-label={t("tools.alarmList")}
-              >
-                {alarmList.map((a) => (
-                  <li key={a.id}>
-                    <div
-                      className={cn(
-                        "w-full rounded-xl border border-border/60 bg-muted/20 px-1.5 py-1.5",
-                      )}
-                    >
-                      <button
-                        type="button"
-                        className={cn(
-                          "w-full text-left hover:bg-muted/80 rounded-lg px-0.5 py-0.5",
-                          motionClass.microInteractive,
-                        )}
-                        onClick={() => {
-                          closePanels();
-                          navigate(alarmChartHref(a), {
-                            message: isModuleAlarmRow(a)
-                              ? t("nav.chartFarm")
-                              : t("nav.chart"),
-                          });
-                        }}
-                      >
-                        <span className="flex items-center justify-between gap-2 text-xs font-medium">
-                          <span className="truncate">{a.alarmType}</span>
-                          <span className="shrink-0 text-[0.65rem] text-muted-foreground">
-                            {a.severity === "critical" ? t("tools.critical") : t("cover.caution")}
-                          </span>
-                        </span>
-                        <span className="block truncate text-[0.65rem] text-muted-foreground">
-                          {situationAlarmMetaLine(a, locale)}
-                        </span>
-                        {isSituationLiveStateRow(a) ? null : (
-                          <span className="block text-[0.65rem] text-muted-foreground">
-                            {formatKst(a.occurredAt, "short")}
-                          </span>
-                        )}
-                      </button>
-                      {isModuleAlarmRow(a) ? (
-                        <div className="mt-1 flex justify-end">
-                          <ModuleAlarmAckButton alarm={a} list={activeAlarms} />
-                        </div>
-                      ) : null}
-                    </div>
-                  </li>
-                ))}
-                {alarmCount > alarmList.length ? (
-                  <li className="px-1 py-1 text-[0.65rem] text-muted-foreground">
-                    {t("tools.more", { count: alarmCount - alarmList.length })}
-                  </li>
-                ) : null}
-              </ul>
-            ) : null}
-          </div>
+        <div className={isHub ? "px-1" : "p-2"}>
+          <AccountMenuAlarmPanel
+            embedded
+            overview={overview}
+            alarms={alarms}
+            onNavigate={closePanels}
+            defaultListOpen={!isHub}
+          />
         </div>
       ) : null}
 
@@ -748,7 +561,7 @@ export function HeaderToolsMenu({
             presentation="hub-detail"
           />
         ) : (
-          <div className="p-1">
+          <div className="p-2">
             <DailyReportButton
               farmKey={farmKey}
               presentation="tools-card"

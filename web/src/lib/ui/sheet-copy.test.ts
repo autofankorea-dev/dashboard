@@ -264,17 +264,15 @@ test("sheet copy keeps the remaining dashboard keys in both languages", () => {
     "tools.ops",
     "tools.viewportMobileToPc",
     "tools.viewportPcToMobile",
-    "tools.noActive",
     "nav.monitoring",
     "nav.ops",
-    "nav.chartFarm",
   ] as const) {
     assert.ok(header.includes(`"${key}"`), key);
   }
-  assert.match(header, /\{a\.alarmType\}/);
+  assert.match(header, /AccountMenuAlarmPanel/);
 
   const alarm = readSrc("../../components/account/account-menu-alarm-panel.tsx");
-  for (const key of ["tools.noActive", "nav.chart", "alarm.toPanel"] as const) {
+  for (const key of ["tools.noActive", "nav.chart", "nav.chartFarm", "alarm.toPanel"] as const) {
     assert.ok(alarm.includes(`"${key}"`), key);
   }
   assert.match(alarm, /alarm\.alarmType/);
