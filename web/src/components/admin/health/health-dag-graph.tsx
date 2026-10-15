@@ -163,13 +163,14 @@ export function HealthDagGraph({ snapshot, onNodeSelect, activeDrillId }: Props)
 
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center justify-end gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-sm font-semibold">{t("health.farm")}</p>
         <button
           type="button"
           onClick={() => setFieldExpanded((v) => !v)}
           className={cn(
             dashboardControl.buttonOutline,
-            "h-8 min-h-8 w-full rounded-lg px-2.5 text-xs sm:w-auto sm:text-sm"
+            "h-8 min-h-8 shrink-0 rounded-lg px-2.5 text-xs sm:text-sm"
           )}
         >
           {fieldExpanded ? t("ui.collapseFarms") : t("ui.expandFarms")}

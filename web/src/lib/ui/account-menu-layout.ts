@@ -32,10 +32,10 @@ export const accountMenuLayout = {
   ),
   sheetInner: "account-menu-sheet-inner w-full min-w-0",
   sheetHeader:
-    "flex min-w-0 items-center gap-2 border-b border-border/60 px-3 py-2 max-md:pt-safe md:gap-3 md:px-4 md:py-2.5",
-  sheetIdentity: "flex min-w-0 flex-1 items-center gap-2",
-  sheetFarmCluster: "flex w-full min-w-0 items-center gap-2 overflow-hidden",
-  sheetHeaderActions: "flex shrink-0 items-center gap-2",
+    "flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 border-b border-border/60 px-3 py-2 max-md:pt-safe md:gap-x-3 md:px-4 md:py-2.5",
+  sheetIdentity: "flex basis-full min-w-0 items-center gap-2",
+  sheetFarmCluster: "flex w-full min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5",
+  sheetHeaderActions: "ml-auto flex shrink-0 items-center gap-2",
   headerLogout: cn(
     "inline-flex shrink-0 items-center rounded-md px-2 py-1 text-[10px] font-medium text-destructive hover:bg-muted/60 hover:underline",
     motionClass.microInteractive,

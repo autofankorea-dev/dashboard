@@ -12,6 +12,7 @@ import { listAllSharedCommandPresets } from "@/lib/data/command-presets";
 import { compareFarmKey, farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
 import { fetchFarmOverviewRows } from "@/lib/data/iot-live-fetch";
 import { farmShortLabel } from "@/lib/domain/farm-summaries";
+import { OpsSectionNav } from "@/components/admin/ops-section-nav";
 import { OpsInspectorFrame } from "@/components/admin/ops-inspector-frame";
 import { OpsServiceRoleNotice } from "@/components/admin/ops-service-role-notice";
 import { opsLayout } from "@/lib/ui/dashboard-page-ui";
@@ -90,6 +91,7 @@ async function PresetsSection() {
 export async function AdminOpsHome() {
   return (
     <OpsInspectorFrame>
+      <OpsSectionNav />
       <OpsScanClient />
       <Suspense fallback={<AdminOpsTabContentSkeleton label="디렉터리" />}>
         <DirectorySection />

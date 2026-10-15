@@ -18,13 +18,13 @@ export function AccountMenuHub({ name, avatarUrl, identity, trailing }: Props) {
       <p id="account-menu-sheet-title" className={accountMenuLayout.hubName}>
         {name}
       </p>
-      {identity ? (
-        <div className={accountMenuLayout.sheetIdentity}>{identity}</div>
-      ) : (
-        <div className="min-w-0 flex-1" />
-      )}
       {trailing ? (
         <div className={accountMenuLayout.sheetHeaderActions}>{trailing}</div>
+      ) : (
+        <div className="ml-auto" />
+      )}
+      {identity ? (
+        <div className={accountMenuLayout.sheetIdentity}>{identity}</div>
       ) : null}
     </div>
   );

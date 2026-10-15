@@ -175,7 +175,7 @@ function ToolsIconBtn({
       )}
       {...rest}
     >
-      <Icon className="size-4 md:size-5" aria-hidden />
+      <Icon className="size-5" aria-hidden />
       {badge != null && badge > 0 ? (
         <span
           className={cn(
@@ -385,7 +385,7 @@ export function HeaderToolsMenu({
           title={onOps ? t("tools.opsToMonitor") : t("tools.monitorToOps")}
           data-tour-id="header-ops"
         >
-          <ShieldCheck className="size-4 md:size-5" aria-hidden />
+          <ShieldCheck className="size-5" aria-hidden />
         </AppNavLink>
       </ToolsIconWrap>
     ) : null;

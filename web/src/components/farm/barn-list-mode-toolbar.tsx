@@ -102,13 +102,13 @@ export function BarnListModeToolbar({
           >
             {modeBusy ? (
               <Loader2
-                className="size-4 shrink-0 animate-spin sm:size-5"
+                className="size-5 shrink-0 animate-spin"
                 strokeWidth={dashboardUi.iconStroke}
                 aria-hidden
               />
             ) : (
               <Icon
-                className="size-4 shrink-0 sm:size-5"
+                className="size-5 shrink-0"
                 strokeWidth={dashboardUi.iconStroke}
                 aria-hidden
               />

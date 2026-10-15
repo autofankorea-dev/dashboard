@@ -1,8 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useCallback, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import type { CSSProperties, MouseEvent } from "react";
+import { useCallback, useMemo, useSyncExternalStore } from "react";
+import type { MouseEvent } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { AppNavLink } from "@/components/layout/app-nav-link";
@@ -28,7 +28,6 @@ import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { dashboardUi } from "@/lib/ui/dashboard-page-ui";
 
 const BRAND_TITLE = "IoT Board";
-const LOGO_SCALE = 1.3;
 const emptySubscribe = () => () => {};
 
 export function AppHeaderBrand() {
@@ -39,24 +38,6 @@ export function AppHeaderBrand() {
   const { isAdmin } = useFarmScope();
   const t = useSheetCopy();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
-  const titleRef = useRef<HTMLParagraphElement>(null);
-  const [titleWidth, setTitleWidth] = useState<number | null>(null);
-
-  useLayoutEffect(() => {
-    if (!mounted) return;
-    const el = titleRef.current;
-    if (!el) return;
-
-    const measure = () => {
-      const width = el.getBoundingClientRect().width;
-      setTitleWidth(width > 0 ? Math.round(width) : null);
-    };
-
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [mounted]);
 
   /** SSR·Link — Next searchParams. 클릭 시 window URL을 다시 읽는다. */
   const monitoringHomeHref = useMemo(() => {
@@ -118,13 +99,6 @@ export function AppHeaderBrand() {
     [isAdmin, pathname, navigate, refreshBusy, runRefresh, t],
   );
 
-  const logoStyle: CSSProperties | undefined =
-    mounted && titleWidth != null
-      ? ({
-          "--brand-title-w": `${Math.round(titleWidth * LOGO_SCALE)}px`,
-        } as CSSProperties)
-      : undefined;
-
   const liveParams = new URLSearchParams(searchParams.toString());
   const softHome =
     pathname === "/farm" &&
@@ -133,32 +107,26 @@ export function AppHeaderBrand() {
       : isFarmMonitoringSoftHome(liveParams));
 
   return (
-    <div
+    <AppNavLink
+      href={monitoringHomeHref}
+      message={softHome ? t("nav.refresh") : t("nav.monitoring")}
+      aria-label={softHome ? t("nav.refreshLabel") : t("nav.home")}
+      title={softHome ? t("nav.refreshShort") : t("nav.home")}
+      aria-busy={mounted && refreshBusy ? true : undefined}
+      onClick={goMonitoringHome}
       className={cn(
         dashboardUi.headerBrand,
-        "text-2xl font-semibold leading-tight",
+        "rounded-lg text-2xl font-semibold leading-tight no-underline",
+        "transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+        mounted && softHome && refreshBusy && "pointer-events-none opacity-70",
       )}
     >
-      <AppNavLink
-        href={monitoringHomeHref}
-        message={softHome ? t("nav.refresh") : t("nav.monitoring")}
-        aria-label={softHome ? t("nav.refreshLabel") : t("nav.home")}
-        title={softHome ? t("nav.refreshShort") : t("nav.home")}
-        aria-busy={mounted && refreshBusy ? true : undefined}
-        onClick={goMonitoringHome}
-        className={cn(
-          dashboardUi.headerBrandIcon,
-          mounted && titleWidth != null && "sm:w-[var(--brand-title-w)]",
-          "transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-          mounted && softHome && refreshBusy && "pointer-events-none opacity-70",
-        )}
-        style={logoStyle}
-      >
+      <span className={dashboardUi.headerBrandIcon}>
         <Image
           src="/logo.png"
           alt=""
           fill
-          sizes="(max-width: 639px) 187px, 156px"
+          sizes="44px"
           className={cn(
             "object-contain p-0.5",
             mounted && refreshShowSpinner && "opacity-40",
@@ -171,14 +139,10 @@ export function AppHeaderBrand() {
             aria-hidden
           />
         ) : null}
-      </AppNavLink>
-      <p
-        ref={titleRef}
-        className={dashboardUi.headerBrandTitle}
-        suppressHydrationWarning
-      >
+      </span>
+      <span className={dashboardUi.headerBrandTitle} suppressHydrationWarning>
         {BRAND_TITLE}
-      </p>
-    </div>
+      </span>
+    </AppNavLink>
   );
 }

@@ -122,16 +122,12 @@ export function AdminHubControlView({
     <section className="flex min-h-0 flex-col gap-3">
       <NavContentReadyMarker />
       <header className="flex flex-wrap items-center justify-between gap-2">
-        <h2
-          className={cn(
-            "inline-flex items-center gap-1.5",
-            dashboardReadout.value,
-          )}
-          title={t("account.national")}
-        >
+        <h2 className="inline-flex items-center gap-1.5">
           <MapPin className="size-4 text-muted-foreground" aria-hidden />
-          <span className="sr-only">{t("account.nationalFarms")}</span>
-          {tones.total}
+          <span className="text-sm font-semibold">{t("account.national")}</span>
+          <span className={cn(dashboardReadout.value, "tabular-nums")}>
+            {tones.total}
+          </span>
         </h2>
         <ul className="flex flex-wrap items-center gap-1">
           {(["live", "alert", "offline", "location"] as const).map((tone) => {
@@ -232,7 +228,7 @@ export function AdminHubControlView({
                       >
                         {name}
                       </span>
-                      <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                      <span className="mt-1 grid grid-cols-4 items-center gap-x-2 gap-y-0.5">
                         <span
                           className="inline-flex items-center gap-0.5"
                           title="온도"
@@ -271,17 +267,15 @@ export function AdminHubControlView({
                               : `${online}/${controllerCount}`}
                           </span>
                         </span>
-                        {ago ? (
-                          <span
-                            className="inline-flex items-center gap-0.5 text-muted-foreground"
-                            title="최근 수신"
-                          >
-                            <Clock className="size-3.5" aria-hidden />
-                            <span className={dashboardTypography.badge}>
-                              {ago}
-                            </span>
+                        <span
+                          className="inline-flex min-w-0 items-center gap-0.5 text-muted-foreground"
+                          title="최근 수신"
+                        >
+                          <Clock className="size-3.5 shrink-0" aria-hidden />
+                          <span className={cn(dashboardTypography.badge, "truncate")}>
+                            {ago ?? "—"}
                           </span>
-                        ) : null}
+                        </span>
                       </span>
                     </span>
                   </a>

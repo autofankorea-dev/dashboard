@@ -8,6 +8,7 @@ import type { EditableFarmOption } from "@/lib/data/farm-location";
 import type { FarmKey } from "@/lib/domain/farm-key";
 import type { FarmSummaryRow } from "@/lib/domain/farm-summaries";
 import { dashboardUi } from "@/lib/ui/dashboard-page-ui";
+import { cn } from "@/lib/utils";
 
 type Role = "admin" | "operator" | "viewer";
 
@@ -41,21 +42,20 @@ export function TopBar({
   const isAdmin = user.role === "admin";
 
   return (
-    <header className={dashboardUi.topBar} data-app-header data-tour-id="app-header">
-      <div className="flex w-full min-w-0 items-center gap-1.5 md:gap-2">
-        <div className="flex min-w-0 flex-1 items-center gap-2 md:gap-3">
-          <AppHeaderBrand />
-          {/* 보기 토글 PC — 브랜드 영역 우측(도구·계정 직전). compact는 하단 독 */}
-          <div
-            data-farm-view-toggle-slot="desktop"
-            className="ml-auto flex shrink-0 items-center empty:hidden [[data-dashboard-compact]_&]:!hidden"
-          />
-        </div>
-
-        <div className="ml-auto flex shrink-0 items-center justify-end gap-1 md:gap-3">
+    <header
+      className={cn(dashboardUi.topBar, "md:grid md:grid-cols-[auto_minmax(0,1fr)_auto] md:items-center")}
+      data-app-header
+      data-tour-id="app-header"
+    >
+      <AppHeaderBrand />
+      <div
+        data-farm-view-toggle-slot="desktop"
+        className="flex min-w-0 justify-center empty:hidden [[data-dashboard-compact]_&]:!hidden"
+      />
+      <div className="ml-auto flex shrink-0 items-center justify-end md:ml-0">
           <div
             data-tour-id="header-actions"
-            className="flex shrink-0 items-center gap-4 md:gap-3"
+            className="flex shrink-0 items-center gap-1 md:gap-2 lg:gap-3"
           >
             <HeaderToolsMenu
               overview={overview}
@@ -84,7 +84,6 @@ export function TopBar({
               alarms={alarms}
             />
           </div>
-        </div>
       </div>
     </header>
   );
