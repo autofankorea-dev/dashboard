@@ -34,6 +34,7 @@ export function invalidateFarmStallTrendCache(farmKey: FarmKey): void {
 export function prefetchFarmStallTrend(
   farmKey: FarmKey,
   onUpdate?: (trend: StallTrendBundle) => void,
+  opts?: { extend30d?: boolean },
 ): Promise<StallTrendBundle> {
   const scopeId = farmKeyId(farmKey);
   const cached = readTimedCache(stallTrendCache, scopeId);
@@ -47,7 +48,9 @@ export function prefetchFarmStallTrend(
     onUpdate?.(stall);
   });
 
-  return prefetchFarmControllerTrend(farmKey, { extend30d: true })
+  return prefetchFarmControllerTrend(farmKey, {
+    extend30d: opts?.extend30d ?? false,
+  })
     .then((ctrl) => {
       const stall = stallTrendBundleFromController(ctrl);
       writeTimedCache(stallTrendCache, scopeId, stall);

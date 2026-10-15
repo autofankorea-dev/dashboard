@@ -20,6 +20,7 @@ import {
   TREND_30D_DAY_CHUNKS,
   TREND_30D_DAY_CONCURRENCY,
   TREND_PERIODS,
+  shouldPublishTrendDayProgress,
   controllerTrendPeriodHasSeries,
   type TrendControllerPeriodData,
   type TrendPeriodId,
@@ -225,14 +226,17 @@ async function loadProgressiveBundle(
         if (part) {
           compact30d = overlayCompactControllerPeriod(compact30d, part);
         }
-        snap = snapshotFrom30d(h24, compact30d, snap.window15m, day + 1);
-        notifyTrend(scopeId, snap);
+        const appliedDays = day + 1;
+        snap = snapshotFrom30d(h24, compact30d, snap.window15m, appliedDays);
+        if (shouldPublishTrendDayProgress(appliedDays)) {
+          notifyTrend(scopeId, snap);
+        }
       },
     });
   } catch {
-    notifyTrend(scopeId, snap);
+    // 실패한 조각은 건너뛰고, 받은 날까지만 남긴다.
   }
-
+  notifyTrend(scopeId, snap);
   return snap;
 }
 
