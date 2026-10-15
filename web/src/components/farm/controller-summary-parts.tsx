@@ -251,15 +251,35 @@ export function ControllerSummaryHeader({
     <div className="flex min-w-0 flex-1 flex-col gap-0.5">{titleBlock}</div>
   );
 
+  const actions = (
+    <CardPanelModeToggle
+      hideActions={hideActions}
+      settingsActive={settingsActive}
+      onToggleSettings={onToggleSettings}
+      onOpenChart={onOpenChart}
+    />
+  );
+
   return (
     <div className={cn("flex min-w-0 flex-col gap-0.5", className)}>
-      <div className="flex min-w-0 flex-nowrap items-start gap-2">
-        {bare ? (
-          <span className={cn("mt-0.5 inline-flex shrink-0 items-center gap-1 text-xs font-medium", controllerEnvCoverFillClass(bareLevel).replace("bg-", "text-"))}>
-            <BareIcon className="size-3.5" aria-hidden />
-            {barePhrase}
-          </span>
-        ) : (
+      {bare ? (
+        <>
+          <div className="flex min-w-0 items-center gap-2">
+            <span
+              className={cn(
+                "inline-flex min-w-0 flex-1 items-center gap-1 text-xs font-medium",
+                controllerEnvCoverFillClass(bareLevel).replace("bg-", "text-"),
+              )}
+            >
+              <BareIcon className="size-3.5 shrink-0" aria-hidden />
+              <span className="truncate">{barePhrase}</span>
+            </span>
+            {actions}
+          </div>
+          <div className="flex min-w-0 items-start">{identity}</div>
+        </>
+      ) : (
+        <div className="flex min-w-0 flex-nowrap items-start gap-2">
           <span
             className={cn(
               "mt-1.5 size-2.5 shrink-0 rounded-sm",
@@ -267,17 +287,12 @@ export function ControllerSummaryHeader({
             )}
             aria-hidden
           />
-        )}
-        <div className="flex min-w-0 flex-1 flex-nowrap items-start gap-2">
-          {identity}
-          <CardPanelModeToggle
-            hideActions={hideActions}
-            settingsActive={settingsActive}
-            onToggleSettings={onToggleSettings}
-            onOpenChart={onOpenChart}
-          />
+          <div className="flex min-w-0 flex-1 flex-nowrap items-start gap-2">
+            {identity}
+            {actions}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
