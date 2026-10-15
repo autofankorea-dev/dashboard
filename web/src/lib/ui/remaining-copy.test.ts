@@ -19,7 +19,7 @@ test("account and hub species labels use the same English dictionary", () => {
   const menu = readSrc("../../components/account/account-menu.tsx");
   assert.match(menu, /localizeFarmSpeciesLabel/);
   const hub = readSrc("../../components/farm/admin-hub-control-view.tsx");
-  assert.match(hub, /account\.nationalFarms/);
+  assert.match(hub, /account\.national/);
 });
 
 test("preset vent line and command summary follow the sheet dictionary", () => {
