@@ -7,10 +7,13 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { AppNavLink } from "@/components/layout/app-nav-link";
 import { useAppNavigate } from "@/components/layout/use-app-navigate";
+import { useFarmScope } from "@/components/layout/farm-scope-provider";
 import {
+  ADMIN_NATIONAL_MAP_PATH,
   buildFarmMonitoringHomeParams,
   buildFarmMonitoringHomePath,
   currentFarmSearchParams,
+  isAdminNationalMapHome,
   isFarmMonitoringSoftHome,
   replaceFarmUrlShallow,
   requestFarmHubViewResync,
@@ -33,6 +36,7 @@ export function AppHeaderBrand() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { navigate } = useAppNavigate();
+  const { isAdmin } = useFarmScope();
   const t = useSheetCopy();
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const titleRef = useRef<HTMLParagraphElement>(null);
@@ -54,12 +58,13 @@ export function AppHeaderBrand() {
     return () => ro.disconnect();
   }, [mounted]);
 
-  /** SSR·Link — Next searchParams. 클릭 시 window shallow URL 재계산 */
-  const monitoringHomeHref = useMemo(
-    () =>
-      buildFarmMonitoringHomePath(new URLSearchParams(searchParams.toString())),
-    [searchParams],
-  );
+  /** SSR·Link — Next searchParams. 클릭 시 window URL을 다시 읽는다. */
+  const monitoringHomeHref = useMemo(() => {
+    if (isAdmin) return ADMIN_NATIONAL_MAP_PATH;
+    return buildFarmMonitoringHomePath(
+      new URLSearchParams(searchParams.toString()),
+    );
+  }, [isAdmin, searchParams]);
 
   const doLiveRefresh = useCallback(async () => {
     if (hasFarmLiveRefreshHandler()) {
@@ -78,10 +83,22 @@ export function AppHeaderBrand() {
   const goMonitoringHome = useCallback(
     (e: MouseEvent<HTMLAnchorElement>) => {
       const live = currentFarmSearchParams();
+
+      // 관리자 홈은 전국 지도. 농장·차트에 남아 있으면 문서 이동으로 돌아간다.
+      // shallow는 SSR 농장 키를 유지해서 지도로 바뀌지 않고, 진행 중 전환에 막힌다.
+      if (isAdmin) {
+        e.preventDefault();
+        if (pathname === "/farm" && isAdminNationalMapHome(live)) {
+          if (!refreshBusy) runRefresh();
+          return;
+        }
+        window.location.assign(ADMIN_NATIONAL_MAP_PATH);
+        return;
+      }
+
       const homeParams = buildFarmMonitoringHomeParams(live);
       const href = buildFarmMonitoringHomePath(live);
 
-      // 이미 모니터링 홈 → 새로고침 (ScopeBar 새로고침 대체)
       if (pathname === "/farm" && isFarmMonitoringSoftHome(live)) {
         e.preventDefault();
         if (!refreshBusy) runRefresh();
@@ -95,11 +112,10 @@ export function AppHeaderBrand() {
         return;
       }
 
-      // 다른 경로 → soft home (농장·기간 유지)
       e.preventDefault();
       navigate(href, { message: t("nav.monitoring") });
     },
-    [pathname, navigate, refreshBusy, runRefresh, t],
+    [isAdmin, pathname, navigate, refreshBusy, runRefresh, t],
   );
 
   const logoStyle: CSSProperties | undefined =
@@ -109,11 +125,12 @@ export function AppHeaderBrand() {
         } as CSSProperties)
       : undefined;
 
+  const liveParams = new URLSearchParams(searchParams.toString());
   const softHome =
     pathname === "/farm" &&
-    isFarmMonitoringSoftHome(
-      new URLSearchParams(searchParams.toString()),
-    );
+    (isAdmin
+      ? isAdminNationalMapHome(liveParams)
+      : isFarmMonitoringSoftHome(liveParams));
 
   return (
     <div
@@ -133,7 +150,7 @@ export function AppHeaderBrand() {
           dashboardUi.headerBrandIcon,
           mounted && titleWidth != null && "sm:w-[var(--brand-title-w)]",
           "transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-          mounted && refreshBusy && "pointer-events-none opacity-70",
+          mounted && softHome && refreshBusy && "pointer-events-none opacity-70",
         )}
         style={logoStyle}
       >
