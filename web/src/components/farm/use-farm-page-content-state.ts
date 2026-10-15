@@ -10,7 +10,11 @@ import {
 } from "react";
 import { useSearchParams } from "next/navigation";
 import type { BarnMapSnapshot, BarnReading } from "@/lib/data/iot";
-import type { TrendPeriodData, TrendPeriodId } from "@/lib/domain/farm-trend-types";
+import {
+  farmTrendIdleExtends30d,
+  type TrendPeriodData,
+  type TrendPeriodId,
+} from "@/lib/domain/farm-trend-types";
 import {
   firstControllerKeyForBarn,
   readingsMatchingBarn,
@@ -290,10 +294,14 @@ export function useFarmPageContentState({
         view === "chart" ||
         view === "list"
       ) {
-        void prefetchFarmStallTrend(gridFarmKey, (trend) => {
-          if (cancelled) return;
-          liveRefreshRef.current?.hydrateStallTrend(gridFarmKey, trend);
-        });
+        void prefetchFarmStallTrend(
+          gridFarmKey,
+          (trend) => {
+            if (cancelled) return;
+            liveRefreshRef.current?.hydrateStallTrend(gridFarmKey, trend);
+          },
+          { extend30d: farmTrendIdleExtends30d(view) },
+        );
       }
       if (view === "list" || (fieldMerge && view === "map")) {
         void enrichListIfNeeded();

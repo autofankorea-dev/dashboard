@@ -309,6 +309,14 @@ export function buildFarmMonitoringHomePath(
   return buildFarmPath(buildFarmMonitoringHomeParams(from));
 }
 
+/** 관리자 전국 지도. 농장 키·탭·드릴이 없을 때. */
+export function isAdminNationalMapHome(params: URLSearchParams): boolean {
+  if (params.get("lsind") || params.get("item")) return false;
+  return isFarmMonitoringSoftHome(params);
+}
+
+export const ADMIN_NATIONAL_MAP_PATH = "/farm";
+
 /** 이미 그리드 홈(탭·드릴 없음)이면 true — 하단 내비 no-op용 */
 export function isFarmMonitoringSoftHome(params: URLSearchParams): boolean {
   if (params.get("view")) return false;

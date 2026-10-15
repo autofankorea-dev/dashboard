@@ -7,6 +7,8 @@ import {
   buildFarmMonitoringHomeParams,
   buildFarmMonitoringHomePath,
   clearHubFarmDrillParams,
+  ADMIN_NATIONAL_MAP_PATH,
+  isAdminNationalMapHome,
   isFarmMonitoringSoftHome,
   normalizeLegacyListModeParam,
   parseListViewMode,
@@ -76,6 +78,9 @@ import {
   assert.equal(home.get("view"), null);
   assert.equal(home.get("planBldg"), null);
   assert.equal(isFarmMonitoringSoftHome(home), true);
+  assert.equal(isAdminNationalMapHome(home), false);
+  assert.equal(isAdminNationalMapHome(new URLSearchParams()), true);
+  assert.equal(ADMIN_NATIONAL_MAP_PATH, "/farm");
 }
 
 {
