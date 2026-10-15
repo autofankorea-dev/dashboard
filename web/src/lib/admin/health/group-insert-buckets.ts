@@ -5,10 +5,12 @@ import {
   INSERT_BUCKET_MINUTES,
 } from "@/lib/admin/health/constants";
 import { formatHealthTime } from "@/lib/admin/health/format-health-time";
-import type { InsertBucket, HealthStatus } from "@/lib/admin/health/types";
+import type { InsertBucket } from "@/lib/admin/health/types";
 import type { CollectorGroupDef } from "@/lib/admin/health/collector-groups";
 import { parseFarmKeyId } from "@/lib/domain/farm-key";
 import { createAdminClient } from "@/lib/supabase/admin";
+
+export { insertRateStatus } from "@/lib/admin/health/insert-rate-status";
 
 function formatBucketLabel(iso: string): string {
   return formatHealthTime(iso);
@@ -86,12 +88,4 @@ export async function fetchGroupInsertBuckets(
   );
 
   return result;
-}
-
-export function insertRateStatus(buckets: InsertBucket[]): HealthStatus {
-  const recent = buckets.slice(-2);
-  if (recent.length === 0) return "unknown";
-  if (recent.every((b) => b.count === 0)) return "critical";
-  if (recent.some((b) => b.count === 0)) return "warn";
-  return "ok";
 }

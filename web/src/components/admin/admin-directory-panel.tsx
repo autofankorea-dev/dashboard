@@ -18,12 +18,28 @@ import { useMobileLayout } from "@/lib/ui/use-mobile-layout";
 import { opsControl, opsLayout, opsStatus, opsTypography } from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";
 
-function grantErrorMessage(error: "forbidden" | "invalid" | "notfound"): string {
+function directoryKey(user: ManagedUser): string {
+  return user.email ?? user.id;
+}
+
+function directoryName(user: ManagedUser): string {
+  return user.displayName?.trim() || user.email || user.id.slice(0, 8);
+}
+
+function directoryMeta(user: ManagedUser): string {
+  return user.email ?? "이메일 없음";
+}
+
+function grantErrorMessage(
+  error: "forbidden" | "invalid" | "notfound" | "config",
+): string {
   switch (error) {
     case "forbidden":
       return "권한이 없습니다.";
     case "notfound":
       return "사용자를 찾을 수 없습니다.";
+    case "config":
+      return "권한 부여는 SUPABASE_SERVICE_ROLE_KEY가 필요합니다.";
     default:
       return "요청을 처리할 수 없습니다.";
   }
@@ -58,18 +74,15 @@ export function AdminDirectoryPanel({
   locationOptions,
 }: Props) {
   const isMobile = useMobileLayout();
-  const emailUsers = useMemo(
-    () => users.filter((u): u is ManagedUser & { email: string } => Boolean(u.email)),
-    [users],
-  );
+  const listedUsers = users;
 
   const [userQuery, setUserQuery] = useState("");
-  const [selectedEmail, setSelectedEmail] = useState(
-    () => emailUsers[0]?.email ?? "",
+  const [selectedKey, setSelectedKey] = useState(
+    () => (listedUsers[0] ? directoryKey(listedUsers[0]) : ""),
   );
   const [sheetOpen, setSheetOpen] = useState(false);
   const [accessByFarmId, setAccessByFarmId] = useState(() =>
-    buildAccessMap(emailUsers[0] ?? null),
+    buildAccessMap(listedUsers[0] ?? null),
   );
   const [addFarmId, setAddFarmId] = useState("");
   const [addPending, startAdd] = useTransition();
@@ -96,15 +109,15 @@ export function AdminDirectoryPanel({
 
   const filteredUsers = useMemo(() => {
     const q = userQuery.trim().toLowerCase();
-    if (!q) return emailUsers;
-    return emailUsers.filter((u) => {
-      const hay = `${u.displayName ?? ""} ${u.email}`.toLowerCase();
+    if (!q) return listedUsers;
+    return listedUsers.filter((u) => {
+      const hay = `${directoryName(u)} ${directoryMeta(u)}`.toLowerCase();
       return hay.includes(q);
     });
-  }, [emailUsers, userQuery]);
+  }, [listedUsers, userQuery]);
 
   const selectedUser =
-    emailUsers.find((u) => u.email === selectedEmail) ?? null;
+    listedUsers.find((u) => directoryKey(u) === selectedKey) ?? null;
 
   const locationById = useMemo(() => {
     const map = new Map<string, EditableFarmOption>();
@@ -159,9 +172,9 @@ export function AdminDirectoryPanel({
     });
   }, [farmOptions, accessByFarmId]);
 
-  const selectUser = (email: string) => {
-    const user = emailUsers.find((u) => u.email === email) ?? null;
-    setSelectedEmail(email);
+  const selectUser = (key: string) => {
+    const user = listedUsers.find((u) => directoryKey(u) === key) ?? null;
+    setSelectedKey(key);
     setAccessByFarmId(buildAccessMap(user));
     setAddFarmId("");
     setExpandedFarmId(null);
@@ -178,12 +191,18 @@ export function AdminDirectoryPanel({
   };
 
   const addFarm = () => {
-    if (!selectedEmail || !addFarmId || addPending) return;
+    if (!selectedUser?.email || !addFarmId || addPending) {
+      if (selectedUser && !selectedUser.email) {
+        notify("권한 부여는 SUPABASE_SERVICE_ROLE_KEY가 필요합니다.", "err");
+      }
+      return;
+    }
     const opt = farmOptions.find((o) => farmValue(o.farmKey) === addFarmId);
     if (!opt) return;
+    const email = selectedUser.email;
     startAdd(async () => {
       const result = await grantFarmAccessInline({
-        email: selectedEmail,
+        email,
         farmKey: opt.farmKey,
         canCommand: false,
       });
@@ -214,17 +233,18 @@ export function AdminDirectoryPanel({
           </li>
         ) : (
           filteredUsers.map((u) => {
-            const active = u.email === selectedEmail;
+            const active = directoryKey(u) === selectedKey;
             const farmCount = u.farmAccess.filter(
               (a) => a.can_read || a.can_command,
             ).length;
-            const name = u.displayName?.trim() || u.email;
+            const name = directoryName(u);
+            const meta = directoryMeta(u);
             return (
               <li key={u.id}>
                 <button
                   type="button"
-                  title={`${name} · ${u.email}`}
-                  onClick={() => selectUser(u.email)}
+                  title={`${name} · ${meta}`}
+                  onClick={() => selectUser(directoryKey(u))}
                   aria-current={active ? "true" : undefined}
                   className={cn(
                     "flex w-full flex-col rounded-lg border px-3 py-2 text-left transition-colors",
@@ -236,7 +256,7 @@ export function AdminDirectoryPanel({
                     {name}
                   </span>
                   <span className={cn("truncate", opsTypography.meta)}>
-                    {u.email} · {farmCount}곳
+                    {meta} · {farmCount}곳
                   </span>
                 </button>
               </li>
@@ -258,12 +278,12 @@ export function AdminDirectoryPanel({
           <div className="sticky top-0 z-10 -mx-0.5 shrink-0 border-b bg-card/95 px-0.5 pb-2 backdrop-blur supports-[backdrop-filter]:bg-card/80">
             <p
               className={cn("truncate", opsTypography.sectionTitle)}
-              title={selectedUser.displayName?.trim() || selectedUser.email}
+              title={directoryName(selectedUser)}
             >
-              {selectedUser.displayName?.trim() || selectedUser.email}
+              {directoryName(selectedUser)}
             </p>
-            <p className={cn("truncate", opsTypography.meta)} title={selectedUser.email}>
-              {selectedUser.email}
+            <p className={cn("truncate", opsTypography.meta)} title={directoryMeta(selectedUser)}>
+              {directoryMeta(selectedUser)}
             </p>
           </div>
 
@@ -323,7 +343,7 @@ export function AdminDirectoryPanel({
               {userFarmCards.map((card) => (
                 <AdminFarmDirectoryCard
                   key={card.farmId}
-                  email={selectedEmail}
+                  email={selectedUser.email ?? ""}
                   farmKey={card.farmKey}
                   label={card.label}
                   access={card.access}
@@ -364,7 +384,7 @@ export function AdminDirectoryPanel({
             onClose={() => setSheetOpen(false)}
             title={
               selectedUser
-                ? `${selectedUser.displayName?.trim() || selectedUser.email} · 농장`
+                ? `${directoryName(selectedUser)} · 농장`
                 : "농장"
             }
             auditRegion="admin-directory-user-sheet"

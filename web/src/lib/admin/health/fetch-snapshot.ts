@@ -2,7 +2,9 @@ import "server-only";
 
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { insertRateStatus, statusFromInsertRate } from "@/lib/admin/health/insert-rate-status";
+import { createAdminClient, readServiceRoleKey, type OpsDbClient } from "@/lib/supabase/admin";
+import { createOpsReadClient } from "@/lib/supabase/ops-client";
 import {
   DECODE_LAG_CRITICAL,
   DECODE_LAG_WARN,
@@ -202,13 +204,6 @@ function fieldControllerPoints(controllers: ControllerHealthRow[]): HealthPoint[
   ];
 }
 
-function insertRateStatus(buckets: InsertBucket[]): HealthStatus {
-  const recent = buckets.slice(-2);
-  if (recent.every((b) => b.count === 0)) return "critical";
-  if (recent.some((b) => b.count === 0)) return "warn";
-  return "ok";
-}
-
 function rsPoints(buckets: InsertBucket[]): HealthPoint[] {
   const recent = buckets.slice(-2);
   const rateStatus = insertRateStatus(buckets);
@@ -354,7 +349,11 @@ function dedupeHints(hints: D11Hint[]): D11Hint[] {
 export const HEALTH_SNAPSHOT_CACHE_TAG = "health-snapshot";
 
 /** 캐시 우회 — Ops soft refresh / 주기 패치용 */
-export async function computeHealthSnapshot(): Promise<HealthSnapshot> {
+export async function computeHealthSnapshot(options?: {
+  admin?: OpsDbClient;
+  /** service_role만 iot_room_state_raw를 읽는다. 관리자 세션은 RLS로 0건이 된다. */
+  canReadRaw?: boolean;
+}): Promise<HealthSnapshot> {
   const nowMs = Date.now();
   const fetchedAt = new Date(nowMs).toISOString();
 
@@ -378,12 +377,14 @@ export async function computeHealthSnapshot(): Promise<HealthSnapshot> {
   let instanceHealth: InstanceHealthSummary = summarizeInstanceHealth(null, nowMs);
   const ekapeHealth = await fetchEkapeHealth();
 
+  const canReadRaw = options?.canReadRaw ?? true;
+
   try {
-    const admin = createAdminClient();
+    const admin = options?.admin ?? createAdminClient();
 
     const [buckets, liveCountRes, liveRowsRes, decodeRes, cmdHealth, instanceRes] =
       await Promise.all([
-      fetchInsertBuckets(admin, nowMs),
+      canReadRaw ? fetchInsertBuckets(admin, nowMs) : Promise.resolve([]),
       admin
         .from("v_iot_decoded_latest")
         .select("controller_key", { count: "exact", head: true }),
@@ -394,8 +395,14 @@ export async function computeHealthSnapshot(): Promise<HealthSnapshot> {
         )
         .order("received_at", { ascending: false })
         .limit(GLOBAL_LIVE_ROW_LIMIT),
-      fetchDecodeMetrics(admin),
-      fetchCommandHealth(nowMs),
+      canReadRaw
+        ? fetchDecodeMetrics(admin)
+        : Promise.resolve({
+            lag: 0,
+            failedCount: 0,
+            cursorUpdatedAt: null,
+          }),
+      fetchCommandHealth(nowMs, admin),
       fetchInstanceHealth(admin, nowMs),
     ]);
 
@@ -429,8 +436,8 @@ export async function computeHealthSnapshot(): Promise<HealthSnapshot> {
     groupBuckets
   );
 
-  const mqttStatus: HealthStatus =
-    rsStatus === "ok" ? "ok" : rsStatus === "warn" ? "warn" : "critical";
+  const mqttStatus = statusFromInsertRate(rsStatus);
+  const rawFlowBad = rsStatus === "warn" || rsStatus === "critical";
 
   // instance_health_current(rsd-healthcheck)가 신선하면 수집단 노드 색을
   // 서버가 직접 보고한 per-service 상태로 확정하고, 지연/미적재 시 기존 추정으로 폴백.
@@ -453,8 +460,8 @@ export async function computeHealthSnapshot(): Promise<HealthSnapshot> {
   // 노드 힌트: 인스턴스 실측을 신뢰하면 서버가 실제 장애(critical/명령 warn)일 때만
   // 수집/명령 힌트를 붙인다. 서버 정상 + 장비 두절(rsStatus 데이터흐름 나쁨) 상황에서
   // 초록 노드에 "수집/MQTT 점검" 오안내가 붙는 것을 막는다. 자원 warn은 드릴다운 포인트(S2)만.
-  const mqttHints = collectorNodeHint(useInstance, mqttNodeStatus, rsStatus !== "ok", "S1");
-  const rsHints = collectorNodeHint(useInstance, rsNodeStatus, rsStatus !== "ok", "S1");
+  const mqttHints = collectorNodeHint(useInstance, mqttNodeStatus, rawFlowBad, "S1");
+  const rsHints = collectorNodeHint(useInstance, rsNodeStatus, rawFlowBad, "S1");
   const cHints = collectorNodeHint(
     useInstance,
     cNodeStatus,
@@ -571,7 +578,7 @@ export async function computeHealthSnapshot(): Promise<HealthSnapshot> {
   statusCounts.not_implemented += 1;
 
   const d11Hints = hintsFromModules(modules);
-  if (rsStatus !== "ok") {
+  if (rawFlowBad) {
     d11Hints.unshift({
       id: "S1",
       title: "측정이 안 옴",
@@ -658,6 +665,10 @@ export async function computeHealthSnapshot(): Promise<HealthSnapshot> {
 }
 
 export const fetchHealthSnapshot = cache(async (): Promise<HealthSnapshot> => {
+  if (!readServiceRoleKey()) {
+    const admin = await createOpsReadClient();
+    return computeHealthSnapshot({ admin, canReadRaw: false });
+  }
   return unstable_cache(
     computeHealthSnapshot,
     ["health-snapshot-v2-lean-buckets"],

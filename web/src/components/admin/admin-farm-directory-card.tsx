@@ -38,12 +38,16 @@ function accessSummary(access: FarmDirectoryAccess): string {
   return "권한 없음";
 }
 
-function grantErrorMessage(error: "forbidden" | "invalid" | "notfound"): string {
+function grantErrorMessage(
+  error: "forbidden" | "invalid" | "notfound" | "config",
+): string {
   switch (error) {
     case "forbidden":
       return "권한이 없습니다.";
     case "notfound":
       return "사용자를 찾을 수 없습니다.";
+    case "config":
+      return "권한 부여는 SUPABASE_SERVICE_ROLE_KEY가 필요합니다.";
     default:
       return "요청을 처리할 수 없습니다.";
   }

@@ -51,7 +51,9 @@ export async function fetchEkapeHealth(): Promise<EkapeHealthSummary> {
 
 export function mqttPoints(rsStatus: HealthStatus): HealthPoint[] {
   const status: HealthStatus =
-    rsStatus === "ok" ? "ok" : rsStatus === "warn" ? "warn" : "critical";
+    rsStatus === "ok" || rsStatus === "warn" || rsStatus === "unknown"
+      ? rsStatus
+      : "critical";
 
   return [
     {
@@ -62,9 +64,11 @@ export function mqttPoints(rsStatus: HealthStatus): HealthPoint[] {
           ? "전역 RS raw 최근 수신 있음 → Mosquitto 정상 추론"
           : rsStatus === "warn"
             ? "raw 수신 불안정 — Mosquitto 후보 점검"
-            : "전역 raw 무활동 — Mosquitto·RS 후보",
+            : rsStatus === "unknown"
+              ? "raw 수신량을 확인하지 못함"
+              : "전역 raw 무활동 — Mosquitto·RS 후보",
       status,
-      d11Hint: rsStatus !== "ok" ? "S1" : undefined,
+      d11Hint: rsStatus === "warn" || rsStatus === "critical" ? "S1" : undefined,
     },
   ];
 }
