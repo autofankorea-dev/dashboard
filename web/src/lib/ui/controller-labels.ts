@@ -273,3 +273,44 @@ export function formatCommandDetail(
   if (note?.trim()) return note.trim();
   return "—";
 }
+
+/** 명령 표·상세에 보이는 설정 한 줄. 기본 로케일은 한글이다. */
+export function formatCommandSummary(
+  c: Pick<
+    ThermoCommand,
+    | "alarmSettings"
+    | "channels"
+    | "minVentPct"
+    | "maxVentPct"
+    | "setpointTemp"
+    | "tempDeviation"
+  >,
+  locale: SheetLocale = "ko",
+  opts?: { trailingDeviation?: boolean },
+): string {
+  const channelText = (c.channels ?? [])
+    .map((ch) =>
+      sheetCopy(locale, "cmd.channelBit", {
+        ch: ch.channel,
+        set: ch.setpointTemp,
+        dev: ch.tempDeviation,
+        min: ch.minVentPct,
+        max: ch.maxVentPct,
+      }),
+    )
+    .join(" / ");
+  if (c.alarmSettings) {
+    const head = sheetCopy(locale, "cmd.lowHigh", {
+      low: c.alarmSettings.lowTempC,
+      high: c.alarmSettings.highTempC,
+    });
+    return channelText ? `${head} · ${channelText}` : head;
+  }
+  if (channelText) return channelText;
+  const vent = sheetCopy(locale, "cmd.ventRange", {
+    min: c.minVentPct,
+    max: c.maxVentPct,
+  });
+  if (opts?.trailingDeviation === false) return `${vent} · ${c.setpointTemp}℃`;
+  return `${vent} · ${c.setpointTemp}℃ +${c.tempDeviation}`;
+}

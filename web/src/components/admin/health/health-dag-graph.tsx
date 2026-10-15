@@ -24,7 +24,7 @@ import {
   healthNodeDisplay,
   healthStatusLabel,
 } from "@/lib/admin/health/health-locale";
-import { useProfileSheetPrefs } from "@/components/account/profile-sheet-prefs";
+import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { HealthDagMobileList } from "@/components/admin/health/health-dag-mobile-list";
 import { healthStatusBorderClass } from "@/components/admin/health/health-status-badge";
 import { dashboardControl } from "@/lib/ui/dashboard-page-ui";
@@ -63,6 +63,7 @@ function mqttModUsed(metric?: string): number {
 
 export function HealthDagGraph({ snapshot, onNodeSelect, activeDrillId }: Props) {
   const locale = useProfileSheetPrefs().locale;
+  const t = useSheetCopy();
   const [mounted, setMounted] = useState(false);
   const [fieldExpanded, setFieldExpanded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -171,9 +172,7 @@ export function HealthDagGraph({ snapshot, onNodeSelect, activeDrillId }: Props)
             "h-8 min-h-8 w-full rounded-lg px-2.5 text-xs sm:w-auto sm:text-sm"
           )}
         >
-          {fieldExpanded
-            ? locale === "en" ? "Collapse farms" : "농장 접기"
-            : locale === "en" ? "Expand farms" : "농장 펼치기"}
+          {fieldExpanded ? t("ui.collapseFarms") : t("ui.expandFarms")}
         </button>
       </div>
 
@@ -361,8 +360,12 @@ export function HealthDagGraph({ snapshot, onNodeSelect, activeDrillId }: Props)
                   }
                   aria-label={
                     meta.togglesField
-                      ? `${healthNodeDisplay(meta.id, meta.label, meta.short, locale).label} ${locale === "en" ? "expand" : "펼치기"}`
-                      : `${healthNodeDisplay(meta.id, meta.label, meta.short, locale).label} ${locale === "en" ? "detail" : "상세"}`
+                      ? t("ui.expandNamed", {
+                          name: healthNodeDisplay(meta.id, meta.label, meta.short, locale).label,
+                        })
+                      : t("ui.detailNamed", {
+                          name: healthNodeDisplay(meta.id, meta.label, meta.short, locale).label,
+                        })
                   }
                 >
                   {box}

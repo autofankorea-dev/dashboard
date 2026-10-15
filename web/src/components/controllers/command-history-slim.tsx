@@ -18,15 +18,12 @@ import { Input } from "@/components/ui/input";
 import { opsControl, opsTypography } from "@/lib/ui/dashboard-page-ui";
 import { useMobileLayout } from "@/lib/ui/use-mobile-layout";
 import type { ThermoCommand } from "@/lib/data/commands";
-import { useProfileSheetPrefs } from "@/components/account/profile-sheet-prefs";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { cn } from "@/lib/utils";
 
 const PREVIEW_LIMIT = 5;
 const FULL_FETCH_LIMIT = 200;
 const QUERY_DEBOUNCE_MS = 350;
-const LOAD_ERROR_MESSAGE =
-  "명령 이력을 불러오지 못했습니다. 잠시 후 다시 시도하세요.";
-
 type Props = {
   commands: ThermoCommand[];
 };
@@ -44,12 +41,11 @@ function EmptyLookupCta({
   onResetFilters: () => void;
   onWidenRange: (range: CommandHistoryRangeId) => void;
 }) {
+  const t = useSheetCopy();
   return (
     <div className="flex flex-col items-center gap-3 py-6 text-center">
       <p className={opsTypography.meta}>
-        {kind === "period"
-          ? "해당 기간 명령이 없습니다."
-          : "조건에 맞는 명령이 없습니다."}
+        {kind === "period" ? t("cmd.nonePeriod") : t("cmd.noneFiltered")}
       </p>
       <div className="flex flex-wrap items-center justify-center gap-1.5">
         {kind === "filtered" ? (
@@ -59,7 +55,7 @@ function EmptyLookupCta({
             onClick={onResetFilters}
             className={cn(opsControl.buttonOutline, "border disabled:opacity-50")}
           >
-            필터 초기화
+            {t("cmd.resetFilters")}
           </button>
         ) : null}
         {kind === "period" && range !== "7d" && range !== "all" ? (
@@ -69,7 +65,7 @@ function EmptyLookupCta({
             onClick={() => onWidenRange("7d")}
             className={cn(opsControl.buttonOutline, "border disabled:opacity-50")}
           >
-            7일
+            {t("cmd.days7")}
           </button>
         ) : null}
         {range !== "all" ? (
@@ -79,7 +75,7 @@ function EmptyLookupCta({
             onClick={() => onWidenRange("all")}
             className={cn(opsControl.buttonOutline, "border disabled:opacity-50")}
           >
-            {kind === "filtered" ? "기간 넓히기" : "기간 전체"}
+            {kind === "filtered" ? t("cmd.widenRange") : t("cmd.allPeriod")}
           </button>
         ) : null}
       </div>
@@ -90,7 +86,7 @@ function EmptyLookupCta({
 /** 운영 홈 — 접힘 → 5건 · 조회(+기간·상태·서버 검색) · 행 상세. */
 export function CommandHistorySlim({ commands: initial }: Props) {
   const isMobile = useMobileLayout();
-  const en = useProfileSheetPrefs().locale === "en";
+  const t = useSheetCopy();
   const [previewCommands] = useState(initial);
   const [fullCommands, setFullCommands] = useState<ThermoCommand[]>([]);
   const [sectionOpen, setSectionOpen] = useState(false);
@@ -147,16 +143,10 @@ export function CommandHistorySlim({ commands: initial }: Props) {
 
   const previewCount = Math.min(PREVIEW_LIMIT, previewCommands.length);
   const title = !sectionOpen
-    ? en
-      ? `Commands · latest ${previewCount}`
-      : `명령 · 최근 ${previewCount}건`
+    ? t("cmd.previewTitle", { count: previewCount })
     : isMobile || !pcFull
-      ? en
-        ? `Recent commands · ${previewCount}`
-        : `최근 명령 · ${previewCount}건`
-      : en
-        ? `Command lookup · ${fullTitleCount}`
-        : `명령 조회 · ${fullTitleCount}건`;
+      ? t("cmd.recentTitle", { count: previewCount })
+      : t("cmd.lookupCount", { count: fullTitleCount });
 
   const shown = !sectionOpen
     ? []
@@ -190,7 +180,7 @@ export function CommandHistorySlim({ commands: initial }: Props) {
       lookupActive.current = true;
 
       if (result.error) {
-        setLoadError(LOAD_ERROR_MESSAGE);
+        setLoadError(t("cmd.loadError"));
         if (!hadRows) setFullCommands([]);
         return;
       }
@@ -313,9 +303,7 @@ export function CommandHistorySlim({ commands: initial }: Props) {
         : "period";
 
   const emptyMessage =
-    emptyKind === "filtered"
-      ? "조건에 맞는 명령이 없습니다."
-      : "해당 기간 명령이 없습니다.";
+    emptyKind === "filtered" ? t("cmd.noneFiltered") : t("cmd.nonePeriod");
 
   const lookupToolbar = (
     <div className="flex flex-col gap-2">
@@ -333,16 +321,16 @@ export function CommandHistorySlim({ commands: initial }: Props) {
         uiSize="dashboard"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        placeholder="검색: 농장·축사·장비·메모·오류·ID…"
-        aria-label="명령 검색"
+        placeholder={t("cmd.search")}
+        aria-label={t("cmd.searchLabel")}
         className={opsControl.input}
         disabled={pending && fullCommands.length === 0}
       />
       <p className={opsTypography.meta}>
         {pending
-          ? "불러오는 중…"
-          : `기본 7일 · 조건에 맞는 최대 ${FULL_FETCH_LIMIT}건${
-              atCap ? " · 상한 도달" : ""
+          ? t("cmd.loading")
+          : `${t("cmd.rangeHint", { count: FULL_FETCH_LIMIT })}${
+              atCap ? t("cmd.rangeCap") : ""
             }`}
       </p>
       {loadError && fullCommands.length > 0 ? (
@@ -359,14 +347,14 @@ export function CommandHistorySlim({ commands: initial }: Props) {
             onClick={retryLookup}
             className={cn(opsControl.buttonOutline, "border disabled:opacity-50")}
           >
-            다시 시도
+            {t("cmd.retry")}
           </button>
         </div>
       ) : null}
       {lookupOpen && !pending && !loadError ? (
         <p aria-live="polite" className="sr-only">
-          조회 결과 {fullCommands.length}건
-          {atCap ? `, 최대 ${FULL_FETCH_LIMIT}건 상한` : ""}
+          {t("cmd.lookupLive", { count: fullCommands.length })}
+          {atCap ? t("cmd.lookupCapLive", { count: FULL_FETCH_LIMIT }) : ""}
         </p>
       ) : null}
     </div>
@@ -395,7 +383,7 @@ export function CommandHistorySlim({ commands: initial }: Props) {
           onClick={retryLookup}
           className={cn(opsControl.buttonOutline, "border disabled:opacity-50")}
         >
-          다시 시도
+          {t("cmd.retry")}
         </button>
       </div>
     ) : null;
@@ -423,7 +411,7 @@ export function CommandHistorySlim({ commands: initial }: Props) {
               (emptyKind && !pending ? emptyCta : undefined) ||
               (pending ? (
                 <p className={cn("py-6 text-center", opsTypography.meta)}>
-                  불러오는 중…
+                  {t("cmd.loading")}
                 </p>
               ) : undefined)
             : undefined
@@ -441,7 +429,7 @@ export function CommandHistorySlim({ commands: initial }: Props) {
                   "border disabled:opacity-50",
                 )}
               >
-                {pending ? "불러오는 중…" : "조회"}
+                {pending ? t("cmd.loading") : t("cmd.lookup")}
               </button>
             ) : null}
             <button
@@ -459,7 +447,7 @@ export function CommandHistorySlim({ commands: initial }: Props) {
                 "border disabled:opacity-50",
               )}
             >
-              {!sectionOpen ? "펼치기" : "접기"}
+              {!sectionOpen ? t("ui.expand") : t("ui.collapse")}
             </button>
           </div>
         }
@@ -470,11 +458,11 @@ export function CommandHistorySlim({ commands: initial }: Props) {
           open={sheetOpen}
           onClose={closeSheet}
           onBack={detail ? () => setDetail(null) : undefined}
-          backLabel="목록"
+          backLabel={t("cmd.list")}
           title={
             detail
-              ? "명령 상세"
-              : `명령 조회 · ${fullTitleCount}건`
+              ? t("cmd.detailTitle")
+              : t("cmd.lookupCount", { count: fullTitleCount })
           }
           auditRegion="ops-command-history-sheet"
           contentClassName="overflow-y-auto p-3"
@@ -486,7 +474,7 @@ export function CommandHistorySlim({ commands: initial }: Props) {
               <div className="mb-3">{lookupToolbar}</div>
               {pending && fullCommands.length === 0 ? (
                 <p className={cn("py-6 text-center", opsTypography.meta)}>
-                  불러오는 중…
+                  {t("cmd.loading")}
                 </p>
               ) : loadErrorEmpty ? (
                 loadErrorEmpty
@@ -517,7 +505,7 @@ export function CommandHistorySlim({ commands: initial }: Props) {
         <BarnPanelBottomSheet
           open={Boolean(detail) && pcFull}
           onClose={() => setDetail(null)}
-          title="명령 상세"
+          title={t("cmd.detailTitle")}
           auditRegion="ops-command-detail-sheet"
           contentClassName="overflow-y-auto p-3"
         >

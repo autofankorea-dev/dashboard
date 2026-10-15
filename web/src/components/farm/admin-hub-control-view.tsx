@@ -127,10 +127,10 @@ export function AdminHubControlView({
             "inline-flex items-center gap-1.5",
             dashboardReadout.value,
           )}
-          title="전국 관제"
+          title={t("account.national")}
         >
           <MapPin className="size-4 text-muted-foreground" aria-hidden />
-          <span className="sr-only">전국 관제 농장</span>
+          <span className="sr-only">{t("account.nationalFarms")}</span>
           {tones.total}
         </h2>
         <ul className="flex flex-wrap items-center gap-1">

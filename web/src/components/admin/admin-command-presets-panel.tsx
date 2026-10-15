@@ -30,7 +30,9 @@ import {
   SettingsChannelStepperGrid,
   SettingsChannelWell,
 } from "@/components/farm/settings-channel-stepper-grid";
-import { useProfileSheetPrefs } from "@/components/account/profile-sheet-prefs";
+import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
+import { sheetCopy } from "@/lib/ui/sheet-copy";
+import type { SheetLocale } from "@/lib/ui/profile-sheet-prefs";
 import { SettingsEditOverlay } from "@/components/farm/settings-edit-overlay";
 import {
   dashboardAffordance,
@@ -52,8 +54,13 @@ const STALL_OPTIONS = Object.keys(STALL_TYPE_NAMES)
   .filter((code) => code.startsWith("SP"))
   .sort((a, b) => stallTyCodeSortKey(a) - stallTyCodeSortKey(b));
 
-function draftSummary(d: PanelDraft): string {
-  return `${d.setpointTemp.toFixed(1)}℃ · ±${d.tempDeviation.toFixed(1)}℃ · 환기 ${d.minVentPct}~${d.maxVentPct}%`;
+function draftSummary(d: PanelDraft, locale: SheetLocale): string {
+  return sheetCopy(locale, "preset.summary", {
+    setpoint: d.setpointTemp.toFixed(1),
+    dev: d.tempDeviation.toFixed(1),
+    min: d.minVentPct,
+    max: d.maxVentPct,
+  });
 }
 
 function firstChannelDraft(
@@ -89,17 +96,18 @@ function AdminDraftEditor({
   disabled?: boolean;
   error?: string | null;
 }) {
+  const t = useSheetCopy();
   return (
     <div className="flex flex-col gap-3">
       {showName ? (
         <label className="flex flex-col gap-1">
-          <span className="text-[11px] text-muted-foreground">이름</span>
+          <span className="text-[11px] text-muted-foreground">{t("preset.name")}</span>
           <input
             value={name}
             maxLength={COMMAND_PRESET_NAME_MAX}
             disabled={disabled}
-            placeholder="이름"
-            aria-label="프리셋 이름"
+            placeholder={t("preset.name")}
+            aria-label={t("preset.nameAria")}
             className="h-9 w-full rounded-md border border-border bg-background px-2 text-sm outline-none"
             onChange={(e) => onName(e.target.value)}
           />
@@ -116,8 +124,7 @@ function AdminDraftEditor({
         />
       </SettingsChannelWell>
       <p className="text-[11px] text-muted-foreground">
-        {error ??
-          "설정·편차 0.1℃, 환기 5%. −/+를 꾹 누르면 연속입니다. 저장해도 현장으로 나가지 않습니다."}
+        {error ?? t("preset.adminHint")}
       </p>
     </div>
   );
@@ -312,7 +319,7 @@ export function AdminCommandPresetsPanel({
               "font-variant-numeric tabular-nums",
             )}
           >
-            {draftSummary(defaults)}
+            {draftSummary(defaults, locale)}
           </p>
         </div>
         <button
@@ -385,6 +392,7 @@ export function AdminCommandPresetsPanel({
           {forStall.map((item) => {
             const summary = draftSummary(
               firstChannelDraft(item.channels, defaults),
+              locale,
             );
             return (
               <button
