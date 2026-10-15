@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { Pencil } from "lucide-react";
 import {
   deleteSharedCommandPresetAction,
   saveCommandDefaultsAction,
@@ -38,6 +39,7 @@ import {
   dashboardAffordance,
   dashboardElevation,
   opsControl,
+  opsLayout,
   opsTypography,
 } from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";
@@ -136,6 +138,7 @@ export function AdminCommandPresetsPanel({
 }: Props) {
   const router = useRouter();
   const locale = useProfileSheetPrefs().locale;
+  const t = useSheetCopy();
   const en = locale === "en";
   const typeName = (code: string) => formatStallTypeLabelLocalized(code, locale);
   const [defaults, setDefaults] = useState(initialDefaults);
@@ -295,7 +298,7 @@ export function AdminCommandPresetsPanel({
     (editorMode !== "defaults" && name.trim().length === 0);
 
   return (
-    <section id="presets" className="order-2 scroll-mt-3 space-y-4 md:order-3">
+    <section id="presets" className={cn(opsLayout.sectionPresets, "space-y-4")}>
       <header className="space-y-1">
         <h2 className={opsTypography.sectionTitle}>{en ? "Command defaults · presets" : "명령 기본값 · 프리셋"}</h2>
         <p className={opsTypography.sectionDesc}>
@@ -328,51 +331,49 @@ export function AdminCommandPresetsPanel({
           onClick={openDefaults}
           className={cn(opsControl.buttonOutline, dashboardAffordance.tool)}
         >
-          {en ? "Edit" : "편집"}
+          {t("preset.edit")}
         </button>
       </div>
 
-      <div className="flex flex-wrap gap-1.5" role="group" aria-label={en ? "Stall type" : "축사유형"}>
-        {STALL_OPTIONS.map((code) => {
-          const on =
-            normalizeStallTyCode(code) === normalizeStallTyCode(stallTyCode);
-          return (
-            <button
-              key={code}
-              type="button"
-              disabled={pending}
-              aria-pressed={on}
-              onClick={() => setStallTyCode(code)}
-              className={cn(
-                "inline-flex h-9 items-center rounded-lg border px-3 text-xs font-semibold",
-                motionClass.microHover,
-                on
-                  ? cn(dashboardAffordance.action, "border-transparent")
-                  : dashboardAffordance.chipToggleIdle,
-              )}
-            >
-              {typeName(code)}
-            </button>
-          );
-        })}
-      </div>
-
       <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label={en ? "Stall type" : "축사유형"}>
+          {STALL_OPTIONS.map((code) => {
+            const on =
+              normalizeStallTyCode(code) === normalizeStallTyCode(stallTyCode);
+            return (
+              <button
+                key={code}
+                type="button"
+                disabled={pending}
+                aria-pressed={on}
+                onClick={() => setStallTyCode(code)}
+                className={cn(
+                  "inline-flex h-9 items-center rounded-lg border px-3 text-xs font-semibold",
+                  motionClass.microHover,
+                  on
+                    ? cn(dashboardAffordance.action, "border-transparent")
+                    : dashboardAffordance.chipToggleIdle,
+                )}
+              >
+                {typeName(code)}
+              </button>
+            );
+          })}
+        </div>
         <button
           type="button"
           disabled={pending || forStall.length >= COMMAND_PRESET_MAX}
           onClick={openCreate}
           className={cn(
-            "inline-flex h-8 items-center gap-1 rounded-lg border px-2.5 text-xs font-semibold",
+            "inline-flex h-9 items-center gap-1 rounded-lg border px-3 text-xs font-semibold",
             dashboardAffordance.chipToggleIdle,
             motionClass.microHover,
           )}
         >
-          <span aria-hidden>＋</span> {en ? "Create" : "생성"}
+          <span aria-hidden>＋</span> {t("preset.create")}
         </button>
-        <p className={opsTypography.meta}>
-          {typeName(stallTyCode)} · {forStall.length}/
-          {COMMAND_PRESET_MAX}
+        <p className={cn(opsTypography.meta, "tabular-nums")}>
+          {typeName(stallTyCode)} · {forStall.length}/{COMMAND_PRESET_MAX}
         </p>
       </div>
 
@@ -407,18 +408,24 @@ export function AdminCommandPresetsPanel({
                   "flex flex-col items-start gap-1.5 p-3 text-left transition-colors hover:border-primary/40",
                 )}
               >
-                <p className="text-sm font-semibold leading-snug">{item.name}</p>
-                <p
+                <span className="flex w-full items-start justify-between gap-2">
+                  <span className="text-sm font-semibold leading-snug">{item.name}</span>
+                  <span className="inline-flex shrink-0 items-center gap-1 text-[11px] font-medium text-primary">
+                    <Pencil className="size-3" aria-hidden />
+                    {t("preset.edit")}
+                  </span>
+                </span>
+                <span
                   className={cn(
                     opsTypography.meta,
                     "font-variant-numeric tabular-nums",
                   )}
                 >
                   {summary}
-                </p>
-                <p className="mt-1 text-[11px] text-channel-info">
-                  {typeName(stallTyCode)} · {en ? "Shared" : "공용"}
-                </p>
+                </span>
+                <span className="mt-1 text-[11px] text-channel-info">
+                  {typeName(stallTyCode)} · {t("preset.shared")}
+                </span>
               </button>
             );
           })}
@@ -461,7 +468,7 @@ export function AdminCommandPresetsPanel({
                 setPendingDelete(item);
               }}
             >
-              이 프리셋 삭제
+              {t("preset.deleteThis")}
             </button>
           ) : null
         }

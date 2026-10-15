@@ -99,7 +99,7 @@ export const opsTypography = {
   chipLabel:
     "block truncate text-center text-[0.65rem] font-semibold leading-tight md:text-left md:text-sm lg:text-base",
   chipMeta:
-    "mt-0.5 hidden truncate text-xs text-muted-foreground leading-tight md:block md:text-sm",
+    "mt-0.5 truncate text-xs text-muted-foreground leading-tight md:text-sm",
   nav: "text-xs text-muted-foreground",
   alert: "text-sm leading-snug",
 } as const;
@@ -123,6 +123,11 @@ export const opsControl = {
 } as const;
 
 export const opsLayout = {
+  /** 화면 순서 = 점프 순서. 헬스 → 사용자 → 명령 → 프리셋 */
+  sectionScan: "order-1 scroll-mt-14",
+  sectionDirectory: "order-2 scroll-mt-14",
+  sectionCommands: "order-3 scroll-mt-14",
+  sectionPresets: "order-4 scroll-mt-14",
   stack: "flex flex-col gap-3 md:gap-4",
   stackTight: "flex flex-col gap-2 md:gap-3",
   sectionGap: "gap-3 md:gap-4",

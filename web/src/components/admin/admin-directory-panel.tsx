@@ -232,6 +232,11 @@ export function AdminDirectoryPanel({
                 <button
                   type="button"
                   title={`${name} · ${u.email}`}
+                  aria-label={
+                    en
+                      ? `${name}, ${u.email}, ${farmCount} farms`
+                      : `${name}, ${u.email}, 농장 ${farmCount}`
+                  }
                   onClick={() => selectUser(u.email)}
                   aria-current={active ? "true" : undefined}
                   className={cn(
@@ -244,7 +249,7 @@ export function AdminDirectoryPanel({
                     {name}
                   </span>
                   <span className={cn("truncate", opsTypography.meta)}>
-                    {u.email} · {farmCount}{en ? "" : "곳"}
+                    {en ? `${farmCount} farms` : `농장 ${farmCount}`}
                   </span>
                 </button>
               </li>
@@ -277,30 +282,28 @@ export function AdminDirectoryPanel({
 
           <div
             id="directory-add-farm"
-            className="flex flex-wrap items-end gap-2 rounded-lg border bg-muted/20 p-2.5"
+            className="flex items-center gap-2 rounded-lg border bg-muted/20 p-2.5"
           >
-            <label className={cn("min-w-0 flex-1 font-medium", opsTypography.meta)}>
-              {en ? "Add farm" : "농장 추가"}
-              <select
-                ref={addFarmSelectRef}
-                className={opsControl.select}
-                value={addFarmId}
-                onChange={(e) => setAddFarmId(e.target.value)}
-              >
-                <option value="">{en ? "Choose an unassigned farm…" : "미부여 농장 선택…"}</option>
-                {addableFarms.map((o) => (
-                  <option key={farmValue(o.farmKey)} value={farmValue(o.farmKey)}>
-                    {farmOptionLabel(o.label)} · {farmValue(o.farmKey)}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <select
+              ref={addFarmSelectRef}
+              aria-label={en ? "Add farm" : "농장 추가"}
+              className={cn(opsControl.select, "mt-0 min-w-0 flex-1")}
+              value={addFarmId}
+              onChange={(e) => setAddFarmId(e.target.value)}
+            >
+              <option value="">{en ? "Choose an unassigned farm…" : "미부여 농장 선택…"}</option>
+              {addableFarms.map((o) => (
+                <option key={farmValue(o.farmKey)} value={farmValue(o.farmKey)}>
+                  {farmOptionLabel(o.label)} · {farmValue(o.farmKey)}
+                </option>
+              ))}
+            </select>
             <PageActionButton
               type="button"
               variant="primary"
               disabled={!addFarmId || addPending}
               onClick={addFarm}
-              className={opsControl.button}
+              className={cn(opsControl.button, "shrink-0")}
             >
               {addPending ? (en ? "Granting…" : "부여중…") : (en ? "Grant read" : "조회권한 부여")}
             </PageActionButton>
@@ -352,17 +355,15 @@ export function AdminDirectoryPanel({
   );
 
   return (
-    <div className={opsLayout.stack}>
-      <div className="rounded-xl border border-border bg-card px-3 py-2 sm:px-4">
-        <h2 className={opsTypography.sectionTitle}>
-          {isMobile ? (en ? "Users" : "사용자") : (en ? "Directory · users first" : "디렉터리 · 사용자 우선")}
-        </h2>
+    <div className={cn(opsLayout.stack, "rounded-xl border border-border bg-card p-3 sm:p-4")}>
+      <header className="border-b pb-2">
+        <h2 className={opsTypography.sectionTitle}>{en ? "Users" : "사용자"}</h2>
         {isMobile ? null : (
           <p className={opsTypography.sectionDesc}>
             {en ? "Pick a user to set access and the address." : "사용자를 고르면 권한·주소를 이어서 처리합니다."}
           </p>
         )}
-      </div>
+      </header>
 
       {isMobile ? (
         <>

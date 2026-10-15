@@ -15,7 +15,7 @@ import {
 import { CommandHistoryStatusChips } from "@/components/controllers/command-history-status-chips";
 import { BarnPanelBottomSheet } from "@/components/farm/barn-panel-bottom-sheet";
 import { Input } from "@/components/ui/input";
-import { opsControl, opsTypography } from "@/lib/ui/dashboard-page-ui";
+import { dashboardAffordance, opsControl, opsTypography } from "@/lib/ui/dashboard-page-ui";
 import { useMobileLayout } from "@/lib/ui/use-mobile-layout";
 import type { ThermoCommand } from "@/lib/data/commands";
 import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
@@ -203,6 +203,7 @@ export function CommandHistorySlim({ commands: initial }: Props) {
   };
 
   const openFull = () => {
+    setSectionOpen(true);
     skipQueryDebounce.current = true;
     setQuery("");
     setStatusFilter("all");
@@ -293,7 +294,7 @@ export function CommandHistorySlim({ commands: initial }: Props) {
     }
   };
 
-  const showFullBtn = sectionOpen && (isMobile || !pcFull);
+  const showFullBtn = isMobile || !pcFull;
 
   const emptyKind: "filtered" | "period" | null =
     loadError || fullCommands.length > 0
@@ -307,25 +308,29 @@ export function CommandHistorySlim({ commands: initial }: Props) {
 
   const lookupToolbar = (
     <div className="flex flex-col gap-2">
-      <CommandHistoryRangeChips
-        value={range}
-        onChange={onRangeChange}
-        disabled={pending}
-      />
-      <CommandHistoryStatusChips
-        value={statusFilter}
-        onChange={onStatusChange}
-        disabled={pending}
-      />
-      <Input
-        uiSize="dashboard"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder={t("cmd.search")}
-        aria-label={t("cmd.searchLabel")}
-        className={opsControl.input}
-        disabled={pending && fullCommands.length === 0}
-      />
+      <div className="flex flex-wrap items-center gap-2">
+        <CommandHistoryRangeChips
+          value={range}
+          onChange={onRangeChange}
+          disabled={pending}
+          className="shrink-0"
+        />
+        <CommandHistoryStatusChips
+          value={statusFilter}
+          onChange={onStatusChange}
+          disabled={pending}
+          className="shrink-0"
+        />
+        <Input
+          uiSize="dashboard"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={t("cmd.search")}
+          aria-label={t("cmd.searchLabel")}
+          className={cn(opsControl.input, "min-w-[10rem] flex-1")}
+          disabled={pending && fullCommands.length === 0}
+        />
+      </div>
       <p className={opsTypography.meta}>
         {pending
           ? t("cmd.loading")
@@ -425,8 +430,9 @@ export function CommandHistorySlim({ commands: initial }: Props) {
                 onClick={openFull}
                 disabled={pending}
                 className={cn(
-                  opsControl.buttonOutline,
-                  "border disabled:opacity-50",
+                  opsControl.button,
+                  dashboardAffordance.action,
+                  "disabled:opacity-50",
                 )}
               >
                 {pending ? t("cmd.loading") : t("cmd.lookup")}

@@ -53,7 +53,7 @@ async function DirectorySection() {
   return (
     <section
       id="directory"
-      className={cn("order-1 scroll-mt-3 md:order-2", opsLayout.stack)}
+      className={cn(opsLayout.sectionDirectory, opsLayout.stack)}
     >
       {configError ? <OpsServiceRoleNotice /> : null}
       <AdminDirectoryPanel
@@ -68,7 +68,7 @@ async function DirectorySection() {
 async function CommandsSection() {
   const commands = await getThermoCommandHistory(10);
   return (
-    <section id="commands" className="order-2 scroll-mt-3 md:order-3">
+    <section id="commands" className={opsLayout.sectionCommands}>
       <CommandHistorySlim commands={commands} />
     </section>
   );
@@ -93,13 +93,31 @@ export async function AdminOpsHome() {
     <OpsInspectorFrame>
       <OpsSectionNav />
       <OpsScanClient />
-      <Suspense fallback={<AdminOpsTabContentSkeleton label="디렉터리" />}>
+      <Suspense
+        fallback={
+          <div className={opsLayout.sectionDirectory}>
+            <AdminOpsTabContentSkeleton label="디렉터리" />
+          </div>
+        }
+      >
         <DirectorySection />
       </Suspense>
-      <Suspense fallback={<AdminOpsTabContentSkeleton label="명령" />}>
+      <Suspense
+        fallback={
+          <div className={opsLayout.sectionCommands}>
+            <AdminOpsTabContentSkeleton label="명령" />
+          </div>
+        }
+      >
         <CommandsSection />
       </Suspense>
-      <Suspense fallback={<AdminOpsTabContentSkeleton label="프리셋" />}>
+      <Suspense
+        fallback={
+          <div className={opsLayout.sectionPresets}>
+            <AdminOpsTabContentSkeleton label="프리셋" />
+          </div>
+        }
+      >
         <PresetsSection />
       </Suspense>
     </OpsInspectorFrame>

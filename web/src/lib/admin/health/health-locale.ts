@@ -37,6 +37,7 @@ export function healthUiText(
     moduleAgeDesc: "Time since last seen",
     liveCap: "Live query cap",
     liveCapDesc: "Global live-view cap for the admin screen",
+    liveShort: "Live",
     farmModules: "Farms · modules",
     farmModulesDesc: "Worst rollup · by status, then age",
     actionHint: "ERROR TYPE · RECOMMEND",

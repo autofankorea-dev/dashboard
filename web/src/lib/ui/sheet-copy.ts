@@ -528,6 +528,8 @@ export const SHEET_COPY = {
   "preset.deviceTitle": { ko: "이 기기 프리셋", en: "Preset for this device" },
   "preset.shared": { ko: "공용", en: "Shared" },
   "preset.delete": { ko: "{name} 삭제", en: "Delete {name}" },
+  "preset.edit": { ko: "편집", en: "Edit" },
+  "preset.deleteThis": { ko: "이 프리셋 삭제", en: "Delete this preset" },
   "preset.hint": {
     ko: "칩만 만들고 표를 채웁니다. 현장으로는 나가지 않습니다.",
     en: "This only creates a chip and fills the table. Nothing is sent to the site.",

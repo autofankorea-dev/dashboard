@@ -19,6 +19,7 @@ export const HEALTH_UI = {
   moduleAgeDesc: "last seen 경과 시간",
   liveCap: "Live 조회 한도",
   liveCapDesc: "관리 화면 전역 live 뷰 상한",
+  liveShort: "실시간",
   farmModules: "농장 · 모듈",
   farmModulesDesc: "worst rollup · 상태·경과시간 순",
   actionHint: "ERROR TYPE · RECOMMEND",

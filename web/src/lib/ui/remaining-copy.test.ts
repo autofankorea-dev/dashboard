@@ -52,6 +52,10 @@ test("preset vent line and command summary follow the sheet dictionary", () => {
   );
   assert.equal(summary, "A: 24℃ +1 · vent 10~80%");
   assert.match(readSrc("../../components/admin/admin-command-presets-panel.tsx"), /preset\.summary/);
+  assert.equal(sheetCopy("en", "preset.edit"), "Edit");
+  assert.equal(sheetCopy("ko", "preset.deleteThis"), "이 프리셋 삭제");
+  assert.match(readSrc("../../components/admin/admin-command-presets-panel.tsx"), /preset\.deleteThis/);
+  assert.match(readSrc("../../components/admin/admin-command-presets-panel.tsx"), /preset\.edit/);
   assert.match(readSrc("../../components/controllers/command-history-table.tsx"), /formatCommandSummary/);
 });
 

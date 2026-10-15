@@ -213,30 +213,29 @@ export function HealthSystemShell({ snapshot }: Props) {
             mobileQuiet ? "px-0 py-0.5" : showAlert || detailOpen ? "py-2" : "py-1.5",
           )}
         >
-          <div className="min-w-0 flex-1">
-            <HealthOverallStatus
-              overallStatus={overallStatus}
-              compact
-              barOnly={mobileQuiet}
-              liveUsed={liveSnapshot.liveRowCount}
-              liveTotal={liveSnapshot.liveRowLimit}
-              liveWarn={capWarn}
-            />
-          </div>
-          <HealthRefreshBar
-            key={liveSnapshot.fetchedAt}
-            fetchedAt={liveSnapshot.fetchedAt}
+          <HealthOverallStatus
+            overallStatus={overallStatus}
             compact
-            className="shrink-0"
-            onRefresh={patchSnapshot}
+            liveUsed={liveSnapshot.liveRowCount}
+            liveTotal={liveSnapshot.liveRowLimit}
+            liveWarn={capWarn}
           />
-          <button
-            type="button"
-            onClick={toggleDetail}
-            className={cn(opsControl.buttonOutline, "shrink-0 border")}
-          >
-            {detailOpen ? (locale === "en" ? "Collapse" : "접기") : (locale === "en" ? "Detail" : "상세")}
-          </button>
+          <div className="ml-auto flex shrink-0 items-center gap-1.5">
+            <HealthRefreshBar
+              key={liveSnapshot.fetchedAt}
+              fetchedAt={liveSnapshot.fetchedAt}
+              compact
+              className="shrink-0"
+              onRefresh={patchSnapshot}
+            />
+            <button
+              type="button"
+              onClick={toggleDetail}
+              className={cn(opsControl.buttonOutline, "shrink-0 border")}
+            >
+              {detailOpen ? (locale === "en" ? "Collapse" : "접기") : (locale === "en" ? "Detail" : "상세")}
+            </button>
+          </div>
         </div>
         {!showAlert && !detailOpen ? null : (
           <div className="px-3 pb-2">

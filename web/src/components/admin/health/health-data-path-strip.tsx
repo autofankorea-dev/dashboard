@@ -105,7 +105,12 @@ export function HealthDataPathStrip({
                 />
                 <span className="min-w-0 md:flex-1">
                   <span className={opsTypography.chipLabel}>{label}</span>
-                  <span className={opsTypography.chipMeta}>
+                  <span
+                    className={cn(
+                      opsTypography.chipMeta,
+                      !active && "max-md:hidden",
+                    )}
+                  >
                     {statusText}
                   </span>
                 </span>
