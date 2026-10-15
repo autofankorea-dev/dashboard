@@ -358,13 +358,15 @@ test("english settings and bulk apply copy stays paired", () => {
 test("missing profile prefs stay on number, cover on, and Korean", () => {
   assert.deepEqual(parseProfileSheetPrefs(undefined), {
     motorDisplay: "number",
+    motorFocus: "fan",
     envCover: true,
     locale: "ko",
   });
   assert.deepEqual(
-    parseProfileSheetPrefs({ motorDisplay: "bar", envCover: false, locale: "en" }),
-    { motorDisplay: "bar", envCover: false, locale: "en" },
+    parseProfileSheetPrefs({ motorDisplay: "bar", motorFocus: "setpoint", envCover: false, locale: "en" }),
+    { motorDisplay: "bar", motorFocus: "setpoint", envCover: false, locale: "en" },
   );
-  assert.equal(parseProfileSheetPrefs({ motorDisplay: "other", locale: "fr" }).motorDisplay, "number");
+  assert.equal(parseProfileSheetPrefs({ motorDisplay: "other", motorFocus: "other", locale: "fr" }).motorDisplay, "number");
+  assert.equal(parseProfileSheetPrefs({ motorFocus: "other" }).motorFocus, "fan");
   assert.equal(parseProfileSheetPrefs({ locale: "fr" }).locale, "ko");
 });

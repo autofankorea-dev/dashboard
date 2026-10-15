@@ -7,12 +7,13 @@ import {
   controllerEnvCoverNotices,
   coverNoticeLevel,
 } from "@/lib/farm/controller-env-cover";
-import type { SheetLocale } from "@/lib/ui/profile-sheet-prefs";
+import type { MotorFocus, SheetLocale } from "@/lib/ui/profile-sheet-prefs";
 import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { coverExampleReading, type ExampleTone } from "@/lib/ui/settings-example-reading";
 import { cn } from "@/lib/utils";
 
 const MOTOR_VALUES = [72, 41, 8] as const;
+const MOTOR_SETS = ["24.0 + 2.0", "25.5 + 2.5", "27.0 + 3.0"] as const;
 
 function exampleStallType(locale: SheetLocale) {
   return locale === "en" ? "Finisher" : "비육사";
@@ -20,10 +21,12 @@ function exampleStallType(locale: SheetLocale) {
 
 function ExampleChannels({
   mode,
+  focus,
   selected,
   onPick,
 }: {
   mode: "number" | "bar";
+  focus: MotorFocus;
   selected: number;
   onPick: (index: number) => void;
 }) {
@@ -31,35 +34,73 @@ function ExampleChannels({
   const labels = [t("cover.channel1"), t("cover.channel2"), t("cover.channel3")];
   return (
     <div className="grid grid-cols-3 gap-1">
-      {labels.map((label, index) => (
-        <button
-          key={label}
-          type="button"
-          aria-pressed={selected === index}
-          className={cn(
-            "relative min-h-10 rounded-md border bg-background px-1 py-1",
-            selected === index && "border-primary",
-          )}
-          onClick={() => onPick(index)}
-        >
-          <span className="absolute top-0.5 left-1 text-[9px] font-semibold text-channel-info">
-            {label}
-          </span>
-          {mode === "bar" ? (
-            <span className="mt-3 block h-1.5 overflow-hidden rounded-full bg-muted" aria-hidden>
+      {labels.map((label, index) => {
+        const fan = (
+          mode === "bar" ? (
+            <span
+              className={cn(
+                "block overflow-hidden rounded-full bg-muted",
+                focus === "setpoint" ? "mx-auto h-1 w-8" : "h-1.5",
+              )}
+              aria-hidden
+            >
               <span
                 className="block h-full bg-channel-info"
                 style={{ width: `${MOTOR_VALUES[index]}%` }}
               />
             </span>
           ) : (
-            <span className="mt-2 block text-center text-xs font-semibold">
+            <span
+              className={cn(
+                "block text-center font-semibold tabular-nums",
+                focus === "setpoint" ? "text-[9px] text-muted-foreground" : "text-xs",
+              )}
+            >
               {MOTOR_VALUES[index]}
               <span className="ml-0.5 text-[9px] font-medium">%</span>
             </span>
-          )}
-        </button>
-      ))}
+          )
+        );
+        const set = (
+          <span
+            className={cn(
+              "block text-center font-semibold tabular-nums",
+              focus === "setpoint" ? "text-xs" : "text-[9px] text-muted-foreground",
+            )}
+          >
+            {MOTOR_SETS[index]}
+          </span>
+        );
+        return (
+          <button
+            key={label}
+            type="button"
+            aria-pressed={selected === index}
+            className={cn(
+              "relative min-h-12 rounded-md border bg-background px-1 py-1",
+              selected === index && "border-primary",
+            )}
+            onClick={() => onPick(index)}
+          >
+            <span className="absolute top-0.5 left-1 text-[9px] font-semibold text-channel-info">
+              {label}
+            </span>
+            <span className="mt-3 flex flex-col items-center gap-0.5">
+              {focus === "setpoint" ? (
+                <>
+                  {set}
+                  {fan}
+                </>
+              ) : (
+                <>
+                  {fan}
+                  {set}
+                </>
+              )}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -85,7 +126,13 @@ export function SettingsFieldExample() {
   );
 }
 
-export function SettingsMotorExample({ mode }: { mode: "number" | "bar" }) {
+export function SettingsMotorExample({
+  mode,
+  focus,
+}: {
+  mode: "number" | "bar";
+  focus: MotorFocus;
+}) {
   const [selected, setSelected] = useState(0);
   const locale = useProfileSheetPrefs().locale;
   const t = useSheetCopy();
@@ -95,7 +142,7 @@ export function SettingsMotorExample({ mode }: { mode: "number" | "bar" }) {
         <span className="font-semibold">{exampleStallType(locale)}</span>
         <span>24.6°C</span>
       </div>
-      <ExampleChannels mode={mode} selected={selected} onPick={setSelected} />
+      <ExampleChannels mode={mode} focus={focus} selected={selected} onPick={setSelected} />
       <p className="mt-1 text-[10px] text-muted-foreground">{t("settings.motor")}</p>
     </div>
   );
@@ -135,7 +182,7 @@ export function SettingsCoverExample({ on }: { on: boolean }) {
             </div>
           </div>
           <div className="mt-1">
-            <ExampleChannels mode={prefs.motorDisplay} selected={selected} onPick={setSelected} />
+            <ExampleChannels mode={prefs.motorDisplay} focus={prefs.motorFocus} selected={selected} onPick={setSelected} />
           </div>
         </div>
       </div>
@@ -183,7 +230,7 @@ export function SettingsCoverExample({ on }: { on: boolean }) {
               <div>61%</div>
             </div>
           </div>
-          <ExampleChannels mode={prefs.motorDisplay} selected={selected} onPick={setSelected} />
+          <ExampleChannels mode={prefs.motorDisplay} focus={prefs.motorFocus} selected={selected} onPick={setSelected} />
         </div>
       </div>
     </div>

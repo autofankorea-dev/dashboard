@@ -54,6 +54,8 @@ export const SHEET_COPY = {
   "settings.dark": { ko: "다크", en: "Dark" },
   "settings.number": { ko: "숫자·단위", en: "Number" },
   "settings.bar": { ko: "막대", en: "Bar" },
+  "settings.motorFanLarge": { ko: "휀 % 크게", en: "Fan % large" },
+  "settings.motorSetLarge": { ko: "설정값 크게", en: "Setpoint large" },
   "settings.coverOn": { ko: "켜짐", en: "On" },
   "settings.coverOff": { ko: "꺼짐", en: "Off" },
   "settings.korean": { ko: "한국어", en: "한국어" },

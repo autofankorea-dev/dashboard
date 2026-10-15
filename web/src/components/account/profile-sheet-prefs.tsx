@@ -11,11 +11,13 @@ import {
 import {
   saveEnvCoverAction,
   saveMotorDisplayAction,
+  saveMotorFocusAction,
   saveSheetLocaleAction,
 } from "@/lib/actions/profile-sheet-prefs-actions";
 import {
   DEFAULT_PROFILE_SHEET_PREFS,
   type MotorDisplay,
+  type MotorFocus,
   type ProfileSheetPrefs,
   type SheetLocale,
 } from "@/lib/ui/profile-sheet-prefs";
@@ -28,6 +30,7 @@ import { sheetCopy, type SheetCopyKey } from "@/lib/ui/sheet-copy";
 
 type Update = {
   motorDisplay?: MotorDisplay;
+  motorFocus?: MotorFocus;
   envCover?: boolean;
   locale?: SheetLocale;
 };
@@ -57,7 +60,9 @@ export function ProfileSheetPrefsProvider({
     const result =
       patch.motorDisplay != null
         ? await saveMotorDisplayAction(patch.motorDisplay)
-        : patch.envCover != null
+        : patch.motorFocus != null
+          ? await saveMotorFocusAction(patch.motorFocus)
+          : patch.envCover != null
           ? await saveEnvCoverAction(patch.envCover)
           : patch.locale != null
             ? await saveSheetLocaleAction(patch.locale)

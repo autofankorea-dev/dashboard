@@ -72,7 +72,9 @@ export function AccountSettingsCard({
     {
       id: "motor",
       label: t("settings.motor"),
-      value: prefs.motorDisplay === "bar" ? t("settings.bar") : t("settings.number"),
+      value: `${prefs.motorDisplay === "bar" ? t("settings.bar") : t("settings.number")} · ${
+        prefs.motorFocus === "setpoint" ? t("settings.motorSetLarge") : t("settings.motorFanLarge")
+      }`,
     },
     {
       id: "cover",
@@ -131,7 +133,24 @@ export function AccountSettingsCard({
                     ]}
                     onPick={(id) => void update({ motorDisplay: id === "bar" ? "bar" : "number" })}
                   />
-                  <SettingsMotorExample mode={prefs.motorDisplay} />
+                  <ChoiceRow
+                    options={[
+                      {
+                        id: "fan",
+                        label: t("settings.motorFanLarge"),
+                        active: prefs.motorFocus !== "setpoint",
+                      },
+                      {
+                        id: "setpoint",
+                        label: t("settings.motorSetLarge"),
+                        active: prefs.motorFocus === "setpoint",
+                      },
+                    ]}
+                    onPick={(id) =>
+                      void update({ motorFocus: id === "setpoint" ? "setpoint" : "fan" })
+                    }
+                  />
+                  <SettingsMotorExample mode={prefs.motorDisplay} focus={prefs.motorFocus} />
                 </>
               ) : null}
               {row.id === "cover" ? (

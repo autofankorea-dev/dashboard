@@ -1,6 +1,9 @@
 "use client";
 
-import type { ControllerThermoSettings } from "@/lib/controllers/controller-settings";
+import {
+  resolveThermoSettings,
+  type ControllerThermoSettings,
+} from "@/lib/controllers/controller-settings";
 import type { BarnReading } from "@/lib/data/iot";
 import type { AlarmSettings } from "@/lib/domain/alarms";
 import { type ChannelSlot } from "@/lib/domain/iot-channel";
@@ -401,17 +404,34 @@ export function ChannelStrip({
   return (
     <div className="min-w-0">
       <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-        {CHANNELS.map((slot) => (
-          <ChannelCell
-            key={slot}
-            slot={slot}
-            value={formatChannelPercent(channels[slot])}
-            compact={compact}
-            expanded={expandedChannel === slot}
-            interactive={interactive}
-            onToggle={onToggleChannel}
-          />
-        ))}
+        {CHANNELS.map((slot) => {
+          const slotThermo =
+            resolveThermoSettings(
+              thermoSettings,
+              reading.farmKey,
+              reading.moduleUid,
+              reading.controllerKey,
+              slot,
+            ) ?? (slot === "A" ? thermo ?? null : null);
+          const setLine =
+            slotThermo &&
+            Number.isFinite(slotThermo.setpointTemp) &&
+            Number.isFinite(slotThermo.tempDeviation)
+              ? `${slotThermo.setpointTemp.toFixed(1)} + ${slotThermo.tempDeviation.toFixed(1)}`
+              : null;
+          return (
+            <ChannelCell
+              key={slot}
+              slot={slot}
+              value={formatChannelPercent(channels[slot])}
+              setLine={setLine}
+              compact={compact}
+              expanded={expandedChannel === slot}
+              interactive={interactive}
+              onToggle={onToggleChannel}
+            />
+          );
+        })}
       </div>
       {!hideChannelTrendExpand ? (
       <BarnListPanelShell
@@ -444,9 +464,80 @@ export function ChannelStrip({
   );
 }
 
+function FanReadout({
+  value,
+  percent,
+  showBar,
+  size,
+  compact,
+}: {
+  value: string;
+  percent: number | null;
+  showBar: boolean;
+  size: "lg" | "sm";
+  compact?: boolean;
+}) {
+  if (showBar && percent != null) {
+    return (
+      <span
+        className={cn(
+          "block overflow-hidden rounded-full bg-muted",
+          size === "lg" ? "h-1.5 w-[70%]" : "h-1 w-10",
+        )}
+        aria-hidden
+      >
+        <span
+          className="block h-full bg-channel-info"
+          style={{ width: `${Math.max(0, Math.min(100, percent))}%` }}
+        />
+      </span>
+    );
+  }
+  return (
+    <span
+      className={cn(
+        size === "lg"
+          ? compact
+            ? dashboardUi.gridCellValueCompact
+            : dashboardUi.gridCellValueDefault
+          : "text-[10px] font-semibold tabular-nums leading-none text-muted-foreground",
+      )}
+    >
+      {value}
+      {value !== "—" ? <span className="ml-0.5 text-[10px] font-medium">%</span> : null}
+    </span>
+  );
+}
+
+function SetpointReadout({
+  line,
+  size,
+  compact,
+}: {
+  line: string;
+  size: "lg" | "sm";
+  compact?: boolean;
+}) {
+  return (
+    <span
+      className={cn(
+        "tabular-nums leading-none",
+        size === "lg"
+          ? compact
+            ? dashboardUi.gridCellValueCompact
+            : dashboardUi.gridCellValueDefault
+          : "text-[10px] font-semibold text-muted-foreground",
+      )}
+    >
+      {line}
+    </span>
+  );
+}
+
 function ChannelCell({
   slot,
   value,
+  setLine,
   compact,
   expanded,
   interactive,
@@ -454,18 +545,22 @@ function ChannelCell({
 }: {
   slot: ChannelSlot;
   value: string;
+  setLine: string | null;
   compact?: boolean;
   expanded?: boolean;
   interactive?: boolean;
   onToggle?: (slot: ChannelSlot) => void;
 }) {
-  const motorDisplay = useProfileSheetPrefs().motorDisplay;
+  const { motorDisplay, motorFocus } = useProfileSheetPrefs();
   const t = useSheetCopy();
   const slotLabel =
     slot === "A" ? t("cover.channel1") : slot === "B" ? t("cover.channel2") : t("cover.channel3");
   const percent = value === "—" ? null : Number(value);
   const showBar = motorDisplay === "bar" && percent != null && Number.isFinite(percent);
-  const label = `${slotLabel} ${value}${value !== "—" ? "%" : ""}`;
+  const fanLarge = motorFocus !== "setpoint" || setLine == null;
+  const label = setLine
+    ? `${slotLabel} ${value}${value !== "—" ? "%" : ""} ${setLine}`
+    : `${slotLabel} ${value}${value !== "—" ? "%" : ""}`;
   const cellClass = cn(
     "relative min-h-[3rem] rounded-md border bg-background/80 sm:min-h-[3.25rem]",
     compact ? "p-1.5 sm:p-2" : "p-2 sm:p-2.5",
@@ -491,23 +586,17 @@ function ChannelCell({
       >
         {slotLabel}
       </span>
-      <div className="flex h-full min-h-[2.25rem] items-center justify-center pt-2 sm:min-h-[2.5rem]">
-        {showBar ? (
-          <span className="block h-1.5 w-[70%] overflow-hidden rounded-full bg-muted" aria-hidden>
-            <span
-              className="block h-full bg-channel-info"
-              style={{ width: `${Math.max(0, Math.min(100, percent ?? 0))}%` }}
-            />
-          </span>
+      <div className="flex h-full min-h-[2.25rem] flex-col items-center justify-center gap-0.5 pt-2 sm:min-h-[2.5rem]">
+        {fanLarge ? (
+          <>
+            <FanReadout value={value} percent={percent} showBar={showBar} size="lg" compact={compact} />
+            {setLine ? <SetpointReadout line={setLine} size="sm" /> : null}
+          </>
         ) : (
-          <span
-            className={cn(
-              compact ? dashboardUi.gridCellValueCompact : dashboardUi.gridCellValueDefault
-            )}
-          >
-            {value}
-            {value !== "—" ? <span className="ml-0.5 text-[10px] font-medium">%</span> : null}
-          </span>
+          <>
+            <SetpointReadout line={setLine ?? ""} size="lg" compact={compact} />
+            <FanReadout value={value} percent={percent} showBar={showBar} size="sm" />
+          </>
         )}
       </div>
       {expanded && interactive ? (
