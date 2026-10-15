@@ -4,10 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { HealthSnapshot, HealthNodeId, HealthStatus } from "@/lib/admin/health/types";
 import {
-  HEALTH_UI,
   countHealthStatuses,
   worstHealthStatus,
 } from "@/lib/admin/health/health-ui-labels";
+import { healthUiText } from "@/lib/admin/health/health-locale";
+import { useProfileSheetPrefs } from "@/components/account/profile-sheet-prefs";
 import { parseHealthNodeId } from "@/lib/admin/health/health-routes";
 import { farmKeyUrlSlug } from "@/lib/domain/farm-key";
 import type { HealthDagNodeSelectPayload } from "@/lib/admin/health/health-node-peek-content";
@@ -52,6 +53,7 @@ function writeSuppressKey(key: string | null) {
 
 export function HealthSystemShell({ snapshot }: Props) {
   const isMobileLayout = useMobileLayout();
+  const locale = useProfileSheetPrefs().locale;
   const searchParams = useSearchParams();
   const queryNodeId = parseHealthNodeId(searchParams.get("node"));
   const queryFarmId = searchParams.get("farm")?.trim() || null;
@@ -170,7 +172,7 @@ export function HealthSystemShell({ snapshot }: Props) {
       />
       <div>
         <p className={cn("mb-2 font-semibold", opsTypography.meta)}>
-          {HEALTH_UI.farmModules}
+          {healthUiText("farmModules", locale)}
         </p>
         <HealthFarmModulePanel
           modules={liveSnapshot.modules}
@@ -188,7 +190,9 @@ export function HealthSystemShell({ snapshot }: Props) {
         isMobileLayout ? "mt-2" : "mt-2",
       )}
     >
-      SUPABASE_SERVICE_ROLE_KEY 또는 DB 연결이 필요합니다.
+      {locale === "en"
+        ? "SUPABASE_SERVICE_ROLE_KEY or a database connection is required."
+        : "SUPABASE_SERVICE_ROLE_KEY 또는 DB 연결이 필요합니다."}
     </div>
   ) : null;
 
@@ -231,7 +235,7 @@ export function HealthSystemShell({ snapshot }: Props) {
             onClick={toggleDetail}
             className={cn(opsControl.buttonOutline, "shrink-0 border")}
           >
-            {detailOpen ? "접기" : "상세"}
+            {detailOpen ? (locale === "en" ? "Collapse" : "접기") : (locale === "en" ? "Detail" : "상세")}
           </button>
         </div>
         {!showAlert && !detailOpen ? null : (
@@ -251,7 +255,9 @@ export function HealthSystemShell({ snapshot }: Props) {
               opsTypography.meta,
             )}
           >
-            이상 감지 — 상세에서 DAG·모듈을 확인하세요.
+            {locale === "en"
+              ? "Something needs attention — open detail to check the graph and modules."
+              : "이상 감지 — 상세에서 DAG·모듈을 확인하세요."}
           </p>
         ) : null}
         {dbWarn ? <div className="px-3 pb-2">{dbWarn}</div> : null}

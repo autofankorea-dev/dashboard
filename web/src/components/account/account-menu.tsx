@@ -28,7 +28,7 @@ import { dashboardControlFill, dashboardUi } from "@/lib/ui/dashboard-page-ui";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { useMobileLayout } from "@/lib/ui/use-mobile-layout";
 import { cn } from "@/lib/utils";
-import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
+import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
 
 const emptySubscribe = () => () => {};
 
@@ -69,6 +69,7 @@ export function AccountMenu({
   const [open, setOpen] = useState(false);
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
   const t = useSheetCopy();
+  const locale = useProfileSheetPrefs().locale;
   const name = user.displayName?.trim() || user.email || t("account.user");
 
   const activeFarmLocation = useMemo(() => {
@@ -142,7 +143,7 @@ export function AccountMenu({
 
   const identityFarmLabel =
     activeFarmLocation?.label ??
-    (activeFarmKey ? farmShortLabel(activeFarmKey) : null);
+    (activeFarmKey ? farmShortLabel(activeFarmKey, locale) : null);
 
   const logoutAction = (
     <button

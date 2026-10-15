@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useProfileSheetPrefs } from "@/components/account/profile-sheet-prefs";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./admin-hub-leaflet-map.css";
@@ -57,6 +58,7 @@ export function AdminHubLeafletMap({
   const onHoverRef = useRef(onHover);
   const onSelectRef = useRef(onSelect);
   const rowsRef = useRef(rows);
+  const locale = useProfileSheetPrefs().locale;
 
   useEffect(() => {
     onHoverRef.current = onHover;
@@ -146,14 +148,14 @@ export function AdminHubLeafletMap({
       if (!loc) continue;
       if (!hubMapInPan(loc.lat, loc.lng)) continue;
       const id = hubMapFarmId(row);
-      const title = farmDisplayLabel(row.farmKey, loc.farmName);
+      const title = farmDisplayLabel(row.farmKey, loc.farmName, locale);
       const marker = L.marker([loc.lat, loc.lng], {
         icon: pinIcon(row, false),
         title,
         keyboard: true,
         riseOnHover: true,
       });
-      marker.bindTooltip(hubMapPinTooltipHtml(row), {
+      marker.bindTooltip(hubMapPinTooltipHtml(row, locale), {
         direction: "auto",
         offset: [14, 0],
         className: "hub-map-tip",
@@ -167,7 +169,7 @@ export function AdminHubLeafletMap({
     }
 
     map.invalidateSize();
-  }, [rows]);
+  }, [rows, locale]);
 
   useEffect(() => {
     for (const row of rowsRef.current) {

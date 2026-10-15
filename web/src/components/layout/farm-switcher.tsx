@@ -29,7 +29,7 @@ import { useAppNavigate } from "@/components/layout/use-app-navigate";
 import { accountMenuLayout } from "@/lib/ui/account-menu-layout";
 import { dashboardUi } from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";
-import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
+import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
 
 const emptySubscribe = () => () => {};
 
@@ -94,6 +94,7 @@ function FarmSwitcherBody({
   inlineListClassName,
 }: FarmSwitcherProps) {
   const t = useSheetCopy();
+  const locale = useProfileSheetPrefs().locale;
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const hubPanels = useAdminHubPanelsOptional();
@@ -177,7 +178,7 @@ function FarmSwitcherBody({
   const triggerLabel =
     activeFarmKey === null
       ? t("farm.all", { count: farmOptions.length })
-      : farmShortLabel(activeFarmKey);
+      : farmShortLabel(activeFarmKey, locale);
 
   const itemClass = (active: boolean) =>
     cn(
@@ -217,7 +218,7 @@ function FarmSwitcherBody({
             )}
           >
             <span className="flex min-w-0 flex-1 items-center gap-2">
-              <span className="truncate">{farmShortLabel(farmKey)}</span>
+              <span className="truncate">{farmShortLabel(farmKey, locale)}</span>
               {hasLiveSummary ? (
                 isLive ? (
                   <span className={dashboardUi.brandChip}>LIVE</span>
@@ -294,7 +295,7 @@ function FarmSwitcherBody({
                 aria-current={activeId === id ? "true" : undefined}
               >
                 <span className={accountMenuLayout.farmMatrixLabel}>
-                  {farmShortLabel(farmKey)}
+                  {farmShortLabel(farmKey, locale)}
                 </span>
                 <span className={accountMenuLayout.farmMatrixMeta}>
                   {hasLiveSummary ? (
@@ -424,7 +425,7 @@ function FarmSwitcherBody({
               className={itemClass(activeId === id)}
             >
               <span className="flex min-w-0 flex-1 items-center gap-2">
-                <span className="truncate">{farmShortLabel(farmKey)}</span>
+                <span className="truncate">{farmShortLabel(farmKey, locale)}</span>
                 {hasLiveSummary ? (
                   isLive ? (
                     <span className={dashboardUi.brandChip}>LIVE</span>

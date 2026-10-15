@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { opsControl, opsTypography } from "@/lib/ui/dashboard-page-ui";
 import { useMobileLayout } from "@/lib/ui/use-mobile-layout";
 import type { ThermoCommand } from "@/lib/data/commands";
+import { useProfileSheetPrefs } from "@/components/account/profile-sheet-prefs";
 import { cn } from "@/lib/utils";
 
 const PREVIEW_LIMIT = 5;
@@ -89,6 +90,7 @@ function EmptyLookupCta({
 /** 운영 홈 — 접힘 → 5건 · 조회(+기간·상태·서버 검색) · 행 상세. */
 export function CommandHistorySlim({ commands: initial }: Props) {
   const isMobile = useMobileLayout();
+  const en = useProfileSheetPrefs().locale === "en";
   const [previewCommands] = useState(initial);
   const [fullCommands, setFullCommands] = useState<ThermoCommand[]>([]);
   const [sectionOpen, setSectionOpen] = useState(false);
@@ -143,11 +145,18 @@ export function CommandHistorySlim({ commands: initial }: Props) {
 
   const fullTitleCount = `${fullCommands.length}`;
 
+  const previewCount = Math.min(PREVIEW_LIMIT, previewCommands.length);
   const title = !sectionOpen
-    ? `명령 · 최근 ${Math.min(PREVIEW_LIMIT, previewCommands.length)}건`
+    ? en
+      ? `Commands · latest ${previewCount}`
+      : `명령 · 최근 ${previewCount}건`
     : isMobile || !pcFull
-      ? `최근 명령 · ${Math.min(PREVIEW_LIMIT, previewCommands.length)}건`
-      : `명령 조회 · ${fullTitleCount}건`;
+      ? en
+        ? `Recent commands · ${previewCount}`
+        : `최근 명령 · ${previewCount}건`
+      : en
+        ? `Command lookup · ${fullTitleCount}`
+        : `명령 조회 · ${fullTitleCount}건`;
 
   const shown = !sectionOpen
     ? []

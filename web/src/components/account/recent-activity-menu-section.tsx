@@ -7,7 +7,7 @@ import { isValidFarmKey } from "@/lib/domain/barn-catalog";
 import { farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
 import { farmShortLabel } from "@/lib/domain/farm-summaries";
 import { formatKst } from "@/lib/datetime/kst";
-import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
+import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { accountMenuLayout } from "@/lib/ui/account-menu-layout";
 import { cn } from "@/lib/utils";
 
@@ -39,6 +39,7 @@ export function RecentActivityMenuSection({
   excludeActiveFarm = false,
 }: Props) {
   const t = useSheetCopy();
+  const locale = useProfileSheetPrefs().locale;
   const [expanded, setExpanded] = useState(false);
 
   const allItems = useMemo(() => {
@@ -84,7 +85,7 @@ export function RecentActivityMenuSection({
     ) : (
       <ul className={accountMenuLayout.list}>
         {items.map((r) => {
-          const label = farmShortLabel(r.farmKey);
+          const label = farmShortLabel(r.farmKey, locale);
           const meta = formatKst(r.receivedAt, "short");
           const line = `${label} · ${meta}`;
 
@@ -127,7 +128,7 @@ export function RecentActivityMenuSection({
         data-tour-id="account-menu-activity"
       >
         {allItems.map((r) => {
-          const label = farmShortLabel(r.farmKey);
+          const label = farmShortLabel(r.farmKey, locale);
           const meta = formatKst(r.receivedAt, "short");
           const timePart = meta.split(" ").slice(-1)[0] ?? meta;
           const chipLabel = `${label} · ${timePart}`;

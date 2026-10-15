@@ -53,11 +53,22 @@ const TIP_ICON = {
   cpu: '<svg class="hub-map-tip-icon" viewBox="0 0 24 24" aria-hidden="true"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg>',
 } as const;
 
-export function hubMapPinTooltipHtml(row: AdminHubFarmRow): string {
+export function hubMapPinTooltipHtml(
+  row: AdminHubFarmRow,
+  locale: "ko" | "en" = "ko",
+): string {
   const title = escapeHubMapHtml(
-    farmDisplayLabel(row.farmKey, row.location?.farmName),
+    farmDisplayLabel(row.farmKey, row.location?.farmName, locale),
   );
-  const status = escapeHubMapHtml(HUB_MAP_TONE_LABEL[row.tone]);
+  const toneEn = {
+    live: "Normal",
+    alert: "Alert",
+    offline: "Offline",
+    location: "Location only",
+  } as const;
+  const status = escapeHubMapHtml(
+    locale === "en" ? toneEn[row.tone] : HUB_MAP_TONE_LABEL[row.tone],
+  );
   const { tempC, humidityPct, online, controllerCount } =
     hubFarmMonitorMetrics(row);
   const controllers = online == null ? "—" : `${online}/${controllerCount}`;

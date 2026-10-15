@@ -1,5 +1,8 @@
+"use client";
+
 import type { HealthStatus } from "@/lib/admin/health/types";
-import { HEALTH_STATUS_LABEL } from "@/lib/admin/health/types";
+import { healthStatusLabel } from "@/lib/admin/health/health-locale";
+import { useProfileSheetPrefs } from "@/components/account/profile-sheet-prefs";
 import { dashboardUi } from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";
 
@@ -31,6 +34,7 @@ export function HealthStatusBadge({
   className,
   compact = false,
 }: HealthStatusBadgeProps) {
+  const locale = useProfileSheetPrefs().locale;
   return (
     <span
       className={cn(
@@ -50,7 +54,7 @@ export function HealthStatusBadge({
         )}
         aria-hidden
       />
-      {HEALTH_STATUS_LABEL[status]}
+      {healthStatusLabel(status, locale)}
     </span>
   );
 }
