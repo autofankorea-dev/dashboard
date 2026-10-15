@@ -65,6 +65,7 @@ import { stallKeyFromReading } from "@/lib/domain/reading-hierarchy";
 import { isReadingOnline } from "@/lib/domain/reading-display";
 import { cn } from "@/lib/utils";
 import { dashboardAffordance } from "@/lib/ui/dashboard-page-ui";
+import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
 
 /** 목록 카드 설정 패널 — 그래프 패널 차트 라벨과 동일 스케일 */
 const LIST_PANEL_META = "text-xs tabular-nums text-muted-foreground";
@@ -123,6 +124,8 @@ export function BarnListAccordionPanel({
   collapsibleSections = false,
   onCommandQueued,
 }: Props) {
+  const t = useSheetCopy();
+  const locale = useProfileSheetPrefs().locale;
   const [thresholdHeader, setThresholdHeader] =
     useState<AlarmThresholdHeaderState | null>(null);
   const [focus, setFocus] = useState<SettingsGlanceFocus | null>(null);
@@ -301,7 +304,7 @@ export function BarnListAccordionPanel({
   })), [channelContexts, panelCommands]);
   const failedCommand = useMemo(() => latestFailedCommand(panelCommands), [panelCommands]);
   const [dismissedFailureId, setDismissedFailureId] = useState<string | null>(null);
-  const failureExplanation = failedCommand ? commandFailureExplanation(failedCommand.errorMsg) : null;
+  const failureExplanation = failedCommand ? commandFailureExplanation(failedCommand.errorMsg, locale) : null;
 
   const editStartDraft = useCommandDefaults();
   const panel = useControllerPanel(
@@ -375,17 +378,17 @@ export function BarnListAccordionPanel({
   const canSaveChanges = (canSaveControl || canSaveAlarm) && (!alarmChanged || canSaveAlarm) && !invalidVent && !(alarmChanged && canSaveControl && !hasChannels);
   const saveDisabled = isSaving || !canSaveChanges;
   const saveDisabledReason = (() => {
-    if (panel.pending || applyBusy) return "적용 중…";
-    if (thresholdHeader?.pending) return "저장 중…";
-    if (!canCommand) return "조회 전용 계정입니다. 설정 변경 권한이 없습니다.";
-    if (!online) return "오프라인이라 적용할 수 없습니다.";
-    if (invalidVent) return "최저 환기는 최고 환기 이하여야 합니다.";
+    if (panel.pending || applyBusy) return t("bulk.applying");
+    if (thresholdHeader?.pending) return t("settings.saving");
+    if (!canCommand) return t("settings.viewOnlyAccount");
+    if (!online) return t("settings.offlineBlock");
+    if (invalidVent) return t("settings.ventOrder");
     if (alarmChanged && thresholdHeader?.validationError) return thresholdHeader.validationError;
     if (!alarmChanged && !panel.settingsKnown && !panel.hasEdited) {
-      return "설정값을 불러오는 중…";
+      return t("settings.loadingValues");
     }
-    if (alarmChanged && canSaveControl && !hasChannels) return "채널 정보를 수신한 뒤 함께 적용할 수 있습니다.";
-    if (!canSaveChanges) return "변경된 명령이 없습니다.";
+    if (alarmChanged && canSaveControl && !hasChannels) return t("settings.needChannels");
+    if (!canSaveChanges) return t("settings.noChanges");
     return null;
   })();
   const defaultsDisabled = !canCommand || isSaving;
@@ -401,8 +404,8 @@ export function BarnListAccordionPanel({
     window.setTimeout(() => {
       const dirty = panel.peekDirtySaves();
       const alarmLines = alarmChanged && thresholdHeader ? [
-        {label:"저온 경보",from:`${panelTarget.alarmLowTempC ?? "—"}℃`,fromWarn:false,to:`${thresholdHeader.values.lowTempC}℃`},
-        {label:"고온 경보",from:`${panelTarget.alarmHighTempC ?? "—"}℃`,fromWarn:false,to:`${thresholdHeader.values.highTempC}℃`},
+        {label:t("settings.lowAlarm"),from:`${panelTarget.alarmLowTempC ?? "—"}℃`,fromWarn:false,to:`${thresholdHeader.values.lowTempC}℃`},
+        {label:t("settings.highAlarm"),from:`${panelTarget.alarmHighTempC ?? "—"}℃`,fromWarn:false,to:`${thresholdHeader.values.highTempC}℃`},
       ] : [];
       if (dirty.length > 0) {
         const model = buildMultiChannelCommandConfirmModel({
@@ -412,12 +415,14 @@ export function BarnListAccordionPanel({
             eqpmnNo: reading.eqpmnNo,
             channels: dirty.map((row) => row.slot),
             onlineCount: 1,
+            locale,
           }),
           channels: dirty.map((row) => ({
             channel: row.slot,
             current: row.current,
             command: row.values,
           })),
+          locale,
         });
         confirmSentRef.current = false;
         confirmControlSavesRef.current = dirty;
@@ -426,7 +431,7 @@ export function BarnListAccordionPanel({
       }
       if (alarmLines.length && !canSaveControl) {
         confirmSentRef.current = false; confirmControlSavesRef.current = [];
-        setConfirmModel({title:"변경값 적용",target:formatCommandConfirmTarget({stallTyCode:reading.stallTyCode,stallNo:reading.stallNo,eqpmnNo:reading.eqpmnNo,onlineCount:1}),lines:alarmLines});
+        setConfirmModel({title:t("bulk.apply"),target:formatCommandConfirmTarget({stallTyCode:reading.stallTyCode,stallNo:reading.stallNo,eqpmnNo:reading.eqpmnNo,onlineCount:1,locale}),lines:alarmLines});
         return;
       }
       const current = panel.currentValues
@@ -446,9 +451,11 @@ export function BarnListAccordionPanel({
           eqpmnNo: reading.eqpmnNo,
           channel: hasChannels ? activeChannel : null,
           onlineCount: 1,
+          locale,
         }),
         current,
         command: sliderFieldsToThermo(panel.sliderValues),
+        locale,
       });
       confirmSentRef.current = false;
       confirmControlSavesRef.current = null;
@@ -539,7 +546,7 @@ export function BarnListAccordionPanel({
   };
 
   const alarmSummary =
-    thresholdHeader?.collapsedSummary ?? "장비 저온 · 고온 경보";
+    thresholdHeader?.collapsedSummary ?? `${t("settings.lowAlarm")} · ${t("settings.highAlarm")}`;
   const openFailureSettings = () => handleFocus(failedCommand?.channels?.[0]?.channel ?? failedCommand?.channel ?? (failedCommand?.alarmSettings ? "alarm" : hasChannels ? activeChannel : "ctrl"));
   const restorePreviousRequest = () => {
     if (!failedCommand || isSaving || !canCommand) return;
@@ -634,11 +641,11 @@ export function BarnListAccordionPanel({
         <div role="status" className="space-y-1.5 rounded-lg border border-border bg-background p-2 text-xs" data-command-failure-recovery>
           <p className="font-semibold text-destructive">{failureExplanation.title}</p>
           <p>{failureExplanation.detail}</p>
-          <p className="text-muted-foreground">마지막 수신값 기준 · 수신 {Number.isFinite(Date.parse(panelTarget.receivedAt)) ? new Date(panelTarget.receivedAt).toLocaleString("ko-KR", { timeZone: "Asia/Seoul", hour12: false }) : "시각 미확인"}</p>
-          {!online ? <p className="text-muted-foreground">통신이 지연되고 있습니다. 설정 확인·편집은 가능하며 전송은 연결 회복 후 가능합니다.</p> : null}
+          <p className="text-muted-foreground">{t("settings.lastReceivedLine", { time: Number.isFinite(Date.parse(panelTarget.receivedAt)) ? new Date(panelTarget.receivedAt).toLocaleString(locale === "en" ? "en-GB" : "ko-KR", { timeZone: "Asia/Seoul", hour12: false }) : t("settings.timeUnknown") })}</p>
+          {!online ? <p className="text-muted-foreground">{t("settings.commDelay")}</p> : null}
           <div className="flex gap-2">
-            <button type="button" className={cn("min-h-11 rounded-md px-3", dashboardAffordance.tool)} disabled={isSaving} onClick={openFailureSettings}>다시 설정</button>
-            <button type="button" className="min-h-11 rounded-md px-3 text-muted-foreground" onClick={() => setDismissedFailureId(failedCommand.id)}>안내 닫기</button>
+            <button type="button" className={cn("min-h-11 rounded-md px-3", dashboardAffordance.tool)} disabled={isSaving} onClick={openFailureSettings}>{t("settings.retry")}</button>
+            <button type="button" className="min-h-11 rounded-md px-3 text-muted-foreground" onClick={() => setDismissedFailureId(failedCommand.id)}>{t("settings.dismissNotice")}</button>
           </div>
         </div>
       ) : null}
@@ -655,11 +662,11 @@ export function BarnListAccordionPanel({
         alarm={{lowTempC:thresholdHeader?.values.lowTempC ?? "",highTempC:thresholdHeader?.values.highTempC ?? "",currentLow:panelTarget.alarmLowTempC,currentHigh:panelTarget.alarmHighTempC}} disabled={!canCommand || isSaving} />
       {alarmForm}
       {failedCommand && canCommand ? <div className="flex items-center justify-between gap-2 text-xs">
-        <span className="text-muted-foreground">이전 요청값을 불러와 확인 후 다시 적용할 수 있습니다.</span>
-        <button type="button" disabled={isSaving} className={cn("min-h-11 shrink-0 rounded-md px-3", dashboardAffordance.tool)} onClick={restorePreviousRequest}>이전 요청값 불러오기</button>
+        <span className="text-muted-foreground">{t("settings.restoreHint")}</span>
+        <button type="button" disabled={isSaving} className={cn("min-h-11 shrink-0 rounded-md px-3", dashboardAffordance.tool)} onClick={restorePreviousRequest}>{t("settings.restore")}</button>
       </div> : null}
       {alarmChanged && thresholdHeader?.validationError ? <p role="alert" className="text-xs text-destructive">{thresholdHeader.validationError}</p> : null}
-      <p className="text-xs text-muted-foreground">채널 {panel.dirtyChannelSlots.length}개 변경 · 알람 {alarmChanged ? "변경됨" : "변경 없음"}</p>
+      <p className="text-xs text-muted-foreground">{t("bulk.changedCount", { channels: panel.dirtyChannelSlots.length, alarm: alarmChanged ? t("bulk.changed") : t("bulk.unchanged") })}</p>
     </div>
   );
 
@@ -670,10 +677,9 @@ export function BarnListAccordionPanel({
     >
       <Eye className="mt-0.5 size-3.5 shrink-0 opacity-80" aria-hidden />
       <div className="min-w-0 space-y-0.5">
-        <p className="font-semibold leading-snug">조회 전용</p>
+        <p className="font-semibold leading-snug">{t("settings.readOnly")}</p>
         <p className="leading-snug text-amber-800/90 dark:text-amber-100/80">
-          설정값·알람 임계값은 확인할 수 있지만 변경·적용할 수 없습니다.
-          조정이 필요하면 운영자 권한이 있는 계정으로 요청하세요.
+          {t("settings.readOnlyBody")}
         </p>
       </div>
     </div>
@@ -693,7 +699,7 @@ export function BarnListAccordionPanel({
                 dashboardAffordance.tool,
               )}
             >
-              기본값
+              {t("settings.defaults")}
             </button>
             <button
               type="button"
@@ -708,8 +714,8 @@ export function BarnListAccordionPanel({
             >
               <BusyButtonLabel
                 busy={panel.pending || applyBusy}
-                idleLabel="변경값 적용"
-                busyLabel="적용 중…"
+                idleLabel={t("bulk.apply")}
+                busyLabel={t("bulk.applying")}
               />
             </button>
           </div>
@@ -719,7 +725,7 @@ export function BarnListAccordionPanel({
             </p>
           ) : (
             <p className="text-right text-xs text-muted-foreground">
-              바뀐 채널과 알람만 현장으로 전송합니다.
+              {t("settings.sendChanged")}
             </p>
           )}
         </>
@@ -733,11 +739,11 @@ export function BarnListAccordionPanel({
         open={editorOpen}
         spacious
         footerContent={sharedStepper}
-        title="채널 · 알람 설정"
-        primaryLabel={canCommand ? "변경값 적용" : null}
+        title={t("settings.editorTitle")}
+        primaryLabel={canCommand ? t("bulk.apply") : null}
         primaryDisabled={saveDisabled}
         onPrimary={handleSaveControl}
-        hint={saveDisabledReason ?? "변경된 채널과 알람을 컨트롤러별 한 건으로 전송합니다."}
+        hint={saveDisabledReason ?? t("settings.applyHint")}
         onClose={closeEditor}
       >
         {editorBody}
@@ -772,7 +778,7 @@ export function BarnListAccordionPanel({
             )}
           >
             <Loader2 className="size-3.5 animate-spin" />
-            상세 데이터 불러오는 중…
+            {t("settings.loadingDetail")}
           </p>
         ) : null}
         <div
@@ -805,7 +811,7 @@ export function BarnListAccordionPanel({
       {showLoading ? (
         <p className={cn("mb-2 flex items-center gap-1.5", LIST_PANEL_META)}>
           <Loader2 className="size-3.5 animate-spin" />
-          상세 데이터 불러오는 중…
+          {t("settings.loadingDetail")}
         </p>
       ) : null}
       {readOnlyBanner ? <div className="mb-3">{readOnlyBanner}</div> : null}

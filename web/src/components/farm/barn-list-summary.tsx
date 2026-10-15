@@ -19,7 +19,8 @@ import {
 import { BarnListToolbarMobileSheet } from "@/components/farm/barn-list-toolbar-mobile-sheet";
 import type { BarnListViewMode, ListLayout } from "@/lib/farm/farm-view-url";
 import { useHydrationSafeDashboardCompact } from "@/components/layout/dashboard-viewport-context";
-import { normalizeStallTyCode } from "@/lib/domain/stall-type";
+import { formatStallTypeLabelLocalized, normalizeStallTyCode } from "@/lib/domain/stall-type";
+import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { StatusBadge } from "@/components/common/status-badge";
 import { EnvChip } from "@/components/common/env-chip";
 import { formatSensorNumberForDisplay } from "@/lib/domain/reading-display";
@@ -300,6 +301,7 @@ function SpBulkChipRow({
   selectedSps: ReadonlySet<string>;
   onToggleSp: (stallTyCode: string) => void;
 }) {
+  const locale = useProfileSheetPrefs().locale;
   return (
     <div className="mb-3 flex flex-wrap gap-2" data-audit-region="barn-list-bulk-sp-chips">
       {groups.map((sp) => {
@@ -329,7 +331,7 @@ function SpBulkChipRow({
             >
               {selected ? <Check className="size-2.5" /> : null}
             </span>
-            {sp.label}
+            {formatStallTypeLabelLocalized(sp.stallTyCode, locale)}
           </button>
         );
       })}
@@ -367,6 +369,8 @@ export function BarnListSummary({
   onToolbarSheetKeyChange,
   onToolbarSheetClose,
 }: Props) {
+  const t = useSheetCopy();
+  const locale = useProfileSheetPrefs().locale;
   const tourActiveState = useFarmTourActive();
   const tourActive = tourActiveState || getFarmTourActiveSync();
   const groups = useMemo(() => groupReadingsByHierarchy(readings), [readings]);
@@ -439,7 +443,7 @@ export function BarnListSummary({
   if (readings.length === 0) {
     return (
       <p className={cn("py-10 text-center text-muted-foreground", dashboardUi.body)}>
-        표시할 데이터가 없습니다.
+        {t("list.empty")}
       </p>
     );
   }
@@ -531,9 +535,9 @@ export function BarnListSummary({
                   {spSelected ? <Check className="size-3.5" /> : null}
                 </span>
               ) : null}
-              <h3 className={cn("min-w-0 truncate font-semibold", dashboardUi.cardTitle)}>{sp.label}</h3>
+              <h3 className={cn("min-w-0 truncate font-semibold", dashboardUi.cardTitle)}>{formatStallTypeLabelLocalized(sp.stallTyCode, locale)}</h3>
               <span className={cn("shrink-0 text-muted-foreground", dashboardTypography.meta)}>
-                {ctrlCount}대
+                {t("list.unitCount", { count: ctrlCount })}
               </span>
               <div className="ml-auto flex shrink-0 flex-nowrap items-center gap-2">
                 <StatusBadge tone={summary.status} compact />
@@ -580,10 +584,10 @@ export function BarnListSummary({
                         stallNo: stall.stallKey.startsWith("__")
                           ? null
                           : stall.stallKey,
-                      })}
+                      }, locale)}
                     </h4>
                     <span className={cn("text-muted-foreground", dashboardTypography.meta)}>
-                      {stall.readings.length}대
+                      {t("list.unitCount", { count: stall.readings.length })}
                     </span>
                   </div>
                   <ControllerCardGrid

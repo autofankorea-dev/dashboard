@@ -301,6 +301,62 @@ test("sheet copy keeps the remaining dashboard keys in both languages", () => {
   assert.equal(pdf.includes("sheetCopy"), false);
 });
 
+const SETTINGS_REQUIRED = [
+  "bulk.clear",
+  "bulk.enterSettings",
+  "bulk.fieldCommand",
+  "bulk.apply",
+  "bulk.nothingChanged",
+  "settings.editorTitle",
+  "settings.setpoint",
+  "settings.deviation",
+  "settings.minVent",
+  "settings.maxVent",
+  "settings.lowAlarm",
+  "settings.highAlarm",
+  "settings.defaults",
+  "settings.noChanges",
+  "settings.close",
+  "settings.glanceSet",
+  "settings.vent",
+  "confirm.title",
+  "confirm.cancel",
+  "confirm.send",
+  "list.unitCount",
+  "list.empty",
+] as const satisfies readonly SheetCopyKey[];
+
+test("english settings and bulk apply copy stays paired", () => {
+  for (const key of SETTINGS_REQUIRED) {
+    assert.ok(SHEET_COPY[key].ko.length > 0, key);
+    assert.ok(SHEET_COPY[key].en.length > 0, key);
+  }
+  assert.equal(sheetCopy("ko", "bulk.clear"), "선택해제");
+  assert.equal(sheetCopy("en", "bulk.clear"), "Clear");
+  assert.equal(sheetCopy("ko", "bulk.enterSettings"), "설정입력");
+  assert.equal(sheetCopy("en", "bulk.enterSettings"), "Enter settings");
+  assert.equal(sheetCopy("en", "settings.editorTitle"), "Channel and alarm settings");
+  assert.equal(sheetCopy("en", "settings.noChanges"), "No command changes.");
+  assert.equal(sheetCopy("en", "bulk.fieldCommand"), "Field commands");
+  assert.equal(sheetCopy("ko", "settings.defaults"), "기본값");
+
+  const bulk = readSrc("../../components/farm/farm-map-bulk-apply.tsx");
+  for (const key of ["bulk.clear", "bulk.enterSettings", "bulk.title", "bulk.fieldCommand"] as const) {
+    assert.ok(bulk.includes(`"${key}"`), key);
+  }
+  const table = readSrc("../../components/farm/unified-settings-table.tsx");
+  assert.ok(table.includes('"settings.setpoint"'));
+  assert.ok(table.includes('"settings.lowAlarm"'));
+  const glance = readSrc("../../components/farm/settings-glance-strip.tsx");
+  assert.ok(glance.includes('"bulk.fieldCommand"'));
+  assert.ok(glance.includes('"settings.glanceSet"'));
+  const summary = readSrc("../../components/farm/barn-list-summary.tsx");
+  assert.ok(summary.includes("formatStallTypeLabelLocalized"));
+  const panel = readSrc("../../components/farm/barn-list-accordion-panel.tsx");
+  assert.ok(panel.includes('"settings.editorTitle"'));
+  assert.ok(panel.includes('"settings.defaults"'));
+});
+
 test("missing profile prefs stay on number, cover on, and Korean", () => {
   assert.deepEqual(parseProfileSheetPrefs(undefined), {
     motorDisplay: "number",

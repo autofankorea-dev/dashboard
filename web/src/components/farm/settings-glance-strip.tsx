@@ -14,9 +14,10 @@ import {
 } from "@/lib/farm/apply-queue";
 import { useApplyQueueStripPresence } from "@/components/farm/use-apply-queue-strip-presence";
 import {
-  CHANNEL_SLOT_LABELS,
   type ChannelSlot,
 } from "@/lib/domain/iot-channel";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
+import { channelSlotCopyKey } from "@/lib/ui/sheet-copy";
 import { dashboardReadout } from "@/lib/ui/dashboard-page-ui";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { cn } from "@/lib/utils";
@@ -53,10 +54,15 @@ type GlanceApply = {
   leaving: boolean;
 };
 
-function applyStageLabel(apply: GlanceApply | null): string {
+function applyStageLabel(
+  apply: GlanceApply | null,
+  t: ReturnType<typeof useSheetCopy>,
+): string {
   if (!apply) return "";
-  if (apply.stage === "확인") return "확인됨";
-  if (apply.stage === "실패") return "실패";
+  if (apply.stage === "확인") return t("settings.confirmed");
+  if (apply.stage === "실패") return t("settings.failedWord");
+  if (apply.stage === "접수") return t("settings.stageReceived");
+  if (apply.stage === "전송") return t("settings.stageSent");
   return apply.stage;
 }
 
@@ -74,6 +80,7 @@ export function SettingsGlanceStrip({
   onFocus,
   presetStrip,
 }: Props) {
+  const t = useSheetCopy();
   const { visible, leaving } = useApplyQueueStripPresence(applyItems);
   const applyBySlot = new Map<ChannelSlot, GlanceApply>();
   let ctrlApply: GlanceApply | null = null;
@@ -88,15 +95,15 @@ export function SettingsGlanceStrip({
   }
   return (
     <div className="flex flex-col gap-1.5">
-      <p className="px-0.5 text-xs font-semibold">현장 명령</p>
+      <p className="px-0.5 text-xs font-semibold">{t("bulk.fieldCommand")}</p>
       {presetStrip}
       {hasChannels ? (
         <>
           <div className={cn(GRID, "px-1")}>
             <span />
-            <ColHead>설정</ColHead>
-            <ColHead>편차</ColHead>
-            <ColHead>환기</ColHead>
+            <ColHead>{t("settings.glanceSet")}</ColHead>
+            <ColHead>{t("settings.deviation")}</ColHead>
+            <ColHead>{t("settings.vent")}</ColHead>
           </div>
           {rows.map((row) => (
             <ChannelRow
@@ -121,15 +128,15 @@ export function SettingsGlanceStrip({
       )}
       <div className={cn(GRID, "px-1")}>
         <span />
-        <ColHead>저온 ℃</ColHead>
-        <ColHead>고온 ℃</ColHead>
-        <ColHead>상태</ColHead>
+        <ColHead>{t("settings.lowC")}</ColHead>
+        <ColHead>{t("settings.highC")}</ColHead>
+        <ColHead>{t("settings.statusCol")}</ColHead>
       </div>
       <button
         type="button"
         disabled={disabled}
         aria-pressed={focus === "alarm"}
-        aria-label={`장비 경보 ${alarmSummary}`}
+        aria-label={t("settings.deviceAlarm", { summary: alarmSummary })}
         onClick={() => onFocus("alarm")}
         className={cn(
           GRID,
@@ -148,13 +155,13 @@ export function SettingsGlanceStrip({
               focus === "alarm" ? "text-primary" : "text-muted-foreground",
             )}
           >
-            경보
+            {t("settings.alarmWord")}
           </span>
-          {alarmDirty ? <DirtyDot label="경보 변경됨" /> : null}
+          {alarmDirty ? <DirtyDot label={t("settings.alarmDirty")} /> : null}
         </span>
         <NumCell>{alarmCells.temp}</NumCell>
         <NumCell>{alarmCells.tempDev}</NumCell>
-        <NumCell>{ctrlApply ? `${applyStageLabel(ctrlApply)} ${ctrlApply.filled}/3` : "장비"}</NumCell>
+        <NumCell>{ctrlApply ? `${applyStageLabel(ctrlApply, t)} ${ctrlApply.filled}/3` : t("settings.device")}</NumCell>
       </button>
     </div>
   );
@@ -179,13 +186,15 @@ function ChannelRow({
   apply: GlanceApply | null;
   onSelect: () => void;
 }) {
+  const t = useSheetCopy();
+  const slotLabel = t(channelSlotCopyKey(row.slot));
   const cells = row.values ? formatChannelGlanceCells(row.values) : null;
   const busy = apply != null && apply.stage !== "실패";
   const locked = disabled || busy;
-  const stageText = applyStageLabel(apply);
+  const stageText = applyStageLabel(apply, t);
   const baseLabel = row.present
-    ? `${CHANNEL_SLOT_LABELS[row.slot]} ${cells ? `${cells.setpoint}℃ ${cells.deviation}℃ 환기 ${cells.vent}` : ""}`
-    : `${CHANNEL_SLOT_LABELS[row.slot]} 없음`;
+    ? `${slotLabel} ${cells ? `${cells.setpoint}℃ ${cells.deviation}℃ ${t("settings.ventValue", { vent: cells.vent })}` : ""}`
+    : t("settings.slotMissing", { slot: slotLabel });
   return (
     <button
       type="button"
@@ -212,10 +221,10 @@ function ChannelRow({
             selected || apply ? "text-primary" : "text-muted-foreground",
           )}
         >
-          {CHANNEL_SLOT_LABELS[row.slot]}
+          {slotLabel}
         </span>
         {row.dirty && !busy ? (
-          <DirtyDot label={`${CHANNEL_SLOT_LABELS[row.slot]} 변경됨`} />
+          <DirtyDot label={t("settings.slotDirty", { slot: slotLabel })} />
         ) : null}
       </span>
       {row.present && cells ? (
@@ -228,7 +237,7 @@ function ChannelRow({
         <>
           <NumCell muted>—</NumCell>
           <NumCell muted>—</NumCell>
-          <NumCell muted>없음</NumCell>
+          <NumCell muted>{t("settings.none")}</NumCell>
         </>
       )}
       <GlanceApplyCheck apply={apply} />
@@ -251,17 +260,18 @@ function CtrlRow({
   apply: GlanceApply | null;
   onSelect: () => void;
 }) {
+  const t = useSheetCopy();
   const cells = values ? formatChannelGlanceCells(values) : null;
   const busy = apply != null && apply.stage !== "실패";
   const locked = disabled || busy;
-  const stageText = applyStageLabel(apply);
+  const stageText = applyStageLabel(apply, t);
   return (
     <button
       type="button"
       disabled={locked}
       aria-pressed={selected}
       aria-busy={busy || undefined}
-      aria-label={stageText ? `설정, ${stageText}` : undefined}
+      aria-label={stageText ? `${t("settings.glanceSet")}, ${stageText}` : undefined}
       onClick={onSelect}
       className={cn(
         "relative overflow-hidden flex w-full items-center justify-between gap-2 rounded-lg border px-2.5 py-2 text-left",
@@ -275,9 +285,9 @@ function CtrlRow({
       <GlanceApplyFill apply={apply} />
       <span className="relative z-[1] flex min-w-0 items-center gap-1.5">
         <span className="text-[0.65rem] font-semibold text-muted-foreground">
-          설정
+          {t("settings.glanceSet")}
         </span>
-        {dirty && !busy ? <DirtyDot label="명령 변경됨" /> : null}
+        {dirty && !busy ? <DirtyDot label={t("settings.commandDirty")} /> : null}
       </span>
       <span
         className={cn(

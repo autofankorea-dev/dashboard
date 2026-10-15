@@ -9,6 +9,7 @@ import { motionDuration } from "@/lib/ui/motion-tokens";
 import { FEEDBACK_Z } from "@/lib/ui/feedback-layers";
 import { opsFeedbackIcon, opsFeedbackTone } from "@/lib/ui/ops-feedback";
 import type { CommandConfirmModel } from "@/lib/farm/command-confirm";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
 
 type Props = {
   model: CommandConfirmModel | null;
@@ -27,6 +28,7 @@ export function CommandConfirmOverlay({
   onCancel,
   onConfirm,
 }: Props) {
+  const t = useSheetCopy();
   const [mounted, setMounted] = useState(false);
   const [show, setShow] = useState(false);
   const visible = model != null;
@@ -129,7 +131,7 @@ export function CommandConfirmOverlay({
         </p>
         <div id={descId} className="mt-2.5 space-y-2">
           <p className="text-xs leading-snug text-muted-foreground">
-            <span className="font-semibold text-foreground">대상: </span>
+            <span className="font-semibold text-foreground">{t("confirm.target")} </span>
             {model.target}
           </p>
           <div className="flex flex-col items-center gap-1">
@@ -177,7 +179,7 @@ export function CommandConfirmOverlay({
             disabled={busy}
             onClick={onCancel}
           >
-            취소
+            {t("confirm.cancel")}
           </button>
           <button
             type="button"
@@ -186,7 +188,7 @@ export function CommandConfirmOverlay({
             aria-busy={busy || undefined}
             onClick={handleConfirm}
           >
-            보내기
+            {t("confirm.send")}
           </button>
         </div>
       </div>

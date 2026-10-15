@@ -47,10 +47,11 @@ export function formatControllerHeaderStallType(
 export function formatControllerHeaderStallUnit(
   reading: Pick<BarnReading, "stallNo"> &
     Partial<Pick<BarnReading, "controllerKey" | "idx">>,
+  locale: "ko" | "en" = "ko",
 ): string {
   const stallKey = stallKeyFromReading(reading);
   const stallNo = stallKey.startsWith("__") ? "—" : stallKey;
-  return `${stallNo}번 축사`;
+  return locale === "en" ? `Stall ${stallNo}` : `${stallNo}번 축사`;
 }
 
 /** 카드 헤더 상위 — 축사유형 + N번 축사 (한 줄 표기·요약용) */

@@ -1,4 +1,8 @@
+"use client";
+
 import { Badge } from "@/components/ui/badge";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
+import type { SheetCopyKey } from "@/lib/ui/sheet-copy";
 import {
   statusFillDanger,
   statusFillOk,
@@ -8,11 +12,11 @@ import { cn } from "@/lib/utils";
 
 export type StatusTone = "normal" | "caution" | "warning" | "offline";
 
-const toneMap: Record<StatusTone, { label: string; className: string }> = {
-  normal: { label: "정상", className: statusFillOk },
-  caution: { label: "주의", className: statusFillWarn },
-  warning: { label: "경고", className: statusFillDanger },
-  offline: { label: "오프라인", className: "bg-muted text-muted-foreground" },
+const toneMap: Record<StatusTone, { labelKey: SheetCopyKey; className: string }> = {
+  normal: { labelKey: "cover.ok", className: statusFillOk },
+  caution: { labelKey: "cover.caution", className: statusFillWarn },
+  warning: { labelKey: "cover.warning", className: statusFillDanger },
+  offline: { labelKey: "account.offline", className: "bg-muted text-muted-foreground" },
 };
 
 type StatusBadgeProps = {
@@ -25,8 +29,9 @@ type StatusBadgeProps = {
 };
 
 export function StatusBadge({ tone, label, compact, large }: StatusBadgeProps) {
+  const t = useSheetCopy();
   const conf = toneMap[tone];
-  const text = label ?? conf.label;
+  const text = label ?? t(conf.labelKey);
   return (
     <Badge
       variant="secondary"

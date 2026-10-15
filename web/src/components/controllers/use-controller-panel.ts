@@ -35,9 +35,10 @@ import {
   type ControllerThermoSettings,
 } from "@/lib/controllers/controller-settings";
 import {
-  CHANNEL_SLOT_LABELS,
   type ChannelSlot,
 } from "@/lib/domain/iot-channel";
+import { useProfileSheetPrefs } from "@/components/account/profile-sheet-prefs";
+import { channelSlotCopyKey, sheetCopy } from "@/lib/ui/sheet-copy";
 import { formatUserError } from "@/lib/ui/controller-labels";
 import {
   clampCommandPresetDraft,
@@ -178,6 +179,7 @@ export function useControllerPanel(
   /** 운영 공용 기본값 — 없으면 EDIT_START_DRAFT */
   editStartDraft?: PanelDraft | null,
 ) {
+  const locale = useProfileSheetPrefs().locale;
   const editStart = editStartDraft ?? EDIT_START_DRAFT;
   const editStartRef = useRef(editStart);
   useEffect(() => {
@@ -445,8 +447,7 @@ export function useControllerPanel(
     setMessage(null);
   }, []);
 
-  const NETWORK_ERROR_TEXT =
-    "네트워크 오류입니다. 연결을 확인한 뒤 다시 시도하세요.";
+  const NETWORK_ERROR_TEXT = sheetCopy(locale, "cmd.network");
   const SAVE_TIMEOUT_MS = 20_000;
 
   const runSaveRequest = useCallback(
@@ -476,14 +477,14 @@ export function useControllerPanel(
           (typeof navigator !== "undefined" && navigator.onLine === false);
         setMessage({
           tone: "error",
-          text: networkLike ? NETWORK_ERROR_TEXT : formatUserError(raw || "unknown"),
+          text: networkLike ? NETWORK_ERROR_TEXT : formatUserError(raw || "unknown", locale),
         });
       } finally {
         if (timer != null) window.clearTimeout(timer);
         setPending(false);
       }
     },
-    [],
+    [NETWORK_ERROR_TEXT, locale],
   );
 
   const markSavesCommitted = useCallback(
@@ -508,11 +509,11 @@ export function useControllerPanel(
   const save = useCallback((queued?: DirtyChannelSave[]) => {
     if (pending) return;
     if (!target) {
-      setMessage({ tone: "error", text: "대상 컨트롤러를 선택하세요." });
+      setMessage({ tone: "error", text: sheetCopy(locale, "settings.pickController") });
       return;
     }
     if (!canCommand) {
-      setMessage({ tone: "error", text: "명령 권한이 없습니다." });
+      setMessage({ tone: "error", text: sheetCopy(locale, "settings.noCommandRight") });
       return;
     }
 
@@ -536,14 +537,14 @@ export function useControllerPanel(
       if (dirtySaves.length === 0) {
         setMessage({
           tone: "error",
-          text: "설정값을 올림·내림으로 입력한 뒤 저장하세요.",
+          text: sheetCopy(locale, "settings.enterStepped"),
         });
         return;
       }
       if (dirtySaves.some((row) => row.values.minVentPct > row.values.maxVentPct)) {
         setMessage({
           tone: "error",
-          text: "최저 환기는 최고 환기 이하여야 합니다.",
+          text: sheetCopy(locale, "settings.ventOrder"),
         });
         return;
       }
@@ -589,13 +590,13 @@ export function useControllerPanel(
         if (!result.ok && result.sentItems.length === 0) {
           setMessage({
             tone: "error",
-            text: formatUserError(result.error ?? result.failed[0]?.error ?? "unknown"),
+            text: formatUserError(result.error ?? result.failed[0]?.error ?? "unknown", locale),
           });
         } else if (!result.ok) {
           const failedSlots = dirtySaves.filter((row) =>
             !result.sentItems.some((item) => commandChannelViews(item.command).some((c) => c.channel === row.slot)))
-            .map((row) => CHANNEL_SLOT_LABELS[row.slot]).join("·");
-          setMessage({ tone: "error", text: `${failedSlots} 전송 실패. 입력값을 유지했습니다. 다시 적용하세요.` });
+            .map((row) => sheetCopy(locale, channelSlotCopyKey(row.slot))).join("·");
+          setMessage({ tone: "error", text: sheetCopy(locale, "settings.partialSendFailed", { slots: failedSlots }) });
         }
       });
       return;
@@ -605,12 +606,12 @@ export function useControllerPanel(
     if (!values) {
       setMessage({
         tone: "error",
-        text: "설정값을 올림·내림으로 입력한 뒤 저장하세요.",
+        text: sheetCopy(locale, "settings.enterStepped"),
       });
       return;
     }
     if (values.minVentPct > values.maxVentPct) {
-      setMessage({ tone: "error", text: "최저 환기는 최고 환기 이하여야 합니다." });
+      setMessage({ tone: "error", text: sheetCopy(locale, "settings.ventOrder") });
       return;
     }
 
@@ -639,7 +640,7 @@ export function useControllerPanel(
         onCommandRegistered?.(result.command);
         markSavesCommitted([channelKey], { [channelKey]: values });
       } else {
-        setMessage({ tone: "error", text: formatUserError(result.error) });
+        setMessage({ tone: "error", text: formatUserError(result.error, locale) });
       }
     });
   }, [
@@ -649,6 +650,7 @@ export function useControllerPanel(
     channelKey,
     draft,
     knownSettings,
+    locale,
     markSavesCommitted,
     onBulkCommandsRegistered,
     onCommandRegistered,

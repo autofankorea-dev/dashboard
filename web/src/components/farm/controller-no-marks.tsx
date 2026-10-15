@@ -6,7 +6,7 @@ import {
 } from "@/lib/farm/controller-summary-display";
 import { normalizeEqpmnNo } from "@/lib/domain/controller-key";
 import { formatStallTypeLabelCompactLocalized, formatStallTypeLabelLocalized } from "@/lib/domain/stall-type";
-import { useProfileSheetPrefs } from "@/components/account/profile-sheet-prefs";
+import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { stallKeyFromReading } from "@/lib/domain/reading-hierarchy";
 import { useHydrationSafeDashboardCompact } from "@/components/layout/dashboard-viewport-context";
 import { cn } from "@/lib/utils";
@@ -96,11 +96,13 @@ export function ControllerNoMark({
   onFill?: boolean;
   fitText?: boolean;
 }) {
+  const t = useSheetCopy();
+  const locale = useProfileSheetPrefs().locale;
   const eq = normalizeEqpmnNo(eqpmnNo ?? "01");
   const noLabel = formatControllerNoLabel(eqpmnNo);
   return (
     <NoMarkFrame
-      label={`컨트롤러 ${noLabel}`}
+      label={locale === "en" ? t("slot.controllerNo", { eq }) : `컨트롤러 ${noLabel}`}
       className={className}
       iconClassName={iconClassName}
       digit={eq}
@@ -128,13 +130,14 @@ export function StallUnitNoMark({
   onFill?: boolean;
   fitText?: boolean;
 }) {
+  const locale = useProfileSheetPrefs().locale;
   const key = stallKeyFromReading({ stallNo: stallNo ?? null });
   const display = key.startsWith("__") ? "—" : key;
   const unitLabel = formatControllerHeaderStallUnit({
     stallNo: stallNo ?? null,
     controllerKey: undefined,
     idx: undefined,
-  });
+  }, locale);
   return (
     <NoMarkFrame
       label={unitLabel}

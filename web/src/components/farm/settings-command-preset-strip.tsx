@@ -14,6 +14,7 @@ import { SettingsPresetCreateForm } from "@/components/farm/settings-preset-crea
 import { dashboardAffordance } from "@/lib/ui/dashboard-page-ui";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { cn } from "@/lib/utils";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
 
 type StripItem = CommandPreset & {
   source?: "shared" | "personal";
@@ -51,6 +52,7 @@ export function SettingsCommandPresetStrip({
   onCreate,
   showCreate = true,
 }: Props) {
+  const t = useSheetCopy();
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
   const [drafts, setDrafts] = useState<CommandPresetChannels>({});
@@ -77,9 +79,9 @@ export function SettingsCommandPresetStrip({
       setDrafts({});
       return;
     }
-    if (result === "empty-name") setError("이름을 입력하세요");
-    else if (result === "empty-channels") setError("저장할 채널 값이 없습니다");
-    else setError("카드당 8개까지입니다");
+    if (result === "empty-name") setError(t("preset.needName"));
+    else if (result === "empty-channels") setError(t("preset.needChannels"));
+    else setError(t("preset.capFull"));
   };
 
   return (
@@ -88,11 +90,11 @@ export function SettingsCommandPresetStrip({
         <button
           type="button"
           disabled={!canOpenCreate}
-          aria-label="프리셋 생성"
-          title={atCap ? "카드당 8개까지" : "이름과 채널 값으로 칩 만들기"}
+          aria-label={t("preset.createAria")}
+          title={atCap ? t("preset.cap") : t("preset.makeChip")}
           onClick={() => {
             setDrafts(seedPresetCreateChannels(seedChannels));
-            setName(`${personalCount + 1}번`);
+            setName(t("preset.numbered", { n: personalCount + 1 }));
             setError(null);
             setCreating(true);
           }}
@@ -105,14 +107,14 @@ export function SettingsCommandPresetStrip({
           )}
         >
           <Plus className="size-3" strokeWidth={2.25} aria-hidden />
-          생성
+          {t("preset.create")}
         </button>
       ) : null}
       {items.length > 0 ? (
         <div
           className="flex flex-wrap items-center gap-1"
           role="group"
-          aria-label="명령 프리셋"
+          aria-label={t("preset.group")}
         >
           {items.map((item) => {
             const on = activeId === item.id;
@@ -135,7 +137,7 @@ export function SettingsCommandPresetStrip({
                   aria-pressed={on}
                   title={
                     item.title ??
-                    (shared ? "축사유형 공용 프리셋" : "이 기기 프리셋")
+                    (shared ? t("preset.sharedTitle") : t("preset.deviceTitle"))
                   }
                   onClick={() => onPick(item.id)}
                   className={cn(
@@ -145,7 +147,7 @@ export function SettingsCommandPresetStrip({
                 >
                   {shared ? (
                     <span className="mr-1 opacity-70" aria-hidden>
-                      공용
+                      {t("preset.shared")}
                     </span>
                   ) : null}
                   {item.name}
@@ -154,7 +156,7 @@ export function SettingsCommandPresetStrip({
                   <button
                     type="button"
                     disabled={locked}
-                    aria-label={`${item.name} 삭제`}
+                    aria-label={t("preset.delete", { name: item.name })}
                     onClick={(e) => {
                       e.stopPropagation();
                       setPendingDelete(item);
@@ -182,10 +184,10 @@ export function SettingsCommandPresetStrip({
         open={creating}
         wide
         focusTarget="content"
-        title="생성"
-        closeLabel="취소"
-        primaryLabel="생성"
-        hint="칩만 만들고 표를 채웁니다. 현장으로는 나가지 않습니다."
+        title={t("preset.create")}
+        closeLabel={t("confirm.cancel")}
+        primaryLabel={t("preset.create")}
+        hint={t("preset.hint")}
         onClose={closeCreate}
         onPrimary={submitCreate}
       >
@@ -203,10 +205,10 @@ export function SettingsCommandPresetStrip({
       ) : null}
       <SettingsEditOverlay
         open={pendingDelete != null}
-        title="삭제하시겠습니까?"
-        closeLabel="취소"
-        primaryLabel="삭제"
-        hint="칩만 지웁니다. 현장 설정은 그대로입니다."
+        title={t("preset.deleteTitle")}
+        closeLabel={t("confirm.cancel")}
+        primaryLabel={t("preset.deleteAction")}
+        hint={t("preset.deleteHint")}
         onClose={() => setPendingDelete(null)}
         onPrimary={() => {
           if (pendingDelete) onDelete(pendingDelete.id);

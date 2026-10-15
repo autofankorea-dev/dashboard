@@ -1,4 +1,8 @@
+"use client";
+
 import { Thermometer, Droplets } from "lucide-react";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
+import type { SheetCopyKey } from "@/lib/ui/sheet-copy";
 import { dashboardAffordance, dashboardUi } from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";
 
@@ -6,16 +10,16 @@ type EnvKind = "temp" | "humidity";
 
 const kindMap: Record<
   EnvKind,
-  { label: string; unit: string; icon: typeof Thermometer; className: string }
+  { labelKey: SheetCopyKey; unit: string; icon: typeof Thermometer; className: string }
 > = {
   temp: {
-    label: "온도",
+    labelKey: "chart.temp",
     unit: "℃",
     icon: Thermometer,
     className: "text-channel-temp",
   },
   humidity: {
-    label: "습도",
+    labelKey: "chart.humidity",
     unit: "%",
     icon: Droplets,
     className: "text-channel-info",
@@ -41,7 +45,10 @@ export function EnvChip({
   compact = false,
   bare = false,
 }: EnvChipProps) {
+  const t = useSheetCopy();
   const conf = kindMap[kind];
+  const label = t(conf.labelKey);
+  const missing = t("panel.noReading", { label });
   const Icon = conf.icon;
   const hasValue = value != null && value.trim() !== "" && Number.isFinite(Number(value));
   const iconClass = compact
@@ -53,7 +60,7 @@ export function EnvChip({
   const unitClass = compact
     ? dashboardUi.gridCellMetaCompact
     : dashboardUi.tableMeta;
-  const aria = hasValue ? `${conf.label} ${value}${conf.unit}` : `${conf.label}값 미수신`;
+  const aria = hasValue ? `${label} ${value}${conf.unit}` : missing;
   const readout = (
     <>
       <Icon className={cn(iconClass, conf.className)} aria-hidden />
@@ -71,7 +78,7 @@ export function EnvChip({
             </span>
           </>
         ) : (
-        <span className="text-muted-foreground" title={`${conf.label}값 미수신`}>—</span>
+        <span className="text-muted-foreground" title={missing}>—</span>
         )}
       </span>
       {tone ? <span className="sr-only">{tone}</span> : null}
@@ -118,7 +125,7 @@ export function EnvChip({
           <span className={cn("ml-1", dashboardUi.tableMeta)}>{conf.unit}</span>
         </p>
       ) : (
-        <span title={`${conf.label}값 미수신`} className={cn(dashboardUi.value, "leading-none text-muted-foreground")}>
+        <span title={missing} className={cn(dashboardUi.value, "leading-none text-muted-foreground")}>
           —
         </span>
       )}

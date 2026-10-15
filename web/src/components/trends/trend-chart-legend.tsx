@@ -68,7 +68,7 @@ export function TrendChartLegend({
         label: string;
         node: ReactNode;
       };
-      const items: LegendItem[] = [];
+      const items: Array<LegendItem & { sourceLabel: string }> = [];
 
       for (const s of series) {
         if (
@@ -82,6 +82,7 @@ export function TrendChartLegend({
           key: `s-${s.name}`,
           group: inferHoverMetricGroup(s.name),
           label: translateFixedLabel(locale, s.name),
+          sourceLabel: s.name,
           node: (
             <span className="inline-flex items-center gap-1 farm-chart-fs-legend text-muted-foreground">
               <span
@@ -111,13 +112,15 @@ export function TrendChartLegend({
           const ch = hit.seg.mark.hold?.channel;
           if (!ch || seen.has(ch)) continue;
           seen.add(ch);
-          const label = CHANNEL_SLOT_LABELS[ch];
+          const sourceLabel = CHANNEL_SLOT_LABELS[ch];
+          const label = translateFixedLabel(locale, sourceLabel);
           const dash = COMMAND_SETTING_DASH[ch];
           const fillOp = COMMAND_SETTING_FILL_OPACITY[ch];
           items.push({
             key: `cmd-set-${ch}`,
             group: "temp",
             label,
+            sourceLabel,
             node: (
               <span className="inline-flex items-center gap-1 farm-chart-fs-legend text-muted-foreground">
                 <span
@@ -164,7 +167,8 @@ export function TrendChartLegend({
           items.push({
             key: `env-${idx}`,
             group: inferHoverMetricGroup(env.legendLabel),
-            label: env.legendLabel,
+            label: translateFixedLabel(locale, env.legendLabel),
+            sourceLabel: env.legendLabel,
             node: (
               <span className="inline-flex items-center gap-1 farm-chart-fs-legend text-muted-foreground">
                 <span
@@ -175,7 +179,7 @@ export function TrendChartLegend({
                   }}
                   aria-hidden
                 />
-                {env.legendLabel}
+                {translateFixedLabel(locale, env.legendLabel)}
               </span>
             ),
           });
@@ -193,7 +197,8 @@ export function TrendChartLegend({
         items.push({
           key: `hist-${idx}`,
           group: inferHoverMetricGroup(h.legendLabel),
-          label: h.legendLabel,
+          label: translateFixedLabel(locale, h.legendLabel),
+          sourceLabel: h.legendLabel,
           node: (
             <span className="inline-flex items-center gap-1 farm-chart-fs-legend text-muted-foreground">
               {h.style === "volume" ? (
@@ -217,7 +222,7 @@ export function TrendChartLegend({
                   />
                 </span>
               )}
-              {h.legendLabel}
+              {translateFixedLabel(locale, h.legendLabel)}
             </span>
           ),
         });
@@ -261,9 +266,9 @@ export function TrendChartLegend({
       };
 
       const coverageLegend = [
-        { kind: "sparse" as const, label: "희소", fill: "var(--status-warn)", opacity: 0.55 },
-        { kind: "offline" as const, label: "통신두절", fill: "var(--status-danger)", opacity: 0.55 },
-        { kind: "void" as const, label: "없음", fill: "currentColor", opacity: 0.35 },
+        { kind: "sparse" as const, label: sheetCopy(locale, "chart.sparse"), fill: "var(--status-warn)", opacity: 0.55 },
+        { kind: "offline" as const, label: sheetCopy(locale, "chart.commDown"), fill: "var(--status-danger)", opacity: 0.55 },
+        { kind: "void" as const, label: sheetCopy(locale, "chart.none"), fill: "currentColor", opacity: 0.35 },
       ].filter((item) => coverageBands.some((b) => b.kind === item.kind));
 
       return (
@@ -273,8 +278,8 @@ export function TrendChartLegend({
           .filter((it) => it.group === group)
           .sort(
             (a, b) =>
-              rank(group, a.label) - rank(group, b.label) ||
-              a.label.localeCompare(b.label, "ko"),
+              rank(group, a.sourceLabel) - rank(group, b.sourceLabel) ||
+              a.label.localeCompare(b.label, locale),
           );
         if (groupItems.length === 0) return null;
         return (
@@ -301,7 +306,7 @@ export function TrendChartLegend({
           {coverageLegend.length > 0 ? (
             <div
               role="group"
-              aria-label="수신 상태"
+              aria-label={sheetCopy(locale, "chart.coverage")}
               className="inline-flex flex-wrap items-center gap-x-2.5 gap-y-1"
             >
               {coverageLegend.map((item) => (
