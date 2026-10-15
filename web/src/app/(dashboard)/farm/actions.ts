@@ -13,7 +13,7 @@ import {
 } from "@/lib/data/farm-trend-history";
 import type { CompactControllerPeriod } from "@/lib/domain/farm-trend-compact";
 import {
-  TREND_PERIODS,
+  trendDayWindowError,
   type TrendControllerPeriodData,
   type TrendPeriodData,
   type TrendPeriodId,
@@ -152,19 +152,7 @@ export async function fetchFarmControllerTrend30dDayAction(
   scanFromMs: number,
   scanToMs: number,
 ): Promise<CompactControllerPeriod> {
-  const cfg = TREND_PERIODS["30d"];
-  const dayMs = TREND_PERIODS["24h"].durationMs;
-  if (
-    !Number.isFinite(axisToMs) ||
-    !Number.isFinite(scanFromMs) ||
-    !Number.isFinite(scanToMs) ||
-    scanToMs <= scanFromMs ||
-    scanToMs - scanFromMs > dayMs + 2000
-  ) {
-    throw new Error("Invalid trend day window");
-  }
-  const axisFromMs = axisToMs - cfg.durationMs;
-  if (scanFromMs < axisFromMs - 1000 || scanToMs > axisToMs + 1000) {
+  if (trendDayWindowError(axisToMs, scanFromMs, scanToMs)) {
     throw new Error("Invalid trend day window");
   }
   await assertFarmReadAccess(farmKey);

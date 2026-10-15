@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import {
-  fetchFarmControllerTrend30dDayAction,
   fetchFarmControllerTrendPeriodAction,
   fetchFarmControllerTrendWindowAction,
 } from "@/app/(dashboard)/farm/actions";
@@ -163,6 +162,30 @@ function snapshotFrom30d(
   };
 }
 
+/** 서버 액션이 아닌 route. Next 개발 모드 전환 대기열에 30개가 쌓이지 않는다. */
+async function fetchTrend30dDay(
+  farmKey: FarmKey,
+  axisToMs: number,
+  scanFromMs: number,
+  scanToMs: number,
+): Promise<CompactControllerPeriod> {
+  const res = await fetch("/api/farm/trend-30d-day", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      lsind: farmKey.lsindRegistNo,
+      item: farmKey.itemCode,
+      axisToMs,
+      scanFromMs,
+      scanToMs,
+    }),
+  });
+  if (!res.ok) {
+    throw new Error("trend day failed");
+  }
+  return (await res.json()) as CompactControllerPeriod;
+}
+
 async function loadProgressiveBundle(
   farmKey: FarmKey,
   refresh: boolean,
@@ -215,12 +238,7 @@ async function loadProgressiveBundle(
       fetchOne: (day) => {
         const scanToMs = axisToMs - day * dayMs;
         const scanFromMs = Math.max(axisFromMs, scanToMs - dayMs);
-        return fetchFarmControllerTrend30dDayAction(
-          farmKey,
-          axisToMs,
-          scanFromMs,
-          scanToMs,
-        );
+        return fetchTrend30dDay(farmKey, axisToMs, scanFromMs, scanToMs);
       },
       onApply: (day, part) => {
         if (part) {

@@ -63,6 +63,29 @@ export const TREND_30D_DAY_CHUNKS = 30;
 /** 허브 클라 하루 조각 동시 요청. 화면 반영은 최신→과거 순. */
 export const TREND_30D_DAY_CONCURRENCY = 3;
 
+/** 30일 하루 창이 24시간 축 안인지. 잘못이면 에러 문구. */
+export function trendDayWindowError(
+  axisToMs: number,
+  scanFromMs: number,
+  scanToMs: number,
+): string | null {
+  const dayMs = TREND_PERIODS["24h"].durationMs;
+  if (
+    !Number.isFinite(axisToMs) ||
+    !Number.isFinite(scanFromMs) ||
+    !Number.isFinite(scanToMs) ||
+    scanToMs <= scanFromMs ||
+    scanToMs - scanFromMs > dayMs + 2000
+  ) {
+    return "Invalid trend day window";
+  }
+  const axisFromMs = axisToMs - TREND_PERIODS["30d"].durationMs;
+  if (scanFromMs < axisFromMs - 1000 || scanToMs > axisToMs + 1000) {
+    return "Invalid trend day window";
+  }
+  return null;
+}
+
 /** 목록·현장 idle은 24시간만. 30일 하루 조각은 차트에서만 시작한다. */
 export function farmTrendIdleExtends30d(view: string): boolean {
   return view === "chart";

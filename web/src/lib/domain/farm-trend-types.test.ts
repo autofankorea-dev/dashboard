@@ -4,6 +4,7 @@ import {
   controllerTrendPeriodHasSeries,
   emptyTrendControllerPeriodData,
   farmTrendIdleExtends30d,
+  trendDayWindowError,
   isCompleteControllerTrendBundle,
   isFarmTrendLoadComplete,
   pickTrendCanvasPeriod,
@@ -160,6 +161,14 @@ describe("farm trend dev load", () => {
     assert.equal(farmTrendIdleExtends30d("chart"), true);
     assert.equal(farmTrendIdleExtends30d("list"), false);
     assert.equal(farmTrendIdleExtends30d("map"), false);
+  });
+
+  it("rejects a day window outside the 30 day axis", () => {
+    const axisTo = 1_700_000_000_000;
+    const day = 24 * 60 * 60 * 1000;
+    assert.equal(trendDayWindowError(axisTo, axisTo - day, axisTo), null);
+    assert.equal(trendDayWindowError(axisTo, axisTo - day * 40, axisTo - day * 39), "Invalid trend day window");
+    assert.equal(trendDayWindowError(axisTo, axisTo, axisTo), "Invalid trend day window");
   });
 
   it("publishes day progress every fifth day and at the end", () => {
