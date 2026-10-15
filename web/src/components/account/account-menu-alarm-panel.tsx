@@ -1,13 +1,13 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState, useTransition } from "react";
-import { Bell, ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import {
   ackModuleAlarmAction,
   ackModuleAlarmsBulkAction,
   fetchActiveModuleAlarmsAction,
 } from "@/app/(dashboard)/farm/actions";
-import { Badge } from "@/components/ui/badge";
+import { AlarmTemplateExample } from "@/components/account/tool-card-examples";
 import { useAppNavigate } from "@/components/layout/use-app-navigate";
 import type { AlarmRow } from "@/lib/domain/alarms";
 import { alarmChartHref, alarmControlHref, isModuleAlarmRow, isSituationLiveStateRow, situationAlarmMetaLine } from "@/lib/domain/alarms";
@@ -20,7 +20,7 @@ import {
   removeShellAlarms,
   useShellAlarms,
 } from "@/lib/navigation/shell-live-alarms-store";
-import { dashboardUi } from "@/lib/ui/dashboard-page-ui";
+import { accountMenuLayout } from "@/lib/ui/account-menu-layout";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import type { SheetCopyKey } from "@/lib/ui/sheet-copy";
@@ -70,7 +70,7 @@ function AlarmPanelListItem({
         onAckFinish(alarm);
       }}
     >
-      <div className="w-full rounded-xl border border-border/60 bg-muted/20 px-1.5 py-1.5">
+      <div className="w-full rounded-lg border border-border/60 bg-background px-2 py-1.5">
         <button
           type="button"
           className={cn(
@@ -104,10 +104,7 @@ function AlarmPanelListItem({
           <button
             type="button"
             disabled={exiting}
-            className={cn(
-              "shrink-0 rounded-md border border-border/70 bg-background px-2 py-0.5 text-[0.65rem] font-medium text-foreground hover:bg-muted/80 disabled:opacity-60",
-              motionClass.microInteractive,
-            )}
+            className={accountMenuLayout.compactBtn}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
@@ -129,10 +126,7 @@ function AlarmPanelListItem({
                 e.stopPropagation();
                 onAckStart(alarm);
               }}
-              className={cn(
-                "shrink-0 rounded-md border border-border/70 bg-background px-2 py-0.5 text-[0.65rem] font-medium text-foreground hover:bg-muted/80 disabled:opacity-60",
-                motionClass.microInteractive,
-              )}
+              className={accountMenuLayout.compactBtn}
               aria-label={t("account.ackNamed", { type: alarm.alarmType })}
             >
               {t("account.ack")}
@@ -167,7 +161,6 @@ export function AccountMenuAlarmPanel({
   const alarmCount = activeAlarms.length;
   const alarmList = activeAlarms.slice(0, 12);
   const offline = overview?.offlineCount ?? 0;
-  const alert = alarmCount > 0 || offline > 0;
   const connTitle = connectivityMessage(overview, t);
   const [alarmListOpen, setAlarmListOpen] = useState(defaultListOpen);
   const [exitingIds, setExitingIds] = useState<Set<string>>(() => new Set());
@@ -278,48 +271,32 @@ export function AccountMenuAlarmPanel({
   return (
     <div
       className={cn(
-        dashboardUi.headerToolsCard,
-        embedded ? "mx-0 mb-0 mt-0 w-full" : "mx-4 mb-2 w-[calc(100%-2rem)]",
-        alert && dashboardUi.headerToolsCardAlert,
+        "flex w-full min-w-0 flex-col gap-1.5",
+        embedded ? "mx-0" : "mx-4 mb-2 w-[calc(100%-2rem)]",
       )}
       data-tour-id="account-menu-alarm-panel"
     >
-      <span
+      <div className="flex min-w-0 items-center justify-between gap-2 px-0.5">
+        <span className={accountMenuLayout.contextFarm}>{t("tools.alarm")}</span>
+        <span className="shrink-0 text-xs text-muted-foreground">
+          {alarmCount > 0 ? t("tools.count", { count: alarmCount }) : t("tools.noActive")}
+        </span>
+      </div>
+      <p
         className={cn(
-          dashboardUi.headerToolsCardIcon,
-          alert && dashboardUi.headerToolsCardIconAlert,
+          "truncate px-0.5 text-[10px] leading-snug text-muted-foreground",
+          offline > 0 && "font-medium text-[var(--status-danger-on-canvas)]",
         )}
-        aria-hidden
       >
-        <Bell className="size-4 md:size-5" />
-      </span>
-      <div className={dashboardUi.headerToolsCardBody}>
-        <div className={dashboardUi.headerToolsCardTitle}>
-          <span>{t("tools.alarm")}</span>
-          {alarmCount > 0 ? (
-            <Badge
-              variant="destructive"
-              className="ml-auto h-5 min-h-0 px-1.5 text-[0.65rem]"
-            >
-              {t("tools.count", { count: alarmCount })}
-            </Badge>
-          ) : null}
-        </div>
-        <p
-          className={cn(
-            dashboardUi.headerToolsCardMeta,
-            "truncate",
-            offline > 0 && "font-medium text-[var(--status-danger-on-canvas)]",
-          )}
-        >
-          {offline > 0 ? `${connTitle} · ${t("tools.offlineCount", { count: offline })}` : connTitle}
-          {alarmCount > 0 ? null : ` · ${t("tools.noActive")}`}
-        </p>
-        {alarmCount > 0 ? (
-          <div className="mt-1.5 flex gap-1.5">
+        {offline > 0 ? `${connTitle} · ${t("tools.offlineCount", { count: offline })}` : connTitle}
+      </p>
+      {alarmCount === 0 ? <AlarmTemplateExample /> : null}
+      {alarmCount > 0 ? (
+        <>
+          <div className="flex gap-1">
             <button
               type="button"
-              className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-[color:var(--surface-well-border)] bg-[color:var(--surface-well)] px-2 py-1.5 text-xs font-medium text-foreground"
+              className={cn(accountMenuLayout.compactBtn, "h-auto flex-1 justify-center py-1")}
               aria-expanded={alarmListOpen}
               onClick={() => setAlarmListOpen((v) => !v)}
             >
@@ -340,22 +317,18 @@ export function AccountMenuAlarmPanel({
                 type="button"
                 disabled={bulkPending || bulkAckBusy}
                 onClick={onBulkAck}
-                className={cn(
-                  "shrink-0 rounded-lg border border-border/70 bg-background px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted/80 disabled:opacity-60",
-                  motionClass.microInteractive,
-                )}
+                className={accountMenuLayout.compactBtn}
               >
                 {bulkPending ? t("account.working") : t("account.ackAll")}
               </button>
             ) : null}
           </div>
-        ) : null}
-        {bulkError ? (
-          <p className="mt-1 text-[0.65rem] text-destructive">{bulkError}</p>
-        ) : null}
-        {alarmListOpen && visibleList.length > 0 ? (
+          {bulkError ? (
+            <p className="text-[0.65rem] text-destructive">{bulkError}</p>
+          ) : null}
+          {alarmListOpen && visibleList.length > 0 ? (
           <ul
-            className={dashboardUi.headerToolsCardList}
+            className="max-h-40 min-h-0 space-y-1 overflow-y-auto overscroll-contain"
             aria-label={t("tools.alarmList")}
           >
             {visibleList.map((a) => (
@@ -374,8 +347,9 @@ export function AccountMenuAlarmPanel({
               </li>
             ) : null}
           </ul>
-        ) : null}
-      </div>
+          ) : null}
+        </>
+      ) : null}
     </div>
   );
 }
