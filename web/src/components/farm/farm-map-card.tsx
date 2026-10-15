@@ -41,12 +41,12 @@ const STATUS_SURFACE: Record<StatusTone, string> = {
   offline: "bg-[var(--status-offline)]",
 };
 
-const STATUS_LABEL: Record<StatusTone, string> = {
-  normal: "정상",
-  caution: "주의",
-  warning: "경고",
-  offline: "오프라인",
-};
+const STATUS_KEY = {
+  normal: "cover.ok",
+  caution: "cover.caution",
+  warning: "cover.warning",
+  offline: "account.offline",
+} as const;
 
 const ENV_SURFACE: Record<ControllerEnvCoverLevel, string> = {
   ok: "bg-[color-mix(in_oklch,var(--status-ok)_14%,transparent)]",
@@ -239,7 +239,7 @@ export function FarmMapCard({
 
   return (
     <div
-      aria-label={`${title} ${STATUS_LABEL[snapshot.status]}`}
+      aria-label={`${title} ${t(STATUS_KEY[snapshot.status])}`}
       data-tour-id="barn-card"
       className={cn(
         "flex min-h-0 min-w-0 flex-col overflow-hidden rounded-lg border transition-shadow",

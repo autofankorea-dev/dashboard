@@ -87,7 +87,7 @@ export function ControllerEnvCover({
   const t = useSheetCopy();
   const locale = useProfileSheetPrefs().locale;
   const typeLabel = formatStallTypeLabelLocalized(reading.stallTyCode, locale);
-  const stallLabel = formatControllerHeaderStallUnit(reading);
+  const stallLabel = formatControllerHeaderStallUnit(reading, locale);
   const ctrlNo = formatControllerNoLabel(reading.eqpmnNo);
   const ctrlLabel = `${t("list.controller")} ${ctrlNo}`;
   const status = controllerEnvCoverStatus(reading, alarmSettings);

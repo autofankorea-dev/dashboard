@@ -13,6 +13,8 @@ import type { ThermoCommand, ThermoCommandStatus } from "@/lib/data/commands";
 import type { ChannelSlot } from "@/lib/domain/iot-channel";
 import { farmKeyId } from "@/lib/domain/farm-key";
 import { pipelineDetailMessage } from "@/lib/ui/controller-labels";
+import { useProfileSheetPrefs } from "@/components/account/profile-sheet-prefs";
+import { sheetCopy } from "@/lib/ui/sheet-copy";
 import {
   addTimedId,
   hasTimedId,
@@ -84,6 +86,7 @@ function findLatestForTarget(
 export type CommandPipelineFlash = {
   tone: "ok" | "info" | "error";
   text: string;
+  liveMatch?: boolean;
 };
 
 type TrackerOpts = {
@@ -121,6 +124,7 @@ export function useCommandPipelineTracker(opts: TrackerOpts) {
     liveThermo,
     onRefreshLive,
   } = opts;
+  const locale = useProfileSheetPrefs().locale;
 
   const [tracked, setTracked] = useState<ThermoCommand | null>(null);
   const [flash, setFlash] = useState<CommandPipelineFlash | null>(null);
@@ -165,9 +169,9 @@ export function useCommandPipelineTracker(opts: TrackerOpts) {
     prevStatusRef.current = cmd.status;
     setFlash({
       tone: "info",
-      text: pipelineDetailMessage(cmd.status, cmd.errorMsg),
+      text: pipelineDetailMessage(cmd.status, cmd.errorMsg, locale),
     });
-  }, []);
+  }, [locale]);
 
   const clearFlash = useCallback(() => setFlash(null), []);
 
@@ -250,8 +254,8 @@ export function useCommandPipelineTracker(opts: TrackerOpts) {
     if (commandId == null || commandStatus == null) return;
     const prev = prevStatusRef.current;
     if (prev != null && prev !== commandStatus) {
-      const label = commandStatusLabel(commandStatus);
-      const detail = pipelineDetailMessage(commandStatus, commandError);
+      const label = commandStatusLabel(commandStatus, locale);
+      const detail = pipelineDetailMessage(commandStatus, commandError, locale);
       setFlash({
         tone:
           commandStatus === "failed"
@@ -263,7 +267,7 @@ export function useCommandPipelineTracker(opts: TrackerOpts) {
       });
     }
     prevStatusRef.current = commandStatus;
-  }, [commandId, commandStatus, commandError]);
+  }, [commandId, commandStatus, commandError, locale]);
 
   // 명령 없음·실패·취소 시 LIVE 확인 해제 (render-time)
   if (
@@ -324,7 +328,8 @@ export function useCommandPipelineTracker(opts: TrackerOpts) {
       setLiveConfirmed(true);
       setFlash({
         tone: "ok",
-        text: `LIVE 설정온도 ${commandSetpoint}℃가 명령과 일치합니다. 패널의 현재값을 확인하세요.`,
+        liveMatch: true,
+        text: sheetCopy(locale, "cmd.liveMatch", { value: commandSetpoint }),
       });
     });
   }, [
@@ -340,6 +345,7 @@ export function useCommandPipelineTracker(opts: TrackerOpts) {
     liveDev,
     liveMin,
     liveMax,
+    locale,
   ]);
 
   const awaitingLive =

@@ -58,7 +58,9 @@ import {
 import { useFarmLiveRefreshOptional } from "@/components/farm/farm-live-refresh";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { cn } from "@/lib/utils";
-import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
+import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
+import { sheetCopy } from "@/lib/ui/sheet-copy";
+import type { SheetLocale } from "@/lib/ui/profile-sheet-prefs";
 
 type Props = {
   controller: ControllerGridData;
@@ -170,61 +172,63 @@ export function formatBulkApplyFeedback(
     wantedControl?: boolean;
     offlineSkipped?: number;
     channelSkipped?: number;
+    locale?: SheetLocale;
   },
 ): BulkApplyFeedback {
   const outcome = classifyBulkApplyResult(result, opts);
   const parts: string[] = [];
   const channelSkipped = opts?.channelSkipped ?? 0;
+  const locale = opts?.locale ?? "ko";
+  const copy = (key: Parameters<typeof sheetCopy>[1], vars?: Record<string, string | number>) =>
+    sheetCopy(locale, key, vars);
 
   if (result.control) {
     if (result.control.error && result.control.sent === 0) {
       parts.push(
         result.control.error === "forbidden" ||
           result.control.error === "unauthorized"
-          ? "제어 권한 없음"
-          : `제어 전송 실패 (${result.control.error})`,
+          ? copy("bulk.noPermission")
+          : copy("bulk.sendFailed", { error: result.control.error }),
       );
     } else {
-      parts.push(`제어 ${result.control.sent}건 전송`);
+      parts.push(copy("bulk.sentCount", { count: result.control.sent }));
       if (result.control.failed.length > 0) {
-        parts.push(`실패 ${result.control.failed.length}건`);
+        parts.push(copy("bulk.failedCount", { count: result.control.failed.length }));
       }
     }
   } else if (opts?.wantedControl && (opts.offlineSkipped ?? 0) > 0) {
-    parts.push("온라인 컨트롤러 없음 · 제어 미전송");
+    parts.push(copy("bulk.noOnlineShort"));
   }
 
   if (opts?.wantedControl && channelSkipped > 0) {
-    parts.push(
-      `채널 미매칭 ${channelSkipped}대 제어 제외 (적용 채널 확인)`,
-    );
+    parts.push(copy("bulk.channelSkip", { count: channelSkipped }));
   }
 
   if (result.alarm) {
     if (result.alarm.ok) {
-      parts.push(`경보 명령 ${result.alarm.spCount}건 접수`);
+      parts.push(copy("bulk.alarmQueued", { count: result.alarm.spCount }));
       if ((result.alarm.clearedOverrides ?? 0) > 0) {
-        parts.push(`개별 설정 ${result.alarm.clearedOverrides}건 제거`);
+        parts.push(copy("bulk.clearedOverrides", { count: result.alarm.clearedOverrides ?? 0 }));
       }
     } else {
       parts.push(
         result.alarm.error
-          ? `경보 명령 접수 실패 (${result.alarm.error})`
-          : "경보 명령 접수 실패",
+          ? copy("bulk.alarmQueueFailed", { error: result.alarm.error })
+          : copy("bulk.alarmQueueFailedPlain"),
       );
     }
   }
 
   const message =
     parts.join(" · ") ||
-    (outcome === "error" ? "일괄 적용 실패" : "일괄 적용 완료");
+    (outcome === "error" ? copy("bulk.failed") : copy("bulk.done"));
 
   const title =
     outcome === "success"
-      ? "일괄 적용 완료"
+      ? copy("bulk.done")
       : outcome === "partial"
-        ? "일부만 적용됨"
-        : "일괄 적용 실패";
+        ? copy("bulk.partial")
+        : copy("bulk.failed");
 
   const tone: InlineStatusTone =
     outcome === "success" ? "ok" : outcome === "partial" ? "warn" : "error";
@@ -250,6 +254,7 @@ export function FarmMapBulkApply({
   trailingCompact: _trailingCompact = false,
 }: Props) {
   const t = useSheetCopy();
+  const locale = useProfileSheetPrefs().locale;
   const liveRefresh = useFarmLiveRefreshOptional();
   const applyQueue = useApplyQueueOptional();
   const queueProgress = applyQueue?.progress ?? EMPTY_APPLY_PROGRESS;
@@ -304,7 +309,7 @@ export function FarmMapBulkApply({
   if (
     open &&
     !awaitingChannelHydration &&
-    error?.includes("채널 정보")
+    (error === t("bulk.channelLoading") || error?.includes("채널 정보"))
   ) {
     setError(null);
   }
@@ -334,7 +339,7 @@ export function FarmMapBulkApply({
     setActivePresetId(null);
     setError(
       needsHydration
-        ? "채널 정보를 불러오는 중입니다. 잠시 후 다시 적용하세요."
+        ? t("bulk.channelLoading")
         : null,
     );
     setResult(null);
@@ -345,6 +350,7 @@ export function FarmMapBulkApply({
     controller.alarmSettings,
     selectedSps,
     liveRefresh,
+    t,
   ]);
 
   const handlePickPreset = (id: string) => {
@@ -440,14 +446,14 @@ export function FarmMapBulkApply({
     if (running) return;
     setError(null);
     if (nothingSelected) {
-      setError("적용할 항목을 1개 이상 선택하세요.");
+      setError(t("bulk.pickOne"));
       return;
     }
     const needsHydration = onlineTargets.some(readingNeedsChannelsHydration);
     if (wantedControl && needsHydration) {
       void liveRefresh?.revalidateFarmLive({ mode: "full" });
       setError(
-        "채널 정보가 아직 없습니다. 불러온 뒤 다시 적용하세요.",
+        t("bulk.channelsMissing"),
       );
       return;
     }
@@ -457,11 +463,11 @@ export function FarmMapBulkApply({
       allChannelTargets &&
       !applyAlarm
     ) {
-      setError("적용할 채널(1차/2차/3차)을 1개 이상 선택하세요.");
+      setError(t("bulk.pickChannel"));
       return;
     }
     if (applyAlarm) {
-      const err = parseDeviceAlarms({ lowTempC: alarm.tempLow, highTempC: alarm.tempHigh }) ? null : "저온 < 고온, 0~100℃, 0.1℃ 단위로 입력하세요.";
+      const err = parseDeviceAlarms({ lowTempC: alarm.tempLow, highTempC: alarm.tempHigh }) ? null : t("bulk.alarmOrder");
       if (err) {
         setError(err);
         return;
@@ -496,7 +502,7 @@ export function FarmMapBulkApply({
         if (commands.length === 0) {
           if (!applyAlarm) {
             setError(
-              "선택한 채널에 해당하는 제어 대상이 없습니다. 채널 선택을 확인하세요.",
+              t("bulk.noChannelTarget"),
             );
             return;
           }
@@ -524,7 +530,7 @@ export function FarmMapBulkApply({
         offlineSkipped: offlineCount,
         channelSkipped,
       };
-      const feedback = formatBulkApplyFeedback(applied, applyOpts);
+      const feedback = formatBulkApplyFeedback(applied, { ...applyOpts, locale });
       if (control?.sentItems?.length) {
         for (const item of control.sentItems) {
           liveRefresh?.patchThermoFromCommand(item.command);
@@ -544,8 +550,8 @@ export function FarmMapBulkApply({
     } catch (e) {
       setError(
         e instanceof Error
-          ? `적용 중 오류: ${e.message}`
-          : "적용 중 오류가 발생했습니다. 네트워크를 확인한 뒤 다시 시도하세요.",
+          ? t("bulk.applyError", { message: e.message })
+          : t("bulk.applyErrorNet"),
       );
     } finally {
       setApplyPhase("idle");
@@ -561,10 +567,13 @@ export function FarmMapBulkApply({
   const resultFeedback = result
     ? formatBulkApplyFeedback(
         result,
-        lastApplyOpts ?? {
+        lastApplyOpts
+          ? { ...lastApplyOpts, locale }
+          : {
           wantedControl: applyTemp || applyVent,
           offlineSkipped: offlineCount,
           channelSkipped: 0,
+          locale,
         },
       )
     : null;
@@ -575,14 +584,14 @@ export function FarmMapBulkApply({
       lowTempC: alarm.tempLow,
       highTempC: alarm.tempHigh,
     })
-      ? "저온 < 고온, 0~100℃, 0.1℃ 단위로 입력하세요."
+      ? t("bulk.alarmOrder")
       : null;
   const applyBlockedReason = nothingSelected
-    ? "바꾼 값이 없습니다."
+    ? t("bulk.nothingChanged")
     : awaitingChannelHydration && wantedControl
-      ? "채널 정보를 불러온 뒤 다시 적용하세요."
+      ? t("bulk.channelThenApply")
       : wantedControl && previewCommands.length === 0 && !applyAlarm
-        ? "선택한 채널에 해당하는 온라인 컨트롤러가 없습니다."
+        ? t("bulk.noOnlineChannel")
         : alarmValidationError;
 
   const tableRows = BULK_CHANNEL_OPTIONS.map((slot) => ({
@@ -655,10 +664,10 @@ export function FarmMapBulkApply({
     })),
   );
   const queueCountLine = [
-    queueCounts.접수 ? `접수 ${queueCounts.접수}` : null,
-    queueCounts.전송 ? `전송 ${queueCounts.전송}` : null,
-    queueCounts.확인 ? `확인 ${queueCounts.확인}` : null,
-    queueCounts.실패 ? `실패 ${queueCounts.실패}` : null,
+    queueCounts.접수 ? t("bulk.stageReceived", { count: queueCounts.접수 }) : null,
+    queueCounts.전송 ? t("bulk.stageSent", { count: queueCounts.전송 }) : null,
+    queueCounts.확인 ? t("bulk.stageConfirmed", { count: queueCounts.확인 }) : null,
+    queueCounts.실패 ? t("bulk.stageFailed", { count: queueCounts.실패 }) : null,
   ]
     .filter(Boolean)
     .join(" · ");
@@ -687,30 +696,29 @@ export function FarmMapBulkApply({
         <ul className="space-y-1.5 leading-snug">
           {result.control ? (
             <li>
-              제어 명령: 전송 {result.control.sent}건
+              {t("bulk.controlSent", { sent: result.control.sent })}
               {result.control.failed.length > 0
-                ? ` · 실패 ${result.control.failed.length}건`
+                ? ` · ${t("bulk.failedCount", { count: result.control.failed.length })}`
                 : ""}
               {result.control.error && result.control.sent === 0
                 ? ` · ${result.control.error}`
                 : ""}
-              {offlineCount > 0 ? ` · 오프라인 ${offlineCount}대 제외` : ""}
+              {offlineCount > 0 ? ` · ${t("bulk.offlineSkip", { count: offlineCount })}` : ""}
             </li>
           ) : applyTemp || applyVent ? (
             <li className="text-amber-700 dark:text-amber-300">
-              제어 명령: 온라인 컨트롤러가 없어 전송하지 않았습니다.
+              {t("bulk.noOnline")}
             </li>
           ) : null}
           {result.alarm ? (
             <li>
-              임계 가이드:{" "}
               {result.alarm.ok
-                ? `유형 ${result.alarm.spCount}개 갱신${
+                ? `${t("bulk.guideUpdated", { count: result.alarm.spCount })}${
                     (result.alarm.clearedOverrides ?? 0) > 0
-                      ? ` · 개별 설정 ${result.alarm.clearedOverrides}건 제거`
+                      ? ` · ${t("bulk.clearedOverrides", { count: result.alarm.clearedOverrides ?? 0 })}`
                       : ""
                   }`
-                : `저장 실패 (${result.alarm.error ?? "오류"})`}
+                : t("bulk.saveFailed", { error: result.alarm.error ?? t("bulk.errorWord") })}
             </li>
           ) : null}
         </ul>
@@ -718,12 +726,12 @@ export function FarmMapBulkApply({
           <div className="rounded-lg border px-3 py-2.5">
             <p className="font-semibold leading-snug">
               {queueProgress.failed > 0
-                ? "일부 실패"
+                ? t("bulk.queuePartial")
                 : queueProgress.allOk
-                  ? "확인 완료"
+                  ? t("bulk.queueDone")
                   : queueProgress.timedOut
-                    ? "일부 미확인"
-                    : "적용 진행 중"}
+                    ? t("bulk.queueUnconfirmed")
+                    : t("bulk.queueRunning")}
             </p>
             <p className="mt-1 text-xs leading-snug text-muted-foreground">
               {queueCountLine}
@@ -734,19 +742,19 @@ export function FarmMapBulkApply({
     ) : running ? (
       <div className="flex flex-col items-center gap-2 py-6 text-center text-sm">
         <Loader2 className="size-6 animate-spin text-primary" aria-hidden />
-        <p className="font-semibold">일괄 적용 중…</p>
+        <p className="font-semibold">{t("bulk.applyingNow")}</p>
         <p className="text-xs text-muted-foreground">
           {applyPhase === "alarm"
-            ? "임계 가이드를 저장하고 있습니다."
+            ? t("bulk.savingGuide")
             : applyPhase === "control"
-              ? `제어 명령을 전송하고 있습니다. (${previewCommands.length || onlineTargets.length}건)`
-              : "적용을 준비하고 있습니다."}
+              ? t("bulk.sendingControl", { count: previewCommands.length || onlineTargets.length })
+              : t("bulk.preparing")}
         </p>
       </div>
     ) : (
       <div className="space-y-3" data-unified-controller-settings>
         <div data-bulk-preset-strip>
-          <p className="px-0.5 text-xs font-semibold">현장 명령</p>
+          <p className="px-0.5 text-xs font-semibold">{t("bulk.fieldCommand")}</p>
           {presetButtons.length > 0 ? (
             <SettingsCommandPresetStrip
               items={presetButtons.map((button) => ({
@@ -768,13 +776,21 @@ export function FarmMapBulkApply({
             />
           ) : (
             <p className="text-xs text-muted-foreground">
-              선택한 컨트롤러에 저장된 설정값이 없습니다.
+              {t("bulk.noSaved")}
             </p>
           )}
         </div>
         <p className="text-xs text-muted-foreground">
-          유형 {selectedSps.length} · 컨트롤러 {targets.length}
-          {offlineCount > 0 ? ` · 온라인 ${onlineTargets.length}` : ""}
+          {offlineCount > 0
+            ? t("bulk.scopeOnline", {
+                types: selectedSps.length,
+                controllers: targets.length,
+                online: onlineTargets.length,
+              })
+            : t("bulk.scope", {
+                types: selectedSps.length,
+                controllers: targets.length,
+              })}
         </p>
         <UnifiedSettingsTable
           rows={tableRows}
@@ -795,8 +811,10 @@ export function FarmMapBulkApply({
           </p>
         ) : null}
         <p className="text-xs text-muted-foreground">
-          채널 {(applyTemp || applyVent) ? selectedChannels.length : 0}개 변경 · 알람{" "}
-          {applyAlarm ? "변경됨" : "변경 없음"}
+          {t("bulk.changedCount", {
+            channels: (applyTemp || applyVent) ? selectedChannels.length : 0,
+            alarm: applyAlarm ? t("bulk.changed") : t("bulk.unchanged"),
+          })}
         </p>
       </div>
     );
@@ -857,7 +875,7 @@ export function FarmMapBulkApply({
                   "shrink-0 border hover:bg-muted disabled:opacity-50"
                 )}
               >
-                선택해제
+                {t("bulk.clear")}
               </button>
               <button
                 type="button"
@@ -868,7 +886,7 @@ export function FarmMapBulkApply({
                   dashboardAffordance.action,
                 )}
               >
-                설정입력
+                {t("bulk.enterSettings")}
               </button>
             </>
           ) : trailing ? (
@@ -880,16 +898,16 @@ export function FarmMapBulkApply({
       <SettingsEditOverlay
         open={open}
         spacious
-        title="컨트롤러 일괄 설정"
-        primaryLabel={result ? "확인" : "변경값 적용"}
-        primaryBusyLabel="적용 중…"
+        title={t("bulk.title")}
+        primaryLabel={result ? t("bulk.ok") : t("bulk.apply")}
+        primaryBusyLabel={t("bulk.applying")}
         primaryDisabled={!result && Boolean(applyBlockedReason)}
         busy={running}
         hint={
           result
             ? undefined
             : (applyBlockedReason ??
-              "변경된 채널과 알람을 선택한 컨트롤러에 전송합니다.")
+              t("bulk.hintSend"))
         }
         onClose={dismissModal}
         onPrimary={result ? closeAll : () => void runApply()}

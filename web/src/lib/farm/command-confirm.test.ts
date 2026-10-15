@@ -174,6 +174,32 @@ import {
   assert.equal(multi.lines[4].to, "2.0℃");
 }
 
+{
+  const target = formatCommandConfirmTarget({
+    stallTyCode: "SP07",
+    stallNo: "01",
+    eqpmnNo: "02",
+    channels: ["A", "B"],
+    onlineCount: 1,
+    locale: "en",
+  });
+  assert.equal(target, "Finisher Stall 1, Controller 2 1st, 2nd");
+  const model = buildCommandConfirmModel({
+    target,
+    current: "mixed",
+    command: {
+      setpointTemp: 25,
+      tempDeviation: 2,
+      minVentPct: 10,
+      maxVentPct: 100,
+    },
+    locale: "en",
+  });
+  assert.equal(model.title, "Send this command?");
+  assert.equal(model.lines[0].label, "Setpoint");
+  assert.equal(model.lines[0].from, "Mixed");
+}
+
 console.log("command-confirm.test.ts ok");
 
 test("module asserts", () => {

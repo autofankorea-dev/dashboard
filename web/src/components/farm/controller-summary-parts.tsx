@@ -315,6 +315,7 @@ export function MetricValue({
   alarmRange?: string;
   alarmBreached?: boolean;
 }) {
+  const t = useSheetCopy();
   return (
     <div className="min-w-0">
       <div className={cn("text-muted-foreground", dashboardTypography.formLabel)}>{label}</div>
@@ -343,7 +344,7 @@ export function MetricValue({
               : "text-muted-foreground"
           )}
         >
-          임계 {alarmRange}
+          {t("settings.threshold", { range: alarmRange })}
         </div>
       ) : null}
     </div>
@@ -355,10 +356,11 @@ export function SetpointBlock({
 }: {
   thermo: ControllerThermoSettings | null;
 }) {
+  const t = useSheetCopy();
   const { main, sub } = formatSetpointDisplay(thermo);
   return (
     <div className="min-w-0">
-      <div className={cn("text-muted-foreground", dashboardTypography.formLabel)}>설정</div>
+      <div className={cn("text-muted-foreground", dashboardTypography.formLabel)}>{t("settings.glanceSet")}</div>
       <div className={cn("mt-0.5 font-bold tabular-nums", dashboardUi.sectionTitle)}>
         {main}
         {main !== "—" ? "℃" : null}

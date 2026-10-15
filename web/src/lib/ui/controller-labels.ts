@@ -5,6 +5,8 @@ import { getItemCodeName } from "@/lib/domain/item-code";
 import { formatStallTypeLabel } from "@/lib/domain/stall-type";
 
 import { dashboardUi } from "@/lib/ui/dashboard-page-ui";
+import { sheetCopy } from "@/lib/ui/sheet-copy";
+import type { SheetLocale } from "@/lib/ui/profile-sheet-prefs";
 
 /** 슬라이더 카드 — 값/비교 영역 고정 높이 (드래그 시 레이아웃 점프 방지) */
 export const SLIDER_VALUE_SLOT_MIN_H = dashboardUi.valueSlotMinH;
@@ -28,21 +30,22 @@ export function settingsSourceLabel(
 
 export function pipelineDetailMessage(
   status: ThermoCommand["status"],
-  errorMsg?: string | null
+  errorMsg?: string | null,
+  locale: SheetLocale = "ko",
 ): string {
   switch (status) {
     case "applied":
-      return "명령을 보냈습니다. 연결된 컨트롤러에 곧 반영됩니다.";
+      return sheetCopy(locale, "cmd.sentSoon");
     case "sent":
-      return "명령을 보냈습니다. 연결된 컨트롤러에 곧 반영됩니다.";
+      return sheetCopy(locale, "cmd.sentSoon");
     case "pending":
-      return "명령을 등록했습니다. 연결된 컨트롤러에 곧 반영됩니다.";
+      return sheetCopy(locale, "cmd.queuedSoon");
     case "failed":
       return errorMsg
-        ? formatUserError(errorMsg)
-        : "명령 처리에 실패했습니다.";
+        ? formatUserError(errorMsg, locale)
+        : sheetCopy(locale, "cmd.failed");
     case "cancelled":
-      return "명령이 취소되었습니다.";
+      return sheetCopy(locale, "cmd.cancelled");
     default:
       return "";
   }
@@ -52,15 +55,16 @@ export function pipelineDetailMessage(
 export function pipelineStatusDetail(
   status: ThermoCommand["status"],
   errorMsg?: string | null,
-  liveConfirmed?: boolean
+  liveConfirmed?: boolean,
+  locale: SheetLocale = "ko",
 ): string {
   if (liveConfirmed) {
-    return "명령을 보냈습니다. 패널에 적용한 값이 표시됩니다.";
+    return sheetCopy(locale, "cmd.shown");
   }
   if (status === "applied" || status === "sent") {
-    return "명령을 보냈습니다. 통신이 연결된 컨트롤러에 곧 반영됩니다.";
+    return sheetCopy(locale, "cmd.sentLinked");
   }
-  return pipelineDetailMessage(status, errorMsg);
+  return pipelineDetailMessage(status, errorMsg, locale);
 }
 
 export const UNKNOWN_SETTINGS_HINT =
@@ -69,18 +73,12 @@ export const UNKNOWN_SETTINGS_HINT =
 export const COMMAND_REGISTER_SUCCESS =
   "명령을 보냈습니다. 통신이 연결된 컨트롤러에 곧 반영됩니다.";
 
-export function formatUserError(error: string): string {
-  if (error === "invalid_vent_range") {
-    return "환기 범위를 확인하세요. (0~100%, 최저 ≤ 최고)";
-  }
-  if (error === "invalid_eqpmn_code") {
-    return "장비코드 형식이 올바르지 않습니다.";
-  }
-  if (error === "unauthorized") return "권한이 없습니다.";
-  if (error.includes("row-level security")) {
-    return "이 컨트롤러에 대한 명령 권한이 없습니다.";
-  }
-  return "요청을 처리하지 못했습니다. 관리자에게 문의하세요.";
+export function formatUserError(error: string, locale: SheetLocale = "ko"): string {
+  if (error === "invalid_vent_range") return sheetCopy(locale, "err.vent");
+  if (error === "invalid_eqpmn_code") return sheetCopy(locale, "err.eqpmn");
+  if (error === "unauthorized") return sheetCopy(locale, "err.unauthorized");
+  if (error.includes("row-level security")) return sheetCopy(locale, "err.rls");
+  return sheetCopy(locale, "err.generic");
 }
 
 export function isDevDiagnosticsEnabled(): boolean {
