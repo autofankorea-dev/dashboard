@@ -15,9 +15,18 @@ export function formatHealthTime(iso: string): string {
   return `${hour}:${minute}`;
 }
 
-/** 모듈 last seen. 2995분 대신 2일. */
-export function formatHealthAgeMin(ageMin: number | null): string | null {
+/** 모듈 last seen. 2995분 대신 2일. locale 기본은 한국어. */
+export function formatHealthAgeMin(
+  ageMin: number | null,
+  locale: "ko" | "en" = "ko",
+): string | null {
   if (ageMin == null || !Number.isFinite(ageMin) || ageMin < 0) return null;
+  if (locale === "en") {
+    if (ageMin < 1) return "just now";
+    if (ageMin < 60) return `${Math.round(ageMin)} min`;
+    if (ageMin < 24 * 60) return `${Math.round(ageMin / 60)} h`;
+    return `${Math.round(ageMin / (24 * 60))} d`;
+  }
   if (ageMin < 1) return "방금";
   if (ageMin < 60) return `${Math.round(ageMin)}분`;
   if (ageMin < 24 * 60) return `${Math.round(ageMin / 60)}시간`;

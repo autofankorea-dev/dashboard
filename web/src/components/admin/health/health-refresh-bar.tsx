@@ -9,6 +9,7 @@ import {
   dashboardTypography,
   opsControl,
 } from "@/lib/ui/dashboard-page-ui";
+import { useProfileSheetPrefs } from "@/components/account/profile-sheet-prefs";
 import { cn } from "@/lib/utils";
 
 type HealthRefreshBarProps = {
@@ -35,6 +36,11 @@ export function HealthRefreshBar({
   const pendingRef = useRef(false);
   /** SSR·hydration과 맞추기 — 시계/카운트다운은 마운트 후에만 DOM·ARIA에 노출 */
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  const locale = useProfileSheetPrefs().locale;
+  const refreshLabel = locale === "en" ? "Refresh scan, users, and commands" : STATIC_REFRESH_LABEL;
+  const refreshWord = locale === "en" ? "Refresh" : "갱신";
+  const refreshing = locale === "en" ? "Refreshing…" : "갱신 중…";
+  const refreshNow = locale === "en" ? "Refresh now" : "지금 갱신";
 
   const refresh = useCallback(() => {
     if (!onRefresh || pendingRef.current) return;
@@ -68,12 +74,14 @@ export function HealthRefreshBar({
   }, [onRefresh, refresh, mounted]);
 
   const detailTitle = (() => {
-    if (!mounted) return STATIC_REFRESH_LABEL;
+    if (!mounted) return refreshLabel;
     const fetchedLabel = formatHealthTime(fetchedAt);
     const mins = Math.floor(secondsLeft / 60);
     const secs = secondsLeft % 60;
     const countdown = `${mins}:${secs.toString().padStart(2, "0")}`;
-    return `${STATIC_REFRESH_LABEL} · 갱신 ${fetchedLabel} · ${countdown} 후`;
+    return locale === "en"
+      ? `${refreshLabel} · updated ${fetchedLabel} · in ${countdown}`
+      : `${STATIC_REFRESH_LABEL} · 갱신 ${fetchedLabel} · ${countdown} 후`;
   })();
 
   if (compact) {
@@ -83,10 +91,10 @@ export function HealthRefreshBar({
         onClick={refresh}
         disabled={pending || !onRefresh}
         title={detailTitle}
-        aria-label={STATIC_REFRESH_LABEL}
+        aria-label={refreshLabel}
         className={cn(opsControl.buttonOutline, "border", className)}
       >
-        {pending ? "갱신 중…" : "갱신"}
+        {pending ? refreshing : refreshWord}
       </button>
     );
   }
@@ -108,9 +116,9 @@ export function HealthRefreshBar({
           dashboardControl.buttonOutline,
         )}
         onClick={refresh}
-        aria-label={STATIC_REFRESH_LABEL}
+        aria-label={refreshLabel}
       >
-        {pending ? "갱신 중…" : "지금 갱신"}
+        {pending ? refreshing : refreshNow}
       </Button>
     </div>
   );

@@ -1,6 +1,9 @@
+"use client";
+
 import type { HealthStatus } from "@/lib/admin/health/types";
 import { HealthStatusBadge } from "@/components/admin/health/health-status-badge";
-import { HEALTH_UI } from "@/lib/admin/health/health-ui-labels";
+import { healthUiText } from "@/lib/admin/health/health-locale";
+import { useProfileSheetPrefs } from "@/components/account/profile-sheet-prefs";
 import { dashboardTypography, opsTypography } from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +27,8 @@ export function HealthOverallStatus({
   liveTotal,
   liveWarn = false,
 }: Props) {
+  const locale = useProfileSheetPrefs().locale;
+  const liveCap = healthUiText("liveCap", locale);
   if (barOnly) {
     return (
       <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">
@@ -37,7 +42,7 @@ export function HealthOverallStatus({
                 ? "border-amber-300/50 bg-amber-50 text-amber-800"
                 : "border-border bg-muted/40 text-muted-foreground",
             )}
-            title={HEALTH_UI.liveCap}
+            title={liveCap}
           >
             {liveUsed}/{liveTotal}
           </span>
@@ -57,7 +62,7 @@ export function HealthOverallStatus({
                 : dashboardTypography.sectionTitle,
             )}
           >
-            {HEALTH_UI.systemTitle}
+            {healthUiText("systemTitle", locale)}
           </h2>
           <HealthStatusBadge status={overallStatus} />
           {liveTotal != null && liveUsed != null ? (
@@ -69,7 +74,7 @@ export function HealthOverallStatus({
                   ? "border-amber-300/50 bg-amber-50 text-amber-800"
                   : "border-border bg-muted/40 text-muted-foreground",
               )}
-              title={HEALTH_UI.liveCap}
+              title={liveCap}
             >
               {liveUsed}/{liveTotal}
             </span>
@@ -77,7 +82,7 @@ export function HealthOverallStatus({
         </div>
         {compact ? null : (
           <p className={cn(dashboardTypography.meta, "mt-1")}>
-            {HEALTH_UI.systemDesc}
+            {healthUiText("systemDesc", locale)}
           </p>
         )}
         {compact || !impactScope ? null : (
@@ -87,7 +92,7 @@ export function HealthOverallStatus({
               compact ? "mt-0.5" : "mt-1",
             )}
           >
-            영향: <strong>{impactScope}</strong>
+            {locale === "en" ? "Impact" : "영향"}: <strong>{impactScope}</strong>
           </p>
         )}
       </div>

@@ -14,6 +14,7 @@ import {
   TriangleAlert,
   WifiOff,
 } from "lucide-react";
+import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { NavContentReadyMarker } from "@/components/layout/nav-content-ready-marker";
 import { appendFarmKeyParams, farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
 import type { FarmLocationRow } from "@/lib/domain/farm-location-shared";
@@ -46,13 +47,6 @@ type Props = {
   locations: FarmLocationRow[];
 };
 
-const TONE_LABEL: Record<AdminHubFarmTone, string> = {
-  live: "정상",
-  alert: "경보",
-  offline: "오프라인",
-  location: "위치만",
-};
-
 const TONE_DOT: Record<AdminHubFarmTone, string> = {
   live: "bg-emerald-500",
   alert: "bg-status-danger",
@@ -78,10 +72,10 @@ function farmMonitorHref(farmKey: FarmKey): string {
 
 const emptySubscribe = () => () => {};
 
-function formatAgoShort(iso: string | null): string | null {
-  const label = formatReceivedAgo(iso);
+function formatAgoShort(iso: string | null, locale: "ko" | "en"): string | null {
+  const label = formatReceivedAgo(iso, locale);
   if (label === "—") return null;
-  return label.replace(/ 전$/, "");
+  return locale === "en" ? label.replace(/ ago$/, "") : label.replace(/ 전$/, "");
 }
 
 export function AdminHubControlView({
@@ -90,6 +84,14 @@ export function AdminHubControlView({
   locations,
 }: Props) {
   const mounted = useSyncExternalStore(emptySubscribe, () => true, () => false);
+  const locale = useProfileSheetPrefs().locale;
+  const t = useSheetCopy();
+  const toneLabel: Record<AdminHubFarmTone, string> = {
+    live: t("cover.ok"),
+    alert: t("account.alert"),
+    offline: t("account.offline"),
+    location: t("farm.locationOnly"),
+  };
   const [activeId, setActiveId] = useState<string | null>(null);
   const [toneFilter, setToneFilter] = useState<AdminHubFarmTone | null>(null);
 
@@ -146,8 +148,8 @@ export function AdminHubControlView({
                       ? "bg-muted ring-1 ring-foreground/20"
                       : "hover:bg-muted/60",
                   )}
-                  title={TONE_LABEL[tone]}
-                  aria-label={`${TONE_LABEL[tone]} ${tones[tone]}`}
+                  title={toneLabel[tone]}
+                  aria-label={`${toneLabel[tone]} ${tones[tone]}`}
                   aria-pressed={pressed}
                   onClick={() => toggleToneFilter(tone)}
                 >
@@ -192,21 +194,21 @@ export function AdminHubControlView({
             {visibleRows.map((row) => {
               const id = farmKeyId(row.farmKey);
               const active = activeId === id;
-              const name = farmDisplayLabel(row.farmKey, row.location?.farmName);
+              const name = farmDisplayLabel(row.farmKey, row.location?.farmName, locale);
               const region = row.location
                 ? `${row.location.sido} ${row.location.sigungu}`
                 : null;
               const { tempC, humidityPct, online, controllerCount } =
                 hubFarmMonitorMetrics(row);
               const ago = mounted
-                ? formatAgoShort(row.summary?.latestReceivedAt ?? null)
+                ? formatAgoShort(row.summary?.latestReceivedAt ?? null, locale)
                 : null;
               return (
                 <li key={id}>
                   <a
                     href={farmMonitorHref(row.farmKey)}
                     title={region ? `${name} · ${region}` : name}
-                    aria-label={`${name} ${TONE_LABEL[row.tone]}${region ? ` ${region}` : ""}`}
+                    aria-label={`${name} ${toneLabel[row.tone]}${region ? ` ${region}` : ""}`}
                     onMouseEnter={() => setActiveId(id)}
                     onFocus={() => setActiveId(id)}
                     className={cn(

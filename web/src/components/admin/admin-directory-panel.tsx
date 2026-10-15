@@ -14,18 +14,23 @@ import type { ManagedUser } from "@/lib/admin/list-users";
 import type { GrantFarmOption } from "@/components/admin/grant-farm-types";
 import { farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
 import type { EditableFarmOption } from "@/lib/data/farm-location";
+import { useProfileSheetPrefs } from "@/components/account/profile-sheet-prefs";
+import { localizeFarmSpeciesLabel } from "@/lib/domain/farm-summaries";
 import { useMobileLayout } from "@/lib/ui/use-mobile-layout";
 import { opsControl, opsLayout, opsStatus, opsTypography } from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";
 
-function grantErrorMessage(error: "forbidden" | "invalid" | "notfound"): string {
+function grantErrorMessage(
+  error: "forbidden" | "invalid" | "notfound",
+  en: boolean,
+): string {
   switch (error) {
     case "forbidden":
-      return "권한이 없습니다.";
+      return en ? "You do not have permission." : "권한이 없습니다.";
     case "notfound":
-      return "사용자를 찾을 수 없습니다.";
+      return en ? "User was not found." : "사용자를 찾을 수 없습니다.";
     default:
-      return "요청을 처리할 수 없습니다.";
+      return en ? "The request could not be completed." : "요청을 처리할 수 없습니다.";
   }
 }
 
@@ -58,6 +63,9 @@ export function AdminDirectoryPanel({
   locationOptions,
 }: Props) {
   const isMobile = useMobileLayout();
+  const locale = useProfileSheetPrefs().locale;
+  const en = locale === "en";
+  const farmOptionLabel = (label: string) => localizeFarmSpeciesLabel(label, locale);
   const emailUsers = useMemo(
     () => users.filter((u): u is ManagedUser & { email: string } => Boolean(u.email)),
     [users],
@@ -190,9 +198,9 @@ export function AdminDirectoryPanel({
       if (result.ok) {
         onAccessChange(addFarmId, { can_read: true, can_command: false });
         setAddFarmId("");
-        notify(`${opt.label}에 조회 권한을 부여했습니다.`);
+        notify(en ? `Read access granted for ${farmOptionLabel(opt.label)}.` : `${opt.label}에 조회 권한을 부여했습니다.`);
       } else {
-        notify(grantErrorMessage(result.error), "err");
+        notify(grantErrorMessage(result.error, en), "err");
       }
     });
   };
@@ -201,16 +209,16 @@ export function AdminDirectoryPanel({
     <div className="flex min-h-0 flex-col gap-2 lg:w-56 lg:min-w-[11rem] lg:max-w-[18rem] lg:shrink-0">
       <Input
         uiSize="dashboard"
-        placeholder="사용자 검색…"
+        placeholder={en ? "Search users…" : "사용자 검색…"}
         value={userQuery}
         onChange={(e) => setUserQuery(e.target.value)}
-        aria-label="사용자 검색"
+        aria-label={en ? "Search users" : "사용자 검색"}
         className={opsControl.input}
       />
       <ul className="flex max-h-[min(50vh,24rem)] flex-col gap-1 overflow-y-auto overscroll-contain lg:max-h-none lg:flex-1">
         {filteredUsers.length === 0 ? (
           <li className={cn("px-2 py-4 text-center", opsTypography.meta)}>
-            사용자가 없습니다.
+            {en ? "No users." : "사용자가 없습니다."}
           </li>
         ) : (
           filteredUsers.map((u) => {
@@ -236,7 +244,7 @@ export function AdminDirectoryPanel({
                     {name}
                   </span>
                   <span className={cn("truncate", opsTypography.meta)}>
-                    {u.email} · {farmCount}곳
+                    {u.email} · {farmCount}{en ? "" : "곳"}
                   </span>
                 </button>
               </li>
@@ -251,7 +259,7 @@ export function AdminDirectoryPanel({
     <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-y-auto overscroll-contain">
       {!selectedUser ? (
         <p className={cn("py-8 text-center", opsTypography.meta)}>
-          왼쪽에서 사용자를 선택하세요.
+          {en ? "Choose a user on the left." : "왼쪽에서 사용자를 선택하세요."}
         </p>
       ) : (
         <>
@@ -272,17 +280,17 @@ export function AdminDirectoryPanel({
             className="flex flex-wrap items-end gap-2 rounded-lg border bg-muted/20 p-2.5"
           >
             <label className={cn("min-w-0 flex-1 font-medium", opsTypography.meta)}>
-              농장 추가
+              {en ? "Add farm" : "농장 추가"}
               <select
                 ref={addFarmSelectRef}
                 className={opsControl.select}
                 value={addFarmId}
                 onChange={(e) => setAddFarmId(e.target.value)}
               >
-                <option value="">미부여 농장 선택…</option>
+                <option value="">{en ? "Choose an unassigned farm…" : "미부여 농장 선택…"}</option>
                 {addableFarms.map((o) => (
                   <option key={farmValue(o.farmKey)} value={farmValue(o.farmKey)}>
-                    {o.label} · {farmValue(o.farmKey)}
+                    {farmOptionLabel(o.label)} · {farmValue(o.farmKey)}
                   </option>
                 ))}
               </select>
@@ -294,7 +302,7 @@ export function AdminDirectoryPanel({
               onClick={addFarm}
               className={opsControl.button}
             >
-              {addPending ? "부여중…" : "조회권한 부여"}
+              {addPending ? (en ? "Granting…" : "부여중…") : (en ? "Grant read" : "조회권한 부여")}
             </PageActionButton>
           </div>
 
@@ -305,7 +313,7 @@ export function AdminDirectoryPanel({
                 opsTypography.meta,
               )}
             >
-              <p>권한 있는 농장이 없습니다.</p>
+              <p>{en ? "No farms with access." : "권한 있는 농장이 없습니다."}</p>
               <PageActionButton
                 type="button"
                 variant="outline"
@@ -314,8 +322,8 @@ export function AdminDirectoryPanel({
                 disabled={addableFarms.length === 0}
               >
                 {addableFarms.length === 0
-                  ? "추가할 농장이 없습니다"
-                  : "농장 추가"}
+                  ? (en ? "No farms to add" : "추가할 농장이 없습니다")
+                  : (en ? "Add farm" : "농장 추가")}
               </PageActionButton>
             </div>
           ) : (
@@ -325,7 +333,7 @@ export function AdminDirectoryPanel({
                   key={card.farmId}
                   email={selectedEmail}
                   farmKey={card.farmKey}
-                  label={card.label}
+                  label={farmOptionLabel(card.label)}
                   access={card.access}
                   locationOption={card.locationOption}
                   onAccessChange={onAccessChange}
@@ -347,11 +355,11 @@ export function AdminDirectoryPanel({
     <div className={opsLayout.stack}>
       <div className="rounded-xl border border-border bg-card px-3 py-2 sm:px-4">
         <h2 className={opsTypography.sectionTitle}>
-          {isMobile ? "사용자" : "디렉터리 · 사용자 우선"}
+          {isMobile ? (en ? "Users" : "사용자") : (en ? "Directory · users first" : "디렉터리 · 사용자 우선")}
         </h2>
         {isMobile ? null : (
           <p className={opsTypography.sectionDesc}>
-            사용자를 고르면 권한·주소를 이어서 처리합니다.
+            {en ? "Pick a user to set access and the address." : "사용자를 고르면 권한·주소를 이어서 처리합니다."}
           </p>
         )}
       </div>
@@ -364,8 +372,8 @@ export function AdminDirectoryPanel({
             onClose={() => setSheetOpen(false)}
             title={
               selectedUser
-                ? `${selectedUser.displayName?.trim() || selectedUser.email} · 농장`
-                : "농장"
+                ? `${selectedUser.displayName?.trim() || selectedUser.email} · ${en ? "Farms" : "농장"}`
+                : (en ? "Farms" : "농장")
             }
             auditRegion="admin-directory-user-sheet"
             contentClassName="overflow-y-auto p-3"

@@ -42,6 +42,40 @@ const DEPRECATED_ITEM_CODE_NAMES: Record<string, string> = {
   T00: "오리",
 };
 
+/** 화면 표시 전용. MQTT·DB·URL 키는 ITEM_CODE_NAMES를 유지한다. */
+export const ITEM_CODE_CATEGORY_NAMES_EN: Record<string, string> = {
+  W: "Hanwoo",
+  D: "Hanwoo",
+  P: "Swine",
+  H: "Poultry",
+  T: "Duck",
+  R: "Deer",
+  I: "Insect",
+  B: "Apiary",
+};
+
+export const ITEM_CODE_NAMES_EN: Record<string, string> = {
+  W00: "Hanwoo",
+  W01: "Dairy",
+  D00: "Hanwoo",
+  P00: "Swine",
+  H01: "Poultry",
+  H02: "Poultry",
+  H03: "Poultry",
+  T01: "Duck",
+  T02: "Duck",
+  E00: "Horse",
+  G00: "Goat and sheep",
+  R00: "Deer",
+  I00: "Insect",
+  B00: "Apiary",
+};
+
+const DEPRECATED_ITEM_CODE_NAMES_EN: Record<string, string> = {
+  H00: "Poultry",
+  T00: "Duck",
+};
+
 export function normalizeItemCode(code: string | null | undefined): string {
   const c = (code ?? "").trim().toUpperCase();
   return c || "UNK";
@@ -64,7 +98,26 @@ export function getItemCodeName(code: string | null | undefined): string {
   );
 }
 
+/** UI 표시용 — 축종명만 (예: 양돈). locale이 ko면 getItemCodeName과 같다. */
+export function getItemCodeNameLocalized(
+  code: string | null | undefined,
+  locale: "ko" | "en",
+): string {
+  if (locale !== "en") return getItemCodeName(code);
+  const key = normalizeItemCode(code);
+  if (key === "UNK") return key;
+  return (
+    ITEM_CODE_NAMES_EN[key] ??
+    DEPRECATED_ITEM_CODE_NAMES_EN[key] ??
+    ITEM_CODE_CATEGORY_NAMES_EN[key.charAt(0)] ??
+    getItemCodeName(code)
+  );
+}
+
 /** UI 표시용 — 축종명만 (예: 양돈) */
-export function formatItemCodeLabel(code: string | null | undefined): string {
-  return getItemCodeName(code);
+export function formatItemCodeLabel(
+  code: string | null | undefined,
+  locale: "ko" | "en" = "ko",
+): string {
+  return getItemCodeNameLocalized(code, locale);
 }
