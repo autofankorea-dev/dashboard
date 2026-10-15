@@ -9,7 +9,8 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
-import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
+import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
+import { tourStepBody, tourStepBullets, tourStepTitle } from "@/lib/onboarding/tour-copy";
 import {
   FARM_TOUR_ACTION_EVENT,
   FARM_TOUR_ACTIVE_EVENT,
@@ -170,6 +171,7 @@ function TourOverlay({
   onFinish: (completed: boolean) => void;
 }) {
   const t = useSheetCopy();
+  const locale = useProfileSheetPrefs().locale;
   const [stepIdx, setStepIdx] = useState(0);
   const [rect, setRect] = useState<Rect | null>(null);
   const [accentRect, setAccentRect] = useState<Rect | null>(null);
@@ -680,12 +682,9 @@ function TourOverlay({
   });
   const tooltipStyle: React.CSSProperties = tooltipPlacement.style;
   if (!step) return null;
-  const stepTitle =
-    mobileSheet && step.mobileTitle ? step.mobileTitle : step.title;
-  const stepBody =
-    mobileSheet && step.mobileBody ? step.mobileBody : step.body;
-  const stepBullets =
-    mobileSheet && step.mobileBullets ? step.mobileBullets : step.bullets;
+  const stepTitle = tourStepTitle(step, locale, mobileSheet);
+  const stepBody = tourStepBody(step, locale, mobileSheet);
+  const stepBullets = tourStepBullets(step, locale, mobileSheet);
   const showStepExtra =
     Boolean(step.extra) && !(mobileSheet && step.mobileHideExtra);
   const dimW = portalBounds?.width ?? vw;

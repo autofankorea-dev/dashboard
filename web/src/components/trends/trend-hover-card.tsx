@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment } from "react";
-import { useProfileSheetPrefs } from "@/components/account/profile-sheet-prefs";
+import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { translateFixedLabel } from "@/lib/ui/sheet-copy";
 import {
   ControllerAffiliationMarks,
@@ -114,6 +114,7 @@ function AlarmTrack({
   unit: string;
   color: string;
 }) {
+  const t = useSheetCopy();
   const span = hi - lo;
   const outside =
     value != null && Number.isFinite(value) && (value < lo || value > hi);
@@ -153,15 +154,15 @@ function AlarmTrack({
       <div className="mb-0.5 flex items-center justify-between gap-2 farm-chart-fs-axis text-muted-foreground">
         {outside && thresholdEdge != null && breachDeltaText ? (
           <>
-            <span className="tabular-nums" title="임계값">
+            <span className="tabular-nums" title={t("chart.threshold")}>
               {formatTrendBandEdge(thresholdEdge, unit)}
             </span>
             <span className="font-medium text-amber-600 dark:text-amber-400">
-              한계 이탈
+              {t("chart.limitBreach")}
             </span>
             <span
               className="tabular-nums font-medium text-amber-600 dark:text-amber-400"
-              title="이탈량"
+              title={t("chart.breachDelta")}
             >
               {breachDeltaText}
             </span>
@@ -171,7 +172,7 @@ function AlarmTrack({
             <span className="tabular-nums">
               {formatTrendBandEdge(lo, unit)}
             </span>
-            <span>알람 구간</span>
+            <span>{t("chart.alarmBand")}</span>
             <span className="tabular-nums">
               {formatTrendBandEdge(hi, unit)}
             </span>
@@ -200,6 +201,7 @@ function MotorChannelMatrix({
   channels: NonNullable<TrendHistogram["hoverChannels"]>;
   hoverIdx: number;
 }) {
+  const locale = useProfileSheetPrefs().locale;
   return (
     <div className="mt-1.5 space-y-1">
       {channels.map((ch) => {
@@ -209,7 +211,8 @@ function MotorChannelMatrix({
             ? Math.max(0, Math.min(100, raw))
             : null;
         /** 데이터 카드 — 짧은 슬롯명 (1차/2차/3차 또는 레거시 A/B/C) */
-        const tipLabel = ch.label.replace(/^채널\s*/, "") || ch.label;
+        const rawTip = ch.label.replace(/^채널\s*/, "") || ch.label;
+        const tipLabel = translateFixedLabel(locale, rawTip);
         return (
           <div
             key={ch.label}
@@ -266,6 +269,7 @@ export function TrendPointCardBody({
   onBreachEquipmentNavigate?: (target: TrendBreachNavTarget) => void;
 }) {
   const locale = useProfileSheetPrefs().locale;
+  const t = useSheetCopy();
   const group = seriesKey ? inferHoverMetricGroup(seriesKey) : null;
   const tipSeries = series.filter(
     (s) => group == null || inferHoverMetricGroup(s.name) === group,
@@ -377,7 +381,7 @@ export function TrendPointCardBody({
     heroColor = heroSeries.color;
   } else if (heroHist) {
     const sec = heroHist.hoverSecondary?.[idx];
-    heroText = formatHistHoverDisplay(heroHist, idx);
+    heroText = formatHistHoverDisplay(heroHist, idx, locale);
     if (sec != null && Number.isFinite(sec)) {
       heroNum = sec;
       heroUnit = heroHist.hoverSecondaryUnit ?? "";
@@ -463,7 +467,7 @@ export function TrendPointCardBody({
     <>
       <div className="mb-1 flex items-center gap-1.5">
         <span className="rounded-sm bg-muted/80 px-1 py-px farm-chart-fs-axis font-semibold tracking-tight text-foreground/90">
-          {group ? HOVER_GROUP_LABEL[group] : "데이터"}
+          {group ? translateFixedLabel(locale, HOVER_GROUP_LABEL[group]) : t("chart.data")}
         </span>
         {hideTime ? null : (
           <span className="farm-chart-fs-legend text-muted-foreground tabular-nums">
@@ -587,11 +591,11 @@ export function TrendPointCardBody({
                     }}
                   />
                   <span className="truncate text-muted-foreground">
-                    {h.legendLabel ?? "편차"}
+                    {translateFixedLabel(locale, h.legendLabel ?? "편차")}
                   </span>
                 </span>
                 <span className="shrink-0 tabular-nums">
-                  {formatHistHoverDisplay(h, idx)}
+                  {formatHistHoverDisplay(h, idx, locale)}
                 </span>
               </div>
             );
@@ -606,24 +610,24 @@ export function TrendPointCardBody({
       {showSpreadHigh || showSpreadLow ? (
         <div className="mt-1.5 space-y-1 border-t border-border/50 pt-1.5">
           <div className="farm-chart-fs-axis font-medium text-muted-foreground">
-            임계 초과 구간
+            {t("chart.overBand")}
           </div>
           {spreadSame && spreadHigh ? (
             <div className="farm-chart-fs-legend flex flex-wrap items-center gap-x-1 leading-snug text-foreground/90">
-              <span className="text-muted-foreground">산포 ·</span>
+              <span className="text-muted-foreground">{t("chart.spread")} ·</span>
               {formatSpreadRow(spreadHigh)}
             </div>
           ) : (
             <>
               {showSpreadHigh && spreadHigh ? (
                 <div className="farm-chart-fs-legend flex flex-wrap items-center gap-x-1 leading-snug text-foreground/90">
-                  <span className="text-muted-foreground">상단 ·</span>
+                  <span className="text-muted-foreground">{t("chart.highSide")} ·</span>
                   {formatSpreadRow(spreadHigh)}
                 </div>
               ) : null}
               {showSpreadLow && spreadLow ? (
                 <div className="farm-chart-fs-legend flex flex-wrap items-center gap-x-1 leading-snug text-foreground/90">
-                  <span className="text-muted-foreground">하단 ·</span>
+                  <span className="text-muted-foreground">{t("chart.lowSide")} ·</span>
                   {formatSpreadRow(spreadLow)}
                 </div>
               ) : null}
@@ -647,6 +651,7 @@ export function TrendPointCardBody({
 
 /** 명령 적중 등 이벤트 점 — 추이 데이터 카드와 같은 타이포·셸 */
 export function TrendEventCardBody({ mark }: { mark: TrendEventMark }) {
+  const locale = useProfileSheetPrefs().locale;
   const card = mark.card;
   const heroColor =
     card.heroTone === "ok" ? "var(--status-ok-ink)" : undefined;
@@ -654,7 +659,7 @@ export function TrendEventCardBody({ mark }: { mark: TrendEventMark }) {
     <>
       <div className="mb-1 flex items-center gap-1.5">
         <span className="rounded-sm bg-muted/80 px-1 py-px farm-chart-fs-axis font-semibold tracking-tight text-foreground/90">
-          {card.badge}
+          {translateFixedLabel(locale, card.badge)}
         </span>
         <span className="farm-chart-fs-legend text-muted-foreground tabular-nums">
           {card.time}
@@ -692,7 +697,7 @@ export function TrendEventCardBody({ mark }: { mark: TrendEventMark }) {
               className="flex items-center justify-between gap-2 farm-chart-fs-legend"
             >
               <span className="truncate text-muted-foreground">
-                {row.label}
+                {translateFixedLabel(locale, row.label)}
               </span>
               <span
                 className={cn(

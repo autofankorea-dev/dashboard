@@ -5,6 +5,8 @@ import type {
   TrendSeries,
   TrendSpreadContributor,
 } from "@/lib/domain/trend-chart-types";
+import type { SheetLocale } from "@/lib/ui/profile-sheet-prefs";
+import { sheetCopy } from "@/lib/ui/sheet-copy";
 
 /**
  * 추이 차트 호버/라벨 포맷·분류 순수 헬퍼. 렌더링(`trend-chart.tsx`)과
@@ -109,11 +111,12 @@ export function spreadControllerNo(equipmentLabel: string): string | null {
 export function formatHistHoverDisplay(
   h: TrendHistogram,
   hoverIdx: number,
+  locale: SheetLocale = "ko",
 ): string {
   const sec = h.hoverSecondary?.[hoverIdx];
   if (sec == null || !Number.isFinite(sec) || !h.hoverSecondaryUnit) return "–";
   if (h.hoverFormat === "midpointDelta") {
-    return `중점 ${sec > 0 ? "+" : ""}${sec.toFixed(1)}${h.hoverSecondaryUnit}`;
+    return `${sheetCopy(locale, "chart.midpoint")} ${sec > 0 ? "+" : ""}${sec.toFixed(1)}${h.hoverSecondaryUnit}`;
   }
   if (
     h.hoverFormat === "percent" ||

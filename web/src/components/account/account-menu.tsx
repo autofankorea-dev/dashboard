@@ -11,6 +11,7 @@ import { AccountMenuSheet } from "@/components/account/account-menu-sheet";
 import type { EditableFarmOption } from "@/lib/data/farm-location";
 import {
   farmShortLabel,
+  localizeFarmSpeciesLabel,
   type FarmSummaryRow,
 } from "@/lib/domain/farm-summaries";
 import {
@@ -141,9 +142,12 @@ export function AccountMenu({
     </>
   );
 
-  const identityFarmLabel =
+  const identityFarmRaw =
     activeFarmLocation?.label ??
     (activeFarmKey ? farmShortLabel(activeFarmKey, locale) : null);
+  const identityFarmLabel = identityFarmRaw
+    ? localizeFarmSpeciesLabel(identityFarmRaw, locale)
+    : null;
 
   const logoutAction = (
     <button

@@ -20,14 +20,16 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { ControllerDeviceIcon } from "@/components/icons/controller-device-icon";
+import { useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { dashboardUi } from "@/lib/ui/dashboard-page-ui";
+import type { SheetCopyKey } from "@/lib/ui/sheet-copy";
 
-const ANATOMY_ITEMS = [
-  { n: 1, label: "현재값", desc: "주황 구간 — 지금 측정된 값" },
-  { n: 2, label: "설정값", desc: "보라 구간 — 설정 온도~온도 편차" },
-  { n: 3, label: "환기량", desc: "분홍 구간 — 설정값 중 현재값 구간" },
-  { n: 4, label: "범위 이탈", desc: "마커가 범위를 벗어나면 주의·경고 색" },
-] as const;
+const ANATOMY_ITEMS: { n: number; label: SheetCopyKey; desc: SheetCopyKey }[] = [
+  { n: 1, label: "tour.gaugeNow", desc: "tour.gaugeNowDesc" },
+  { n: 2, label: "tour.gaugeSet", desc: "tour.gaugeSetDesc" },
+  { n: 3, label: "tour.gaugeVent", desc: "tour.gaugeVentDesc" },
+  { n: 4, label: "tour.gaugeOut", desc: "tour.gaugeOutDesc" },
+];
 
 type GuideProps = {
   /** 모바일 bottom sheet — B 스케일 */
@@ -35,6 +37,7 @@ type GuideProps = {
 };
 
 export function GaugeAnatomy({ compact = false }: GuideProps) {
+  const t = useSheetCopy();
   return (
     <div className={cnBox(compact)}>
       <p
@@ -44,7 +47,7 @@ export function GaugeAnatomy({ compact = false }: GuideProps) {
             : "mb-2 text-sm font-semibold text-muted-foreground"
         }
       >
-        게이지 바 읽는 법
+        {t("tour.gaugeTitle")}
       </p>
       <div className={compact ? "relative mb-1.5 select-none pt-0.5" : "relative mb-2 select-none pt-0.5"}>
         <div
@@ -54,7 +57,7 @@ export function GaugeAnatomy({ compact = false }: GuideProps) {
               : "relative h-4 w-full overflow-hidden rounded-md border bg-muted/40"
           }
           role="img"
-          aria-label="게이지 예시 — 알람 기준±편차, 설정온도±편차, 현재값 마커"
+          aria-label={t("tour.gaugeAria")}
         >
           <div
             className="pointer-events-none absolute inset-y-0 z-[1] rounded-sm bg-[color-mix(in_oklch,var(--channel-temp)_34%,var(--mix-lift))] ring-1 ring-inset ring-[color-mix(in_oklch,var(--channel-temp)_58%,transparent)]"
@@ -88,8 +91,8 @@ export function GaugeAnatomy({ compact = false }: GuideProps) {
               : "mt-1 flex justify-between text-xs text-muted-foreground"
           }
         >
-          <span>하한</span>
-          <span>상한</span>
+          <span>{t("tour.gaugeLow")}</span>
+          <span>{t("tour.gaugeHigh")}</span>
         </div>
       </div>
       <ul className={compact ? "space-y-1" : "space-y-1.5"}>
@@ -112,8 +115,8 @@ export function GaugeAnatomy({ compact = false }: GuideProps) {
               {it.n}
             </span>
             <span>
-              <span className="font-semibold">{it.label}</span>
-              <span className="text-muted-foreground"> — {it.desc}</span>
+              <span className="font-semibold">{t(it.label)}</span>
+              <span className="text-muted-foreground"> — {t(it.desc)}</span>
             </span>
           </li>
         ))}
@@ -123,34 +126,39 @@ export function GaugeAnatomy({ compact = false }: GuideProps) {
 }
 
 const PILL_ITEMS: {
-  name: string;
-  desc: string;
+  key: string;
+  name: SheetCopyKey;
+  desc: SheetCopyKey;
   Icon: LucideIcon | typeof ControllerDeviceIcon;
 }[] = [
   {
-    name: "순환",
-    desc: "카드 우측 버튼 — 컨트롤러 → 그래프 → 설정 → 컨트롤러 순으로 전환·접기.",
+    key: "cycle",
+    name: "tour.pillCycle",
+    desc: "tour.pillCycleDesc",
     Icon: ControllerDeviceIcon,
   },
   {
-    name: "그래프",
-    desc: "추이 패널을 엽니다. 다시 누르면 설정으로 갑니다.",
+    key: "graph",
+    name: "tour.pillGraph",
+    desc: "tour.pillGraphDesc",
     Icon: LineChart,
   },
   {
-    name: "설정",
-    desc: "알람·설정온도·환기. 다시 누르면 컨트롤러로 접습니다.",
+    key: "settings",
+    name: "tour.pillSettings",
+    desc: "tour.pillSettingsDesc",
     Icon: Settings,
   },
 ];
 
 export function PanelPillsGuide({ compact = false }: GuideProps) {
+  const t = useSheetCopy();
   return (
     <div className={cnBox(compact)}>
       <ul className={compact ? "space-y-1.5" : "space-y-2"}>
         {PILL_ITEMS.map((p) => (
           <li
-            key={p.name}
+            key={p.key}
             className={
               compact
                 ? "flex items-start gap-2 text-xs leading-snug"
@@ -171,8 +179,8 @@ export function PanelPillsGuide({ compact = false }: GuideProps) {
               />
             </span>
             <span>
-              <span className="font-semibold">{p.name}</span>
-              <span className="text-muted-foreground"> — {p.desc}</span>
+              <span className="font-semibold">{t(p.name)}</span>
+              <span className="text-muted-foreground"> — {t(p.desc)}</span>
             </span>
           </li>
         ))}
@@ -182,33 +190,39 @@ export function PanelPillsGuide({ compact = false }: GuideProps) {
 }
 
 const LIST_MODE_ITEMS: {
-  name: string;
-  desc: string;
+  key: string;
+  name: SheetCopyKey;
+  desc: SheetCopyKey;
   Icon: LucideIcon | typeof ControllerDeviceIcon;
 }[] = [
   {
-    name: "컨트롤러",
-    desc: "게이지·현재값 중심 목록.",
+    key: "controller",
+    name: "list.controller",
+    desc: "tour.listControllerDesc",
     Icon: ControllerDeviceIcon,
   },
   {
-    name: "그래프",
-    desc: "카드 아래(또는 시트)에 추이 표시.",
+    key: "graph",
+    name: "tour.pillGraph",
+    desc: "tour.listGraphDesc",
     Icon: LineChart,
   },
   {
-    name: "설정",
-    desc: "알람·설정온도·환기 범위 조정.",
+    key: "settings",
+    name: "list.settings",
+    desc: "tour.listSettingsDesc",
     Icon: Settings,
   },
   {
-    name: "그룹별 보기",
-    desc: "축사 유형별 묶음 / 평면 목록 전환.",
+    key: "group",
+    name: "tour.listGroup",
+    desc: "tour.listGroupDesc",
     Icon: LayoutGrid,
   },
 ];
 
 export function ListModeIconsGuide({ compact = false }: GuideProps) {
+  const t = useSheetCopy();
   return (
     <div className={cnBox(compact)}>
       <p
@@ -218,12 +232,12 @@ export function ListModeIconsGuide({ compact = false }: GuideProps) {
             : "mb-2 text-sm font-semibold text-muted-foreground"
         }
       >
-        목록 아이콘 안내
+        {t("tour.listTitle")}
       </p>
       <ul className={compact ? "space-y-1.5" : "space-y-2"}>
         {LIST_MODE_ITEMS.map((p) => (
           <li
-            key={p.name}
+            key={p.key}
             className={
               compact
                 ? "flex items-start gap-2 text-xs leading-snug"
@@ -244,8 +258,8 @@ export function ListModeIconsGuide({ compact = false }: GuideProps) {
               />
             </span>
             <span>
-              <span className="font-semibold">{p.name}</span>
-              <span className="text-muted-foreground"> — {p.desc}</span>
+              <span className="font-semibold">{t(p.name)}</span>
+              <span className="text-muted-foreground"> — {t(p.desc)}</span>
             </span>
           </li>
         ))}
@@ -262,43 +276,44 @@ function cnBox(compact: boolean) {
 
 const HEADER_ICON_ITEMS: {
   key: string;
-  label: string;
-  desc: string;
+  label: SheetCopyKey;
+  desc: SheetCopyKey;
   Icon: LucideIcon;
 }[] = [
   {
     key: "alarms",
-    label: "이상상황",
-    desc: "모듈이 올린 활성 경보 건수. 누르면 목록으로 이동합니다.",
+    label: "tools.alarm",
+    desc: "tour.headerAlarmsDesc",
     Icon: Bell,
   },
   {
     key: "ops-report",
-    label: "운영 · 일보",
-    desc: "관리자는 운영 화면으로, 오늘의 리포트 PDF를 받을 수 있습니다.",
+    label: "tour.headerReport",
+    desc: "tour.headerReportDesc",
     Icon: FileText,
   },
   {
     key: "style",
-    label: "레이아웃 · 테마",
-    desc: "PC/모바일 미리보기와 라이트/다크를 전환합니다.",
+    label: "tour.headerTheme",
+    desc: "tour.headerThemeDesc",
     Icon: Moon,
   },
   {
     key: "help",
-    label: "기능 안내",
-    desc: "물음표를 누르면 지금 보고 있는 탭(필드·차트) 안내가 시작됩니다.",
+    label: "tools.help",
+    desc: "tour.headerHelpDesc",
     Icon: CircleHelp,
   },
   {
     key: "account",
-    label: "계정",
-    desc: "프로필 메뉴에서 농장·활동·계정 탭과 요약 한 줄을 이용할 수 있습니다.",
+    label: "tour.headerAccount",
+    desc: "tour.headerAccountDesc",
     Icon: UserRound,
   },
 ];
 
 export function HeaderIconsGuide({ compact = false }: GuideProps) {
+  const t = useSheetCopy();
   return (
     <div className={cnBox(compact)}>
       <p
@@ -308,7 +323,7 @@ export function HeaderIconsGuide({ compact = false }: GuideProps) {
             : "mb-2 text-sm font-semibold text-muted-foreground"
         }
       >
-        헤더 도구 안내
+        {t("tour.headerTitle")}
       </p>
       <ul className={compact ? "space-y-2" : "space-y-2.5"}>
         {HEADER_ICON_ITEMS.map((item) => (
@@ -334,8 +349,8 @@ export function HeaderIconsGuide({ compact = false }: GuideProps) {
               />
             </span>
             <span>
-              <span className="font-semibold">{item.label}</span>
-              <span className="text-muted-foreground"> — {item.desc}</span>
+              <span className="font-semibold">{t(item.label)}</span>
+              <span className="text-muted-foreground"> — {t(item.desc)}</span>
             </span>
           </li>
         ))}
