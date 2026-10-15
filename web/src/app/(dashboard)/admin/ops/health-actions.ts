@@ -9,7 +9,8 @@ import {
 } from "@/lib/admin/health/fetch-snapshot";
 import type { HealthSnapshot } from "@/lib/admin/health/types";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { readServiceRoleKey } from "@/lib/supabase/admin";
+import { createOpsReadClient } from "@/lib/supabase/ops-client";
 
 const ADMIN_OPS_SYSTEM_PATH = adminOpsPath("system");
 
@@ -19,7 +20,11 @@ export async function fetchHealthSnapshotAction(): Promise<HealthSnapshot> {
   if (!me?.isAdmin) {
     throw new Error("Forbidden");
   }
-  return computeHealthSnapshot();
+  if (readServiceRoleKey()) return computeHealthSnapshot();
+  return computeHealthSnapshot({
+    admin: await createOpsReadClient(),
+    canReadRaw: false,
+  });
 }
 
 export async function acknowledgeCommandHealthCheckpoint(
@@ -36,7 +41,7 @@ export async function acknowledgeCommandHealthCheckpoint(
     return { ok: false, error: "command_id required" };
   }
 
-  const admin = createAdminClient();
+  const admin = await createOpsReadClient();
   const { error } = await admin.from("health_command_checkpoint").upsert(
     {
       command_id: trimmed,

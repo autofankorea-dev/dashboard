@@ -98,9 +98,10 @@ function buildCommandTimeline(
 }
 
 export async function fetchCommandHealth(
-  nowMs = Date.now()
+  nowMs = Date.now(),
+  adminClient?: ReturnType<typeof createAdminClient>,
 ): Promise<CommandHealthSummary> {
-  const admin = createAdminClient();
+  const admin = adminClient ?? createAdminClient();
   const since24h = new Date(nowMs - 24 * 60 * 60 * 1000).toISOString();
 
   const [cmdRes, cpRes] = await Promise.all([

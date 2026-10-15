@@ -4,8 +4,10 @@ import {
   controllerTrendPeriodHasSeries,
   emptyTrendControllerPeriodData,
   isCompleteControllerTrendBundle,
+  farmTrendIdleExtends30d,
   isFarmTrendLoadComplete,
   pickTrendCanvasPeriod,
+  shouldPublishTrendDayProgress,
   TREND_30D_DAY_CHUNKS,
   type TrendControllerPeriodData,
 } from "./farm-trend-types";
@@ -150,6 +152,21 @@ describe("isCompleteControllerTrendBundle", () => {
       }),
       false,
     );
+  });
+});
+
+describe("farm trend dev load", () => {
+  it("starts the 30 day fan-out only on the chart view", () => {
+    assert.equal(farmTrendIdleExtends30d("chart"), true);
+    assert.equal(farmTrendIdleExtends30d("list"), false);
+    assert.equal(farmTrendIdleExtends30d("map"), false);
+  });
+
+  it("publishes day progress every fifth day and at the end", () => {
+    assert.equal(shouldPublishTrendDayProgress(1), false);
+    assert.equal(shouldPublishTrendDayProgress(4), false);
+    assert.equal(shouldPublishTrendDayProgress(5), true);
+    assert.equal(shouldPublishTrendDayProgress(30), true);
   });
 });
 

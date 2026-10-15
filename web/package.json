@@ -43,6 +43,7 @@
     "smoke:boot": "node scripts/e2e-farm-hub-boot-smoke.mjs",
     "smoke:chart-comparison": "node scripts/chart-controller-comparison-smoke.mjs",
     "snapshot:chart-markup": "node scripts/chart-markup-snapshot.mjs",
+    "sync:ops-env": "node scripts/sync-ops-env.mjs",
     "smoke:controller-state": "node scripts/controller-state-smoke.mjs",
     "test:e2e": "node scripts/e2e-farm-hub-boot-smoke.mjs && node scripts/farm-hub-url-manual-smoke.mjs",
     "cap:sync": "npx cap sync android",

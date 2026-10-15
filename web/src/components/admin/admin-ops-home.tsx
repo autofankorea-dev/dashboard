@@ -4,7 +4,7 @@ import { AdminDirectoryPanel } from "@/components/admin/admin-directory-panel";
 import { AdminCommandPresetsPanel } from "@/components/admin/admin-command-presets-panel";
 import { CommandHistorySlim } from "@/components/controllers/command-history-slim";
 import { AdminOpsTabContentSkeleton } from "@/components/admin/admin-ops-loading-skeleton";
-import { listManagedUsers } from "@/lib/admin/list-users";
+import { listManagedUsers, opsDirectoryNeedsServiceRole } from "@/lib/admin/list-users";
 import { getEditableFarmLocationOptions } from "@/lib/data/farm-location";
 import { getThermoCommandHistory } from "@/lib/data/commands";
 import { getCommandDefaults } from "@/lib/data/command-defaults";
@@ -63,6 +63,17 @@ async function DirectorySection() {
           SUPABASE_SERVICE_ROLE_KEY가 설정되지 않았습니다.{" "}
           <code>web/.env.local</code>에 service_role 키를 입력해야 사용자
           목록/권한 부여가 동작합니다.
+        </p>
+      ) : opsDirectoryNeedsServiceRole() ? (
+        <p
+          className={cn(
+            "rounded-lg border border-amber-200 bg-amber-50 px-4 py-2 text-amber-900",
+            opsTypography.alert,
+          )}
+        >
+          이메일 조회와 권한 부여는 SUPABASE_SERVICE_ROLE_KEY가 필요합니다.
+          사용자·농장 접근 목록은 로그인한 관리자 세션으로 배포와 같은
+          Supabase를 읽습니다. <code>npm run sync:ops-env</code>
         </p>
       ) : null}
       <AdminDirectoryPanel

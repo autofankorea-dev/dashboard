@@ -5,7 +5,7 @@ import { findAuthUserByEmail } from "@/lib/admin/auth-users";
 import { MANAGED_USERS_CACHE_TAG } from "@/lib/admin/list-users";
 import { getCurrentUser } from "@/lib/auth/get-current-user";
 import type { FarmKey } from "@/lib/domain/farm-key";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createAdminClient, readServiceRoleKey } from "@/lib/supabase/admin";
 import { adminOpsPath } from "@/lib/admin/ops-tabs";
 
 const ADMIN_OPS_HOME = "/admin/ops";
@@ -92,7 +92,7 @@ async function deleteOrphanFarmScopes(userId: string, farmKey: FarmKey) {
 
 export type GrantFarmAccessResult =
   | { ok: true }
-  | { ok: false; error: "forbidden" | "invalid" | "notfound" };
+  | { ok: false; error: "forbidden" | "invalid" | "notfound" | "config" };
 
 async function grantFarmAccessCore(
   email: string,
@@ -102,6 +102,9 @@ async function grantFarmAccessCore(
   const me = await getCurrentUser();
   if (!me?.isAdmin) {
     return { ok: false, error: "forbidden" };
+  }
+  if (!readServiceRoleKey()) {
+    return { ok: false, error: "config" };
   }
 
   const normalizedEmail = email.trim().toLowerCase();
@@ -131,10 +134,13 @@ export async function grantFarmAccessInline(input: {
 
 async function resolveTargetUserId(
   email: string
-): Promise<{ ok: true; userId: string } | { ok: false; error: "forbidden" | "invalid" | "notfound" }> {
+): Promise<{ ok: true; userId: string } | { ok: false; error: "forbidden" | "invalid" | "notfound" | "config" }> {
   const me = await getCurrentUser();
   if (!me?.isAdmin) {
     return { ok: false, error: "forbidden" };
+  }
+  if (!readServiceRoleKey()) {
+    return { ok: false, error: "config" };
   }
 
   const normalizedEmail = email.trim().toLowerCase();
