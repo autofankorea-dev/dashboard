@@ -43,7 +43,7 @@ export function PageActionButton({
         !iconOnly && dashboardControl.buttonOutline,
         iconOnly && "border",
         variant === "outline" && "hover:bg-muted",
-        variant === "primary" && cn("border-primary", dashboardAffordance.action),
+        variant === "primary" && cn("border-control-command", dashboardAffordance.action),
         variant === "danger" &&
           "border-[color-mix(in_oklch,var(--status-danger)_45%,var(--border))] text-[var(--status-danger-on-canvas)] hover:bg-[color-mix(in_oklch,var(--status-danger)_12%,transparent)]",
         className

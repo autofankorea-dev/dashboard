@@ -170,7 +170,7 @@ function ToolsIconBtn({
         dashboardUi.topHeaderActionBtn,
         alert && dashboardUi.topHeaderActionBtnAlert,
         active &&
-          "border-primary/60 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary",
+          "border-control-border bg-control-active text-control-foreground hover:bg-control-active",
         className,
       )}
       {...rest}

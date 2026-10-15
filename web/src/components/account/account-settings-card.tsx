@@ -219,7 +219,9 @@ function ChoiceRow({
           aria-pressed={option.active}
           className={cn(
             "rounded-md border px-2 py-1 text-xs",
-            option.active ? "border-primary bg-primary/10" : "border-border",
+            option.active
+              ? "border-control-border bg-control-active text-control-foreground"
+              : "border-border",
           )}
           onClick={() => onPick(option.id)}
         >

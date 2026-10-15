@@ -150,13 +150,13 @@ export const statusFillDanger =
   "border-[color-mix(in_oklch,var(--status-danger)_45%,var(--border))] bg-[color-mix(in_oklch,var(--status-danger)_12%,transparent)] text-[var(--status-danger-on-canvas)]";
 
 export const opsStatus = {
-  /** 정상·선택 — brand primary */
-  ok: "border-primary/60 bg-primary/10 text-primary dark:bg-primary/15",
+  /** 정상 — 상태 팔레트. 선택과 섞지 않는다. */
+  ok: statusFillOk,
   warn: statusFillWarn,
   danger: statusFillDanger,
   /** 정보·미구현 — channel-info */
   info: "border-channel-info/40 bg-channel-info/10 text-channel-info",
-  selected: "border-primary bg-primary/10 text-primary dark:bg-primary/15",
+  selected: "border-control-border bg-control-active text-control-foreground",
   idle: "border-border text-muted-foreground hover:bg-muted/60 hover:text-foreground",
   chipFocus:
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1",
@@ -624,7 +624,7 @@ export const dashboardHubSurface = {
 export const dashboardAffordance = {
   /** 1 명령 — 적용·확인. 높이는 호출부 min-h */
   action:
-    "cursor-pointer bg-primary text-primary-foreground hover:bg-primary/80 disabled:cursor-wait disabled:pointer-events-none disabled:opacity-50",
+    "cursor-pointer bg-control-command text-control-command-foreground hover:bg-control-command/80 disabled:cursor-wait disabled:pointer-events-none disabled:opacity-50",
   /** 2 도구 — 테두리 + `--control`. 헤더 `topHeaderActionBtn`과 같은 언어 */
   tool: `cursor-pointer rounded-lg border ${dashboardControlFill.idle} disabled:cursor-wait disabled:opacity-50`,
   /** 3 선택군 — 트랙 안 비활성 탭 */

@@ -134,6 +134,8 @@ html[data-viewport-preview="mobile"] [data-viewport-preview="mobile"] {
   --color-muted: var(--muted);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-secondary: var(--secondary);
+  --color-control-command-foreground: var(--control-command-foreground);
+  --color-control-command: var(--control-command);
   --color-control-foreground: var(--control-foreground);
   --color-control-border: var(--control-border);
   --color-control-active: var(--control-active);
@@ -194,11 +196,13 @@ html[data-viewport-preview="mobile"] [data-viewport-preview="mobile"] {
   /* 컨트롤 회색 면 (iOS secondarySystemFill). muted=우물과 같은 값 금지 */
   --secondary: color-mix(in oklch, var(--muted) 90%, var(--foreground));
   --secondary-foreground: oklch(0.28 0.03 155);
-  /* iOS tinted 버튼. 대기 12% / 켜짐 22%. .dark는 믹스 상속 */
-  --control: color-mix(in oklch, var(--primary) 12%, var(--secondary));
-  --control-active: color-mix(in oklch, var(--primary) 22%, var(--secondary));
-  --control-foreground: color-mix(in oklch, var(--primary) 35%, var(--foreground));
-  --control-border: color-mix(in oklch, var(--primary) 22%, var(--border));
+  /* 상호작용 회색. 채도 0. 선택은 카드보다 어둡다. 명령은 면을 뒤집는다. */
+  --control: oklch(0.9 0 0);
+  --control-active: oklch(0.84 0 0);
+  --control-foreground: oklch(0.22 0 0);
+  --control-border: oklch(0.72 0 0);
+  --control-command: oklch(0.22 0 0);
+  --control-command-foreground: oklch(0.98 0 0);
   /* iOS tertiaryLabel / quaternaryLabel. muted-foreground = secondaryLabel */
   --tertiary-foreground: color-mix(
     in oklch,
@@ -214,7 +218,7 @@ html[data-viewport-preview="mobile"] [data-viewport-preview="mobile"] {
   --accent-foreground: oklch(0.28 0.04 155);
   --border: oklch(0.82 0.018 155);
   --input: oklch(0.82 0.018 155);
-  --ring: oklch(0.55 0.14 145);
+  --ring: oklch(0.45 0 0);
   --chart-1: oklch(0.55 0.15 145);
   --chart-2: oklch(0.55 0.1 185);
   --chart-3: oklch(0.7 0.12 85);
@@ -385,7 +389,13 @@ html[data-pc-band="narrow"]:not([data-field-rail-user="1"]) [data-field-rail] {
   --accent-foreground: oklch(0.95 0.04 150);
   --border: oklch(0.36 0.018 155);
   --input: oklch(0.36 0.018 155);
-  --ring: oklch(0.723 0.191 145);
+  --ring: oklch(0.72 0 0);
+  --control: oklch(0.28 0 0);
+  --control-active: oklch(0.38 0 0);
+  --control-foreground: oklch(0.95 0 0);
+  --control-border: oklch(0.45 0 0);
+  --control-command: oklch(0.92 0 0);
+  --control-command-foreground: oklch(0.16 0 0);
   --chart-1: oklch(0.723 0.191 145);
   --chart-2: oklch(0.70 0.12 185);
   --chart-3: oklch(0.77 0.15 75);

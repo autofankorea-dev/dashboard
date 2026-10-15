@@ -324,7 +324,7 @@ function SpBulkChipRow({
               className={cn(
                 "flex size-4 shrink-0 items-center justify-center rounded border",
                 selected
-                  ? "border-primary bg-primary text-primary-foreground"
+                  ? "border-control-command bg-control-command text-control-command-foreground"
                   : "border-muted-foreground/40 bg-background"
               )}
               aria-hidden
@@ -527,7 +527,7 @@ export function BarnListSummary({
                   className={cn(
                     "flex size-5 shrink-0 items-center justify-center rounded border",
                     spSelected
-                      ? "border-primary bg-primary text-primary-foreground"
+                      ? "border-control-command bg-control-command text-control-command-foreground"
                       : "border-muted-foreground/40 bg-background"
                   )}
                   aria-hidden

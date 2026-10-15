@@ -12,7 +12,7 @@ PC(`md+`)와 모바일(컴팩트)은 **같은 계약**, 히트만 밀도 토큰�
 
 | 코드 | 이름 | 대기 시각 | 커서 | 대표 |
 |------|------|-----------|------|------|
-| 1 | 명령 | `primary` 채움 | pointer | 적용, 확인 |
+| 1 | 명령 | `--control-command` 채움 | pointer | 적용, 확인 |
 | 2 | 도구 | 테두리 + `--control` tinted | pointer | 헤더, 취소, 기간, 카드 헤더 아이콘 |
 | 3 | 선택군 | 트랙 + 필 `--control-active` | pointer | 뷰 탭, 목록 모드 |
 | 4 | 칩 토글 | 꺼져도 테두리 + `--control` | pointer | 차트 레이어, 농장 격자 칸 |
@@ -23,7 +23,7 @@ PC(`md+`)와 모바일(컴팩트)은 **같은 계약**, 히트만 밀도 토큰�
 
 ## Do / Don't
 
-**Do** — 표시 칩은 `metricPocket`(우물). 실사용 컨트롤은 고스트(빈 면) 금지. 대기는 `--control`. CTA는 `--primary`. 세그먼트 트랙만 `--surface-well`.  
+**Do** — 표시 칩은 `metricPocket`(우물). 실사용 컨트롤은 고스트(빈 면) 금지. 대기는 `--control`. 선택은 `--control-active`. CTA는 `--control-command`(무채색 반전, 라이트는 어두운 면·다크는 밝은 면). 세그먼트 트랙만 `--surface-well`. 정상 녹색은 `--status-ok`만.  
 **Don't** — 탭 solid primary, 대기 면을 `--secondary`/`--card`/`--surface-well`로만 칠하기, 수치 underline, 덮개 Dialog blur, `bg-emerald-600` 명령, 신규 글로우.
 
 ## 적용 현황 (A–G)
