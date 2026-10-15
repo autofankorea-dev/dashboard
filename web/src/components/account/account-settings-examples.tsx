@@ -13,7 +13,11 @@ import { coverExampleReading, type ExampleTone } from "@/lib/ui/settings-example
 import { cn } from "@/lib/utils";
 
 const MOTOR_VALUES = [72, 41, 8] as const;
-const MOTOR_SETS = ["24.0 + 2.0", "25.5 + 2.5", "27.0 + 3.0"] as const;
+const MOTOR_SETS = [
+  { set: "24.0", dev: "2.0" },
+  { set: "25.5", dev: "2.5" },
+  { set: "27.0", dev: "3.0" },
+] as const;
 
 function exampleStallType(locale: SheetLocale) {
   return locale === "en" ? "Finisher" : "비육사";
@@ -35,40 +39,54 @@ function ExampleChannels({
   return (
     <div className="grid grid-cols-3 gap-1">
       {labels.map((label, index) => {
+        const fanLarge = focus !== "setpoint";
+        const parts = MOTOR_SETS[index];
         const fan = (
           mode === "bar" ? (
-            <span
-              className={cn(
-                "block overflow-hidden rounded-full bg-muted",
-                focus === "setpoint" ? "mx-auto h-1 w-8" : "h-1.5",
-              )}
-              aria-hidden
-            >
+            <span className="flex w-full min-w-0 items-center gap-1">
               <span
-                className="block h-full bg-channel-info"
-                style={{ width: `${MOTOR_VALUES[index]}%` }}
-              />
+                className={cn(
+                  "block min-w-0 flex-1 overflow-hidden rounded-full bg-muted",
+                  fanLarge ? "h-1.5" : "h-1",
+                )}
+                aria-hidden
+              >
+                <span
+                  className="block h-full bg-channel-info"
+                  style={{ width: `${MOTOR_VALUES[index]}%` }}
+                />
+              </span>
+              <span
+                className={cn(
+                  "font-semibold tabular-nums",
+                  fanLarge ? "text-xs" : "text-[11px] text-muted-foreground",
+                )}
+              >
+                {MOTOR_VALUES[index]}
+              </span>
             </span>
           ) : (
             <span
               className={cn(
                 "block text-center font-semibold tabular-nums",
-                focus === "setpoint" ? "text-[9px] text-muted-foreground" : "text-xs",
+                fanLarge ? "text-sm" : "text-[11px] text-muted-foreground",
               )}
             >
               {MOTOR_VALUES[index]}
-              <span className="ml-0.5 text-[9px] font-medium">%</span>
+              <span className="ml-0.5 text-[10px] font-medium">%</span>
             </span>
           )
         );
-        const set = (
-          <span
-            className={cn(
-              "block text-center font-semibold tabular-nums",
-              focus === "setpoint" ? "text-xs" : "text-[9px] text-muted-foreground",
-            )}
-          >
-            {MOTOR_SETS[index]}
+        const set = fanLarge ? (
+          <span className="block text-center text-[11px] font-semibold tabular-nums text-muted-foreground">
+            {parts.set} +{parts.dev}
+          </span>
+        ) : (
+          <span className="flex items-baseline justify-center gap-0.5">
+            <span className="text-sm font-semibold tabular-nums">{parts.set}</span>
+            <span className="text-[11px] font-semibold tabular-nums text-muted-foreground">
+              +{parts.dev}
+            </span>
           </span>
         );
         return (
@@ -85,7 +103,7 @@ function ExampleChannels({
             <span className="absolute top-0.5 left-1 text-[9px] font-semibold text-channel-info">
               {label}
             </span>
-            <span className="mt-3 flex flex-col items-center gap-0.5">
+            <span className="mt-3 flex w-full flex-col items-center gap-0.5">
               {focus === "setpoint" ? (
                 <>
                   {set}

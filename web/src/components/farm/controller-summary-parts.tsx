@@ -413,18 +413,21 @@ export function ChannelStrip({
               reading.controllerKey,
               slot,
             ) ?? (slot === "A" ? thermo ?? null : null);
-          const setLine =
+          const setParts =
             slotThermo &&
             Number.isFinite(slotThermo.setpointTemp) &&
             Number.isFinite(slotThermo.tempDeviation)
-              ? `${slotThermo.setpointTemp.toFixed(1)} + ${slotThermo.tempDeviation.toFixed(1)}`
+              ? {
+                  set: slotThermo.setpointTemp.toFixed(1),
+                  dev: slotThermo.tempDeviation.toFixed(1),
+                }
               : null;
           return (
             <ChannelCell
               key={slot}
               slot={slot}
               value={formatChannelPercent(channels[slot])}
-              setLine={setLine}
+              setParts={setParts}
               compact={compact}
               expanded={expandedChannel === slot}
               interactive={interactive}
@@ -464,6 +467,9 @@ export function ChannelStrip({
   );
 }
 
+const motorSecondaryClass =
+  "text-xs font-semibold tabular-nums leading-none text-muted-foreground";
+
 function FanReadout({
   value,
   percent,
@@ -478,18 +484,24 @@ function FanReadout({
   compact?: boolean;
 }) {
   if (showBar && percent != null) {
+    const shown = String(Math.round(percent));
     return (
-      <span
-        className={cn(
-          "block overflow-hidden rounded-full bg-muted",
-          size === "lg" ? "h-1.5 w-[70%]" : "h-1 w-10",
-        )}
-        aria-hidden
-      >
+      <span className="flex w-full min-w-0 items-center gap-1">
         <span
-          className="block h-full bg-channel-info"
-          style={{ width: `${Math.max(0, Math.min(100, percent))}%` }}
-        />
+          className={cn(
+            "block min-w-0 flex-1 overflow-hidden rounded-full bg-muted",
+            size === "lg" ? "h-2" : "h-1",
+          )}
+          aria-hidden
+        >
+          <span
+            className="block h-full bg-channel-info"
+            style={{ width: `${Math.max(0, Math.min(100, percent))}%` }}
+          />
+        </span>
+        <span className={cn(size === "lg" ? "text-sm font-bold tabular-nums" : motorSecondaryClass)}>
+          {shown}
+        </span>
       </span>
     );
   }
@@ -500,7 +512,7 @@ function FanReadout({
           ? compact
             ? dashboardUi.gridCellValueCompact
             : dashboardUi.gridCellValueDefault
-          : "text-[10px] font-semibold tabular-nums leading-none text-muted-foreground",
+          : motorSecondaryClass,
       )}
     >
       {value}
@@ -510,34 +522,37 @@ function FanReadout({
 }
 
 function SetpointReadout({
-  line,
+  set,
+  dev,
   size,
   compact,
 }: {
-  line: string;
+  set: string;
+  dev: string;
   size: "lg" | "sm";
   compact?: boolean;
 }) {
-  return (
-    <span
-      className={cn(
-        "tabular-nums leading-none",
-        size === "lg"
-          ? compact
-            ? dashboardUi.gridCellValueCompact
-            : dashboardUi.gridCellValueDefault
-          : "text-[10px] font-semibold text-muted-foreground",
-      )}
-    >
-      {line}
-    </span>
-  );
+  if (size === "lg") {
+    return (
+      <span className="inline-flex max-w-full items-baseline justify-center gap-1 whitespace-nowrap">
+        <span
+          className={cn(
+            compact ? dashboardUi.gridCellValueCompact : dashboardUi.gridCellValueDefault,
+          )}
+        >
+          {set}
+        </span>
+        <span className={motorSecondaryClass}>+{dev}</span>
+      </span>
+    );
+  }
+  return <span className={cn(motorSecondaryClass, "whitespace-nowrap")}>{set} +{dev}</span>;
 }
 
 function ChannelCell({
   slot,
   value,
-  setLine,
+  setParts,
   compact,
   expanded,
   interactive,
@@ -545,7 +560,7 @@ function ChannelCell({
 }: {
   slot: ChannelSlot;
   value: string;
-  setLine: string | null;
+  setParts: { set: string; dev: string } | null;
   compact?: boolean;
   expanded?: boolean;
   interactive?: boolean;
@@ -557,9 +572,9 @@ function ChannelCell({
     slot === "A" ? t("cover.channel1") : slot === "B" ? t("cover.channel2") : t("cover.channel3");
   const percent = value === "—" ? null : Number(value);
   const showBar = motorDisplay === "bar" && percent != null && Number.isFinite(percent);
-  const fanLarge = motorFocus !== "setpoint" || setLine == null;
-  const label = setLine
-    ? `${slotLabel} ${value}${value !== "—" ? "%" : ""} ${setLine}`
+  const fanLarge = motorFocus !== "setpoint" || setParts == null;
+  const label = setParts
+    ? `${slotLabel} ${value}${value !== "—" ? "%" : ""} ${setParts.set} +${setParts.dev}`
     : `${slotLabel} ${value}${value !== "—" ? "%" : ""}`;
   const cellClass = cn(
     "relative min-h-[3rem] rounded-md border bg-background/80 sm:min-h-[3.25rem]",
@@ -586,18 +601,18 @@ function ChannelCell({
       >
         {slotLabel}
       </span>
-      <div className="flex h-full min-h-[2.25rem] flex-col items-center justify-center gap-0.5 pt-2 sm:min-h-[2.5rem]">
+      <div className="flex h-full w-full min-h-[2.25rem] flex-col items-center justify-center gap-1 px-0.5 pt-2 sm:min-h-[2.5rem]">
         {fanLarge ? (
           <>
             <FanReadout value={value} percent={percent} showBar={showBar} size="lg" compact={compact} />
-            {setLine ? <SetpointReadout line={setLine} size="sm" /> : null}
+            {setParts ? <SetpointReadout set={setParts.set} dev={setParts.dev} size="sm" /> : null}
           </>
-        ) : (
+        ) : setParts ? (
           <>
-            <SetpointReadout line={setLine ?? ""} size="lg" compact={compact} />
+            <SetpointReadout set={setParts.set} dev={setParts.dev} size="lg" compact={compact} />
             <FanReadout value={value} percent={percent} showBar={showBar} size="sm" />
           </>
-        )}
+        ) : null}
       </div>
       {expanded && interactive ? (
         <span
