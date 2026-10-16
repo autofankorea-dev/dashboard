@@ -195,7 +195,10 @@ export function ControllerSummaryHeader({
         {stallTypeLabel}
       </span>
       <span
-        className="mt-0.5 flex min-w-0 items-center gap-2"
+        className={cn(
+          "mt-0.5 flex min-w-0 items-center gap-2",
+          bare && "justify-center",
+        )}
         data-cover-morph-target="marks"
       >
         <StallUnitNoMark
@@ -234,6 +237,7 @@ export function ControllerSummaryHeader({
       type="button"
       className={cn(
         "flex min-w-0 flex-1 items-start gap-1 text-left",
+        bare && "w-full justify-center text-center",
         dashboardAffordance.hitSurface,
       )}
       aria-label={t("panel.hideDetail")}
@@ -242,14 +246,28 @@ export function ControllerSummaryHeader({
         onConcealDetail();
       }}
     >
-      <span className="flex min-w-0 flex-1 flex-col gap-0.5">{titleBlock}</span>
+      <span
+        className={cn(
+          "flex min-w-0 flex-1 flex-col gap-0.5",
+          bare && "items-center",
+        )}
+      >
+        {titleBlock}
+      </span>
       <ChevronUp
         className={cn(dashboardAffordance.hitHint, "mt-1 text-muted-foreground")}
         aria-hidden
       />
     </button>
   ) : (
-    <div className="flex min-w-0 flex-1 flex-col gap-0.5">{titleBlock}</div>
+    <div
+      className={cn(
+        "flex min-w-0 flex-1 flex-col gap-0.5",
+        bare && "w-full items-center text-center",
+      )}
+    >
+      {titleBlock}
+    </div>
   );
 
   const actions = (
@@ -277,7 +295,7 @@ export function ControllerSummaryHeader({
             </span>
             {actions}
           </div>
-          <div className="flex min-w-0 items-start">{identity}</div>
+          <div className="flex w-full min-w-0 items-start justify-center">{identity}</div>
         </>
       ) : (
         <div className="flex min-w-0 flex-nowrap items-start gap-2">
