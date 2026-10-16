@@ -8,7 +8,6 @@ import {
   formatControllerNoLabel,
 } from "@/lib/farm/controller-summary-display";
 import {
-  controllerEnvCoverFillClass,
   controllerEnvCoverInkClass,
   controllerEnvCoverStatus,
   controllerEnvCoverStaleLine,
@@ -53,7 +52,7 @@ type Props = {
   morphReveal?: boolean;
   /** 일반 보기 — 축사 이름을 카드에 둔다. 그룹 보기는 묶음 헤더가 이름을 가진다. */
   showAffiliation?: boolean;
-  /** 걷힌 헤더의 차트·설정 버튼 자리. 명칭이 열릴 때와 같은 줄에 남는다. */
+  /** 열린 헤더의 버튼 자리. 덮개 글자는 칸 가운데에 두므로 이 값으로 밀지 않는다. */
   headerActionSlots?: number;
   onOpen: () => void;
 };
@@ -72,7 +71,7 @@ function coverExitDurationMs(): number {
   return Number.isFinite(ms) ? ms : 0;
 }
 
-/** 닫힌 덮개. 축사유형·번호는 열린 패널 헤더와 같은 크기·왼쪽. 온도는 축사유형 크기. 경보·판정 문구는 두지 않는다. */
+/** 닫힌 덮개. 축사유형·번호·온도는 덮개 가로 가운데. 경보·판정 문구는 두지 않는다. */
 export function ControllerEnvCover({
   reading,
   level,
@@ -80,7 +79,6 @@ export function ControllerEnvCover({
   animateEnter = false,
   morphReveal = false,
   showAffiliation = false,
-  headerActionSlots = 0,
   onOpen,
 }: Props) {
   const [exiting, setExiting] = useState(false);
@@ -151,7 +149,7 @@ export function ControllerEnvCover({
       }}
       data-cover-layout="stack"
       className={cn(
-        "absolute inset-0 z-10 flex flex-col justify-between gap-1 p-2.5 text-left sm:p-3",
+        "absolute inset-0 z-10 flex flex-col items-center justify-between gap-1 p-2.5 text-center sm:p-3",
         dashboardAffordance.hitSurface,
         COVER_FILL[displayLevel],
         dashboardChroma.statusFilmGlassRim,
@@ -160,91 +158,67 @@ export function ControllerEnvCover({
         exiting ? motionClass.exitFade : animateEnter ? motionClass.enterFade : null,
       )}
     >
-      <span className="flex min-w-0 flex-nowrap items-start gap-2">
-        <span
-          className={cn(
-            "mt-1.5 size-2.5 shrink-0 rounded-sm",
-            controllerEnvCoverFillClass(displayLevel),
-          )}
-          aria-hidden
-        />
-        <span className="flex min-w-0 flex-1 flex-nowrap items-start gap-2">
-          <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-            {showAffiliation ? (
-              <>
-                <span
-                  data-cover-morph="identity"
-                  className={cn(
-                    "break-keep text-current",
-                    dashboardTypography.cardTitle,
-                  )}
-                >
-                  {typeLabel}
-                </span>
-                <span
-                  data-cover-morph="marks"
-                  className="mt-0.5 flex min-w-0 items-center gap-2"
-                >
-                  <StallUnitNoMark
-                    stallNo={reading.stallNo}
-                    onFill={onFill}
-                    fitText
-                    className={cn(dashboardTypography.cardTitle, "text-current")}
-                  />
-                  <ControllerNoMark
-                    eqpmnNo={reading.eqpmnNo}
-                    onFill={onFill}
-                    fitText
-                    className={cn(dashboardTypography.cardTitle, "text-current")}
-                  />
-                </span>
-              </>
-            ) : (
-              <span data-cover-morph="identity" className="min-w-0">
-                <ControllerNoMark
-                  eqpmnNo={reading.eqpmnNo}
-                  onFill={onFill}
-                  fitText
-                  className={cn(dashboardTypography.cardTitle, "text-current")}
-                />
-              </span>
-            )}
-          </span>
-          {headerActionSlots > 0 ? (
+      <span className="flex w-full min-w-0 flex-col items-center gap-0.5">
+        {showAffiliation ? (
+          <>
             <span
-              className="flex shrink-0 flex-nowrap items-center gap-1"
-              aria-hidden
-            >
-              {Array.from({ length: headerActionSlots }, (_, i) => (
-                <span key={i} className="size-7" />
-              ))}
-            </span>
-          ) : null}
-        </span>
-      </span>
-      <span className="flex min-h-0 flex-1 items-center gap-2">
-        <span className="size-2.5 shrink-0" aria-hidden />
-        <span className="flex min-w-0 flex-1 flex-col justify-center gap-1">
-          {status.stale ? (
-            <span
+              data-cover-morph="identity"
               className={cn(
-                dashboardTypography.envCoverMeta,
-                "font-medium text-current",
+                "break-keep text-center text-current",
+                dashboardTypography.cardTitle,
               )}
             >
-              {staleLine}
+              {typeLabel}
             </span>
-          ) : null}
-          <span
-            data-cover-morph="value"
-            className={cn(dashboardTypography.envCoverValue, "text-current")}
-          >
-            {reason.valueLabel ?? "—"}
+            <span
+              data-cover-morph="marks"
+              className="mt-0.5 flex min-w-0 items-center justify-center gap-2"
+            >
+              <StallUnitNoMark
+                stallNo={reading.stallNo}
+                onFill={onFill}
+                fitText
+                className={cn(dashboardTypography.cardTitle, "text-current")}
+              />
+              <ControllerNoMark
+                eqpmnNo={reading.eqpmnNo}
+                onFill={onFill}
+                fitText
+                className={cn(dashboardTypography.cardTitle, "text-current")}
+              />
+            </span>
+          </>
+        ) : (
+          <span data-cover-morph="identity" className="min-w-0 text-center">
+            <ControllerNoMark
+              eqpmnNo={reading.eqpmnNo}
+              onFill={onFill}
+              fitText
+              className={cn(dashboardTypography.cardTitle, "text-current")}
+            />
           </span>
-          {applyStrip.length > 0 ? (
-            <CoverChannelApplyStrip items={applyStrip} />
-          ) : null}
+        )}
+      </span>
+      <span className="flex min-h-0 w-full flex-1 flex-col items-center justify-center gap-1 text-center">
+        {status.stale ? (
+          <span
+            className={cn(
+              dashboardTypography.envCoverMeta,
+              "text-center font-medium text-current",
+            )}
+          >
+            {staleLine}
+          </span>
+        ) : null}
+        <span
+          data-cover-morph="value"
+          className={cn(dashboardTypography.envCoverValue, "text-center text-current")}
+        >
+          {reason.valueLabel ?? "—"}
         </span>
+        {applyStrip.length > 0 ? (
+          <CoverChannelApplyStrip items={applyStrip} />
+        ) : null}
       </span>
       <ChevronRight
         className={cn(
