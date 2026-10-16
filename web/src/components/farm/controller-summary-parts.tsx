@@ -590,7 +590,7 @@ function ChannelCell({
     <>
       <span
         className={cn(
-          "absolute top-1 left-1.5 font-semibold leading-none sm:top-1.5 sm:left-2",
+          "absolute top-1 left-1/2 -translate-x-1/2 text-center font-semibold leading-none whitespace-nowrap sm:top-1.5",
           compact
             ? dashboardUi.gridCellMetaCompact
             : "text-[10px] sm:text-[11px]",
