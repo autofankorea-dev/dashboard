@@ -226,16 +226,16 @@ export const FarmAddressInput = forwardRef<FarmAddressInputHandle, Props>(functi
     <div
       className={cn(
         compact ? "space-y-1" : "space-y-3",
-        inline && "relative min-w-0 flex-1 space-y-0",
+        inline && "w-max space-y-0",
       )}
     >
       {compact ? (
         <>
           <div className={cn(accountMenuLayout.compactInputRow, inline && "w-max")}>
-            <span className={cn("grid", inline && "w-max")}>
+            <span className={cn(inline && "relative inline-flex items-center")}>
             <span
               className={cn(
-                "invisible col-start-1 row-start-1 whitespace-nowrap px-2.5",
+                "invisible whitespace-nowrap border border-transparent px-1.5 text-[length:var(--density-meta)] font-semibold leading-snug md:text-[length:var(--density-meta-md)]",
                 !inline && "hidden",
               )}
               aria-hidden
@@ -247,7 +247,7 @@ export const FarmAddressInput = forwardRef<FarmAddressInputHandle, Props>(functi
               type="text"
               className={cn(
                 inline
-                  ? "col-start-1 row-start-1 h-8 w-full min-w-[8rem] rounded-md border border-border bg-background px-2.5 text-[length:var(--density-meta)] leading-snug text-foreground md:text-[length:var(--density-meta-md)]"
+                  ? "absolute inset-0 h-full w-full rounded-md border border-border bg-background px-1.5 text-[length:var(--density-meta)] font-semibold leading-snug text-foreground md:text-[length:var(--density-meta-md)]"
                   : accountMenuLayout.compactInput,
                 inputLocked && "cursor-text",
               )}
@@ -303,7 +303,7 @@ export const FarmAddressInput = forwardRef<FarmAddressInputHandle, Props>(functi
               <button
                 type="button"
                 disabled={pending}
-                className={cn(accountMenuLayout.compactSaveBtn, inline && "h-8 py-0")}
+                className={cn(accountMenuLayout.compactSaveBtn, inline && "h-7 py-0")}
                 onClick={runSave}
               >
                 {pending ? "…" : "저장"}

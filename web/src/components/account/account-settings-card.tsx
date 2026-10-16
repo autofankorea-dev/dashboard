@@ -60,7 +60,7 @@ export function AccountFarmAddressSetting({
       data-account-address-setting=""
     >
       {open ? (
-        <div className="flex h-full w-max items-center gap-1.5 rounded-md border border-border bg-popover px-2 shadow-sm">
+        <div className="inline-flex h-full items-center gap-2 whitespace-nowrap px-2">
           <span className="shrink-0 font-semibold">{t("settings.address")}</span>
           <FarmAddressInput
             ref={inputRef}
