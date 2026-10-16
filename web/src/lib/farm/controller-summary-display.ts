@@ -320,15 +320,4 @@ export function buildGaugeFillSegments(
   };
 }
 
-export function setpointBandPct(
-  setpoint: number,
-  dev: number,
-  low: number,
-  high: number
-): { left: number; width: number } {
-  const lo = gaugePctInAlarmRange(setpoint - dev, low, high);
-  const hi = gaugePctInAlarmRange(setpoint + dev, low, high);
-  return { left: Math.min(lo, hi), width: Math.abs(hi - lo) };
-}
-
 export { CHANNELS };

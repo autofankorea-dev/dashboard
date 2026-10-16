@@ -720,15 +720,10 @@ export const SHEET_COPY = {
   "tour.gaugeTitle": { ko: "게이지 바 읽는 법", en: "How to read the gauge" },
   "tour.gaugeNow": { ko: "현재값", en: "Current" },
   "tour.gaugeNowDesc": { ko: "주황 구간 — 지금 측정된 값", en: "Orange band — the current reading" },
-  "tour.gaugeSet": { ko: "설정값", en: "Setpoint" },
-  "tour.gaugeSetDesc": {
-    ko: "보라 구간 — 설정 온도~온도 편차",
-    en: "Purple band — setpoint through temp deviation",
-  },
   "tour.gaugeVent": { ko: "환기량", en: "Vent" },
   "tour.gaugeVentDesc": {
-    ko: "분홍 구간 — 설정값 중 현재값 구간",
-    en: "Pink band — where the current value sits in the setpoint",
+    ko: "하단 막대 — 최저·최고 환기",
+    en: "Bottom bar — minimum and maximum vent",
   },
   "tour.gaugeOut": { ko: "범위 이탈", en: "Out of range" },
   "tour.gaugeOutDesc": {
@@ -895,8 +890,8 @@ export const SHEET_COPY = {
   },
   "health.singleFault": { ko: "단일 장비 이상 → S5", en: "One controller fault → S5" },
   "tour.gaugeAria": {
-    ko: "게이지 예시 — 알람 기준±편차, 설정온도±편차, 현재값 마커",
-    en: "Gauge example — alarm band, setpoint band, current marker",
+    ko: "게이지 예시 — 알람 하한·상한, 현재값 마커",
+    en: "Gauge example — alarm low and high, current marker",
   },
   "tour.pillCycle": { ko: "순환", en: "Cycle" },
   "tour.pillCycleDesc": {
@@ -984,8 +979,8 @@ export const SHEET_COPY = {
     en: "Bulk apply — apply settings to several stall types\nThis step is skipped without access",
   },
   "tour.fController.bullets": {
-    ko: "온도·습도 게이지 — 현재값과 알람·설정 구간\n1차·2차·3차 — 출력 비율\n카드 우측 아이콘 — 차트에서 보기 · 설정(컨트롤러↔설정) 전환",
-    en: "Temp and humidity gauges — current value and alarm or setpoint bands\n1st · 2nd · 3rd — output share\nIcons on the card — open in chart, and switch controller and settings",
+    ko: "온도·습도 게이지 — 현재값과 알람 구간\n1차·2차·3차 — 출력 비율\n카드 우측 아이콘 — 차트에서 보기 · 설정(컨트롤러↔설정) 전환",
+    en: "Temp and humidity gauges — current value and alarm range\n1st · 2nd · 3rd — output share\nIcons on the card — open in chart, and switch controller and settings",
   },
   "tour.fController.mobileBullets": {
     ko: "온도·습도 게이지 — 현재값과 허용 범위\n1차·2차·3차 — 출력 비율\n차트 아이콘으로 이력, 설정 탭에서 설정을 엽니다",

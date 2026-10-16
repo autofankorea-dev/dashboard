@@ -2,10 +2,7 @@
 
 import type { CSSProperties } from "react";
 
-import {
-  buildGaugeFillSegments,
-  setpointBandPct,
-} from "@/lib/farm/controller-summary-display";
+import { buildGaugeFillSegments } from "@/lib/farm/controller-summary-display";
 import { dashboardUi } from "@/lib/ui/dashboard-page-ui";
 import { motionClass } from "@/lib/ui/motion-classes";
 import { cn } from "@/lib/utils";
@@ -22,8 +19,6 @@ type GaugeMetricProps = {
   high: number;
   offline: boolean;
   breached: boolean;
-  setpoint?: number;
-  setDev?: number;
   className?: string;
 };
 
@@ -36,10 +31,6 @@ const FILL_ACCENT = {
   온도: "bg-channel-temp",
   습도: "bg-channel-hum",
 } as const;
-
-/** 설정온도±편차 밴드 — 온도 채널과 같은 색상각, 명도만 올림(primary 금지) */
-const TEMP_SETPOINT_BAND =
-  "bg-[color-mix(in_oklch,var(--channel-temp)_34%,var(--mix-lift))] ring-1 ring-inset ring-[color-mix(in_oklch,var(--channel-temp)_58%,transparent)]";
 
 /** 임계 값 pill — 숫자만 (워터마크 아이콘 없음) */
 function ValuePillBadge({
@@ -173,21 +164,14 @@ function buildGaugeAriaLabel({
   unit,
   low,
   high,
-  setpoint,
-  setDev,
 }: {
   label: "온도" | "습도";
   displayValue: string;
   unit: string;
   low: number;
   high: number;
-  setpoint?: number;
-  setDev?: number;
 }): string {
   const parts = [displayValue === "—" ? `${label}값 미수신` : `${label} ${displayValue}${unit}`, `알람 ${low}–${high}${unit}`];
-  if (label === "온도" && setpoint != null && setDev != null) {
-    parts.push(`설정 ${setpoint}±${setDev}${unit}`);
-  }
   return parts.join(" · ");
 }
 
@@ -227,7 +211,7 @@ function MetricValue({
   );
 }
 
-/** 카드 게이지 — metric 아이콘 + BellBadge flanking + 설정 밴드(온도) */
+/** 카드 게이지 — metric 아이콘 + 알람 하한·상한 + 현재값 마커 */
 export function CardMetricGauge({
   label,
   value,
@@ -237,8 +221,6 @@ export function CardMetricGauge({
   high,
   offline,
   breached,
-  setpoint,
-  setDev,
   className,
   compact,
   showValue = true,
@@ -264,10 +246,6 @@ export function CardMetricGauge({
     return showValue ? <div className={className}><MetricValue label={label} displayValue={displayValue} unit={unit} offline={offline} breached={false} compact={compact} /></div> : null;
   }
   const { span, cur, rest, pct } = buildGaugeFillSegments(value, low, high, offline);
-  const band =
-    label === "온도" && setpoint != null && setDev != null
-      ? setpointBandPct(setpoint, setDev, low, high)
-      : null;
   const curPct = span > 0 ? (cur / span) * 100 : 0;
   const accent = TEXT_ACCENT[label];
   const lowStr = String(low);
@@ -278,8 +256,6 @@ export function CardMetricGauge({
     unit,
     low,
     high,
-    setpoint,
-    setDev,
   });
 
   return (
@@ -327,16 +303,6 @@ export function CardMetricGauge({
           role="img"
           aria-label={ariaLabel}
         >
-          {band ? (
-            <div
-              className={cn(
-                "pointer-events-none absolute inset-y-0 z-[1] rounded-sm",
-                TEMP_SETPOINT_BAND,
-              )}
-              style={{ left: `${band.left}%`, width: `${band.width}%` }}
-              aria-hidden
-            />
-          ) : null}
           {!offline && cur > 0 ? (
             <div
               className={cn(
@@ -374,8 +340,6 @@ type EnvMetricPanelProps = {
   temp: Pick<GaugeMetricProps, "value" | "displayValue" | "low" | "high" | "breached">;
   humidity: Pick<GaugeMetricProps, "value" | "displayValue" | "low" | "high" | "breached">;
   offline: boolean;
-  setpoint?: number;
-  setDev?: number;
   className?: string;
   glowBand?: "temp" | "humidity" | null;
   bandGlowIn?: boolean;
@@ -390,8 +354,6 @@ export function EnvMetricPanel({
   temp,
   humidity,
   offline,
-  setpoint,
-  setDev,
   className,
   glowBand = null,
   bandGlowIn = false,
@@ -448,8 +410,6 @@ export function EnvMetricPanel({
           high={temp.high}
           offline={offline}
           breached={temp.breached}
-          setpoint={setpoint}
-          setDev={setDev}
         />
         <CardMetricGauge
           compact

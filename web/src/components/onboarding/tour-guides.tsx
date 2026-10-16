@@ -26,9 +26,8 @@ import type { SheetCopyKey } from "@/lib/ui/sheet-copy";
 
 const ANATOMY_ITEMS: { n: number; label: SheetCopyKey; desc: SheetCopyKey }[] = [
   { n: 1, label: "tour.gaugeNow", desc: "tour.gaugeNowDesc" },
-  { n: 2, label: "tour.gaugeSet", desc: "tour.gaugeSetDesc" },
-  { n: 3, label: "tour.gaugeVent", desc: "tour.gaugeVentDesc" },
-  { n: 4, label: "tour.gaugeOut", desc: "tour.gaugeOutDesc" },
+  { n: 2, label: "tour.gaugeVent", desc: "tour.gaugeVentDesc" },
+  { n: 3, label: "tour.gaugeOut", desc: "tour.gaugeOutDesc" },
 ];
 
 type GuideProps = {
@@ -59,11 +58,6 @@ export function GaugeAnatomy({ compact = false }: GuideProps) {
           role="img"
           aria-label={t("tour.gaugeAria")}
         >
-          <div
-            className="pointer-events-none absolute inset-y-0 z-[1] rounded-sm bg-[color-mix(in_oklch,var(--channel-temp)_34%,var(--mix-lift))] ring-1 ring-inset ring-[color-mix(in_oklch,var(--channel-temp)_58%,transparent)]"
-            style={{ left: "25%", width: "50%" }}
-            aria-hidden
-          />
           <div
             className="absolute inset-y-0 left-0 z-[0] rounded-md bg-channel-temp"
             style={{ width: "42%" }}

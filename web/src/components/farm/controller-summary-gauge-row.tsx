@@ -170,8 +170,6 @@ export function ControllerSummaryGaugeRow({
   /** 카드 인라인 추이 — 하단 BarnListGraphPanel과 기간·차트 중복 방지. */
   const inlineEnvWithChannels = hideGraphToggle;
 
-  const setpoint = thermo?.setpointTemp;
-  const setDev = thermo?.tempDeviation;
   const envCoverLevel = controllerEnvCoverLevel(reading, alarmSettings);
   const concealOnIdleClick = Boolean(
     envCoverEnabled && envCoverOpen && onEnvCoverClose,
@@ -344,8 +342,6 @@ export function ControllerSummaryGaugeRow({
         <EnvMetricPanel
           className="mb-2"
           offline={offline}
-          setpoint={setpoint}
-          setDev={setDev}
           glowBand={
             coverReveal && envCoverOpen ? coverReveal.snapshot.band : null
           }
