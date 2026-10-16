@@ -143,7 +143,7 @@ export function VentGaugeV1({
         aria-label={`환기 ${min}–${max}%`}
       >
         <div
-          className="absolute inset-y-0 rounded-full bg-channel-motor/45"
+          className="absolute inset-y-0 rounded-full bg-channel-motor/80 dark:bg-channel-motor/45"
           style={{ left: `${min}%`, width: `${span}%` }}
           aria-hidden
         />
