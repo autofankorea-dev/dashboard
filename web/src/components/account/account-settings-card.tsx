@@ -61,7 +61,9 @@ export function AccountFarmAddressSetting({
     >
       {open ? (
         <div className="inline-flex h-full items-center gap-2 whitespace-nowrap px-2">
-          <span className="shrink-0 font-semibold">{t("settings.address")}</span>
+          <span className={cn(accountMenuLayout.contextFarm, "shrink-0")}>
+            {t("settings.address")}
+          </span>
           <FarmAddressInput
             ref={inputRef}
             key={`${farmKey.lsindRegistNo}-${farmKey.itemCode}`}
