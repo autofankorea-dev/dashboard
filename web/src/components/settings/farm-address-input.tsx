@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import {
   geocodeFarmAddressAction,
   saveFarmAddressAction,
@@ -9,7 +10,7 @@ import type { FarmKey } from "@/lib/domain/farm-key";
 import { PageActionButton } from "@/components/common/page-action-button";
 import type { FarmLocationRow } from "@/lib/data/farm-location";
 import { dashboardUi } from "@/lib/ui/dashboard-page-ui";
-import { accountMenuLayout } from "@/lib/ui/account-menu-layout";
+import { ACCOUNT_MENU_SHEET_Z, accountMenuLayout } from "@/lib/ui/account-menu-layout";
 import { cn } from "@/lib/utils";
 
 export type AddressDraft = {
@@ -59,6 +60,49 @@ const ERROR_LABEL: Record<string, string> = {
   unauthorized: "로그인이 필요합니다.",
 };
 
+function AddressSystemMessage({
+  message,
+  onDone,
+}: {
+  message: string;
+  onDone: () => void;
+}) {
+  const [leaving, setLeaving] = useState(false);
+  const onDoneRef = useRef(onDone);
+  useEffect(() => {
+    onDoneRef.current = onDone;
+  });
+
+  useEffect(() => {
+    const hold = window.setTimeout(() => setLeaving(true), 2600);
+    const done = window.setTimeout(() => onDoneRef.current(), 2750);
+    return () => {
+      window.clearTimeout(hold);
+      window.clearTimeout(done);
+    };
+  }, [message]);
+
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div
+      role="status"
+      aria-live="polite"
+      data-address-system-message=""
+      className={cn(
+        "pointer-events-none fixed inset-0 flex items-center justify-center bg-black/45 px-8 text-center",
+        leaving ? "ui-motion-exit-fade" : "ui-motion-enter-fade",
+      )}
+      style={{ zIndex: ACCOUNT_MENU_SHEET_Z + 20 }}
+    >
+      <p id="farm-address-error" className="max-w-[22rem] text-sm font-medium leading-snug text-white">
+        {message}
+      </p>
+    </div>,
+    document.body,
+  );
+}
+
 type Props = {
   farmKey: FarmKey;
   location: FarmLocationRow | null | undefined;
@@ -68,7 +112,7 @@ type Props = {
   deferFocusUntilTap?: boolean;
   /** compact + saveOnly — 검색 없이 저장만 (프로필 Top Sheet) */
   saveOnly?: boolean;
-  /** 상태 줄 높이 안에 한 줄로 둔다. 오류는 줄 아래로 겹친다. */
+  /** 상태 줄 높이 안에 한 줄로 둔다. 오류는 화면 중앙 시스템 메시지. */
   inline?: boolean;
   onSaved?: () => void;
 };
@@ -250,15 +294,12 @@ export function FarmAddressInput({
               </div>
             ) : null}
           </div>
-          {error ? (
+          {error && inline ? (
+            <AddressSystemMessage message={error} onDone={() => setError(null)} />
+          ) : error ? (
             <p
               id="farm-address-error"
-              className={cn(
-                "leading-snug text-destructive",
-                accountMenuLayout.hubMeta,
-                inline &&
-                  "absolute left-0 top-full z-20 mt-1 max-w-full rounded-md border bg-popover px-2 py-1 text-popover-foreground shadow-md",
-              )}
+              className={cn("leading-snug text-destructive", accountMenuLayout.hubMeta)}
             >
               {error}
             </p>
