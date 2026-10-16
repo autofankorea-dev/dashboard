@@ -77,7 +77,26 @@ for (const label of edges.scaleEdgeLabels) {
 }
 assert.equal(edges.alarmRangeBands.length, 1);
 assert.equal(edges.alarmRangeBands[0]?.id, "temp-farm-range");
+assert.equal(edges.alarmRangeBands[0]?.color, "var(--status-ok)");
 assert.ok(edges.alarmRangeBands[0]!.lo < edges.alarmRangeBands[0]!.hi);
+
+const overlay = buildFarmTrendScaleEdges({
+  built: { available },
+  layers: DEFAULT_UNIFIED_LAYERS,
+  plotThresholds: DEFAULT_ALARM_THRESHOLDS,
+  mappingThresholds: DEFAULT_ALARM_THRESHOLDS,
+  layout,
+  scopeVisibility: visibility,
+  alarmEditEnabled: false,
+  tempMapLayout: layout,
+  tempMapOverflow: null,
+  chartLeftUnit: "℃",
+  overlayActive: true,
+  overlayAlign: { headFrac: 0.12 },
+  alarmRangeOn: { temp: true, hum: false },
+});
+assert.equal(overlay.alarmRangeBands[0]?.id, "temp-farm-range");
+assert.equal(overlay.alarmRangeBands[0]?.color, "var(--status-ok)");
 
 console.log("unified-barn-trend-scale-edges.test.ts: ok");
 

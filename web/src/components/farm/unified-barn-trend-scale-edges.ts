@@ -253,9 +253,7 @@ if (Number.isFinite(mappingThresholds.tempLow) && scopeVisibility.showTemp && la
         lo: tempFarmLoY,
         hi: tempFarmHiY,
         axis: "left",
-        color: overlayAlign
-          ? TREND_CHART_COLORS.temp
-          : FARM_ALARM_RANGE_FILL,
+        color: FARM_ALARM_RANGE_FILL,
         fillOpacity: overlayAlign
           ? FARM_ALARM_RANGE_TEMP_OVERLAY_OPACITY
           : FARM_ALARM_RANGE_FILL_OPACITY,

@@ -41,10 +41,10 @@ import {
 
 const TEMP_STEP = 0.1;
 
-/** 현장 알람 구간 — 기준±편차, 투명 정상색 띠만(분리 보기) */
+/** 현장 알람 구간 — 기준±편차. 구간 안은 단일·겹쳐보기 모두 정상색. */
 export const FARM_ALARM_RANGE_FILL = "var(--status-ok)";
 export const FARM_ALARM_RANGE_FILL_OPACITY = 0.22;
-/** 오버레이 — 온·습 각자 채널색. 겹치면 source-over로 조금 더 진해진다. */
+/** 겹쳐보기 불투명도. 온도·습도가 겹치면 정상색이 조금 더 진해진다. */
 export const FARM_ALARM_RANGE_TEMP_OVERLAY_OPACITY = 0.2;
 export const FARM_ALARM_RANGE_HUM_OVERLAY_OPACITY = 0.16;
 
