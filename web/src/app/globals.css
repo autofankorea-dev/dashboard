@@ -233,10 +233,10 @@ html[data-viewport-preview="mobile"] [data-viewport-preview="mobile"] {
   --sidebar-accent-foreground: oklch(0.28 0.04 155);
   --sidebar-border: oklch(0.84 0.018 155);
   --sidebar-ring: oklch(0.55 0.14 145);
-  /* Channel — wine temp + gunmetal motor (status 녹황적과 색상각 분리). 습도 파랑 유지 */
+  /* Channel — wine temp + purple motor (status 녹황적·습도 파랑과 색상각 분리) */
   --channel-temp: oklch(0.48 0.12 15);
   --channel-hum: oklch(0.55 0.12 230);
-  --channel-motor: oklch(0.53 0.07 260);
+  --channel-motor: oklch(0.46 0.15 305);
   --channel-info: oklch(0.55 0.12 230);
   /* 명령 이력·적용 큐 진행 — C2 청록(시안), hum/info(230)과 분리 */
   --channel-command: oklch(0.55 0.12 210);
@@ -411,7 +411,7 @@ html[data-pc-band="narrow"]:not([data-field-rail-user="1"]) [data-field-rail] {
   --sidebar-ring: oklch(0.723 0.191 145);
   --channel-temp: oklch(0.68 0.11 15);
   --channel-hum: oklch(0.72 0.12 230);
-  --channel-motor: oklch(0.72 0.06 258);
+  --channel-motor: oklch(0.76 0.13 305);
   --channel-info: oklch(0.72 0.12 230);
   --channel-command: oklch(0.72 0.12 210);
   --channel-fan-intake: oklch(0.72 0.06 258);

@@ -111,7 +111,7 @@ function PercentEdgeBadge({
   return (
     <div
       className={cn(
-        "flex shrink-0 items-center justify-center rounded-md border border-border bg-muted/60 font-bold tabular-nums leading-none text-channel-hum",
+        "flex shrink-0 items-center justify-center rounded-md border border-border bg-muted/60 font-bold tabular-nums leading-none text-channel-motor",
         compact ? "h-5 min-w-8 px-0.5 text-[10px]" : "h-[22px] min-w-8 px-1 text-[11px]",
       )}
       aria-label={ariaLabel}
@@ -152,7 +152,7 @@ export function VentGaugeV1({
         aria-label={`환기 ${min}–${max}%`}
       >
         <div
-          className="absolute inset-y-0 rounded-full bg-channel-hum/45"
+          className="absolute inset-y-0 rounded-full bg-channel-motor/45"
           style={{ left: `${min}%`, width: `${span}%` }}
           aria-hidden
         />

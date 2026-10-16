@@ -52,7 +52,7 @@ function ExampleChannels({
                 aria-hidden
               >
                 <span
-                  className="block h-full bg-channel-info"
+                  className="block h-full bg-channel-motor"
                   style={{ width: `${MOTOR_VALUES[index]}%` }}
                 />
               </span>
@@ -100,7 +100,7 @@ function ExampleChannels({
             )}
             onClick={() => onPick(index)}
           >
-            <span className="absolute top-0.5 left-1 text-[9px] font-semibold text-channel-info">
+            <span className="absolute top-0.5 left-1 text-[9px] font-semibold text-channel-motor">
               {label}
             </span>
             <span className="mt-3 flex w-full flex-col items-center gap-0.5">

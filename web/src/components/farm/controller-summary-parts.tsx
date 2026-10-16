@@ -493,7 +493,7 @@ function FanReadout({
           aria-hidden
         >
           <span
-            className="block h-full bg-channel-info"
+            className="block h-full bg-channel-motor"
             style={{ width: `${Math.max(0, Math.min(100, percent))}%` }}
           />
         </span>
@@ -578,7 +578,7 @@ function ChannelCell({
     "relative min-h-[3rem] rounded-md border bg-background/80 sm:min-h-[3.25rem]",
     compact ? "p-1.5 sm:p-2" : "p-2 sm:p-2.5",
     expanded &&
-      "border-channel-info/60 bg-channel-info/5 ring-1 ring-channel-info/30",
+      "border-channel-motor/60 bg-channel-motor/5 ring-1 ring-channel-motor/30",
     interactive &&
       cn(
         "cursor-pointer hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
@@ -594,7 +594,7 @@ function ChannelCell({
           compact
             ? dashboardUi.gridCellMetaCompact
             : "text-[10px] sm:text-[11px]",
-          "text-channel-info",
+          "text-channel-motor",
         )}
       >
         {slotLabel}
@@ -614,7 +614,7 @@ function ChannelCell({
       </div>
       {expanded && interactive ? (
         <span
-          className="absolute right-1.5 bottom-1 text-[10px] font-semibold text-channel-info"
+          className="absolute right-1.5 bottom-1 text-[10px] font-semibold text-channel-motor"
           aria-hidden
         >
           ▼
