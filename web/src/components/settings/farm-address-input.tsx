@@ -303,7 +303,11 @@ export const FarmAddressInput = forwardRef<FarmAddressInputHandle, Props>(functi
               <button
                 type="button"
                 disabled={pending}
-                className={cn(accountMenuLayout.compactSaveBtn, inline && "h-7 py-0")}
+                className={cn(
+                  accountMenuLayout.compactSaveBtn,
+                  inline &&
+                    "h-auto self-stretch py-0 leading-none text-[length:var(--density-meta)] md:text-[length:var(--density-meta-md)]",
+                )}
                 onClick={runSave}
               >
                 {pending ? "…" : "저장"}
