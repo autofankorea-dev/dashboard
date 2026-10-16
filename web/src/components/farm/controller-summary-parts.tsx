@@ -195,10 +195,7 @@ export function ControllerSummaryHeader({
         {stallTypeLabel}
       </span>
       <span
-        className={cn(
-          "mt-0.5 flex min-w-0 items-center gap-2",
-          bare && "justify-center",
-        )}
+        className="mt-0.5 flex min-w-0 items-center justify-center gap-2"
         data-cover-morph-target="marks"
       >
         <StallUnitNoMark
@@ -236,8 +233,7 @@ export function ControllerSummaryHeader({
     <button
       type="button"
       className={cn(
-        "flex min-w-0 flex-1 items-start gap-1 text-left",
-        bare && "w-full justify-center text-center",
+        "relative inline-flex min-w-0 items-start justify-center text-center",
         dashboardAffordance.hitSurface,
       )}
       aria-label={t("panel.hideDetail")}
@@ -246,26 +242,17 @@ export function ControllerSummaryHeader({
         onConcealDetail();
       }}
     >
-      <span
-        className={cn(
-          "flex min-w-0 flex-1 flex-col gap-0.5",
-          bare && "items-center",
-        )}
-      >
-        {titleBlock}
-      </span>
+      <span className="flex min-w-0 flex-col items-center gap-0.5">{titleBlock}</span>
       <ChevronUp
-        className={cn(dashboardAffordance.hitHint, "mt-1 text-muted-foreground")}
+        className={cn(
+          dashboardAffordance.hitHint,
+          "absolute top-1 left-full ml-1 text-muted-foreground",
+        )}
         aria-hidden
       />
     </button>
   ) : (
-    <div
-      className={cn(
-        "flex min-w-0 flex-1 flex-col gap-0.5",
-        bare && "w-full items-center text-center",
-      )}
-    >
+    <div className="flex min-w-0 flex-col items-center gap-0.5 text-center">
       {titleBlock}
     </div>
   );
@@ -298,18 +285,16 @@ export function ControllerSummaryHeader({
           <div className="flex w-full min-w-0 items-start justify-center">{identity}</div>
         </>
       ) : (
-        <div className="flex min-w-0 flex-nowrap items-start gap-2">
+        <div className="relative flex w-full min-w-0 items-start justify-center">
           <span
             className={cn(
-              "mt-1.5 size-2.5 shrink-0 rounded-sm",
+              "absolute left-0 mt-1.5 size-2.5 shrink-0 rounded-sm",
               controllerEnvCoverFillClass(envCoverLevel),
             )}
             aria-hidden
           />
-          <div className="flex min-w-0 flex-1 flex-nowrap items-start gap-2">
-            {identity}
-            {actions}
-          </div>
+          {identity}
+          <div className="absolute right-0 top-0 z-10">{actions}</div>
         </div>
       )}
     </div>
