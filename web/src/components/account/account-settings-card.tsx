@@ -28,7 +28,7 @@ function addressPreview(text: string, emptyLabel: string) {
   return trimmed.length > 6 ? `${trimmed.slice(0, 6)}…` : trimmed;
 }
 
-export function AccountSettingsCard({
+export function AccountFarmAddressSetting({
   farmKey,
   location,
   farmLabel,
@@ -36,23 +36,71 @@ export function AccountSettingsCard({
   deferAddressFocus,
   onSaved,
 }: {
-  farmKey: FarmKey | null;
+  farmKey: FarmKey;
   location: FarmLocationRow | null | undefined;
   farmLabel?: string | null;
   canEditLocation: boolean;
   deferAddressFocus?: boolean;
   onSaved?: () => void;
 }) {
+  const t = useSheetCopy();
+  const [open, setOpen] = useState(false);
+  const addressText = location?.addressText ?? "";
+
+  return (
+    <div
+      className={cn(
+        "flex min-w-0 shrink-0 flex-col items-stretch",
+        open && accountMenuLayout.previewAddress,
+      )}
+      data-account-address-setting=""
+    >
+      <button
+        type="button"
+        className={cn(
+          accountMenuLayout.contextFarmBtn,
+          "inline-flex max-w-full items-center gap-2 px-2 py-1 text-left",
+          open && "w-full justify-between",
+        )}
+        aria-expanded={open}
+        onClick={() => setOpen((current) => !current)}
+      >
+        <span>{t("settings.address")}</span>
+        <span className="truncate text-muted-foreground">
+          {addressPreview(addressText, t("settings.address"))}
+        </span>
+      </button>
+      {open ? (
+        <div className="flex w-full flex-col gap-1.5 py-1.5">
+          <FarmAddressInput
+            key={`${farmKey.lsindRegistNo}-${farmKey.itemCode}`}
+            farmKey={farmKey}
+            location={location}
+            disabled={!canEditLocation}
+            compact
+            saveOnly
+            deferFocusUntilTap={deferAddressFocus}
+            onSaved={onSaved}
+          />
+          <SettingsAddressExample
+            farmName={farmLabel || location?.farmName || t("header.farmSelect")}
+            address={addressText}
+          />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export function AccountSettingsCard() {
   const prefs = useProfileSheetPrefs();
   const update = useUpdateProfileSheetPrefs();
   const t = useSheetCopy();
-  const [addressOpen, setAddressOpen] = useState(false);
   const dark = useSyncExternalStore(
     subscribeDashboardTheme,
     () => getDashboardTheme() === "dark",
     () => false,
   );
-  const addressText = location?.addressText ?? "";
 
   return (
     <div className="flex w-full min-w-0 flex-col gap-3">
@@ -112,42 +160,6 @@ export function AccountSettingsCard({
         </div>
         <SettingsControllerPanelExample />
       </div>
-      {farmKey ? (
-        <div className={cn("min-w-0", accountMenuLayout.previewAddress)}>
-          <button
-            type="button"
-            className={cn(
-              accountMenuLayout.contextFarmBtn,
-              "flex w-full items-center justify-between gap-2 px-2 py-1.5 text-left",
-            )}
-            aria-expanded={addressOpen}
-            onClick={() => setAddressOpen((open) => !open)}
-          >
-            <span>{t("settings.address")}</span>
-            <span className="truncate text-muted-foreground">
-              {addressPreview(addressText, t("settings.address"))}
-            </span>
-          </button>
-          {addressOpen ? (
-            <div className="flex flex-col gap-1.5 py-1.5">
-              <FarmAddressInput
-                key={`${farmKey.lsindRegistNo}-${farmKey.itemCode}`}
-                farmKey={farmKey}
-                location={location}
-                disabled={!canEditLocation}
-                compact
-                saveOnly
-                deferFocusUntilTap={deferAddressFocus}
-                onSaved={onSaved}
-              />
-              <SettingsAddressExample
-                farmName={farmLabel || location?.farmName || t("header.farmSelect")}
-                address={addressText}
-              />
-            </div>
-          ) : null}
-        </div>
-      ) : null}
     </div>
   );
 }

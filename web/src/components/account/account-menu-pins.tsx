@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { AlarmRow } from "@/lib/domain/alarms";
 import type { FarmKey } from "@/lib/domain/farm-key";
-import type { FarmLocationRow } from "@/lib/data/farm-location";
 import type { FarmOverview } from "@/lib/data/iot";
 import { useShellAlarms } from "@/lib/navigation/shell-live-alarms-store";
 import {
@@ -44,11 +43,6 @@ type Props = {
   overview?: FarmOverview;
   alarms?: AlarmRow[];
   farmKey?: FarmKey | null;
-  addressLocation?: FarmLocationRow | null;
-  farmLabel?: string | null;
-  canEditLocation?: boolean;
-  deferAddressFocus?: boolean;
-  onFarmSaved?: () => void;
   onCloseMenu?: () => void;
   embedded?: boolean;
   /** tile — Two-Zone Action 2×2 grid */
@@ -59,11 +53,6 @@ export function AccountMenuPins({
   overview,
   alarms = [],
   farmKey = null,
-  addressLocation = null,
-  farmLabel = null,
-  canEditLocation = false,
-  deferAddressFocus = false,
-  onFarmSaved,
   onCloseMenu,
   embedded = false,
   variant = "row",
@@ -197,14 +186,7 @@ export function AccountMenuPins({
             />
           ) : null}
           {sheetTool === "settings" ? (
-            <AccountSettingsCard
-              farmKey={farmKey}
-              location={addressLocation}
-              farmLabel={farmLabel}
-              canEditLocation={canEditLocation}
-              deferAddressFocus={deferAddressFocus}
-              onSaved={onFarmSaved}
-            />
+            <AccountSettingsCard />
           ) : null}
         </div>
         ) : null}

@@ -9,6 +9,7 @@ import {
   TriangleAlert,
   WifiOff,
 } from "lucide-react";
+import { AccountFarmAddressSetting } from "@/components/account/account-settings-card";
 import { AccountMenuPins } from "@/components/account/account-menu-pins";
 import { FarmSwitcher } from "@/components/layout/farm-switcher";
 import { isValidFarmKey } from "@/lib/domain/barn-catalog";
@@ -222,10 +223,20 @@ export function AccountMenuSplitBody({
     >
       {farmControl}
       {farmLabel && liveLine ? (
-        <p className={cn(accountMenuLayout.liveStrip, "min-w-0 flex-1")}>
+        <p className={cn(accountMenuLayout.liveStrip, "min-w-0")}>
           <span className={statusDotClass(liveStatus?.status)} aria-hidden />
           <span className="min-w-0 truncate">{liveLine}</span>
         </p>
+      ) : null}
+      {farmKey ? (
+        <AccountFarmAddressSetting
+          farmKey={farmKey}
+          location={activeFarmLocation?.location}
+          farmLabel={farmLabel}
+          canEditLocation={canEditLocation}
+          deferAddressFocus={deferAddressFocus}
+          onSaved={onFarmSaved}
+        />
       ) : null}
       {!farmLabel ? (
         <HubToneStrip farmOptions={farmOptions} farmSummaries={farmSummaries} />
@@ -260,11 +271,6 @@ export function AccountMenuSplitBody({
           overview={overview}
           alarms={alarms}
           farmKey={activeFarmKey ? farmKey : null}
-          addressLocation={activeFarmKey ? activeFarmLocation?.location : null}
-          farmLabel={farmLabel}
-          canEditLocation={canEditLocation}
-          deferAddressFocus={deferAddressFocus}
-          onFarmSaved={onFarmSaved}
           onCloseMenu={onCloseMenu}
         />
       </div>

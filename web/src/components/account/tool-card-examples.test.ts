@@ -50,7 +50,9 @@ test("sheet previews keep the width of the component they stand in for", () => {
   assert.match(tools, /previewAlarm/);
   const settings = read("./account-settings-card.tsx");
   assert.match(settings, /SettingsControllerPanelExample/);
+  assert.match(settings, /AccountFarmAddressSetting/);
   assert.match(settings, /previewAddress/);
+  assert.match(read("./account-menu-split.tsx"), /AccountFarmAddressSetting/);
   assert.match(read("./account-menu-alarm-panel.tsx"), /previewAlarm/);
   assert.match(read("../layout/daily-report-button.tsx"), /previewReport/);
 });
