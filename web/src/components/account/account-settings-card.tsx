@@ -158,7 +158,7 @@ export function AccountSettingsCard() {
 }
 
 function SettingName({ children }: { children: string }) {
-  return <span className="pt-1 text-xs font-medium">{children}</span>;
+  return <span className="block w-full text-center text-xs font-medium">{children}</span>;
 }
 
 function ChoiceRow({
