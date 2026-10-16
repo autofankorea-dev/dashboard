@@ -19,13 +19,8 @@ import {
 } from "@/components/account/profile-sheet-prefs";
 import {
   SettingsAddressExample,
-  SettingsCoverExample,
-  SettingsFieldExample,
-  SettingsLanguageExample,
-  SettingsMotorExample,
+  SettingsControllerPanelExample,
 } from "@/components/account/account-settings-examples";
-
-type Section = "screen" | "motor" | "cover" | "language" | "address";
 
 function addressPreview(text: string, emptyLabel: string) {
   const trimmed = text.trim();
@@ -51,7 +46,7 @@ export function AccountSettingsCard({
   const prefs = useProfileSheetPrefs();
   const update = useUpdateProfileSheetPrefs();
   const t = useSheetCopy();
-  const [open, setOpen] = useState<Section | null>(null);
+  const [addressOpen, setAddressOpen] = useState(false);
   const dark = useSyncExternalStore(
     subscribeDashboardTheme,
     () => getDashboardTheme() === "dark",
@@ -59,158 +54,106 @@ export function AccountSettingsCard({
   );
   const addressText = location?.addressText ?? "";
 
-  function toggle(section: Section) {
-    setOpen((current) => (current === section ? null : section));
-  }
-
-  const rows: { id: Section; label: string; value: string; hidden?: boolean }[] = [
-    {
-      id: "screen",
-      label: t("settings.screen"),
-      value: dark ? t("settings.dark") : t("settings.light"),
-    },
-    {
-      id: "motor",
-      label: t("settings.motor"),
-      value: `${prefs.motorDisplay === "bar" ? t("settings.bar") : t("settings.number")} · ${
-        prefs.motorFocus === "setpoint" ? t("settings.motorSetLarge") : t("settings.motorFanLarge")
-      }`,
-    },
-    {
-      id: "cover",
-      label: t("settings.cover"),
-      value: prefs.envCover ? t("settings.coverOn") : t("settings.coverOff"),
-    },
-    {
-      id: "language",
-      label: t("settings.language"),
-      value: prefs.locale === "en" ? t("settings.english") : t("settings.korean"),
-    },
-    {
-      id: "address",
-      label: t("settings.address"),
-      value: addressPreview(addressText, t("settings.address")),
-      hidden: !farmKey,
-    },
-  ];
-
   return (
-    <div className="flex w-full min-w-0 flex-col gap-1.5">
-      {rows.filter((row) => !row.hidden).map((row) => (
-        <div
-          key={row.id}
-          className={cn(
-            "min-w-0",
-            row.id === "address"
-              ? accountMenuLayout.previewAddress
-              : row.id === "cover" && prefs.envCover
-                ? accountMenuLayout.previewCoverPair
-                : accountMenuLayout.previewCard,
-          )}
-        >
+    <div className="flex w-full min-w-0 flex-col gap-3">
+      <div className="flex w-fit max-w-full flex-col items-start gap-3 sm:flex-row">
+        <div className="grid shrink-0 grid-cols-[max-content_max-content] items-start gap-x-3 gap-y-2">
+          <SettingName>{t("settings.screen")}</SettingName>
+          <ChoiceRow
+            options={[
+              { id: "light", label: t("settings.light"), active: !dark },
+              { id: "dark", label: t("settings.dark"), active: dark },
+            ]}
+            onPick={(id) => setDashboardTheme(id === "dark" ? "dark" : "light")}
+          />
+          <SettingName>{t("settings.motor")}</SettingName>
+          <div className="flex flex-col gap-1">
+            <ChoiceRow
+              options={[
+                { id: "number", label: t("settings.number"), active: prefs.motorDisplay === "number" },
+                { id: "bar", label: t("settings.bar"), active: prefs.motorDisplay === "bar" },
+              ]}
+              onPick={(id) => void update({ motorDisplay: id === "bar" ? "bar" : "number" })}
+            />
+            <ChoiceRow
+              options={[
+                {
+                  id: "fan",
+                  label: t("settings.motorFanLarge"),
+                  active: prefs.motorFocus !== "setpoint",
+                },
+                {
+                  id: "setpoint",
+                  label: t("settings.motorSetLarge"),
+                  active: prefs.motorFocus === "setpoint",
+                },
+              ]}
+              onPick={(id) =>
+                void update({ motorFocus: id === "setpoint" ? "setpoint" : "fan" })
+              }
+            />
+          </div>
+          <SettingName>{t("settings.cover")}</SettingName>
+          <ChoiceRow
+            options={[
+              { id: "on", label: t("settings.coverOn"), active: prefs.envCover },
+              { id: "off", label: t("settings.coverOff"), active: !prefs.envCover },
+            ]}
+            onPick={(id) => void update({ envCover: id === "on" })}
+          />
+          <SettingName>{t("settings.language")}</SettingName>
+          <ChoiceRow
+            options={[
+              { id: "ko", label: t("settings.korean"), active: prefs.locale === "ko" },
+              { id: "en", label: t("settings.english"), active: prefs.locale === "en" },
+            ]}
+            onPick={(id) => void update({ locale: id === "en" ? "en" : "ko" })}
+          />
+        </div>
+        <SettingsControllerPanelExample />
+      </div>
+      {farmKey ? (
+        <div className={cn("min-w-0", accountMenuLayout.previewAddress)}>
           <button
             type="button"
             className={cn(
               accountMenuLayout.contextFarmBtn,
               "flex w-full items-center justify-between gap-2 px-2 py-1.5 text-left",
             )}
-            aria-expanded={open === row.id}
-            onClick={() => toggle(row.id)}
+            aria-expanded={addressOpen}
+            onClick={() => setAddressOpen((open) => !open)}
           >
-            <span>{row.label}</span>
-            <span className="truncate text-muted-foreground">{row.value}</span>
+            <span>{t("settings.address")}</span>
+            <span className="truncate text-muted-foreground">
+              {addressPreview(addressText, t("settings.address"))}
+            </span>
           </button>
-          {open === row.id ? (
+          {addressOpen ? (
             <div className="flex flex-col gap-1.5 py-1.5">
-              {row.id === "screen" ? (
-                <>
-                  <ChoiceRow
-                    options={[
-                      { id: "light", label: t("settings.light"), active: !dark },
-                      { id: "dark", label: t("settings.dark"), active: dark },
-                    ]}
-                    onPick={(id) => setDashboardTheme(id === "dark" ? "dark" : "light")}
-                  />
-                  <SettingsFieldExample />
-                </>
-              ) : null}
-              {row.id === "motor" ? (
-                <>
-                  <ChoiceRow
-                    options={[
-                      { id: "number", label: t("settings.number"), active: prefs.motorDisplay === "number" },
-                      { id: "bar", label: t("settings.bar"), active: prefs.motorDisplay === "bar" },
-                    ]}
-                    onPick={(id) => void update({ motorDisplay: id === "bar" ? "bar" : "number" })}
-                  />
-                  <ChoiceRow
-                    options={[
-                      {
-                        id: "fan",
-                        label: t("settings.motorFanLarge"),
-                        active: prefs.motorFocus !== "setpoint",
-                      },
-                      {
-                        id: "setpoint",
-                        label: t("settings.motorSetLarge"),
-                        active: prefs.motorFocus === "setpoint",
-                      },
-                    ]}
-                    onPick={(id) =>
-                      void update({ motorFocus: id === "setpoint" ? "setpoint" : "fan" })
-                    }
-                  />
-                  <SettingsMotorExample mode={prefs.motorDisplay} focus={prefs.motorFocus} />
-                </>
-              ) : null}
-              {row.id === "cover" ? (
-                <>
-                  <ChoiceRow
-                    options={[
-                      { id: "on", label: t("settings.coverOn"), active: prefs.envCover },
-                      { id: "off", label: t("settings.coverOff"), active: !prefs.envCover },
-                    ]}
-                    onPick={(id) => void update({ envCover: id === "on" })}
-                  />
-                  <SettingsCoverExample on={prefs.envCover} />
-                </>
-              ) : null}
-              {row.id === "language" ? (
-                <>
-                  <ChoiceRow
-                    options={[
-                      { id: "ko", label: t("settings.korean"), active: prefs.locale === "ko" },
-                      { id: "en", label: t("settings.english"), active: prefs.locale === "en" },
-                    ]}
-                    onPick={(id) => void update({ locale: id === "en" ? "en" : "ko" })}
-                  />
-                  <SettingsLanguageExample />
-                </>
-              ) : null}
-              {row.id === "address" && farmKey ? (
-                <>
-                  <FarmAddressInput
-                    key={`${farmKey.lsindRegistNo}-${farmKey.itemCode}`}
-                    farmKey={farmKey}
-                    location={location}
-                    disabled={!canEditLocation}
-                    compact
-                    saveOnly
-                    deferFocusUntilTap={deferAddressFocus}
-                    onSaved={onSaved}
-                  />
-                  <SettingsAddressExample
-                    farmName={farmLabel || location?.farmName || t("header.farmSelect")}
-                    address={addressText}
-                  />
-                </>
-              ) : null}
+              <FarmAddressInput
+                key={`${farmKey.lsindRegistNo}-${farmKey.itemCode}`}
+                farmKey={farmKey}
+                location={location}
+                disabled={!canEditLocation}
+                compact
+                saveOnly
+                deferFocusUntilTap={deferAddressFocus}
+                onSaved={onSaved}
+              />
+              <SettingsAddressExample
+                farmName={farmLabel || location?.farmName || t("header.farmSelect")}
+                address={addressText}
+              />
             </div>
           ) : null}
         </div>
-      ))}
+      ) : null}
     </div>
   );
+}
+
+function SettingName({ children }: { children: string }) {
+  return <span className="pt-1 text-xs font-medium">{children}</span>;
 }
 
 function ChoiceRow({
@@ -221,7 +164,7 @@ function ChoiceRow({
   onPick: (id: string) => void;
 }) {
   return (
-    <div className="flex flex-wrap gap-1">
+    <div className="flex flex-nowrap gap-1">
       {options.map((option) => (
         <button
           key={option.id}

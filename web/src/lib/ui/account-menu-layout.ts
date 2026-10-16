@@ -65,8 +65,6 @@ export const accountMenuLayout = {
    * 컨트롤러 카드 — 목록 3열(1440)과 5열(2150) 모두 345–346px.
    */
   previewCard: "w-full max-w-[21.625rem]",
-  /** 덮개 켜짐 예시 — 닫힌 카드와 열린 카드, 목록 gap-2. */
-  previewCoverPair: "w-full max-w-[calc(21.625rem*2+0.5rem)]",
   /** 이상상황 카드 — hubDetailPopoverAlarm */
   previewAlarm: "w-full max-w-[18.5rem]",
   /** 일보 첫 장 본문 — (PAGE_W - 2×MARGIN) pt, 96dpi */

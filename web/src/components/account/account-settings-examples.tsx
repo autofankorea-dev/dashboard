@@ -1,16 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Thermometer, Wifi } from "lucide-react";
-import {
-  controllerEnvCoverFillClass,
-  controllerEnvCoverNotices,
-  coverNoticeLevel,
-} from "@/lib/farm/controller-env-cover";
 import type { MotorFocus, SheetLocale } from "@/lib/ui/profile-sheet-prefs";
 import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { accountMenuLayout } from "@/lib/ui/account-menu-layout";
-import { coverExampleReading, type ExampleTone } from "@/lib/ui/settings-example-reading";
 import { cn } from "@/lib/utils";
 
 const MOTOR_VALUES = [72, 41, 8] as const;
@@ -124,164 +117,52 @@ function ExampleChannels({
   );
 }
 
-export function SettingsFieldExample() {
-  return (
-    <div
-      data-settings-example="screen"
-      className={cn(accountMenuLayout.previewCard, "rounded-lg border bg-background p-2")}
-    >
-      <div className="mb-2 flex items-center gap-1">
-        <span className="size-3 rounded-sm bg-primary" />
-        <span className="h-2 w-16 rounded bg-muted" />
-      </div>
-      <div className="grid grid-cols-3 gap-1">
-        {["24°", "23°", "31°", "22°", "36°", "—"].map((value) => (
-          <div
-            key={value}
-            className="rounded-md bg-card px-1 py-1 text-center text-[11px] font-semibold text-card-foreground"
-          >
-            {value}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-export function SettingsMotorExample({
-  mode,
-  focus,
-}: {
-  mode: "number" | "bar";
-  focus: MotorFocus;
-}) {
-  const [selected, setSelected] = useState(0);
-  const locale = useProfileSheetPrefs().locale;
-  const t = useSheetCopy();
-  return (
-    <div
-      data-settings-example="motor"
-      className={cn(accountMenuLayout.previewCard, "rounded-lg border bg-card p-2.5 sm:p-3")}
-    >
-      <div className="mb-2 flex items-center justify-between text-xs">
-        <span className="font-semibold">{exampleStallType(locale)}</span>
-        <span>24.6°C</span>
-      </div>
-      <ExampleChannels mode={mode} focus={focus} selected={selected} onPick={setSelected} />
-      <p className="mt-1 text-[10px] text-muted-foreground">{t("settings.motor")}</p>
-    </div>
-  );
-}
-
-export function SettingsCoverExample({ on }: { on: boolean }) {
-  const [tone, setTone] = useState<ExampleTone>("ok");
-  const [selected, setSelected] = useState(0);
+/** 화면·모터·덮개·언어가 같이 먹는 컨트롤러 카드 한 장. */
+export function SettingsControllerPanelExample() {
   const prefs = useProfileSheetPrefs();
-  const t = useSheetCopy();
-  const reading = coverExampleReading(on ? "ok" : tone);
-  const top = controllerEnvCoverNotices(reading)[0];
-  const level = coverNoticeLevel(top);
-  const Icon = !top ? Check : top.kind === "comm" ? Wifi : Thermometer;
-  const phrase = top
-    ? `${t(top.kind === "comm" ? "cover.comm" : "cover.temp")} ${t(top.grade === "caution" ? "cover.caution" : top.grade === "warning" ? "cover.warning" : "cover.down")}`
-    : t("cover.ok");
+  const [selected, setSelected] = useState(0);
   const stall = exampleStallType(prefs.locale);
 
-  if (on) {
-    return (
-      <div
-        data-settings-example="cover"
-        className={cn(accountMenuLayout.previewCoverPair, "grid grid-cols-2 gap-2")}
-      >
-        <div className="relative min-h-16 rounded-md bg-[var(--status-ok)] p-2 text-[11px] font-semibold">
-          <div>{stall}</div>
-          <div className="mt-0.5 font-medium">12 · 3</div>
-          <div className="mt-1 text-sm">24.6°C</div>
-        </div>
-        <div className="rounded-md border bg-card p-2">
-          <div className="flex items-start justify-between gap-1 text-[11px]">
-            <div>
-              <div className="font-semibold">{stall}</div>
-              <div>12 · 3</div>
-            </div>
-            <div className="text-right">
-              <div className="font-semibold">24.6°C</div>
-              <div>61%</div>
-            </div>
-          </div>
-          <div className="mt-1">
-            <ExampleChannels mode={prefs.motorDisplay} focus={prefs.motorFocus} selected={selected} onPick={setSelected} />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div
-      data-settings-example="cover"
-      className={cn(accountMenuLayout.previewCard, "flex flex-col gap-1")}
-    >
-      <div className="flex flex-wrap gap-1">
-        {(
-          [
-            ["ok", t("cover.ok")],
-            ["temp", `${t("cover.temp")} ${t("cover.caution")}`],
-            ["comm", `${t("cover.comm")} ${t("cover.warning")}`],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            aria-pressed={tone === id}
-            className={cn(
-              "rounded-md border px-2 py-0.5 text-[10px]",
-              tone === id && "border-primary bg-primary/10",
-            )}
-            onClick={() => setTone(id)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-      <div className="flex overflow-hidden rounded-md border bg-card">
-        <span className={cn("w-2 shrink-0", controllerEnvCoverFillClass(level))} aria-hidden />
-        <div className="min-w-0 flex-1 p-2">
-          <div className="flex items-center gap-1 text-xs font-semibold">
-            <Icon className="size-3.5" aria-hidden />
-            <span>{phrase}</span>
-          </div>
-          <div className="mt-1 flex items-start justify-between text-[11px]">
-            <div>
-              <div className="font-semibold">{stall}</div>
-              <div>12 · 3</div>
-            </div>
-            <div className="text-right">
-              <div className="font-semibold">24.6°C</div>
-              <div>61%</div>
-            </div>
-          </div>
-          <ExampleChannels mode={prefs.motorDisplay} focus={prefs.motorFocus} selected={selected} onPick={setSelected} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export function SettingsLanguageExample() {
-  const locale = useProfileSheetPrefs().locale;
-  const t = useSheetCopy();
-  return (
-    <div
-      data-settings-example="language"
+      data-settings-example="controller"
       className={cn(
         accountMenuLayout.previewCard,
-        "flex items-center gap-2 rounded-md bg-[var(--status-ok)] px-2 py-1.5 text-[11px] font-semibold",
+        "relative shrink-0 overflow-hidden rounded-xl border bg-card",
       )}
     >
-      <span>{exampleStallType(locale)}</span>
-      <span>24.6°C</span>
-      <span>{[t("cover.channel1"), t("cover.channel2"), t("cover.channel3")].join(" · ")}</span>
+      <div className="px-2.5 py-2.5 sm:px-3 sm:py-3">
+        <div className="mb-2 flex items-start justify-between gap-2 text-xs">
+          <div>
+            <div className="font-semibold">{stall}</div>
+            <div className="mt-0.5 font-medium">12 · 3</div>
+          </div>
+          <div className="text-right">
+            <div className="font-semibold">24.6°C</div>
+            <div>61%</div>
+          </div>
+        </div>
+        <ExampleChannels
+          mode={prefs.motorDisplay}
+          focus={prefs.motorFocus}
+          selected={selected}
+          onPick={setSelected}
+        />
+      </div>
+      {prefs.envCover ? (
+        <div className="absolute inset-0 flex flex-col justify-between bg-[var(--status-ok)] p-2.5 text-[11px] font-semibold sm:p-3">
+          <div>
+            <div>{stall}</div>
+            <div className="mt-0.5 font-medium">12 · 3</div>
+          </div>
+          <div className="text-sm">24.6°C</div>
+        </div>
+      ) : (
+        <span
+          className="pointer-events-none absolute inset-y-0 left-0 w-2 bg-[var(--status-ok)]"
+          aria-hidden
+        />
+      )}
     </div>
   );
 }

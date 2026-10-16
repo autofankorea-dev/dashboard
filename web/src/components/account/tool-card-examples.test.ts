@@ -35,7 +35,6 @@ test("alarm and report cards share the sheet example frame", () => {
 test("sheet previews keep the width of the component they stand in for", () => {
   const widths = [
     accountMenuLayout.previewCard,
-    accountMenuLayout.previewCoverPair,
     accountMenuLayout.previewAlarm,
     accountMenuLayout.previewReport,
     accountMenuLayout.previewAddress,
@@ -43,14 +42,14 @@ test("sheet previews keep the width of the component they stand in for", () => {
   assert.equal(new Set(widths).size, widths.length);
 
   const examples = read("./account-settings-examples.tsx");
+  assert.match(examples, /data-settings-example="controller"/);
   assert.match(examples, /previewCard/);
-  assert.match(examples, /previewCoverPair/);
   assert.match(examples, /previewAddress/);
   const tools = read("./tool-card-examples.tsx");
   assert.match(tools, /previewReport/);
   assert.match(tools, /previewAlarm/);
   const settings = read("./account-settings-card.tsx");
-  assert.match(settings, /previewCoverPair/);
+  assert.match(settings, /SettingsControllerPanelExample/);
   assert.match(settings, /previewAddress/);
   assert.match(read("./account-menu-alarm-panel.tsx"), /previewAlarm/);
   assert.match(read("../layout/daily-report-button.tsx"), /previewReport/);
