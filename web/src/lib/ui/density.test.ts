@@ -51,7 +51,9 @@ test("header has no density toggle and the controller card uses the md scale", (
   assert.match(cover, /dashboardTypography\.cardTitle/);
   assert.equal(cover.includes("cardDesc"), false);
   assert.match(cover, /fitText/);
-  assert.match(cover, /mt-1\.5 size-2\.5 shrink-0 rounded-sm/);
+  assert.match(cover, /items-center/);
+  assert.match(cover, /text-center/);
+  assert.equal(cover.includes("mt-1.5 size-2.5 shrink-0 rounded-sm"), false);
   assert.match(summaryHeader, /mt-1\.5 size-2\.5 shrink-0 rounded-sm/);
   assert.match(summaryHeader, /fitText/);
   assert.match(summaryHeader, /dashboardTypography\.cardTitle/);
