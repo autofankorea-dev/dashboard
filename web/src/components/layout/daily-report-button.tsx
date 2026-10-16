@@ -215,7 +215,13 @@ export function DailyReportButton({
   return (
     <>
       {presentation === "tools-card" ? (
-        <div className={cn("flex w-full min-w-0 flex-col gap-1.5", className)}>
+        <div
+          className={cn(
+            "flex min-w-0 flex-col gap-1.5",
+            accountMenuLayout.previewReport,
+            className,
+          )}
+        >
           <div className="flex min-w-0 items-center justify-between gap-2 px-0.5">
             <span className={accountMenuLayout.contextFarm}>{t("tools.report")}</span>
             <span className="shrink-0 text-xs text-muted-foreground">

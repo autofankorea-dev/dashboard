@@ -97,7 +97,17 @@ export function AccountSettingsCard({
   return (
     <div className="flex w-full min-w-0 flex-col gap-1.5">
       {rows.filter((row) => !row.hidden).map((row) => (
-        <div key={row.id} className="min-w-0">
+        <div
+          key={row.id}
+          className={cn(
+            "min-w-0",
+            row.id === "address"
+              ? accountMenuLayout.previewAddress
+              : row.id === "cover" && prefs.envCover
+                ? accountMenuLayout.previewCoverPair
+                : accountMenuLayout.previewCard,
+          )}
+        >
           <button
             type="button"
             className={cn(
@@ -111,7 +121,7 @@ export function AccountSettingsCard({
             <span className="truncate text-muted-foreground">{row.value}</span>
           </button>
           {open === row.id ? (
-            <div className="flex flex-col gap-1.5 px-1 py-1.5">
+            <div className="flex flex-col gap-1.5 py-1.5">
               {row.id === "screen" ? (
                 <>
                   <ChoiceRow

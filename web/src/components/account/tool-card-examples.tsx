@@ -1,6 +1,8 @@
 "use client";
 
 import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
+import { accountMenuLayout } from "@/lib/ui/account-menu-layout";
+import { cn } from "@/lib/utils";
 
 function sampleStall(locale: "ko" | "en") {
   return locale === "en" ? "Finisher" : "비육사";
@@ -20,7 +22,10 @@ export function ReportTemplateExample() {
   return (
     <figure
       data-tool-example="report"
-      className="overflow-hidden rounded-lg border border-border/60 bg-background"
+      className={cn(
+        accountMenuLayout.previewReport,
+        "overflow-hidden rounded-lg border border-border/60 bg-background",
+      )}
     >
       <div className="bg-muted/40 px-2 py-1.5">
         <p className="text-[11px] font-semibold leading-tight">{t("report.templateTitle")}</p>
@@ -84,7 +89,10 @@ export function AlarmTemplateExample() {
   return (
     <figure
       data-tool-example="alarm"
-      className="rounded-lg border border-border/60 bg-background px-2 py-1.5"
+      className={cn(
+        accountMenuLayout.previewAlarm,
+        "rounded-lg border border-border/60 bg-background px-2 py-1.5",
+      )}
     >
       <div className="flex items-center justify-between gap-2 text-xs font-semibold">
         <span className="truncate">{t("tool.exampleAlarm")}</span>

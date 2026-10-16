@@ -60,6 +60,23 @@ export const accountMenuLayout = {
     "flex w-full min-w-0 flex-col gap-2 border-t border-border/60 px-3 py-2.5 md:px-4 md:py-3",
   /** 아이콘 행과 같은 좌우 폭. 열린 카드만 높이를 쓴다. */
   toolsCardWell: "w-full min-w-0",
+  /**
+   * 열린 도구·예시의 너비. 시트 전체가 아니라 적용되는 컴포넌트를 따른다.
+   * 컨트롤러 카드 — 목록 3열(1440)과 5열(2150) 모두 345–346px.
+   */
+  previewCard: "w-full max-w-[21.625rem]",
+  /** 덮개 켜짐 예시 — 닫힌 카드와 열린 카드, 목록 gap-2. */
+  previewCoverPair: "w-full max-w-[calc(21.625rem*2+0.5rem)]",
+  /** 이상상황 카드 — hubDetailPopoverAlarm */
+  previewAlarm: "w-full max-w-[18.5rem]",
+  /** 일보 첫 장 본문 — (PAGE_W - 2×MARGIN) pt, 96dpi */
+  previewReport: "w-full max-w-[44.94rem]",
+  /**
+   * 주소가 붙는 허브 농장 목록 칸.
+   * `minmax(18rem, 0.85fr)` · gap-3 · main p-5.
+   */
+  previewAddress:
+    "w-full max-w-[min(100%,max(18rem,calc((100vw-3.25rem)*0.85/2.1)))]",
   addressRow:
     "min-w-0 border-b border-border/60 px-3 py-2.5 md:px-4",
   contextFarm:

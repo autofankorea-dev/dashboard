@@ -9,6 +9,7 @@ import {
 } from "@/lib/farm/controller-env-cover";
 import type { MotorFocus, SheetLocale } from "@/lib/ui/profile-sheet-prefs";
 import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
+import { accountMenuLayout } from "@/lib/ui/account-menu-layout";
 import { coverExampleReading, type ExampleTone } from "@/lib/ui/settings-example-reading";
 import { cn } from "@/lib/utils";
 
@@ -37,7 +38,7 @@ function ExampleChannels({
   const t = useSheetCopy();
   const labels = [t("cover.channel1"), t("cover.channel2"), t("cover.channel3")];
   return (
-    <div className="grid grid-cols-3 gap-1">
+    <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
       {labels.map((label, index) => {
         const fanLarge = focus !== "setpoint";
         const parts = MOTOR_SETS[index];
@@ -125,7 +126,10 @@ function ExampleChannels({
 
 export function SettingsFieldExample() {
   return (
-    <div data-settings-example="screen" className="rounded-lg border bg-background p-2">
+    <div
+      data-settings-example="screen"
+      className={cn(accountMenuLayout.previewCard, "rounded-lg border bg-background p-2")}
+    >
       <div className="mb-2 flex items-center gap-1">
         <span className="size-3 rounded-sm bg-primary" />
         <span className="h-2 w-16 rounded bg-muted" />
@@ -155,7 +159,10 @@ export function SettingsMotorExample({
   const locale = useProfileSheetPrefs().locale;
   const t = useSheetCopy();
   return (
-    <div data-settings-example="motor" className="rounded-lg border bg-card p-2">
+    <div
+      data-settings-example="motor"
+      className={cn(accountMenuLayout.previewCard, "rounded-lg border bg-card p-2.5 sm:p-3")}
+    >
       <div className="mb-2 flex items-center justify-between text-xs">
         <span className="font-semibold">{exampleStallType(locale)}</span>
         <span>24.6°C</span>
@@ -182,7 +189,10 @@ export function SettingsCoverExample({ on }: { on: boolean }) {
 
   if (on) {
     return (
-      <div data-settings-example="cover" className="grid grid-cols-2 gap-1">
+      <div
+        data-settings-example="cover"
+        className={cn(accountMenuLayout.previewCoverPair, "grid grid-cols-2 gap-2")}
+      >
         <div className="relative min-h-16 rounded-md bg-[var(--status-ok)] p-2 text-[11px] font-semibold">
           <div>{stall}</div>
           <div className="mt-0.5 font-medium">12 · 3</div>
@@ -208,7 +218,10 @@ export function SettingsCoverExample({ on }: { on: boolean }) {
   }
 
   return (
-    <div data-settings-example="cover" className="flex flex-col gap-1">
+    <div
+      data-settings-example="cover"
+      className={cn(accountMenuLayout.previewCard, "flex flex-col gap-1")}
+    >
       <div className="flex flex-wrap gap-1">
         {(
           [
@@ -261,7 +274,10 @@ export function SettingsLanguageExample() {
   return (
     <div
       data-settings-example="language"
-      className="flex items-center gap-2 rounded-md bg-[var(--status-ok)] px-2 py-1.5 text-[11px] font-semibold"
+      className={cn(
+        accountMenuLayout.previewCard,
+        "flex items-center gap-2 rounded-md bg-[var(--status-ok)] px-2 py-1.5 text-[11px] font-semibold",
+      )}
     >
       <span>{exampleStallType(locale)}</span>
       <span>24.6°C</span>
@@ -279,7 +295,13 @@ export function SettingsAddressExample({
 }) {
   const t = useSheetCopy();
   return (
-    <div data-settings-example="address" className="rounded-lg border bg-background px-2 py-1.5">
+    <div
+      data-settings-example="address"
+      className={cn(
+        accountMenuLayout.previewAddress,
+        "rounded-lg border bg-background px-2 py-1.5",
+      )}
+    >
       <div className="text-xs font-semibold">{farmName}</div>
       <div className="mt-0.5 text-[11px] text-muted-foreground">
         {address.trim() || t("settings.address")}

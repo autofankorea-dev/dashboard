@@ -271,8 +271,9 @@ export function AccountMenuAlarmPanel({
   return (
     <div
       className={cn(
-        "flex w-full min-w-0 flex-col gap-1.5",
-        embedded ? "mx-0" : "mx-4 mb-2 w-[calc(100%-2rem)]",
+        "flex min-w-0 flex-col gap-1.5",
+        accountMenuLayout.previewAlarm,
+        embedded ? "mx-0" : "mb-2 ml-4",
       )}
       data-tour-id="account-menu-alarm-panel"
     >
