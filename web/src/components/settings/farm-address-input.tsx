@@ -68,6 +68,8 @@ type Props = {
   deferFocusUntilTap?: boolean;
   /** compact + saveOnly — 검색 없이 저장만 (프로필 Top Sheet) */
   saveOnly?: boolean;
+  /** 상태 줄 높이 안에 한 줄로 둔다. 오류는 줄 아래로 겹친다. */
+  inline?: boolean;
   onSaved?: () => void;
 };
 
@@ -77,6 +79,7 @@ export function FarmAddressInput({
   disabled = false,
   compact = false,
   saveOnly = false,
+  inline = false,
   deferFocusUntilTap = false,
   onSaved,
 }: Props) {
@@ -152,7 +155,12 @@ export function FarmAddressInput({
   };
 
   return (
-    <div className={cn(compact ? "space-y-1" : "space-y-3")}>
+    <div
+      className={cn(
+        compact ? "space-y-1" : "space-y-3",
+        inline && "relative min-w-0 flex-1 space-y-0",
+      )}
+    >
       {compact ? (
         <>
           <div className={accountMenuLayout.compactInputRow}>
@@ -161,6 +169,7 @@ export function FarmAddressInput({
               type="text"
               className={cn(
                 accountMenuLayout.compactInput,
+                inline && "h-8 py-0",
                 inputLocked && "cursor-text",
               )}
               placeholder="농장 주소"
@@ -214,7 +223,7 @@ export function FarmAddressInput({
               <button
                 type="button"
                 disabled={pending}
-                className={accountMenuLayout.compactSaveBtn}
+                className={cn(accountMenuLayout.compactSaveBtn, inline && "h-8 py-0")}
                 onClick={runSave}
               >
                 {pending ? "…" : "저장"}
@@ -243,7 +252,12 @@ export function FarmAddressInput({
           {error ? (
             <p
               id="farm-address-error"
-              className={cn("leading-snug text-destructive", accountMenuLayout.hubMeta)}
+              className={cn(
+                "leading-snug text-destructive",
+                accountMenuLayout.hubMeta,
+                inline &&
+                  "absolute left-0 top-full z-20 mt-1 max-w-full rounded-md border bg-popover px-2 py-1 text-popover-foreground shadow-md",
+              )}
             >
               {error}
             </p>

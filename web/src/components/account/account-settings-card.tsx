@@ -17,10 +17,7 @@ import {
   useSheetCopy,
   useUpdateProfileSheetPrefs,
 } from "@/components/account/profile-sheet-prefs";
-import {
-  SettingsAddressExample,
-  SettingsControllerPanelExample,
-} from "@/components/account/account-settings-examples";
+import { SettingsControllerPanelExample } from "@/components/account/account-settings-examples";
 
 function addressPreview(text: string, emptyLabel: string) {
   const trimmed = text.trim();
@@ -31,7 +28,6 @@ function addressPreview(text: string, emptyLabel: string) {
 export function AccountFarmAddressSetting({
   farmKey,
   location,
-  farmLabel,
   canEditLocation,
   deferAddressFocus,
   onSaved,
@@ -49,22 +45,16 @@ export function AccountFarmAddressSetting({
 
   return (
     <div className={accountMenuLayout.addressChip} data-account-address-setting="">
-      <button
-        type="button"
-        className={cn(
-          accountMenuLayout.contextFarmBtn,
-          "inline-flex max-w-full items-center gap-2 px-2 py-1 text-left",
-        )}
-        aria-expanded={open}
-        onClick={() => setOpen((current) => !current)}
-      >
-        <span className="shrink-0">{t("settings.address")}</span>
-        <span className="min-w-0 truncate text-muted-foreground">
-          {addressPreview(addressText, t("settings.address"))}
-        </span>
-      </button>
       {open ? (
-        <div className="mt-1 flex w-full flex-col gap-1.5 rounded-lg border bg-popover p-2 text-popover-foreground">
+        <div className="flex h-full w-full min-w-0 items-center gap-1 px-2">
+          <button
+            type="button"
+            className={cn(accountMenuLayout.contextFarmBtn, "shrink-0")}
+            aria-expanded
+            onClick={() => setOpen(false)}
+          >
+            {t("settings.address")}
+          </button>
           <FarmAddressInput
             key={`${farmKey.lsindRegistNo}-${farmKey.itemCode}`}
             farmKey={farmKey}
@@ -72,15 +62,30 @@ export function AccountFarmAddressSetting({
             disabled={!canEditLocation}
             compact
             saveOnly
+            inline
             deferFocusUntilTap={deferAddressFocus}
-            onSaved={onSaved}
-          />
-          <SettingsAddressExample
-            farmName={farmLabel || location?.farmName || t("header.farmSelect")}
-            address={addressText}
+            onSaved={() => {
+              setOpen(false);
+              onSaved?.();
+            }}
           />
         </div>
-      ) : null}
+      ) : (
+        <button
+          type="button"
+          className={cn(
+            accountMenuLayout.contextFarmBtn,
+            "inline-flex h-full max-w-full items-center gap-2 px-2 text-left",
+          )}
+          aria-expanded={false}
+          onClick={() => setOpen(true)}
+        >
+          <span className="shrink-0">{t("settings.address")}</span>
+          <span className="min-w-0 truncate text-muted-foreground">
+            {addressPreview(addressText, t("settings.address"))}
+          </span>
+        </button>
+      )}
     </div>
   );
 }
