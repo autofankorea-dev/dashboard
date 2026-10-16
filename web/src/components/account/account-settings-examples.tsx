@@ -179,7 +179,6 @@ export function SettingsAddressExample({
     <div
       data-settings-example="address"
       className={cn(
-        accountMenuLayout.previewAddress,
         "rounded-lg border bg-background px-2 py-1.5",
       )}
     >

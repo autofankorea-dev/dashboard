@@ -48,30 +48,23 @@ export function AccountFarmAddressSetting({
   const addressText = location?.addressText ?? "";
 
   return (
-    <div
-      className={cn(
-        "flex min-w-0 shrink-0 flex-col items-stretch",
-        open && accountMenuLayout.previewAddress,
-      )}
-      data-account-address-setting=""
-    >
+    <div className={accountMenuLayout.addressChip} data-account-address-setting="">
       <button
         type="button"
         className={cn(
           accountMenuLayout.contextFarmBtn,
           "inline-flex max-w-full items-center gap-2 px-2 py-1 text-left",
-          open && "w-full justify-between",
         )}
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
       >
-        <span>{t("settings.address")}</span>
-        <span className="truncate text-muted-foreground">
+        <span className="shrink-0">{t("settings.address")}</span>
+        <span className="min-w-0 truncate text-muted-foreground">
           {addressPreview(addressText, t("settings.address"))}
         </span>
       </button>
       {open ? (
-        <div className="flex w-full flex-col gap-1.5 py-1.5">
+        <div className="mt-1 flex w-full flex-col gap-1.5 rounded-lg border bg-popover p-2 text-popover-foreground">
           <FarmAddressInput
             key={`${farmKey.lsindRegistNo}-${farmKey.itemCode}`}
             farmKey={farmKey}
@@ -105,7 +98,7 @@ export function AccountSettingsCard() {
   return (
     <div className="flex w-full min-w-0 flex-col gap-3">
       <div className="flex w-fit max-w-full flex-col items-start gap-3 sm:flex-row">
-        <div className="grid shrink-0 grid-cols-[max-content_max-content] items-start gap-x-3 gap-y-2">
+        <div className={accountMenuLayout.settingsToggles}>
           <SettingName>{t("settings.screen")}</SettingName>
           <ChoiceRow
             options={[
@@ -176,7 +169,7 @@ function ChoiceRow({
   onPick: (id: string) => void;
 }) {
   return (
-    <div className="flex flex-nowrap gap-1">
+    <div className="flex min-w-0 flex-wrap gap-1">
       {options.map((option) => (
         <button
           key={option.id}

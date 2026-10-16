@@ -34,7 +34,7 @@ export const accountMenuLayout = {
   sheetHeader:
     "flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 border-b border-border/60 px-3 py-2 max-md:pt-safe md:gap-x-3 md:px-4 md:py-2.5",
   sheetIdentity: "flex basis-full min-w-0 items-center gap-2",
-  sheetFarmCluster: "flex w-full min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5",
+  sheetFarmCluster: "flex w-full min-w-0 flex-wrap items-start gap-x-2 gap-y-0.5",
   sheetHeaderActions: "ml-auto flex shrink-0 items-center gap-2",
   headerLogout: cn(
     "inline-flex shrink-0 items-center rounded-md px-2 py-1 text-[10px] font-medium text-destructive hover:bg-muted/60 hover:underline",
@@ -70,11 +70,16 @@ export const accountMenuLayout = {
   /** 일보 첫 장 본문 — (PAGE_W - 2×MARGIN) pt, 96dpi */
   previewReport: "w-full max-w-[44.94rem]",
   /**
-   * 주소가 붙는 허브 농장 목록 칸.
-   * `minmax(18rem, 0.85fr)` · gap-3 · main p-5.
+   * 상태 줄 옆 주소. 열림·언어가 칩 너비를 바꾸지 않게 19rem.
+   * 편집기는 칩 안에서 아래로만 늘어 상태 줄을 밀지 않는다.
    */
-  previewAddress:
-    "w-full max-w-[min(100%,max(18rem,calc((100vw-3.25rem)*0.85/2.1)))]",
+  addressChip: "w-[19rem] max-w-[19rem] shrink-0",
+  /**
+   * 설정 토글 열. 영어 “Fan % large”·“Setpoint large”가 한 줄에 들어가게 20rem.
+   * 언어를 바꿔도 카드 가로 위치가 그대로다.
+   */
+  settingsToggles:
+    "grid w-[20rem] max-w-[20rem] shrink-0 grid-cols-[4.75rem_minmax(0,1fr)] items-start gap-x-3 gap-y-2",
   addressRow:
     "min-w-0 border-b border-border/60 px-3 py-2.5 md:px-4",
   contextFarm:

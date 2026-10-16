@@ -37,21 +37,22 @@ test("sheet previews keep the width of the component they stand in for", () => {
     accountMenuLayout.previewCard,
     accountMenuLayout.previewAlarm,
     accountMenuLayout.previewReport,
-    accountMenuLayout.previewAddress,
+    accountMenuLayout.addressChip,
+    accountMenuLayout.settingsToggles,
   ];
   assert.equal(new Set(widths).size, widths.length);
 
   const examples = read("./account-settings-examples.tsx");
   assert.match(examples, /data-settings-example="controller"/);
   assert.match(examples, /previewCard/);
-  assert.match(examples, /previewAddress/);
   const tools = read("./tool-card-examples.tsx");
   assert.match(tools, /previewReport/);
   assert.match(tools, /previewAlarm/);
   const settings = read("./account-settings-card.tsx");
   assert.match(settings, /SettingsControllerPanelExample/);
   assert.match(settings, /AccountFarmAddressSetting/);
-  assert.match(settings, /previewAddress/);
+  assert.match(settings, /addressChip/);
+  assert.match(settings, /settingsToggles/);
   assert.match(read("./account-menu-split.tsx"), /AccountFarmAddressSetting/);
   assert.match(read("./account-menu-alarm-panel.tsx"), /previewAlarm/);
   assert.match(read("../layout/daily-report-button.tsx"), /previewReport/);
