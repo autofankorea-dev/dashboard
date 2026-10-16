@@ -33,8 +33,9 @@ export const accountMenuLayout = {
   sheetInner: "account-menu-sheet-inner w-full min-w-0",
   sheetHeader:
     "flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 border-b border-border/60 px-3 py-2 max-md:pt-safe md:gap-x-3 md:px-4 md:py-2.5",
-  sheetIdentity: "flex basis-full min-w-0 items-center gap-2",
-  sheetFarmCluster: "flex w-full min-w-0 flex-wrap items-start gap-x-2 gap-y-0.5",
+  sheetIdentity:
+    "flex basis-full min-w-0 items-center gap-2 pl-[calc(2rem+0.5rem)] md:pl-[calc(2rem+0.75rem)]",
+  sheetFarmCluster: "flex w-full min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5",
   sheetHeaderActions: "ml-auto flex shrink-0 items-center gap-2",
   headerLogout: cn(
     "inline-flex shrink-0 items-center rounded-md px-2 py-1 text-[10px] font-medium text-destructive hover:bg-muted/60 hover:underline",
