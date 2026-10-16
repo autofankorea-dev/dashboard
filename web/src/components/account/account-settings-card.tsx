@@ -46,7 +46,7 @@ export function AccountFarmAddressSetting({
   return (
     <div className={accountMenuLayout.addressChip} data-account-address-setting="">
       {open ? (
-        <div className="flex h-full w-full min-w-0 items-center gap-1 px-2">
+        <div className="absolute inset-y-0 left-0 z-20 flex h-full w-[max(100%,min(42rem,70vw))] items-center gap-1.5 rounded-md border border-border bg-popover px-2 shadow-sm">
           <button
             type="button"
             className={cn(accountMenuLayout.contextFarmBtn, "shrink-0")}

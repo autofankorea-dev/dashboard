@@ -167,25 +167,3 @@ export function SettingsControllerPanelExample() {
   );
 }
 
-export function SettingsAddressExample({
-  farmName,
-  address,
-}: {
-  farmName: string;
-  address: string;
-}) {
-  const t = useSheetCopy();
-  return (
-    <div
-      data-settings-example="address"
-      className={cn(
-        "rounded-lg border bg-background px-2 py-1.5",
-      )}
-    >
-      <div className="text-xs font-semibold">{farmName}</div>
-      <div className="mt-0.5 text-[11px] text-muted-foreground">
-        {address.trim() || t("settings.address")}
-      </div>
-    </div>
-  );
-}

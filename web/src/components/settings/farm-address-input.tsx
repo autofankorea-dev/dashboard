@@ -168,8 +168,9 @@ export function FarmAddressInput({
               ref={inputRef}
               type="text"
               className={cn(
-                accountMenuLayout.compactInput,
-                inline && "h-8 py-0",
+                inline
+                  ? "h-8 min-w-0 flex-1 rounded-md border border-border bg-background px-2.5 text-[length:var(--density-meta)] leading-snug text-foreground md:text-[length:var(--density-meta-md)]"
+                  : accountMenuLayout.compactInput,
                 inputLocked && "cursor-text",
               )}
               placeholder="농장 주소"
