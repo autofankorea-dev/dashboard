@@ -1,6 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { createPortal } from "react-dom";
 import {
   geocodeFarmAddressAction,
@@ -117,7 +125,11 @@ type Props = {
   onSaved?: () => void;
 };
 
-export function FarmAddressInput({
+export type FarmAddressInputHandle = {
+  save: () => void;
+};
+
+export const FarmAddressInput = forwardRef<FarmAddressInputHandle, Props>(function FarmAddressInput({
   farmKey,
   location,
   disabled = false,
@@ -126,7 +138,7 @@ export function FarmAddressInput({
   inline = false,
   deferFocusUntilTap = false,
   onSaved,
-}: Props) {
+}: Props, ref) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [inputActive, setInputActive] = useState(false);
   const [draft, setDraft] = useState(() => addressDraftFromLocation(location));
@@ -175,8 +187,13 @@ export function FarmAddressInput({
     });
   }, [draft.addressText]);
 
-  const runSave = () => {
+  const runSave = useCallback(() => {
     const query = draft.addressText.trim();
+    const stored = (location?.addressText ?? "").trim();
+    if (query === stored) {
+      onSaved?.();
+      return;
+    }
     if (!query) {
       setVerified(false);
       setError(ERROR_LABEL.address_too_short);
@@ -196,7 +213,14 @@ export function FarmAddressInput({
       setVerified(true);
       onSaved?.();
     });
-  };
+  }, [draft.addressText, farmKey.itemCode, farmKey.lsindRegistNo, location?.addressText, onSaved]);
+
+  useImperativeHandle(ref, () => ({ save: runSave }), [runSave]);
+
+  useEffect(() => {
+    if (!inline || deferFocusUntilTap) return;
+    inputRef.current?.focus({ preventScroll: true });
+  }, [deferFocusUntilTap, inline]);
 
   return (
     <div
@@ -207,13 +231,23 @@ export function FarmAddressInput({
     >
       {compact ? (
         <>
-          <div className={accountMenuLayout.compactInputRow}>
+          <div className={cn(accountMenuLayout.compactInputRow, inline && "w-max")}>
+            <span className={cn("grid", inline && "w-max")}>
+            <span
+              className={cn(
+                "invisible col-start-1 row-start-1 whitespace-nowrap px-2.5",
+                !inline && "hidden",
+              )}
+              aria-hidden
+            >
+              {draft.addressText || "농장 주소"}
+            </span>
             <input
               ref={inputRef}
               type="text"
               className={cn(
                 inline
-                  ? "h-8 min-w-0 flex-1 rounded-md border border-border bg-background px-2.5 text-[length:var(--density-meta)] leading-snug text-foreground md:text-[length:var(--density-meta-md)]"
+                  ? "col-start-1 row-start-1 h-8 w-full min-w-[8rem] rounded-md border border-border bg-background px-2.5 text-[length:var(--density-meta)] leading-snug text-foreground md:text-[length:var(--density-meta-md)]"
                   : accountMenuLayout.compactInput,
                 inputLocked && "cursor-text",
               )}
@@ -264,6 +298,7 @@ export function FarmAddressInput({
                 }));
               }}
             />
+            </span>
             {!disabled && saveOnly ? (
               <button
                 type="button"
@@ -386,4 +421,4 @@ export function FarmAddressInput({
       )}
     </div>
   );
-}
+});

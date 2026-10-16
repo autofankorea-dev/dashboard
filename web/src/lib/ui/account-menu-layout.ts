@@ -70,11 +70,10 @@ export const accountMenuLayout = {
   /** 일보 첫 장 본문 — (PAGE_W - 2×MARGIN) pt, 96dpi */
   previewReport: "w-full max-w-[44.94rem]",
   /**
-   * 상태 줄 옆 주소. 자리 크기는 19rem × 3.125rem.
-   * 입력칸은 빈 오른쪽으로만 넓어지고, 상태 줄 높이는 그대로다.
+   * 상태 줄 옆 주소. 높이는 3.125rem, 너비는 주소 글자만큼.
+   * 열어도 줄 높이는 그대로다.
    */
-  addressChip:
-    "relative flex h-[3.125rem] w-[19rem] max-w-[19rem] shrink-0 items-center",
+  addressChip: "relative flex h-[3.125rem] w-max max-w-full shrink-0 items-center",
   /**
    * 설정 토글 열. 영어 “Fan % large”·“Setpoint large”가 한 줄에 들어가게 20rem.
    * 언어를 바꿔도 카드 가로 위치가 그대로다.

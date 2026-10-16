@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSyncExternalStore } from "react";
-import { FarmAddressInput } from "@/components/settings/farm-address-input";
+import {
+  FarmAddressInput,
+  type FarmAddressInputHandle,
+} from "@/components/settings/farm-address-input";
 import type { FarmKey } from "@/lib/domain/farm-key";
 import type { FarmLocationRow } from "@/lib/data/farm-location";
 import {
@@ -18,12 +21,6 @@ import {
   useUpdateProfileSheetPrefs,
 } from "@/components/account/profile-sheet-prefs";
 import { SettingsControllerPanelExample } from "@/components/account/account-settings-examples";
-
-function addressPreview(text: string, emptyLabel: string) {
-  const trimmed = text.trim();
-  if (!trimmed) return emptyLabel;
-  return trimmed.length > 6 ? `${trimmed.slice(0, 6)}…` : trimmed;
-}
 
 export function AccountFarmAddressSetting({
   farmKey,
@@ -42,20 +39,31 @@ export function AccountFarmAddressSetting({
   const t = useSheetCopy();
   const [open, setOpen] = useState(false);
   const addressText = location?.addressText ?? "";
+  const chipRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<FarmAddressInputHandle>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const finish = (event: PointerEvent) => {
+      const chip = chipRef.current;
+      if (!chip || chip.contains(event.target as Node)) return;
+      inputRef.current?.save();
+    };
+    document.addEventListener("pointerdown", finish, true);
+    return () => document.removeEventListener("pointerdown", finish, true);
+  }, [open]);
 
   return (
-    <div className={accountMenuLayout.addressChip} data-account-address-setting="">
+    <div
+      ref={chipRef}
+      className={accountMenuLayout.addressChip}
+      data-account-address-setting=""
+    >
       {open ? (
-        <div className="absolute inset-y-0 left-0 z-20 flex h-full w-[max(100%,min(42rem,70vw))] items-center gap-1.5 rounded-md border border-border bg-popover px-2 shadow-sm">
-          <button
-            type="button"
-            className={cn(accountMenuLayout.contextFarmBtn, "shrink-0")}
-            aria-expanded
-            onClick={() => setOpen(false)}
-          >
-            {t("settings.address")}
-          </button>
+        <div className="flex h-full w-max items-center gap-1.5 rounded-md border border-border bg-popover px-2 shadow-sm">
+          <span className="shrink-0 font-semibold">{t("settings.address")}</span>
           <FarmAddressInput
+            ref={inputRef}
             key={`${farmKey.lsindRegistNo}-${farmKey.itemCode}`}
             farmKey={farmKey}
             location={location}
@@ -75,14 +83,14 @@ export function AccountFarmAddressSetting({
           type="button"
           className={cn(
             accountMenuLayout.contextFarmBtn,
-            "inline-flex h-full max-w-full items-center gap-2 px-2 text-left",
+            "inline-flex h-full items-center gap-2 whitespace-nowrap px-2 text-left",
           )}
           aria-expanded={false}
           onClick={() => setOpen(true)}
         >
           <span className="shrink-0">{t("settings.address")}</span>
-          <span className="min-w-0 truncate text-muted-foreground">
-            {addressPreview(addressText, t("settings.address"))}
+          <span className="text-muted-foreground">
+            {addressText.trim() || t("settings.address")}
           </span>
         </button>
       )}
