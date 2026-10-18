@@ -25,6 +25,7 @@ function sameAlarmInbox(a: AlarmRow[], b: AlarmRow[]): boolean {
       left.id !== right.id ||
       left.alarmType !== right.alarmType ||
       left.detail !== right.detail ||
+      left.errCode !== right.errCode ||
       left.status !== right.status
     ) {
       return false;

@@ -66,5 +66,6 @@ export function moduleAlarmToAlarmRow(row: ModuleAlarmDbRow): AlarmRow {
     source: "module",
     farmName: row.farm_name,
     channel: channel || null,
+    errCode: Number(row.err_code),
   };
 }

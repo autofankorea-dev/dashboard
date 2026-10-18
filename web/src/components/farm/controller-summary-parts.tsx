@@ -32,6 +32,7 @@ import { Check, ChevronUp, Droplets, LineChart, Settings, Thermometer, Wifi } fr
 import { useProfileSheetPrefs, useSheetCopy } from "@/components/account/profile-sheet-prefs";
 import { formatStallTypeLabelLocalized } from "@/lib/domain/stall-type";
 import { ControllerDeviceIcon } from "@/components/icons/controller-device-icon";
+import { ControllerErrorBinary } from "@/components/farm/controller-error-binary";
 import {
   ControllerAffiliationMarks,
   ControllerNoMark,
@@ -270,7 +271,7 @@ export function ControllerSummaryHeader({
     <div className={cn("flex min-w-0 flex-col gap-0.5", className)}>
       {bare ? (
         <>
-          <div className="flex min-w-0 items-center gap-2">
+          <div data-controller-status-line="" className="flex min-w-0 flex-wrap items-center gap-2">
             <span
               className={cn(
                 "inline-flex min-w-0 flex-1 items-center gap-1 text-xs font-medium",
@@ -278,13 +279,19 @@ export function ControllerSummaryHeader({
               )}
             >
               <BareIcon className="size-3.5 shrink-0" aria-hidden />
-              <span className="truncate">{barePhrase}</span>
+              <span data-controller-status-judgement="" className="truncate">{barePhrase}</span>
             </span>
+            <ControllerErrorBinary reading={reading} />
             {actions}
           </div>
           <div className="flex w-full min-w-0 items-start justify-center">{identity}</div>
         </>
       ) : (
+        <>
+        <div data-controller-status-line="" className="flex min-w-0 flex-wrap items-center justify-between gap-2 text-xs">
+          <span data-controller-status-judgement="">{barePhrase}</span>
+          <ControllerErrorBinary reading={reading} />
+        </div>
         <div className="relative flex w-full min-w-0 items-start justify-center">
           <span
             className={cn(
@@ -296,6 +303,7 @@ export function ControllerSummaryHeader({
           {identity}
           <div className="absolute right-0 top-0 z-10">{actions}</div>
         </div>
+        </>
       )}
     </div>
   );

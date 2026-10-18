@@ -8,9 +8,25 @@ import {
   DECODE_ERROR_INVALID_STALL_TY,
   decodeV0cPayload,
   decodeV0cPayloadOutcome,
+  decodeErrorPacketV0c,
+  encodeErrorPacketV0c,
   formatTempC,
   toSlimDecodedJson,
 } from "./wire-decode-v0c.ts";
+
+test("error packets preserve enum bytes, validate CRC and bypass measurement decode", () => {
+  for (const legacy of [true, false]) {
+    for (const code of [0x11, 0x12, 0x21, 0x22, 0x31, 0x32, 0x41, 0xfe]) {
+      const wire = encodeErrorPacketV0c(code, legacy ? undefined : { stallTy: 7, stallNo: 1, eqpmnNo: 1 });
+      const decoded = decodeErrorPacketV0c(wire, { allowUnknown: true });
+      assert.equal(decoded?.errCode, code);
+      assert.equal(decoded?.controllerKey, legacy ? undefined : "SP07:01:01");
+      assert.equal(decodeV0cPayloadOutcome(wire).status, "skip");
+      wire[wire.length - 1] ^= 1;
+      assert.equal(decodeErrorPacketV0c(wire, { allowUnknown: true }), null);
+    }
+  }
+});
 
 function hex(s: string): Uint8Array {
   return Uint8Array.from(Buffer.from(s, "hex"));

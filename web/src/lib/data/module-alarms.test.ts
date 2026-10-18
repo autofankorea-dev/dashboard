@@ -46,6 +46,7 @@ assert.equal(row.stallTyCode, "SP02");
 assert.equal(row.stallNo, "03");
 assert.equal(row.eqpmnNo, "01");
 assert.equal(row.channel, "A");
+assert.equal(row.errCode, 0x11);
 assert.match(row.detail ?? "", /SP02.*03번.*01번/);
 assert.equal(row.status, "active");
 

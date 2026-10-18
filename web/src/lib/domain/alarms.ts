@@ -41,6 +41,8 @@ export type AlarmRow = {
   farmName?: string | null;
   /** 모듈 wire err — A/B/C (정전은 null) */
   channel?: string | null;
+  /** Original wire error byte; absent for derived environment/communication alerts. */
+  errCode?: number;
 };
 
 /** 이상상황 목록 — 모듈 경보면 농장 표시명 중심 */
