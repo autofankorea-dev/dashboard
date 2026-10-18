@@ -98,6 +98,7 @@ assert.equal(p79.channels[0]?.thermo?.setpointTemp, "25.0");
 assert.equal(p79.channels[0]?.thermo?.tempDeviation, "2.0");
 assert.deepEqual(Object.keys(toSlimDecodedJson(p79)).sort(), [
   "channels",
+  "errorCodeRaw",
   "schema_version",
   "tempsC",
 ]);
@@ -117,6 +118,21 @@ assert.equal(farm02Alarm.channels[0]?.thermo?.tempDeviation, "5.0");
 const slim83 = toSlimDecodedJson(farm02Alarm);
 assert.equal(slim83.alarmLowTempC, "10.0");
 assert.equal(slim83.alarmHighTempC, "43.6");
+
+test("fourth sensor is an exact little-endian error word in 79B and 83B packets", () => {
+  const sample83 = hex("0c00bcee8f6a070101002003ffffffffffffffff5802a8030f0600004b4b00000000000000ee022602194b0f0000000000000000000000000d022b0219640f000000000000000000000000170229021964c153");
+  for (const body of [farm01Body, sample83.subarray(0, -2)]) {
+    for (const raw of [0, 1, 0x11, 0x01ff, 0x1234, 0xabcd, 0xffff]) {
+      const changed = Uint8Array.from(body);
+      changed[16] = raw & 0xff;
+      changed[17] = raw >> 8;
+      const decoded = decodeV0cPayload(withCrc(changed))!;
+      assert.equal(decoded.errorCodeRaw, raw);
+      assert.equal(decoded.tempsC[3], null);
+      assert.equal(toSlimDecodedJson(decoded).errorCodeRaw, raw);
+    }
+  }
+});
 
 const invalidStallTy = Uint8Array.from(farm01Body);
 invalidStallTy[6] = 0xff;

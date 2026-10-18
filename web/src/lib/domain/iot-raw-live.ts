@@ -14,6 +14,7 @@ export type RawLiveControllerRow = {
   mesure_dt: string;
   run_mode?: number;
   temps_c?: (string | null)[];
+  error_code_raw?: number | null;
   humidity_pct?: string | null;
   alarm_low_temp_c?: string | null;
   alarm_high_temp_c?: string | null;

@@ -16,7 +16,8 @@ const sample: DecodedV0cPayload = {
   stallNo: "01",
   mesureDt: "2026-08-05 17:00:00",
   runMode: 1,
-  tempsC: ["24.5", "24.4", null, "24.1"],
+  tempsC: ["24.5", "24.4", null, null],
+  errorCodeRaw: 0x01ff,
   humidityPct: "57.8",
   alarmLowTempC: null,
   alarmHighTempC: null,
@@ -58,7 +59,7 @@ if (!slim.channels?.[0]?.outputs?.["1"]) throw new Error("motor outputs");
 for (const k of forbidden) {
   if (k in slim) throw new Error(`leaked ${k}`);
 }
-if (JSON.stringify(keys) !== JSON.stringify(["channels", "schema_version", "tempsC"])) {
+if (JSON.stringify(keys) !== JSON.stringify(["channels", "errorCodeRaw", "schema_version", "tempsC"])) {
   throw new Error(`keys ${keys.join(",")}`);
 }
 

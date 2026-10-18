@@ -57,6 +57,8 @@ export type DecodedV0cPayload = {
   mesureDt: string;
   runMode: number;
   tempsC: (string | null)[];
+  /** Fourth sensor word, preserved as an unsigned error code (no temperature scaling). */
+  errorCodeRaw: number;
   humidityPct: string | null;
   alarmLowTempC: string | null;
   alarmHighTempC: string | null;
@@ -311,9 +313,10 @@ function decodeRow(
   const tempsC: (string | null)[] = [];
   let off = 8;
   for (let i = 0; i < ROW_SENSOR_TEMPS; i++) {
-    tempsC.push(formatTempC(readU16LE(row, off)));
+    tempsC.push(i === 3 ? null : formatTempC(readU16LE(row, off)));
     off += 2;
   }
+  const errorCodeRaw = readU16LE(row, 14);
   const humidityPct = formatHumidityPct(readU16LE(row, off));
   off += 2;
 
@@ -341,6 +344,7 @@ function decodeRow(
     mesureDt: formatMesureDt(rowT),
     runMode,
     tempsC,
+    errorCodeRaw,
     humidityPct,
     alarmLowTempC,
     alarmHighTempC,
@@ -587,6 +591,7 @@ function fanPctFromChannelOutputs(
 export type SlimDecodedV0cJson = {
   schema_version: "v0c-slim-1";
   tempsC: (string | null)[];
+  errorCodeRaw: number;
   channels: DecodedV0cChannel[];
   alarmLowTempC?: string;
   alarmHighTempC?: string;
@@ -596,6 +601,7 @@ export function toSlimDecodedJson(payload: DecodedV0cPayload): SlimDecodedV0cJso
   const slim: SlimDecodedV0cJson = {
     schema_version: "v0c-slim-1",
     tempsC: payload.tempsC,
+    errorCodeRaw: payload.errorCodeRaw,
     channels: payload.channels,
   };
   if (payload.alarmLowTempC != null) slim.alarmLowTempC = payload.alarmLowTempC;

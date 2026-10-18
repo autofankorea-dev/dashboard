@@ -77,6 +77,12 @@ const replaced = mergeLiveReadings(cards, [reading("SP07:01:12", 24.7)]);
 assert.equal(replaced.length, 1);
 assert.equal(replaced[0]?.key, "SP07:01:12");
 
+test("error-code-only refresh updates the panel even when measurements stay unchanged", () => {
+  const previous = { ...reading("SP07:01:05", 24.5), errorCodeRaw: 0x01ff };
+  const updated = { ...previous, errorCodeRaw: 0xabcd };
+  assert.equal(mergeLiveReadings([previous], [updated])[0]?.errorCodeRaw, 0xabcd);
+});
+
 console.log("merge-live-slice.test.ts: ok");
 
 test("module asserts", () => {

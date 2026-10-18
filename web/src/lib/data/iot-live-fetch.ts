@@ -103,6 +103,7 @@ function toNum(v: unknown): number | null {
 }
 
 type ListDbRow = {
+  error_code_raw?: string | number | null;
   alarm_low_temp_c?: string | number | null;
   alarm_high_temp_c?: string | number | null;
   raw_id: number;
@@ -135,7 +136,7 @@ type ListDbRow = {
  */
 const LAST_KNOWN_SOURCE = "iot_room_state_decoded";
 const LAST_KNOWN_COLS =
-  "raw_id, lsind_regist_no, item_code, module_uid, controller_key, eqpmn_no, stall_ty_code, stall_no, wire_ver, packet_mode, run_mode, temp_c, humidity_pct, fan_supply_pct, fan_exhaust_pct, fan_intake_pct, setpoint_temp, temp_deviation, min_vent_pct, max_vent_pct, mesure_dt, received_at, alarm_low_temp_c:decoded_json->>alarmLowTempC, alarm_high_temp_c:decoded_json->>alarmHighTempC";
+  "raw_id, lsind_regist_no, item_code, module_uid, controller_key, eqpmn_no, stall_ty_code, stall_no, wire_ver, packet_mode, run_mode, temp_c, humidity_pct, fan_supply_pct, fan_exhaust_pct, fan_intake_pct, setpoint_temp, temp_deviation, min_vent_pct, max_vent_pct, mesure_dt, received_at, alarm_low_temp_c:decoded_json->>alarmLowTempC, alarm_high_temp_c:decoded_json->>alarmHighTempC, error_code_raw:decoded_json->>errorCodeRaw";
 
 function thermoFromListRow(row: ListDbRow) {
   const setpointTemp = toNum(row.setpoint_temp);
@@ -188,6 +189,7 @@ function listRowToReading(row: ListDbRow): BarnReading | null {
     label: formatControllerSlotLabel({ stallNo, eqpmnNo }),
     alarmLowTempC: toNum(row.alarm_low_temp_c),
     alarmHighTempC: toNum(row.alarm_high_temp_c),
+    errorCodeRaw: toNum(row.error_code_raw),
     tempC: Number.isFinite(tempC!) ? tempC : null,
     humidityPct: Number.isFinite(humidityPct!) ? humidityPct : null,
     fanSupply: toNum(row.fan_supply_pct),
@@ -220,6 +222,7 @@ function decodedLatestDbRowToLiveRow(row: {
   humidity_pct: number | null;
   mesure_dt: string;
   decoded_json: {
+    errorCodeRaw?: number | null;
     tempsC?: (string | null)[];
     humidityPct?: string | null;
     alarmLowTempC?: string | null;
@@ -243,6 +246,7 @@ function decodedLatestDbRowToLiveRow(row: {
     mesure_dt: row.mesure_dt,
     run_mode: row.run_mode ?? j.runMode ?? undefined,
     temps_c: j.tempsC,
+    error_code_raw: j.errorCodeRaw,
     alarm_low_temp_c: j.alarmLowTempC,
     alarm_high_temp_c: j.alarmHighTempC,
     humidity_pct:
@@ -310,6 +314,7 @@ function expandRawLiveRowToReading(row: RawLiveControllerRow): BarnReading {
     channels: channels.length > 0 ? channels : undefined,
     runMode: row.run_mode ?? null,
     tempsC,
+    errorCodeRaw: row.error_code_raw ?? null,
   };
 }
 

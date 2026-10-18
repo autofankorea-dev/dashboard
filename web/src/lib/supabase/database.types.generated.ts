@@ -504,6 +504,7 @@ export type Database = {
       iot_decoded_last_value: {
         Row: {
           controller_key: string
+          error_code_raw: number | null
           fan_exhaust_pct: number | null
           fan_intake_pct: number | null
           item_code: string
@@ -514,6 +515,7 @@ export type Database = {
         }
         Insert: {
           controller_key: string
+          error_code_raw?: number | null
           fan_exhaust_pct?: number | null
           fan_intake_pct?: number | null
           item_code: string
@@ -524,6 +526,7 @@ export type Database = {
         }
         Update: {
           controller_key?: string
+          error_code_raw?: number | null
           fan_exhaust_pct?: number | null
           fan_intake_pct?: number | null
           item_code?: string
@@ -1686,6 +1689,7 @@ export type Database = {
       }
       v_iot_dashboard_list: {
         Row: {
+          error_code_raw: number | null
           alarm_high_temp_c: number | null
           alarm_low_temp_c: number | null
           controller_key: string | null

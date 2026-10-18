@@ -223,6 +223,7 @@ Deno.serve(async (req: Request) => {
     const fanExhaust = fanPctFromChannels(payload.channels, "EC02");
     const fanIntake = fanPctFromChannels(payload.channels, "EC03");
     const nextMetrics = {
+      error_code_raw: payload.errorCodeRaw,
       temp_c: tempC,
       fan_exhaust_pct: fanExhaust,
       fan_intake_pct: fanIntake,
@@ -240,7 +241,7 @@ Deno.serve(async (req: Request) => {
       const { data: lastRow } = await supabase
         .from("iot_decoded_last_value")
         .select(
-          "temp_c, fan_exhaust_pct, fan_intake_pct, updated_at",
+          "temp_c, fan_exhaust_pct, fan_intake_pct, error_code_raw, updated_at",
         )
         .eq("lsind_regist_no", row.lsind_regist_no)
         .eq("item_code", row.item_code)
@@ -342,6 +343,7 @@ Deno.serve(async (req: Request) => {
           item_code: row.item_code,
           module_uid: row.module_uid,
           controller_key: payload.controllerKey,
+          error_code_raw: payload.errorCodeRaw,
           temp_c: tempC,
           fan_exhaust_pct: fanExhaust,
           fan_intake_pct: fanIntake,

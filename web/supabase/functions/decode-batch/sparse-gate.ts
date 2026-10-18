@@ -4,6 +4,7 @@ export type SparseMetrics = {
   temp_c: number | null;
   fan_exhaust_pct: number | null;
   fan_intake_pct: number | null;
+  error_code_raw?: number | null;
 };
 
 export type SparseLast = SparseMetrics & { updated_at: string };
@@ -28,6 +29,7 @@ export function shouldWriteSparse(args: {
   heartbeatSec: number;
 }): boolean {
   if (!args.last) return true;
+  if (args.next.error_code_raw !== args.last.error_code_raw) return true;
   const lastMs = Date.parse(String(args.last.updated_at));
   const ageSec = (args.nowMs - lastMs) / 1000;
   if (!Number.isFinite(ageSec) || ageSec >= args.heartbeatSec) return true;

@@ -72,6 +72,8 @@ export type BarnReading = {
 
   /** v0x0C — row-level temperature probes (up to 4) */
   tempsC?: (number | null)[];
+  /** Raw uint16 from the fourth temperature word; displayed as HEX, never scaled. */
+  errorCodeRaw?: number | null;
 
 };
 
