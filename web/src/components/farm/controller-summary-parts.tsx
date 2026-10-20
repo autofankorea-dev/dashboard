@@ -535,12 +535,16 @@ function SetpointReadout({
   size: "lg" | "sm";
 }) {
   const t = useSheetCopy();
-  return <span className={cn("w-full min-w-0 text-center", size === "lg"
+  return <span data-setting-readout data-setting-pair className={cn("relative w-full min-w-0 text-center", size === "lg"
     ? "inline-flex items-baseline justify-center gap-1.5 whitespace-nowrap"
     : "grid grid-cols-2 items-baseline gap-1")}>
-    <ControllerSettingReadout label={t("settings.setpoint")} value={set}
+    <ControllerSettingReadout label={t("settings.setpoint")} value={set} showName={false}
       className={size === "lg" ? "shrink-0 font-mono text-[clamp(0.875rem,24cqi,2rem)] font-bold tabular-nums leading-none tracking-tight" : motorSecondaryClass} />
-    <ControllerSettingReadout label={t("confirm.deviation")} value={`+${dev}`} className={cn(motorSecondaryClass, size === "lg" && "shrink-0 text-[clamp(0.625rem,12cqi,0.75rem)]")} />
+    <ControllerSettingReadout label={t("confirm.deviation")} value={`+${dev}`} showName={false} className={cn(motorSecondaryClass, size === "lg" && "shrink-0 text-[clamp(0.625rem,12cqi,0.75rem)]")} />
+    <span className="controller-setting-name pointer-events-none absolute inset-0 grid grid-cols-2 items-center gap-1 font-sans text-[9px] font-semibold leading-tight" aria-hidden>
+      <span>{t("settings.setpoint")}</span>
+      <span>{t("confirm.deviation")}</span>
+    </span>
   </span>;
 }
 
