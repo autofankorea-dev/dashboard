@@ -1,6 +1,7 @@
 import {
   resolveThermoSettings,
   thermoFromDecoded,
+  thermoSettingsKey,
   type ControllerThermoSettings,
 } from "@/lib/controllers/controller-settings";
 import type { BarnReading } from "@/lib/data/iot";
@@ -141,13 +142,12 @@ export function resolveReadingChannelThermo(
   thermoSettings: Record<string, ControllerThermoSettings>,
   channel: ChannelSlot
 ): ControllerThermoSettings | null {
-  const fromChannel = resolveThermoSettings(
-    thermoSettings,
+  const fromChannel = thermoSettings[thermoSettingsKey(
     r.farmKey,
     r.moduleUid,
     r.controllerKey,
     channel
-  );
+  )];
   if (fromChannel) return fromChannel;
 
   if (r.channels?.length) {
@@ -161,6 +161,8 @@ export function resolveReadingChannelThermo(
     };
   }
 
+  // Legacy root settings describe channel A only.
+  if (channel !== "A") return null;
   const fromCtrl = resolveThermoSettings(
     thermoSettings,
     r.farmKey,

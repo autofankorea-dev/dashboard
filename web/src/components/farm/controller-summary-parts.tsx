@@ -427,21 +427,32 @@ export function ChannelStrip({
     <div className="min-w-0">
       <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
         {CHANNELS.map((slot) => {
+          const channelThermo = resolveReadingChannelThermo(reading, thermoSettings, slot);
           const ownSetpoint =
-            setpointParts(resolveReadingChannelThermo(reading, thermoSettings, slot)) ??
+            setpointParts(channelThermo) ??
             setpointParts(channelBySlot(reading.channels ?? [], slot)?.thermo);
-          const setParts = ownSetpoint ?? setpointParts(thermo);
+          const setParts = ownSetpoint ?? (slot === "A" ? setpointParts(thermo) : null);
           return (
-            <ChannelCell
-              key={slot}
-              slot={slot}
-              value={formatChannelPercent(channels[slot])}
-              setParts={setParts}
-              compact={compact}
-              expanded={expandedChannel === slot}
-              interactive={interactive}
-              onToggle={onToggleChannel}
-            />
+            <div key={slot} className="flex min-w-0 flex-col gap-2" data-channel-motor={slot}>
+              <ChannelCell
+                slot={slot}
+                value={formatChannelPercent(channels[slot])}
+                setParts={setParts}
+                compact={compact}
+                expanded={expandedChannel === slot}
+                interactive={interactive}
+                onToggle={onToggleChannel}
+              />
+              {channelThermo ? (
+                <VentGaugeV1
+                  min={channelThermo.minVentPct}
+                  max={channelThermo.maxVentPct}
+                  compact
+                />
+              ) : (
+                <div className="flex h-5 items-center justify-center text-xs text-muted-foreground" aria-label={`${slot} · —`}>—</div>
+              )}
+              </div>
           );
         })}
       </div>
@@ -463,14 +474,6 @@ export function ChannelStrip({
           />
         ) : null}
       </BarnListPanelShell>
-      ) : null}
-      {thermo ? (
-        <VentGaugeV1
-          min={thermo.minVentPct}
-          max={thermo.maxVentPct}
-          compact={compact}
-          className="mt-2"
-        />
       ) : null}
     </div>
   );
