@@ -37,6 +37,7 @@ type Props = {
   /** SSR과 일치하는 초기 그리드/목록/차트 탭 (hubMode) */
   initialHubView?: FarmHubView;
   lazyListFarmKey?: FarmKey | null;
+  onRefreshPanels?: () => void | Promise<void>;
 };
 
 export function FarmPageContent({
@@ -55,6 +56,7 @@ export function FarmPageContent({
   lazyListEnrichment = false,
   lazyListFarmKey = null,
   initialHubView,
+  onRefreshPanels,
 }: Props) {
   const {
     viewportCompact,
@@ -265,6 +267,7 @@ export function FarmPageContent({
               />
             ) : (
               <FarmFieldSplit
+                onRefreshPanels={onRefreshPanels}
                 fieldStatusOpen={fieldStatusOpen}
                 barns={barnSnapshots}
                 readings={readings}
@@ -331,6 +334,7 @@ export function FarmPageContent({
                 data-farm-view-active={view === "list"}
               >
                 <BarnTable
+                  onRefreshPanels={onRefreshPanels}
                   rows={readings}
                   controller={controller ?? null}
                   thermoSettings={thermoSettings}

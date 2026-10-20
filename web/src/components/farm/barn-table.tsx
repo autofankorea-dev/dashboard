@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
-import { LayoutGrid, LayoutList, Loader2 } from "lucide-react";
+import { LayoutGrid, LayoutList, Loader2, RefreshCw } from "lucide-react";
 import { StaleWhileRevalidateShell } from "@/components/common/stale-while-revalidate-shell";
 import { InlineStatusToast, type InlineStatusTone } from "@/components/common/inline-status-toast";
 import { RefreshScopeShell } from "@/components/common/refresh-scope-shell";
@@ -107,6 +107,8 @@ type Props = {
    * 비허브·기본 true.
    */
   panelLiveActive?: boolean;
+  /** Optional data source for embedded field views. */
+  onRefreshPanels?: () => void | Promise<void>;
 };
 
 function stallTyCodesFromReadings(readings: BarnReading[]): string[] {
@@ -141,6 +143,7 @@ export function BarnTable({
   trendPeriod: trendPeriodProp,
   onOpenChart,
   panelLiveActive = true,
+  onRefreshPanels,
 }: Props) {
   const router = useRouter();
   const compact = useHydrationSafeDashboardCompact();
@@ -178,12 +181,13 @@ export function BarnTable({
   } | null>(null);
 
   const onListRefresh = useCallback(() => {
+    if (onRefreshPanels) return onRefreshPanels();
     if (liveRefreshManaged && liveRefresh) {
       if (liveRefresh.revalidating) return;
-      return liveRefresh.revalidateFarmLive();
+      return liveRefresh.revalidateFarmLive({ mode: "full" });
     }
     scheduleSafeRouterRefresh(router);
-  }, [liveRefresh, liveRefreshManaged, router]);
+  }, [liveRefresh, liveRefreshManaged, onRefreshPanels, router]);
   const {
     run: refreshList,
     busy: listSoftRefreshBusy,
@@ -595,6 +599,17 @@ export function BarnTable({
   );
 
   const listToolbar = compact ? listToolbarMobile : listToolbarDesktop;
+  const refreshBusy = listSoftRefreshBusy || Boolean(liveRefresh?.revalidating);
+  const refreshButton = (
+    <PageActionButton
+      icon={<RefreshCw className={cn(dashboardUi.iconSm, refreshBusy && "animate-spin")} aria-hidden />}
+      onClick={refreshList}
+      disabled={refreshBusy}
+      aria-busy={refreshBusy || undefined}
+      aria-label={refreshBusy ? t("nav.refresh") : t("nav.refreshLabel")}
+      title={refreshBusy ? t("nav.refresh") : t("nav.refreshLabel")}
+    />
+  );
 
   /** canCommand 없으면 CardHeader, 있으면 bulk bar trailing / bulk on 시 숨김 */
   const toolbarInBulkBar = bulkEnabled && !bulkMode;
@@ -612,7 +627,7 @@ export function BarnTable({
         )}
         action={
           showHeaderToolbar ? (
-            <div data-tour-id="farm-command-bar">{listToolbar}</div>
+            <div className="flex items-center gap-2" data-tour-id="farm-command-bar">{listToolbar}{refreshButton}</div>
           ) : undefined
         }
         contentClassName={bulkEnabled ? "flex flex-col gap-0 p-0" : undefined}
@@ -628,6 +643,7 @@ export function BarnTable({
           onAfterApply={handleAfterBulkApply}
           onRefreshLive={onListRefresh}
           trailing={toolbarInBulkBar ? listToolbar : undefined}
+          persistentAction={refreshButton}
           trailingCompact={compact && toolbarInBulkBar}
         />
       ) : null}

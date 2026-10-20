@@ -78,6 +78,8 @@ type Props = {
   onRefreshLive?: () => void;
   /** 일괄적용 off — 툴바 우측 (기간 선택 등) */
   trailing?: ReactNode;
+  /** Remains available while bulk selection is active. */
+  persistentAction?: ReactNode;
   /** 모바일 목록 — bulk bar 한 줄 배치 (일괄적용 ↔ trailing) */
   trailingCompact?: boolean;
 };
@@ -251,6 +253,7 @@ export function FarmMapBulkApply({
   onAfterApply,
   onRefreshLive: _onRefreshLive,
   trailing,
+  persistentAction,
   trailingCompact: _trailingCompact = false,
 }: Props) {
   const t = useSheetCopy();
@@ -892,6 +895,7 @@ export function FarmMapBulkApply({
           ) : trailing ? (
             trailing
           ) : null}
+          {persistentAction}
         </div>
       </div>
 

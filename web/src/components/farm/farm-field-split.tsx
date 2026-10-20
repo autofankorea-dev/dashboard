@@ -44,6 +44,7 @@ export function FarmFieldSplit({
   onOpenChart,
   panelLiveActive,
   listFilterEnterEpoch,
+  onRefreshPanels,
 }: {
   fieldStatusOpen: boolean;
   barns: BarnMapSnapshot[];
@@ -72,6 +73,7 @@ export function FarmFieldSplit({
   onOpenChart: (reading: BarnReading) => void;
   panelLiveActive: boolean;
   listFilterEnterEpoch: number;
+  onRefreshPanels?: () => void | Promise<void>;
 }) {
   return (
     <div
@@ -116,6 +118,7 @@ export function FarmFieldSplit({
           data-field-list-filter={fieldFilterPhase}
         >
           <BarnTable
+            onRefreshPanels={onRefreshPanels}
             rows={rows}
             controller={controller}
             thermoSettings={thermoSettings}
