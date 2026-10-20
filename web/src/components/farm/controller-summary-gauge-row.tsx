@@ -402,7 +402,7 @@ export function ControllerSummaryGaugeRow({
           reading={reading}
           alarmSettings={alarmSettings}
           settingsActive={settingsExpanded}
-          hideActions={hideGraphToggle}
+          hideActions={hideGraphToggle || showEnvCover || Boolean(coverReveal?.overlay)}
           showAffiliation={showAffiliation}
           onToggleSettings={onToggleSettings}
           onOpenChart={onOpenChart}
