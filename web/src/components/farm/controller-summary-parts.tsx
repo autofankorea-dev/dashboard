@@ -529,18 +529,18 @@ function SetpointReadout({
   set,
   dev,
   size,
-  compact,
 }: {
   set: string;
   dev: string;
   size: "lg" | "sm";
-  compact?: boolean;
 }) {
   const t = useSheetCopy();
-  return <span className="grid w-full min-w-0 grid-cols-2 items-baseline gap-1 text-center">
+  return <span className={cn("w-full min-w-0 text-center", size === "lg"
+    ? "inline-flex items-baseline justify-center gap-1.5 whitespace-nowrap"
+    : "grid grid-cols-2 items-baseline gap-1")}>
     <ControllerSettingReadout label={t("settings.setpoint")} value={set}
-      className={size === "lg" ? compact ? dashboardUi.gridCellValueCompact : dashboardUi.gridCellValueDefault : motorSecondaryClass} />
-    <ControllerSettingReadout label={t("confirm.deviation")} value={`+${dev}`} className={motorSecondaryClass} />
+      className={size === "lg" ? "shrink-0 font-mono text-[clamp(0.875rem,24cqi,2rem)] font-bold tabular-nums leading-none tracking-tight" : motorSecondaryClass} />
+    <ControllerSettingReadout label={t("confirm.deviation")} value={`+${dev}`} className={cn(motorSecondaryClass, size === "lg" && "shrink-0 text-[clamp(0.625rem,12cqi,0.75rem)]")} />
   </span>;
 }
 
@@ -574,7 +574,7 @@ function ChannelCell({
     ? `${slotLabel} ${value}${value !== "—" ? "%" : ""} ${setParts.set} +${setParts.dev}`
     : `${slotLabel} ${value}${value !== "—" ? "%" : ""}`;
   const cellClass = cn(
-    "relative min-h-[3rem] rounded-md border bg-background/80 sm:min-h-[3.25rem]",
+    "@container relative min-h-[3rem] rounded-md border bg-background/80 sm:min-h-[3.25rem]",
     compact ? "p-1.5 sm:p-2" : "p-2 sm:p-2.5",
     expanded &&
       "border-channel-motor/60 bg-channel-motor/5 ring-1 ring-channel-motor/30",
@@ -589,7 +589,7 @@ function ChannelCell({
     <>
       <span
         className={cn(
-          "absolute top-1 left-1/2 -translate-x-1/2 text-center font-semibold leading-none whitespace-nowrap sm:top-1.5",
+          "mb-1 block text-center font-semibold leading-none whitespace-nowrap",
           compact
             ? dashboardUi.gridCellMetaCompact
             : "text-[10px] sm:text-[11px]",
@@ -598,7 +598,7 @@ function ChannelCell({
       >
         {slotLabel}
       </span>
-      <div className="flex w-full min-h-[2.25rem] flex-col items-center justify-center gap-1 px-0.5 pt-2 sm:min-h-[2.5rem]">
+      <div className="flex w-full min-h-[2.25rem] flex-col items-center justify-center gap-1 px-0.5 sm:min-h-[2.5rem]">
         {fanLarge ? (
           <>
             <FanReadout value={value} percent={percent} showBar={showBar} size="lg" compact={compact} />
@@ -606,7 +606,7 @@ function ChannelCell({
           </>
         ) : setParts ? (
           <>
-            <SetpointReadout set={setParts.set} dev={setParts.dev} size="lg" compact={compact} />
+            <SetpointReadout set={setParts.set} dev={setParts.dev} size="lg" />
             <FanReadout value={value} percent={percent} showBar={showBar} size="sm" />
           </>
         ) : null}
