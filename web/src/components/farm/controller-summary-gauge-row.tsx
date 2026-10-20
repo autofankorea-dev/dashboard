@@ -380,6 +380,7 @@ export function ControllerSummaryGaugeRow({
       <ChannelStrip
         reading={reading}
         thermo={thermo}
+        thermoSettings={thermoSettings}
         compact
         hideChannelTrendExpand
       />

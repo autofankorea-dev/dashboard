@@ -395,9 +395,9 @@ export function controllerEnvCoverRingClass(
   return "outline outline-2 outline-[color-mix(in_oklch,var(--muted-foreground)_55%,transparent)] -outline-offset-1";
 }
 
-/** 차트·설정·명칭 등 실제 컨트롤. 여기가 아니면 덮개 다시 닫기. */
+/** Controls and setting-name help targets keep the revealed panel open. */
 export const CONTROLLER_PANEL_INTERACTIVE_SELECTOR =
-  "a, button, input, select, textarea, summary, label, [role='button'], [role='switch'], [role='tab'], [role='slider'], [role='combobox'], [role='menuitem']";
+  "a, button, input, select, textarea, summary, label, [data-setting-readout], [role='button'], [role='switch'], [role='tab'], [role='slider'], [role='combobox'], [role='menuitem']";
 
 export function isControllerPanelInteractiveTarget(
   target: EventTarget | null,

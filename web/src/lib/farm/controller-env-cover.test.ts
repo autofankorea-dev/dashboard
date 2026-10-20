@@ -272,6 +272,7 @@ import {
   assert.match(CONTROLLER_PANEL_INTERACTIVE_SELECTOR, /\bbutton\b/);
   assert.match(CONTROLLER_PANEL_INTERACTIVE_SELECTOR, /\ba\b/);
   assert.match(CONTROLLER_PANEL_INTERACTIVE_SELECTOR, /\blabel\b/);
+  assert.match(CONTROLLER_PANEL_INTERACTIVE_SELECTOR, /\[data-setting-readout\]/);
   assert.doesNotMatch(CONTROLLER_PANEL_INTERACTIVE_SELECTOR, /role='img'/);
 }
 

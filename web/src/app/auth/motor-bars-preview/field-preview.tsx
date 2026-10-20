@@ -41,7 +41,7 @@ export function FieldPreview({ initial }: { initial: Snapshot }) {
   const farmKey = initial.readings[0].farmKey;
   return <DashboardMetaShell metas={[]} canEdit={false}>
     <FarmScopeProvider isAdmin={false} fixedFarmKey={farmKey}>
-      <ProfileSheetPrefsProvider initial={{ ...DEFAULT_PROFILE_SHEET_PREFS, envCover: false }}>
+      <ProfileSheetPrefsProvider initial={{ ...DEFAULT_PROFILE_SHEET_PREFS, envCover: true }}>
         <DashboardViewportShell>
           <TopBar user={{ displayName: "필드 UI 미리보기", email: null, role: "operator", avatarUrl: null }} activeFarmKey={farmKey} farmOptions={[farmKey]} />
           <main className={cn(dashboardUi.mainPadWide, "flex min-h-0 min-w-0 flex-col")}>
