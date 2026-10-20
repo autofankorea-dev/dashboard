@@ -25,6 +25,7 @@ import { formatSensorNumberForDisplay } from "@/lib/domain/reading-display";
 import { BarnChannelTrendPanel } from "@/components/farm/barn-channel-trend-panel";
 import { BarnListPanelShell } from "@/components/farm/barn-list-panel-shell";
 import { VentGaugeV1 } from "@/components/farm/controller-summary-gauge-parts";
+import { ControllerSettingReadout } from "@/components/farm/controller-setting-readout";
 import { dashboardAffordance, dashboardControlFill, dashboardUi, dashboardTypography } from "@/lib/ui/dashboard-page-ui";
 import { cn } from "@/lib/utils";
 import { motionClass } from "@/lib/ui/motion-classes";
@@ -424,7 +425,7 @@ export function ChannelStrip({
   const interactive = onToggleChannel != null && !offline;
 
   return (
-    <div className="min-w-0">
+    <div className="controller-settings-glance min-w-0">
       <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
         {CHANNELS.map((slot) => {
           const channelThermo = resolveReadingChannelThermo(reading, thermoSettings, slot);
@@ -433,8 +434,8 @@ export function ChannelStrip({
             setpointParts(channelBySlot(reading.channels ?? [], slot)?.thermo);
           const setParts = ownSetpoint ?? (slot === "A" ? setpointParts(thermo) : null);
           return (
-            <div key={slot} className="flex min-w-0 flex-col gap-2" data-channel-motor={slot}>
               <ChannelCell
+                key={slot}
                 slot={slot}
                 value={formatChannelPercent(channels[slot])}
                 setParts={setParts}
@@ -442,17 +443,8 @@ export function ChannelStrip({
                 expanded={expandedChannel === slot}
                 interactive={interactive}
                 onToggle={onToggleChannel}
+                ventRange={channelThermo}
               />
-              {channelThermo ? (
-                <VentGaugeV1
-                  min={channelThermo.minVentPct}
-                  max={channelThermo.maxVentPct}
-                  compact
-                />
-              ) : (
-                <div className="flex h-5 items-center justify-center text-xs text-muted-foreground" aria-label={`${slot} · —`}>—</div>
-              )}
-              </div>
           );
         })}
       </div>
@@ -544,21 +536,12 @@ function SetpointReadout({
   size: "lg" | "sm";
   compact?: boolean;
 }) {
-  if (size === "lg") {
-    return (
-      <span className="inline-flex max-w-full items-baseline justify-center gap-1 whitespace-nowrap">
-        <span
-          className={cn(
-            compact ? dashboardUi.gridCellValueCompact : dashboardUi.gridCellValueDefault,
-          )}
-        >
-          {set}
-        </span>
-        <span className={motorSecondaryClass}>+{dev}</span>
-      </span>
-    );
-  }
-  return <span className={cn(motorSecondaryClass, "whitespace-nowrap")}>{set} +{dev}</span>;
+  const t = useSheetCopy();
+  return <span className="grid w-full min-w-0 grid-cols-2 items-baseline gap-1 text-center">
+    <ControllerSettingReadout label={t("settings.setpoint")} value={set}
+      className={size === "lg" ? compact ? dashboardUi.gridCellValueCompact : dashboardUi.gridCellValueDefault : motorSecondaryClass} />
+    <ControllerSettingReadout label={t("confirm.deviation")} value={`+${dev}`} className={motorSecondaryClass} />
+  </span>;
 }
 
 function ChannelCell({
@@ -569,6 +552,7 @@ function ChannelCell({
   expanded,
   interactive,
   onToggle,
+  ventRange,
 }: {
   slot: ChannelSlot;
   value: string;
@@ -577,6 +561,7 @@ function ChannelCell({
   expanded?: boolean;
   interactive?: boolean;
   onToggle?: (slot: ChannelSlot) => void;
+  ventRange?: Pick<ControllerThermoSettings, "minVentPct" | "maxVentPct"> | null;
 }) {
   const { motorDisplay, motorFocus } = useProfileSheetPrefs();
   const t = useSheetCopy();
@@ -613,7 +598,7 @@ function ChannelCell({
       >
         {slotLabel}
       </span>
-      <div className="flex h-full w-full min-h-[2.25rem] flex-col items-center justify-center gap-1 px-0.5 pt-2 sm:min-h-[2.5rem]">
+      <div className="flex w-full min-h-[2.25rem] flex-col items-center justify-center gap-1 px-0.5 pt-2 sm:min-h-[2.5rem]">
         {fanLarge ? (
           <>
             <FanReadout value={value} percent={percent} showBar={showBar} size="lg" compact={compact} />
@@ -625,6 +610,10 @@ function ChannelCell({
             <FanReadout value={value} percent={percent} showBar={showBar} size="sm" />
           </>
         ) : null}
+      </div>
+      <div className="mt-1.5 border-t border-border/60 pt-1" data-channel-motor={slot}>
+        {ventRange ? <VentGaugeV1 min={ventRange.minVentPct} max={ventRange.maxVentPct} compact embedded /> :
+          <div className="flex h-5 items-center justify-center text-xs text-muted-foreground">—</div>}
       </div>
       {expanded && interactive ? (
         <span

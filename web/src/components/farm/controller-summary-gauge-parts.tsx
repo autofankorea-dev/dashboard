@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { Droplets, Thermometer } from "lucide-react";
 import { useProfileSheetPrefs } from "@/components/account/profile-sheet-prefs";
 import { sheetCopy, translateFixedLabel } from "@/lib/ui/sheet-copy";
+import { ControllerSettingReadout } from "@/components/farm/controller-setting-readout";
 
 type GaugeMetricProps = {
   label: "온도" | "습도";
@@ -119,13 +120,25 @@ export function VentGaugeV1({
   max,
   compact,
   className,
+  embedded = false,
 }: {
   min: number;
   max: number;
   compact?: boolean;
   className?: string;
+  embedded?: boolean;
 }) {
+  const { locale } = useProfileSheetPrefs();
   const span = Math.max(max - min, 0);
+  if (embedded) return <div className={cn("min-w-0 text-channel-motor", className)}>
+    <div className="grid grid-cols-2 gap-1 text-center text-[10px] font-semibold tabular-nums leading-4">
+      <ControllerSettingReadout label={sheetCopy(locale, "settings.minVent")} value={`${min}%`} />
+      <ControllerSettingReadout label={sheetCopy(locale, "settings.maxVent")} value={`${max}%`} />
+    </div>
+    <div className="relative h-1 overflow-hidden rounded-full bg-muted/60" role="img" aria-label={`환기 ${min}–${max}%`}>
+      <div className="absolute inset-y-0 rounded-full bg-channel-motor/80 dark:bg-channel-motor/45" style={{ left: `${min}%`, width: `${span}%` }} aria-hidden />
+    </div>
+  </div>;
   return (
     <div className={cn("flex min-w-0 items-center gap-1 sm:gap-1.5", className)}>
       <PercentEdgeBadge

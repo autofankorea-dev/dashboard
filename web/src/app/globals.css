@@ -3243,3 +3243,17 @@ html[data-viewport-preview="mobile"] [data-farm-tour-root] .farm-tour-tooltip[da
     transform: translate(-50%, -50%);
   }
 }
+
+/* Read-only channel settings: keep the hit areas and card geometry stable. */
+.controller-setting-name {
+  visibility: hidden;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .controller-settings-glance:has([data-setting-readout]:hover) .controller-setting-value {
+    visibility: hidden;
+  }
+  .controller-settings-glance:has([data-setting-readout]:hover) .controller-setting-name {
+    visibility: visible;
+  }
+}
