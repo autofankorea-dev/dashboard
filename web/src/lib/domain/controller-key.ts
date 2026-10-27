@@ -6,6 +6,16 @@ export type ControllerAddress = {
   eqpmnNo: string;
 };
 
+/** Downlink addresses share the module's 1..48 controller range with EC2. */
+export function parseCommandEqpmnNo(raw: unknown): string | null {
+  if (typeof raw !== "number" && typeof raw !== "string") return null;
+  if (typeof raw === "string" && !/^\d{1,2}$/.test(raw.trim())) return null;
+  const n = Number(raw);
+  return Number.isInteger(n) && n >= 1 && n <= 48
+    ? String(n).padStart(2, "0")
+    : null;
+}
+
 /** 컨트롤러 번호. 1~99는 두 자리 그대로 둔다. */
 export function normalizeEqpmnNo(raw: unknown): string {
   const n = Number(raw);
