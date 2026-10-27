@@ -149,6 +149,7 @@ html[data-viewport-preview="mobile"] [data-viewport-preview="mobile"] {
   --color-channel-temp: var(--channel-temp);
   --color-channel-hum: var(--channel-hum);
   --color-channel-motor: var(--channel-motor);
+  --color-channel-motor-track: var(--channel-motor-track);
   --color-channel-info: var(--channel-info);
   --color-channel-command: var(--channel-command);
   --color-channel-fan-intake: var(--channel-fan-intake);
@@ -237,6 +238,8 @@ html[data-viewport-preview="mobile"] [data-viewport-preview="mobile"] {
   --channel-temp: oklch(0.48 0.12 15);
   --channel-hum: oklch(0.55 0.12 230);
   --channel-motor: oklch(0.45 0.20 328);
+  /* 환기 바 빈 트랙 — 불투명 연보라, 셀 배경(155 녹회색)과 색상으로 분리 */
+  --channel-motor-track: oklch(0.80 0.07 325);
   --channel-info: oklch(0.55 0.12 230);
   /* 명령 이력·적용 큐 진행 — C2 청록(시안), hum/info(230)과 분리 */
   --channel-command: oklch(0.55 0.12 210);
@@ -412,6 +415,7 @@ html[data-pc-band="narrow"]:not([data-field-rail-user="1"]) [data-field-rail] {
   --channel-temp: oklch(0.68 0.11 15);
   --channel-hum: oklch(0.72 0.12 230);
   --channel-motor: oklch(0.76 0.13 305);
+  --channel-motor-track: oklch(0.42 0.07 310);
   --channel-info: oklch(0.72 0.12 230);
   --channel-command: oklch(0.72 0.12 210);
   --channel-fan-intake: oklch(0.72 0.06 258);
