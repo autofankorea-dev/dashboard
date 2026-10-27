@@ -28,8 +28,10 @@ import {
   isApplyQueueInWindow,
   isApplyQueueWatchStatus,
   selectApplyQueueCommands,
+  controllerApplyProgress,
 } from "@/lib/farm/apply-queue";
-import type { FarmKey } from "@/lib/domain/farm-key";
+import { farmKeyId, type FarmKey } from "@/lib/domain/farm-key";
+import type { ControllerCommandFailure } from "@/lib/controllers/bulk-command-result";
 
 const PENDING_POLL_MS = 2000;
 const SENT_POLL_MS = 4000;
@@ -66,6 +68,7 @@ export type BulkLiveProgress = {
   /** 실패 없이 전부 실측 확인 — 도크 자동 접힘 */
   allOk: boolean;
   ackSettled: boolean;
+  counts: ReturnType<typeof controllerApplyProgress>["counts"];
 };
 
 type Args = {
@@ -191,6 +194,9 @@ export function useBulkCommandPipelineTracker({
   onCommandAck,
 }: Args) {
   const [rows, setRows] = useState<BulkLiveTrackRow[]>([]);
+  const [registrationFailures, setRegistrationFailures] = useState<ControllerCommandFailure[]>([]);
+  const sessionFarmRef = useRef<string | null>(null);
+  const currentFarmId = farmKey ? farmKeyId(farmKey) : null;
   const [active, setActive] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
   const [bannerVisible, setBannerVisible] = useState(false);
@@ -212,8 +218,8 @@ export function useBulkCommandPipelineTracker({
     return map;
   }, [readings]);
 
-  const startSession = useCallback((items: BulkSentCommandItem[]) => {
-    if (items.length === 0) {
+  const startSession = useCallback((items: BulkSentCommandItem[], failures: ControllerCommandFailure[] = []) => {
+    if (items.length === 0 && failures.length === 0) {
       return;
     }
     const incoming: BulkLiveTrackRow[] = items.map((item) => ({
@@ -222,18 +228,15 @@ export function useBulkCommandPipelineTracker({
       command: item.command,
       liveConfirmed: false,
     }));
-    setRows((prev) => {
-      const rest = prev.filter(
-        (row) => !incoming.some((item) => item.id === row.id),
-      );
-      return [...incoming, ...rest].slice(0, 16);
-    });
+    sessionFarmRef.current = items[0] ? farmKeyId(items[0].command.farmKey) : currentFarmId;
+    setRows([...new Map(incoming.map((row) => [row.id, row])).values()]);
+    setRegistrationFailures(failures);
     setActive(true);
     setTimedOut(false);
     setBannerVisible(true);
     startedAtRef.current = Date.now();
     awaitingFoldRef.current = true;
-  }, []);
+  }, [currentFarmId]);
 
   const watchKey = useMemo(() => {
     if (!farmKey || !watchCommands) return "";
@@ -244,6 +247,18 @@ export function useBulkCommandPipelineTracker({
 
   useEffect(() => {
     if (!farmKey || !watchCommands) return;
+    if (sessionFarmRef.current === farmKeyId(farmKey)) {
+      // Keep this request's full target set, including failures; do not add prior history.
+      const updates = new Map(watchCommands.map((command) => [command.id, command]));
+      setRows((prev) => prev.map((row) => ({ ...row, command: mergeCommand(row.command, updates.get(row.id)) })));
+      return;
+    }
+    if (sessionFarmRef.current != null) {
+      sessionFarmRef.current = null;
+      setRows([]);
+      startedAtRef.current = null;
+      queueMicrotask(() => setRegistrationFailures([]));
+    }
     const selected = selectApplyQueueCommands(watchCommands, farmKey);
     setRows((prev) => {
       const prevMap = new Map(prev.map((row) => [row.id, row]));
@@ -321,6 +336,8 @@ export function useBulkCommandPipelineTracker({
 
   const clearSession = useCallback(() => {
     setRows([]);
+    setRegistrationFailures([]);
+    sessionFarmRef.current = null;
     setActive(false);
     setTimedOut(false);
     setBannerVisible(false);
@@ -352,32 +369,11 @@ export function useBulkCommandPipelineTracker({
   });
 
   const progress = useMemo((): BulkLiveProgress => {
-    const total = trackedRows.length;
-    let ackDone = 0;
-    let liveDone = 0;
-    let failed = 0;
-    let pending = 0;
-    for (const row of trackedRows) {
-      if (row.liveConfirmed) liveDone += 1;
-      if (isTerminalFail(row.command.status)) failed += 1;
-      else if (isAckDone(row.command.status)) ackDone += 1;
-      else pending += 1;
-    }
-    const allAcked =
-      total > 0 &&
-      trackedRows.every(
-        (r) => isAckDone(r.command.status) || isTerminalFail(r.command.status),
-      );
-    const allOk =
-      total > 0 &&
-      trackedRows.every(
-        (r) => r.liveConfirmed && !isTerminalFail(r.command.status),
-      );
-    const allSettled =
-      total > 0 &&
-      trackedRows.every(
-        (r) => r.liveConfirmed || isTerminalFail(r.command.status),
-      );
+    const summary = controllerApplyProgress(trackedRows, registrationFailures.map((failure) => failure.key));
+    const { total, ackDone, liveDone, failed, pending } = summary;
+    const allAcked = total > 0 && ackDone + failed === total;
+    const allOk = total > 0 && liveDone === total && failed === 0;
+    const allSettled = total > 0 && liveDone + failed === total;
     const allLive = total > 0 && liveDone === total;
     return {
       total,
@@ -390,8 +386,9 @@ export function useBulkCommandPipelineTracker({
       allLive,
       allOk,
       ackSettled: allAcked,
+      counts: summary.counts,
     };
-  }, [trackedRows, timedOut]);
+  }, [trackedRows, registrationFailures, timedOut]);
 
   const pollSignature = useMemo(
     () =>

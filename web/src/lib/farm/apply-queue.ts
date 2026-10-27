@@ -96,6 +96,38 @@ export function applyQueueStageCounts(tickets: ApplyQueueTicket[]) {
   return counts;
 }
 
+/** One exclusive stage per controller. Any failed requested channel fails that controller. */
+export function controllerApplyProgress(
+  rows: readonly { id: string; key: string; command: { status: ThermoCommandStatus }; liveConfirmed: boolean }[],
+  rejectedKeys: readonly string[] = [],
+) {
+  const groups = new Map<string, Map<string, (typeof rows)[number]>>();
+  for (const row of rows) {
+    const group = groups.get(row.key) ?? new Map();
+    group.set(row.id, row);
+    groups.set(row.key, group);
+  }
+  const rejected = new Set(rejectedKeys);
+  for (const key of rejected) if (!groups.has(key)) groups.set(key, new Map());
+  const counts = { 접수: 0, 전송: 0, 확인: 0, 실패: 0 };
+  let ackDone = 0, liveDone = 0;
+  for (const [key, group] of groups) {
+    const commands = [...group.values()];
+    if (rejected.has(key) || commands.some((r) => r.command.status === "failed" || r.command.status === "cancelled")) {
+      counts.실패++;
+      continue;
+    }
+    if (commands.some((r) => r.command.status === "pending")) counts.접수++;
+    else {
+      ackDone++;
+      if (commands.every((r) => r.command.status === "applied")) counts.확인++;
+      else counts.전송++;
+    }
+    if (commands.every((r) => r.liveConfirmed)) liveDone++;
+  }
+  return { total: groups.size, ackDone, liveDone, failed: counts.실패, pending: counts.접수, counts };
+}
+
 export function formatApplyQueueTargetParts(opts: {
   stallTyCode?: string | null;
   stallNo?: string | null;

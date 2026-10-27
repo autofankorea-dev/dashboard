@@ -50,3 +50,31 @@ it("keeps legacy single and bulk commands on the same boundary", async () => {
   expect((await sendBulkThermoCommandAction([{ ...target(49), ...channel }])).sent).toBe(0);
   expect(insert).not.toHaveBeenCalled();
 });
+
+it("counts 14 two-channel targets as 10 queued controllers and 4 rejected controllers", async () => {
+  const targets = Array.from({ length: 14 }, (_, i) => target(i + 1));
+  const commands = targets.flatMap((t, index) => [channel, { ...channel, channel: "B" as const }].map((c) =>
+    ({ ...t, ...c, setpointTemp: index < 10 ? 24 : 100 })));
+  const result = await sendBulkThermoCommandAction(commands);
+  expect(result.sent).toBe(10);
+  expect(result.failed).toHaveLength(4);
+  expect(result.failed.map((r) => r.key)).toEqual(targets.slice(10).map((t) => t.key));
+  expect(result.sent + result.failed.length).toBe(14);
+  expect(insert).toHaveBeenCalledTimes(10);
+});
+
+it("counts DB failures once per controller, for both combined and device settings paths", async () => {
+  insert.mockImplementation((row) => ({ select: () => ({ single: async () => Number(row.eqpmn_no) > 10
+    ? { data: null, error: { message: "database rejected" } }
+    : { data: { ...row, id: `id-${row.eqpmn_no}` }, error: null } }) }));
+  const targets = Array.from({ length: 14 }, (_, i) => target(i + 1));
+  for (const send of [
+    () => sendBulkThermoCommandAction(targets.flatMap((t) => [channel, { ...channel, channel: "B" as const }].map((c) => ({ ...t, ...c })))),
+    () => sendDeviceSettingsCommandsAction(targets.map((t) => ({ ...t, channels: [channel] }))),
+  ]) {
+    const result = await send();
+    expect(result.sent).toBe(10);
+    expect(result.failed).toHaveLength(4);
+    expect(new Set(result.failed.map((r) => r.key)).size).toBe(4);
+  }
+});

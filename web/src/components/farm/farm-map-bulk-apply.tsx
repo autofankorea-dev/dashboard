@@ -23,7 +23,7 @@ import {
 import { normalizeStallTyCode } from "@/lib/domain/stall-type";
 import { isReadingOnline } from "@/lib/domain/reading-display";
 import type { InlineStatusTone } from "@/components/common/inline-status-toast";
-import { applyQueueStageCounts } from "@/lib/farm/apply-queue";
+import { controllerCommandResult } from "@/lib/controllers/bulk-command-result";
 import {
   EMPTY_APPLY_PROGRESS,
   useApplyQueueOptional,
@@ -261,7 +261,6 @@ export function FarmMapBulkApply({
   const liveRefresh = useFarmLiveRefreshOptional();
   const applyQueue = useApplyQueueOptional();
   const queueProgress = applyQueue?.progress ?? EMPTY_APPLY_PROGRESS;
-  const queueRows = applyQueue?.rows ?? [];
   const [open, setOpen] = useState(false);
   const [running, setRunning] = useState(false);
   const [applyPhase, setApplyPhase] = useState<ApplyPhase>("idle");
@@ -524,7 +523,7 @@ export function FarmMapBulkApply({
           channels: combinedChannels.filter(c => c.key === r.key && c.channel).map(c => ({ channel: c.channel!, eqpmnCode: c.eqpmnCode!, setpointTemp: c.setpointTemp, tempDeviation: c.tempDeviation, minVentPct: c.minVentPct, maxVentPct: c.maxVentPct })),
           alarmSettings: { lowTempC: alarm.tempLow, highTempC: alarm.tempHigh } })));
         alarmResult = { ok: res.ok, spCount: res.sent, error: res.error ?? res.failed[0]?.error };
-        control = control ? { ok: control.ok && res.ok, sent: control.sent + res.sent, failed: [...control.failed, ...res.failed], sentItems: [...control.sentItems, ...res.sentItems] } : res;
+        control = control ? controllerCommandResult([...control.sentItems, ...res.sentItems], [...control.failed, ...res.failed], control.error ?? res.error) : res;
       }
 
       const applied: ApplyResult = { control, alarm: alarmResult };
@@ -534,11 +533,11 @@ export function FarmMapBulkApply({
         channelSkipped,
       };
       const feedback = formatBulkApplyFeedback(applied, { ...applyOpts, locale });
+      if (control) applyQueue?.startSession(control.sentItems, control.failed);
       if (control?.sentItems?.length) {
         for (const item of control.sentItems) {
           liveRefresh?.patchThermoFromCommand(item.command);
         }
-        applyQueue?.startSession(control.sentItems);
         onAfterApply?.(applied, feedback);
         setOpen(false);
         setResult(null);
@@ -660,12 +659,7 @@ export function FarmMapBulkApply({
     }));
   };
 
-  const queueCounts = applyQueueStageCounts(
-    queueRows.map((row) => ({
-      status: row.command.status,
-      liveConfirmed: row.liveConfirmed,
-    })),
-  );
+  const queueCounts = queueProgress.counts;
   const queueCountLine = [
     queueCounts.접수 ? t("bulk.stageReceived", { count: queueCounts.접수 }) : null,
     queueCounts.전송 ? t("bulk.stageSent", { count: queueCounts.전송 }) : null,
@@ -750,7 +744,7 @@ export function FarmMapBulkApply({
           {applyPhase === "alarm"
             ? t("bulk.savingGuide")
             : applyPhase === "control"
-              ? t("bulk.sendingControl", { count: previewCommands.length || onlineTargets.length })
+              ? t("bulk.sendingControl", { count: new Set(previewCommands.map((command) => command.key)).size || onlineTargets.length })
               : t("bulk.preparing")}
         </p>
       </div>
