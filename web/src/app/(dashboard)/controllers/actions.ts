@@ -20,6 +20,7 @@ import { revalidateLiveCache } from "@/lib/data/live-cache";
 import { farmScopeCacheKey } from "@/lib/domain/live-config";
 import { MENU_STEPS } from "@/lib/controllers/controller-panel-map";
 import { isValidEqpmnCode } from "@/lib/domain/eqpmn-code";
+import { controllerCommandResult } from "@/lib/controllers/bulk-command-result";
 
 export type SendThermoCommandResult =
   | { ok: true; id: string; command: ThermoCommand }
@@ -203,7 +204,9 @@ export type BulkSentCommandItem = {
 
 export type SendBulkThermoCommandResult = {
   ok: boolean;
+  /** Controllers whose requested settings were all registered (not device ACKs). */
   sent: number;
+  /** One entry per controller reading key; partial registration counts as failed. */
   failed: { key: string; error: string }[];
   /** insert 성공 건 — ACK/LIVE 추적에 사용 */
   sentItems: BulkSentCommandItem[];
@@ -216,10 +219,10 @@ async function sendLegacyBulkThermoCommandAction(
 ): Promise<SendBulkThermoCommandResult> {
   const user = await getCurrentUser();
   if (!user) {
-    return { ok: false, sent: 0, failed: [], sentItems: [], error: "unauthorized" };
+    return controllerCommandResult<BulkSentCommandItem>([], commands.map((c) => ({ key: c.key, error: "unauthorized" })), "unauthorized");
   }
   if (!canCommand(user)) {
-    return { ok: false, sent: 0, failed: [], sentItems: [], error: "forbidden" };
+    return controllerCommandResult<BulkSentCommandItem>([], commands.map((c) => ({ key: c.key, error: "forbidden" })), "forbidden");
   }
   if (!Array.isArray(commands) || commands.length === 0) {
     return { ok: false, sent: 0, failed: [], sentItems: [], error: "no_targets" };
@@ -248,7 +251,7 @@ async function sendLegacyBulkThermoCommandAction(
         : null;
     const eqpmnCode = String(c.eqpmnCode ?? "").trim() || null;
     const action = channel ? "SET_CHANNEL_THERMO" : "SET_CTRL_THERMO";
-    const failKey = channel ? `${c.key}:${channel}` : c.key;
+  const failKey = c.key;
 
     if (
       !lsindRegistNo ||
@@ -333,19 +336,14 @@ async function sendLegacyBulkThermoCommandAction(
 
   for (const scope of farmScopes) revalidateLiveCache(scope);
 
-  return {
-    ok: failed.length === 0,
-    sent: sentItems.length,
-    failed,
-    sentItems,
-  };
+  return controllerCommandResult(sentItems, failed);
 }
 
 
 /** One controller, one row, one MQTT packet. Individual values live in payload_json. */
 export async function sendCombinedChannelCommandAction(commands: BulkThermoCommand[]): Promise<SendBulkThermoCommandResult> {
   const user = await getCurrentUser();
-  const reject = (error: string): SendBulkThermoCommandResult => ({ ok: false, sent: 0, failed: (Array.isArray(commands) ? commands : []).map((c) => ({ key: c?.key ?? "", error })), sentItems: [], error });
+  const reject = (error: string): SendBulkThermoCommandResult => controllerCommandResult<BulkSentCommandItem>([], (Array.isArray(commands) ? commands : []).map((c) => ({ key: c?.key ?? "", error })), error);
   if (!user) return reject("unauthorized");
   if (!canCommand(user)) return reject("forbidden");
   if (!Array.isArray(commands) || !commands.length || commands.length > 3) return reject("invalid_values");
@@ -391,8 +389,8 @@ export async function sendBulkThermoCommandAction(commands: BulkThermoCommand[])
   const results: SendBulkThermoCommandResult[] = [];
   for (const group of groups.values()) results.push(await sendCombinedChannelCommandAction(group));
   if (legacy.length) results.push(await sendLegacyBulkThermoCommandAction(legacy));
-  return { ok: results.every((r) => r.ok), sent: results.reduce((n, r) => n + r.sent, 0),
-    failed: results.flatMap((r) => r.failed), sentItems: results.flatMap((r) => r.sentItems) };
+  return controllerCommandResult(results.flatMap((r) => r.sentItems),
+    results.flatMap((r) => r.failed), results.find((r) => r.error)?.error);
 }
 
 export async function saveControllerDisplayNameAction(
@@ -435,7 +433,8 @@ export type DeviceSettingsTarget = {
 };
 /** RLS-scoped command, never a profile write. One controller → one packet. */
 export async function sendDeviceSettingsCommandsAction(targets: DeviceSettingsTarget[]): Promise<SendBulkThermoCommandResult> {
-  const empty = (error: string): SendBulkThermoCommandResult => ({ ok: false, error, sent: 0, failed: [], sentItems: [] });
+  const empty = (error: string): SendBulkThermoCommandResult => controllerCommandResult<BulkSentCommandItem>([],
+    (Array.isArray(targets) ? targets : []).map((t) => ({ key: t?.key ?? "", error })), error);
   const user = await getCurrentUser();
   if (!user) return empty("unauthorized");
   if (!canCommand(user)) return empty("forbidden");
@@ -465,5 +464,5 @@ export async function sendDeviceSettingsCommandsAction(targets: DeviceSettingsTa
     sentItems.push({ key: t.key, id: command.id, command });
     revalidateLiveCache(farmScopeCacheKey(t.lsindRegistNo, t.itemCode));
   }
-  return { ok: failed.length === 0, sent: sentItems.length, failed, sentItems };
+  return controllerCommandResult(sentItems, failed);
 }

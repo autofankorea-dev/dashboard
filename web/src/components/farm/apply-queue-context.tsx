@@ -13,11 +13,12 @@ import {
   type BulkLiveTrackRow,
 } from "@/components/farm/use-bulk-command-pipeline-tracker";
 import type { BulkSentCommandItem } from "@/app/(dashboard)/controllers/actions";
+import type { ControllerCommandFailure } from "@/lib/controllers/bulk-command-result";
 import type { ThermoCommand } from "@/lib/data/commands";
 import { useFarmLiveRefreshOptional } from "@/components/farm/farm-live-refresh";
 
 type ApplyQueueContextValue = {
-  startSession: (items: BulkSentCommandItem[]) => void;
+  startSession: (items: BulkSentCommandItem[], failures?: ControllerCommandFailure[]) => void;
   startFromCommand: (readingKey: string, command: ThermoCommand) => void;
   rows: BulkLiveTrackRow[];
   progress: BulkLiveProgress;
@@ -35,6 +36,7 @@ export const EMPTY_APPLY_PROGRESS: BulkLiveProgress = {
   allLive: false,
   allOk: false,
   ackSettled: false,
+  counts: { 접수: 0, 전송: 0, 확인: 0, 실패: 0 },
 };
 
 const ApplyQueueContext = createContext<ApplyQueueContextValue | null>(null);
