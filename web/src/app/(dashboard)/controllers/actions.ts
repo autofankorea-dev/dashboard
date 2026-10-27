@@ -15,7 +15,7 @@ import {
   type ThermoCommand,
   type ThermoCommandRow,
 } from "@/lib/data/commands";
-import { normalizeEqpmnNo } from "@/lib/domain/controller-key";
+import { parseCommandEqpmnNo } from "@/lib/domain/controller-key";
 import { revalidateLiveCache } from "@/lib/data/live-cache";
 import { farmScopeCacheKey } from "@/lib/domain/live-config";
 import { MENU_STEPS } from "@/lib/controllers/controller-panel-map";
@@ -37,7 +37,7 @@ export async function sendThermoCommandAction(
   const moduleUid = Number(formData.get("module_uid"));
   const stallTyCode = String(formData.get("stall_ty_code") ?? "").trim();
   const stallNo = String(formData.get("stall_no") ?? "").trim();
-  const eqpmnNo = normalizeEqpmnNo(formData.get("eqpmn_no") ?? "01");
+  const eqpmnNo = parseCommandEqpmnNo(formData.get("eqpmn_no") ?? "01");
   const minVentPct = Number(formData.get("min_vent_pct"));
   const maxVentPct = Number(formData.get("max_vent_pct"));
   const setpointTemp = Number(formData.get("setpoint_temp"));
@@ -55,6 +55,7 @@ export async function sendThermoCommandAction(
     !lsindRegistNo ||
     !itemCode ||
     !Number.isInteger(moduleUid) ||
+    !eqpmnNo ||
     !stallTyCode ||
     !/^SP(0[1-9]|10)$/.test(stallTyCode) ||
     !stallNo ||
@@ -235,7 +236,7 @@ async function sendLegacyBulkThermoCommandAction(
     const moduleUid = Number(c.moduleUid);
     const stallTyCode = String(c.stallTyCode ?? "").trim();
     const stallNo = String(c.stallNo ?? "").trim();
-    const eqpmnNo = normalizeEqpmnNo(c.eqpmnNo ?? "01");
+    const eqpmnNo = parseCommandEqpmnNo(c.eqpmnNo ?? "01");
     const minVentPct = Number(c.minVentPct);
     const maxVentPct = Number(c.maxVentPct);
     const setpointTemp = Number(c.setpointTemp);
@@ -253,6 +254,7 @@ async function sendLegacyBulkThermoCommandAction(
       !lsindRegistNo ||
       !itemCode ||
       !Number.isInteger(moduleUid) ||
+      !eqpmnNo ||
       !stallTyCode ||
       !/^SP(0[1-9]|10)$/.test(stallTyCode) ||
       !stallNo ||
@@ -354,10 +356,10 @@ export async function sendCombinedChannelCommandAction(commands: BulkThermoComma
     setpointTemp: c.setpointTemp, tempDeviation: c.tempDeviation, minVentPct: c.minVentPct, maxVentPct: c.maxVentPct })));
   if (!channels) return reject("invalid_values");
   const { lsindRegistNo, itemCode, moduleUid, stallTyCode, stallNo } = first;
-  const eqpmnNo = normalizeEqpmnNo(first.eqpmnNo);
+  const eqpmnNo = parseCommandEqpmnNo(first.eqpmnNo);
   if (!lsindRegistNo || !itemCode || !Number.isInteger(moduleUid) || moduleUid < 1 ||
       !/^SP(0[1-9]|10)$/.test(stallTyCode) || !/^(0[1-9]|[12][0-9]|3[0-2])$/.test(stallNo) ||
-      !/^(0[1-9]|10)$/.test(eqpmnNo)) return reject("invalid_target");
+      !eqpmnNo) return reject("invalid_target");
   if (!canEditFarmScope(user, { lsindRegistNo, itemCode })) return reject("forbidden");
   const values = channels[0]!;
   const supabase = await createClient();
@@ -441,18 +443,19 @@ export async function sendDeviceSettingsCommandsAction(targets: DeviceSettingsTa
   const supabase = await createClient();
   const failed: SendBulkThermoCommandResult["failed"] = [], sentItems: BulkSentCommandItem[] = [];
   for (const t of targets) {
+    const eqpmnNo = parseCommandEqpmnNo(t?.eqpmnNo);
     const alarmSettings = t?.alarmSettings === undefined ? null : parseDeviceAlarms(t.alarmSettings);
     const channels = t?.channels === undefined || (Array.isArray(t.channels) && !t.channels.length) ? [] : parseCommandChannels(t.channels);
     if (!t || (t.alarmSettings !== undefined && !alarmSettings) || !channels || (!alarmSettings && !channels.length) || !t.key || !t.lsindRegistNo || !t.itemCode ||
         !Number.isInteger(t.moduleUid) || t.moduleUid < 1 ||
         !/^SP(0[1-9]|10)$/.test(t.stallTyCode) || !/^(0[1-9]|[12][0-9]|3[0-2])$/.test(t.stallNo) ||
-        !/^(0[1-9]|10)$/.test(t.eqpmnNo)) { failed.push({ key: t?.key ?? "", error: "invalid_values" }); continue; }
+        !eqpmnNo) { failed.push({ key: t?.key ?? "", error: "invalid_values" }); continue; }
     if (!canEditFarmScope(user, t)) { failed.push({ key: t.key, error: "forbidden" }); continue; }
     // Legacy NOT NULL columns are compatibility storage, excluded by the channel mask.
     const values = channels[0] ?? { setpointTemp: 25, tempDeviation: 2, minVentPct: 0, maxVentPct: 100 };
     const { data, error } = await supabase.from("ctrl_thermo_command").insert({
       created_by: user.id, lsind_regist_no: t.lsindRegistNo, item_code: t.itemCode, module_uid: t.moduleUid,
-      ctrl_idx: Number(t.eqpmnNo) - 1, stall_ty_code: t.stallTyCode, stall_no: t.stallNo, eqpmn_no: t.eqpmnNo,
+      ctrl_idx: Number(eqpmnNo) - 1, stall_ty_code: t.stallTyCode, stall_no: t.stallNo, eqpmn_no: eqpmnNo,
       channel: null, eqpmn_code: null, action: DEVICE_SETTINGS_ACTION, status: "pending",
       setpoint_temp: values.setpointTemp, temp_deviation: values.tempDeviation, min_vent_pct: values.minVentPct, max_vent_pct: values.maxVentPct,
       payload_json: { command_channels: channels, ...(alarmSettings ? { alarm_settings: alarmSettings } : {}) }, note: null,

@@ -3,6 +3,7 @@
 import { encodeCombinedCommandBody, type CommandChannelValues } from "@/lib/controllers/combined-channel-command";
 
 import { encodeDeviceSettingsBody, type DeviceAlarmValues } from "@/lib/controllers/device-alarm-command";
+import { parseCommandEqpmnNo } from "@/lib/domain/controller-key";
 
 const CMD_WIRE_VER = 0x0c;
 const FLAG_CHANNEL_CMD = 0x01;
@@ -86,7 +87,7 @@ export function encodeCommandWireHex(input: CommandWireInput): string | null {
   }
   const stallTy = stallTyToWire(input.stallTyCode ?? "");
   const stallNo = Number.parseInt(String(input.stallNo ?? "").trim(), 10);
-  const eqpmnNo = Number.parseInt(String(input.eqpmnNo ?? "").trim(), 10);
+  const eqpmnNo = Number(parseCommandEqpmnNo(input.eqpmnNo));
   const setpoint = tempToX10(input.setpointTemp);
   const deviation = tempToX10(input.tempDeviation);
   const minVent = Math.round(input.minVentPct);

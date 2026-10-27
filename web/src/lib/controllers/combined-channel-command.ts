@@ -1,4 +1,5 @@
 import type { ChannelSlot } from "@/lib/domain/iot-channel";
+import { parseCommandEqpmnNo } from "@/lib/domain/controller-key";
 
 export const COMBINED_CHANNEL_ACTION = "SET_CHANNELS_THERMO";
 export const COMBINED_WIRE_VERSION = 0x0d;
@@ -47,10 +48,11 @@ export function encodeCombinedCommandBody(input: {
   channels?: CommandChannelValues[];
 }): Uint8Array | null {
   const channels = parseCommandChannels(input.channels);
+  const eqpmnNo = parseCommandEqpmnNo(input.eqpmnNo);
   const sp = /^SP(0[1-9]|10)$/.exec(input.stallTyCode ?? "");
-  const stall = Number(input.stallNo), controller = Number(input.eqpmnNo);
+  const stall = Number(input.stallNo), controller = Number(eqpmnNo);
   if (!channels || !sp || !Number.isInteger(stall) || stall < 1 || stall > 32 ||
-    !Number.isInteger(controller) || controller < 1 || controller > 10) return null;
+    !eqpmnNo) return null;
   const body = new Uint8Array(27).fill(0xff);
   body.set([COMBINED_WIRE_VERSION, 0, Number(sp[1]), stall, controller, 0]);
   for (const row of channels) {
