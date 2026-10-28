@@ -2,7 +2,6 @@ import { deviceAlarmThresholds } from "@/lib/domain/device-alarm-thresholds";
 import type { BulkThermoCommand } from "@/app/(dashboard)/controllers/actions";
 import type { ControllerGridData } from "@/lib/farm/controller-grid-data";
 import {
-  resolveThermoSettings,
   type ControllerThermoSettings,
 } from "@/lib/controllers/controller-settings";
 import { EDIT_START_DRAFT } from "@/lib/controllers/controller-panel-map";
@@ -29,11 +28,7 @@ export type BulkChannelThermo = {
 };
 
 export type BulkThermoDraft = {
-  applyTemp: boolean;
-  applyVent: boolean;
   channelDrafts: Record<ChannelSlot, BulkChannelThermo>;
-  /** 채널 컨트롤러에 보낼 슬롯. 레거시(CTRL)는 무시. */
-  selectedChannels: ChannelSlot[];
 };
 
 export const BULK_CHANNEL_OPTIONS: ChannelSlot[] = ["A", "B", "C"];
@@ -168,33 +163,16 @@ export function bulkAlarmDraftSeed(
 }
 
 function thermoValuesForReading(
-  r: ControllerGridData["readings"][number],
-  thermoSettings: ControllerGridData["thermoSettings"],
   draft: BulkThermoDraft,
   channel?: ChannelSlot,
 ) {
   const slot = channel ?? "A";
   const chDraft = draft.channelDrafts[slot];
-  const cur = resolveThermoSettings(
-    thermoSettings,
-    r.farmKey,
-    r.moduleUid,
-    r.controllerKey,
-    channel,
-  );
   return {
-    setpointTemp: draft.applyTemp
-      ? chDraft.setpoint
-      : (cur?.setpointTemp ?? EDIT_START_DRAFT.setpointTemp),
-    tempDeviation: draft.applyTemp
-      ? chDraft.deviation
-      : (cur?.tempDeviation ?? EDIT_START_DRAFT.tempDeviation),
-    minVentPct: draft.applyVent
-      ? chDraft.minVent
-      : (cur?.minVentPct ?? EDIT_START_DRAFT.minVentPct),
-    maxVentPct: draft.applyVent
-      ? chDraft.maxVent
-      : (cur?.maxVentPct ?? EDIT_START_DRAFT.maxVentPct),
+    setpointTemp: chDraft.setpoint,
+    tempDeviation: chDraft.deviation,
+    minVentPct: chDraft.minVent,
+    maxVentPct: chDraft.maxVent,
   };
 }
 
@@ -212,26 +190,21 @@ export function readingNeedsChannelsHydration(r: BarnReading): boolean {
 
 /**
  * 선택된 온라인 컨트롤러별 일괄 제어 명령 구성.
- * - channels[] 있음 → 선택된 활성 채널마다 SET_CHANNEL_THERMO
+ * - channels[] 있음 → 모든 활성 채널에 일괄창 확정값 전송
  * - 없음 → SET_CTRL_THERMO 1건
- * 미적용 항목은 각 대상의 현재 설정값(없으면 편집 시작 기본값)을 유지.
+ * 대상별 기존값을 섞거나 변경되지 않은 채널을 제외하지 않는다.
  */
 export function buildBulkThermoCommands(
   onlineTargets: ControllerGridData["readings"],
-  thermoSettings: ControllerGridData["thermoSettings"],
   draft: BulkThermoDraft
 ): BulkThermoCommand[] {
-  const selected = new Set(draft.selectedChannels);
   const out: BulkThermoCommand[] = [];
 
   for (const r of onlineTargets) {
     const channels = r.channels ?? [];
     if (channels.length > 0) {
       for (const ch of channels) {
-        if (!selected.has(ch.channel)) continue;
         const values = thermoValuesForReading(
-          r,
-          thermoSettings,
           draft,
           ch.channel,
         );
@@ -251,7 +224,7 @@ export function buildBulkThermoCommands(
       continue;
     }
 
-    const values = thermoValuesForReading(r, thermoSettings, draft);
+    const values = thermoValuesForReading(draft);
     out.push({
       key: r.key,
       lsindRegistNo: r.farmKey.lsindRegistNo,
