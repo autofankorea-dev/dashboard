@@ -266,13 +266,14 @@ export const SHEET_COPY = {
   "bulk.clear": { ko: "선택해제", en: "Clear" },
   "bulk.enterSettings": { ko: "설정입력", en: "Enter settings" },
   "bulk.title": { ko: "컨트롤러 일괄 설정", en: "Bulk controller settings" },
-  "bulk.apply": { ko: "변경값 적용", en: "Apply changes" },
+  "bulk.apply": { ko: "일괄명령 전송", en: "Send bulk command" },
   "bulk.applying": { ko: "적용 중…", en: "Applying…" },
   "bulk.ok": { ko: "확인", en: "OK" },
   "bulk.hintSend": {
-    ko: "변경된 채널과 알람을 선택한 컨트롤러에 전송합니다.",
-    en: "Sends changed channels and alarms to the selected controllers.",
+    ko: "표시된 모든 채널 설정과 알람을 선택한 컨트롤러에 동일하게 전송합니다.",
+    en: "Sends all displayed channel settings and alarms identically to the selected controllers.",
   },
+  "bulk.fullSnapshot": { ko: "1·2·3차 설정 및 알람 전체 전송 · 현재값과 같아도 전송", en: "Send all channel settings and alarms, including unchanged values" },
   "bulk.fieldCommand": { ko: "현장 명령", en: "Field commands" },
   "bulk.noSaved": {
     ko: "선택한 컨트롤러에 저장된 설정값이 없습니다.",
