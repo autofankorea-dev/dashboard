@@ -42,13 +42,12 @@ import {
   buildBulkThermoCommands,
   bulkAlarmDraftSeed,
   bulkDraftsFromPreset,
-  bulkSendSlots,
   bulkThermoDraftSeedByChannel,
   emptyBulkChannelDrafts,
   bulkModalBtn,
   readingNeedsChannelsHydration,
 } from "@/components/farm/farm-map-bulk-apply-parts";
-import { type ChannelSlot } from "@/lib/domain/iot-channel";
+import type { ChannelSlot } from "@/lib/domain/iot-channel";
 import type { PanelThermoValues } from "@/lib/controllers/controller-panel-draft";
 import {
   readCommandPresets,
@@ -280,7 +279,6 @@ export function FarmMapBulkApply({
     slot: "A",
     field: "setpoint",
   });
-  const [pinnedSlots, setPinnedSlots] = useState<ChannelSlot[]>([]);
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -337,7 +335,6 @@ export function FarmMapBulkApply({
     setAlarm(seededAlarm);
     setAlarmSeed(seededAlarm);
     setSelectedCell({ slot: "A", field: "setpoint" });
-    setPinnedSlots([]);
     setActivePresetId(null);
     setError(
       needsHydration
@@ -361,7 +358,6 @@ export function FarmMapBulkApply({
     const applied = bulkDraftsFromPreset(channelDrafts, button.channels);
     if (applied.slots.length === 0) return;
     setChannelDrafts(applied.drafts);
-    setPinnedSlots(applied.slots);
     setActivePresetId(id);
     setError(null);
   };
@@ -376,37 +372,12 @@ export function FarmMapBulkApply({
     if (activePresetId === id) setActivePresetId(null);
   };
 
-  const valueChanged = (left: number, right: number) =>
-    Math.abs(left - right) > 0.05;
-  const draftTempChanged = BULK_CHANNEL_OPTIONS.some(
-    (slot) =>
-      valueChanged(channelDrafts[slot].setpoint, channelSeeds[slot].setpoint) ||
-      valueChanged(channelDrafts[slot].deviation, channelSeeds[slot].deviation),
-  );
-  const draftVentChanged = BULK_CHANNEL_OPTIONS.some(
-    (slot) =>
-      channelDrafts[slot].minVent !== channelSeeds[slot].minVent ||
-      channelDrafts[slot].maxVent !== channelSeeds[slot].maxVent,
-  );
-  const presetPinned = pinnedSlots.length > 0;
-  const applyTemp = draftTempChanged || presetPinned;
-  const applyVent = draftVentChanged || presetPinned;
-  const applyAlarm =
-    valueChanged(alarm.tempLow, alarmSeed.tempLow) ||
-    valueChanged(alarm.tempHigh, alarmSeed.tempHigh);
-  const nothingSelected = !applyTemp && !applyVent && !applyAlarm;
-  const wantedControl = applyTemp || applyVent;
-  const selectedChannels = useMemo(
-    () =>
-      bulkSendSlots(
-        channelDrafts,
-        channelSeeds,
-        applyTemp,
-        applyVent,
-        pinnedSlots,
-      ),
-    [channelDrafts, channelSeeds, applyTemp, applyVent, pinnedSlots],
-  );
+  // 일괄적용은 표시된 전체 명령의 재전송이다. seed는 입력 참조값일 뿐이다.
+  const applyTemp = true;
+  const applyVent = true;
+  const applyAlarm = true;
+  const wantedControl = true;
+  const selectedChannels = BULK_CHANNEL_OPTIONS;
   /** 온라인 대상이 전부 채널형일 때만 채널 선택이 필수 */
   const allChannelTargets = useMemo(
     () =>
@@ -417,21 +388,14 @@ export function FarmMapBulkApply({
   const previewCommands = useMemo(
     () =>
       wantedControl
-        ? buildBulkThermoCommands(onlineTargets, controller.thermoSettings, {
-            applyTemp,
-            applyVent,
+        ? buildBulkThermoCommands(onlineTargets, {
             channelDrafts,
-            selectedChannels,
           })
         : [],
     [
       wantedControl,
       onlineTargets,
-      controller.thermoSettings,
-      applyTemp,
-      applyVent,
       channelDrafts,
-      selectedChannels,
     ],
   );
 
@@ -447,8 +411,8 @@ export function FarmMapBulkApply({
   const runApply = async () => {
     if (running) return;
     setError(null);
-    if (nothingSelected) {
-      setError(t("bulk.pickOne"));
+    if (onlineTargets.length === 0) {
+      setError(t("bulk.noOnline"));
       return;
     }
     const needsHydration = onlineTargets.some(readingNeedsChannelsHydration);
@@ -489,12 +453,8 @@ export function FarmMapBulkApply({
         setApplyPhase("control");
         const commands = buildBulkThermoCommands(
           onlineTargets,
-          controller.thermoSettings,
           {
-            applyTemp,
-            applyVent,
-            channelDrafts,
-            selectedChannels,
+            channelDrafts: structuredClone(channelDrafts),
           },
         );
         const commandedKeys = new Set(commands.map((c) => c.key));
@@ -588,8 +548,8 @@ export function FarmMapBulkApply({
     })
       ? t("bulk.alarmOrder")
       : null;
-  const applyBlockedReason = nothingSelected
-    ? t("bulk.nothingChanged")
+  const applyBlockedReason = onlineTargets.length === 0
+    ? t("bulk.noOnline")
     : awaitingChannelHydration && wantedControl
       ? t("bulk.channelThenApply")
       : wantedControl && previewCommands.length === 0 && !applyAlarm
@@ -808,10 +768,7 @@ export function FarmMapBulkApply({
           </p>
         ) : null}
         <p className="text-xs text-muted-foreground">
-          {t("bulk.changedCount", {
-            channels: (applyTemp || applyVent) ? selectedChannels.length : 0,
-            alarm: applyAlarm ? t("bulk.changed") : t("bulk.unchanged"),
-          })}
+          {t("bulk.fullSnapshot")}
         </p>
       </div>
     );
