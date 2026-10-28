@@ -80,7 +80,7 @@ export const accountMenuLayout = {
    * 언어를 바꿔도 카드 가로 위치가 그대로다.
    */
   settingsToggles:
-    "grid w-[20rem] max-w-[20rem] shrink-0 grid-cols-[4.75rem_minmax(0,1fr)] items-start gap-x-3 gap-y-2",
+    "grid w-[20rem] max-w-[20rem] shrink-0 grid-cols-[4.75rem_minmax(0,1fr)] items-center gap-x-3 gap-y-2",
   addressRow:
     "min-w-0 border-b border-border/60 px-3 py-2.5 md:px-4",
   contextFarm:
