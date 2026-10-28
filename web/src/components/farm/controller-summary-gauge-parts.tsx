@@ -135,8 +135,8 @@ export function VentGaugeV1({
       <ControllerSettingReadout label={sheetCopy(locale, "settings.minVent")} value={`${min}%`} />
       <ControllerSettingReadout label={sheetCopy(locale, "settings.maxVent")} value={`${max}%`} />
     </div>
-    <div className="relative h-1 overflow-hidden rounded-full bg-muted/60" role="img" aria-label={`환기 ${min}–${max}%`}>
-      <div className="absolute inset-y-0 rounded-full bg-channel-motor/80 dark:bg-channel-motor/45" style={{ left: `${min}%`, width: `${span}%` }} aria-hidden />
+    <div className="relative h-1 overflow-hidden rounded-full bg-channel-motor-track" role="img" aria-label={`환기 ${min}–${max}%`}>
+      <div className="absolute inset-y-0 rounded-full bg-channel-motor" style={{ left: `${min}%`, width: `${span}%` }} aria-hidden />
     </div>
   </div>;
   return (
@@ -149,14 +149,14 @@ export function VentGaugeV1({
       />
       <div
         className={cn(
-          "relative min-w-0 flex-1 overflow-hidden rounded-full bg-muted/50",
+          "relative min-w-0 flex-1 overflow-hidden rounded-full bg-channel-motor-track",
           compact ? "h-1" : "h-1.5"
         )}
         role="img"
         aria-label={`환기 ${min}–${max}%`}
       >
         <div
-          className="absolute inset-y-0 rounded-full bg-channel-motor/80 dark:bg-channel-motor/45"
+          className="absolute inset-y-0 rounded-full bg-channel-motor"
           style={{ left: `${min}%`, width: `${span}%` }}
           aria-hidden
         />
