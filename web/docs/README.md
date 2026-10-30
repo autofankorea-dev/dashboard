@@ -24,7 +24,7 @@
 | [`mobile-ui-audit.md`](./mobile-ui-audit.md) | 모바일 UI audit |
 | [`PERF_BASELINE.md`](./PERF_BASELINE.md) | LIVE/TTFB |
 | [`LIVE_HOT_VIEW_RULES.md`](./LIVE_HOT_VIEW_RULES.md) | HOT list 뷰 thin 규칙·PR 체크리스트 |
-| [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) | 보존(retention) **채택·cron 적용 현황** (정본) |
+| [`IOT_RETENTION_OPTIONS.md`](./IOT_RETENTION_OPTIONS.md) | 보존(retention) **링 버퍼 7×50MB · cron 적용 현황** (정본) |
 | [`RAW_STORAGE_CHANGE.md`](./RAW_STORAGE_CHANGE.md) | raw passthrough 축소 Phase 1~4 · 용량 실측 |
 | [`DECODED_CAPACITY.md`](./DECODED_CAPACITY.md) | decoded 용량·인덱스 실측 · D0~D4 트랙 |
 | [`DECODED_ROWCOUNT_PLAN.md`](./DECODED_ROWCOUNT_PLAN.md) | 행 수: 파티션 + retention (D1·D4) · **희소 PoC OFF 2026-09-01** |

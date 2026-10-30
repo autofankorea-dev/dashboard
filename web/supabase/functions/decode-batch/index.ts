@@ -26,6 +26,8 @@ type RawRow = {
   topic: string | null;
   payload_bytea: unknown;
   received_at: string;
+  // Ring slot (1..7). Absent before the ring migration is applied.
+  slot?: number | null;
 };
 
 type DecodeConfig = {
@@ -97,9 +99,8 @@ Deno.serve(async (req: Request) => {
 
   const { data: rawRows, error: rawErr } = await supabase
     .from("iot_room_state_raw")
-    .select(
-      "id, lsind_regist_no, item_code, module_uid, topic, payload_bytea, received_at",
-    )
+    // "*" so `slot` is read when the ring schema exists, without failing before it.
+    .select("*")
     .gt("id", lastRawId)
     .order("id", { ascending: true })
     .limit(batchLimit);
@@ -316,10 +317,15 @@ Deno.serve(async (req: Request) => {
       received_at: row.received_at,
     };
 
-    // D1 partitioned UNIQUE(raw_id, mesure_at)
+    // Ring schema: decoded row goes to its raw row's slot, UNIQUE(raw_id, mesure_at, slot).
+    // Pre-ring schema: month partitions, UNIQUE(raw_id, mesure_at).
+    const ringSlot = row.slot ?? null;
     const { error: upsertErr } = await supabase
       .from("iot_room_state_decoded")
-      .upsert(insertRow, { onConflict: "raw_id,mesure_at" });
+      .upsert(
+        ringSlot === null ? insertRow : { ...insertRow, slot: ringSlot },
+        { onConflict: ringSlot === null ? "raw_id,mesure_at" : "raw_id,mesure_at,slot" },
+      );
 
     if (upsertErr) {
       failed += 1;
